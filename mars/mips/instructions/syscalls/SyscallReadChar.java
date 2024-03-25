@@ -1,8 +1,10 @@
-   package mars.mips.instructions.syscalls;
-   import mars.*;
-   import mars.util.*;
-   import mars.mips.hardware.*;
-   import mars.simulator.*;
+package mars.mips.instructions.syscalls;
+
+import mars.ProcessingException;
+import mars.ProgramStatement;
+import mars.mips.hardware.RegisterFile;
+import mars.simulator.Exceptions;
+import mars.util.SystemIO;
 
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
@@ -30,40 +32,32 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
- */
+*/
 
-
-/** 
+/**
  * Service to read a character from input console into $a0.
- *
  */
- 
-    public class SyscallReadChar extends AbstractSyscall {
-   /**
-    * Build an instance of the Read Char syscall.  Default service number
-    * is 12 and name is "ReadChar".
-    */
-       public SyscallReadChar() {
-         super(12, "ReadChar");
-      }
-      
-   /**
-   * Performs syscall function to read a character from input console into $a0
-   */
-       public void simulate(ProgramStatement statement) throws ProcessingException {
-         int value = 0;
-         try
-         {
-            value = SystemIO.readChar(this.getNumber());
-         } 
-             catch (IndexOutOfBoundsException e) // means null input
-            {
-               throw new ProcessingException(statement,
-                     "invalid char input (syscall "+this.getNumber()+")",
-                  	Exceptions.SYSCALL_EXCEPTION);
-            }
-			// DPS 20 June 2008: changed from 4 ($a0) to 2 ($v0)
-         RegisterFile.updateRegister(2, value); 
-      }
-   
-   }
+public class SyscallReadChar extends AbstractSyscall {
+    /**
+     * Build an instance of the Read Char syscall.  Default service number
+     * is 12 and name is "ReadChar".
+     */
+    public SyscallReadChar() {
+        super(12, "ReadChar");
+    }
+
+    /**
+     * Performs syscall function to read a character from input console into $v0
+     */
+    public void simulate(ProgramStatement statement) throws ProcessingException {
+        try {
+            int value = SystemIO.readChar(this.getNumber());
+            // DPS 20 June 2008: changed from 4 ($a0) to 2 ($v0)
+            RegisterFile.updateRegister(2, value);
+        }
+        catch (IndexOutOfBoundsException e) // means null input
+        {
+            throw new ProcessingException(statement, "invalid char input (syscall " + this.getNumber() + ")", Exceptions.SYSCALL_EXCEPTION);
+        }
+    }
+}

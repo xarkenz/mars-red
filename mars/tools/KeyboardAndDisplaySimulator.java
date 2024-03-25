@@ -8,7 +8,6 @@
    import java.awt.event.*;
    import java.util.*;
    import mars.Globals;
-   import mars.venus.RunSpeedPanel;
    import mars.mips.hardware.*;
    import mars.simulator.Exceptions;
    import javax.swing.text.DefaultCaret;
@@ -703,7 +702,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	 // NOTE: last argument TRUE means update only the MMIO Control register; FALSE means update both Control and Data.
       private synchronized void updateMMIOControlAndData(int controlAddr, int controlValue, int dataAddr, int dataValue, boolean controlOnly) {
          if (!this.isBeingUsedAsAMarsTool || (this.isBeingUsedAsAMarsTool && connectButton.isConnected())) {
-            synchronized (Globals.memoryAndRegistersLock) {
+            synchronized (Globals.MEMORY_AND_REGISTERS_LOCK) {
                try {
                   Globals.memory.setRawWord(controlAddr, controlValue);
                   if (!controlOnly) Globals.memory.setRawWord(dataAddr, dataValue);

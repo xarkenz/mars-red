@@ -1,23 +1,15 @@
 package mars.tools;
 
 import java.awt.Color;
-import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GraphicsConfiguration;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
-import java.awt.MouseInfo;
-import java.awt.PointerInfo;
 import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.font.FontRenderContext;
-import java.awt.font.TextLayout;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -26,7 +18,6 @@ import java.util.HashMap;
 import java.util.Vector;
 
 import javax.imageio.ImageIO;
-import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 import javax.xml.parsers.DocumentBuilder;
@@ -503,19 +494,19 @@ private int datapatTypeUsed;
 		 BufferedImage im;
 		 if(datapatTypeUsed == register){
 			 im =  ImageIO.read( 
-				 getClass().getResource(Globals.imagesPath+"register.png") );
+				 getClass().getResource(Globals.IMAGES_PATH +"register.png") );
 		 }
 		 else if(datapatTypeUsed == control){
 			 im =  ImageIO.read( 
-					 getClass().getResource(Globals.imagesPath+"control.png") );
+					 getClass().getResource(Globals.IMAGES_PATH +"control.png") );
 			 }
 		 else if(datapatTypeUsed == aluControl){
 			 im =  ImageIO.read( 
-				 getClass().getResource(Globals.imagesPath+"ALUcontrol.png") );
+				 getClass().getResource(Globals.IMAGES_PATH +"ALUcontrol.png") );
 		 }
 		 else{
 			 im =  ImageIO.read( 
-					 getClass().getResource(Globals.imagesPath+"alu.png") );
+					 getClass().getResource(Globals.IMAGES_PATH +"alu.png") );
 		 }
 		 
 		 int transparency = im.getColorModel().getTransparency();
@@ -528,7 +519,7 @@ private int datapatTypeUsed;
 	 } 
 	 catch(IOException e) {
 		 System.out.println("Load Image error for " +
-				 getClass().getResource(Globals.imagesPath+"register.png") + ":\n" + e); 
+				 getClass().getResource(Globals.IMAGES_PATH +"register.png") + ":\n" + e);
 	 }
  } 
 

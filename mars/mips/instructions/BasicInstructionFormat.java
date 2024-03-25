@@ -26,7 +26,7 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
- */
+*/
 
 /**
  * These are the MIPS-defined formats of basic machine instructions.  The R-format indicates
@@ -35,17 +35,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * instruction.  The I-branch-format is defined by me, not MIPS, to to indicate this is
  * a Branch instruction, specifically to distinguish immediate
  * values used as target addresses.
- * 
- * @author Pete Sanderson 
+ *
+ * @author Pete Sanderson
  * @version August 2003
  */
-public class BasicInstructionFormat {
-    public static final BasicInstructionFormat R_FORMAT = new BasicInstructionFormat();
-    public static final BasicInstructionFormat I_FORMAT = new BasicInstructionFormat();
-    public static final BasicInstructionFormat I_BRANCH_FORMAT = new BasicInstructionFormat();
-    public static final BasicInstructionFormat J_FORMAT = new BasicInstructionFormat();
-    
-    // private default constructor prevents objects of this class other than those above.
-    private BasicInstructionFormat() {
-    }
+public enum BasicInstructionFormat {
+    R_FORMAT,
+    I_FORMAT,
+    I_BRANCH_FORMAT,
+    J_FORMAT,
 }

@@ -1,10 +1,9 @@
-   package mars.venus;
-   import mars.mips.hardware.*;
-   import java.awt.*;
-   import java.awt.event.*;
-   import javax.swing.*;
+package mars.venus;
+
+import javax.swing.*;
+import java.awt.event.ActionEvent;
 	
-	/*
+/*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
@@ -30,25 +29,24 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
+*/
+
+/**
+ * Action for the File -> New menu item
  */
-	
+public class FileNewAction extends GuiAction {
+    public FileNewAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+        super(name, icon, description, mnemonic, accel, gui);
+    }
+
     /**
-    * Action  for the File -> New menu item
-    */   			
-    public class FileNewAction extends GuiAction {
-   	 
-       public FileNewAction(String name, Icon icon, String descrip,
-                             Integer mnemonic, KeyStroke accel, VenusUI gui) {
-         super(name, icon, descrip, mnemonic, accel, gui);
-      }
-   	
-   	/**
-   	 * Code to create a new document.  It clears the source code window.
-   	 *
-   	 * @param e component triggering this call
-   	 */
-       public void actionPerformed(ActionEvent e) {
-		   mainUI.editor.newFile();
-      }
-   }
+     * Code to create a new document.  It clears the source code window.
+     *
+     * @param e component triggering this call
+     */
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        gui.editor.newFile();
+    }
+}
 	

@@ -1,9 +1,10 @@
-   package mars.mips.instructions.syscalls;
-   import mars.util.*;
-   import mars.mips.hardware.*;
-	import mars.simulator.*;
-   import mars.*;
-   import java.util.Random;
+package mars.mips.instructions.syscalls;
+
+import mars.ProcessingException;
+import mars.ProgramStatement;
+import mars.mips.hardware.RegisterFile;
+
+import java.util.Random;
 
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
@@ -31,38 +32,31 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
- */
+*/
 
-
-/** 
+/**
  * Service to set seed for the underlying Java pseudorandom number generator. No values are returned.
- *
  */
- 
-    public class SyscallRandSeed extends AbstractSyscall {
-   /**
-    * Build an instance of the syscall with its default service number and name.
-    */
-       public SyscallRandSeed() {
-         super(40, "RandSeed");
-      }
+public class SyscallRandSeed extends AbstractSyscall {
+    /**
+     * Build an instance of the syscall with its default service number and name.
+     */
+    public SyscallRandSeed() {
+        super(40, "RandSeed");
+    }
 
-   /**
-   * Set the seed of the underlying Java pseudorandom number generator.
-   */
-       public void simulate(ProgramStatement statement) throws ProcessingException {
-          // Arguments: $a0 = index of pseudorandom number generator
-          //   $a1 = seed for pseudorandom number generator.
-          // Result: No values are returned. Sets the seed of the underlying Java pseudorandom number generator.
+    /**
+     * Set the seed of the underlying Java pseudorandom number generator.
+     */
+    public void simulate(ProgramStatement statement) throws ProcessingException {
+        // Arguments:
+        //   $a0 = index of pseudorandom number generator
+        //   $a1 = seed for pseudorandom number generator.
+        // Result: No values are returned. Sets the seed of the underlying Java pseudorandom number generator.
 
-          Integer index = new Integer(RegisterFile.getValue(4));
-			 Random stream = (Random) RandomStreams.randomStreams.get(index);
-          if (stream == null) {
-			    RandomStreams.randomStreams.put(index, new Random(RegisterFile.getValue(5)));
-			 } else {
-			    stream.setSeed(RegisterFile.getValue(5));
-			 }
-       }
-
-   }
+        int index = RegisterFile.getValue(4);
+        int seed = RegisterFile.getValue(5);
+        RandomStreams.setStreamSeed(index, seed);
+    }
+}
 

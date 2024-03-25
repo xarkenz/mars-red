@@ -2,9 +2,7 @@ package mars.tools;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Container;
-import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
@@ -15,14 +13,12 @@ import java.awt.GraphicsEnvironment;
 import java.awt.GridBagLayout;
 import java.awt.Image;
 import java.awt.MouseInfo;
-import java.awt.Point;
 import java.awt.PointerInfo;
 import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.font.FontRenderContext;
@@ -45,11 +41,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
-import javax.swing.SwingUtilities;
 import javax.swing.Timer;
-import javax.swing.UIManager;
 //import java.util.Timer;
-import javax.swing.event.InternalFrameEvent;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -130,7 +123,7 @@ public class MipsXray extends AbstractMarsToolAndApplication{
              						"\n"+
 										"To see the datapath of register bank and control units click inside the functional unit.\n\n" +
              						"Version 2.0\n" + 
-             						"Developed by Márcio Roberto, Guilherme Sales, Fabrício Vivas, Flávio Cardeal and Fábio Lúcio\n" +
+             						"Developed by Mï¿½rcio Roberto, Guilherme Sales, Fabrï¿½cio Vivas, Flï¿½vio Cardeal and Fï¿½bio Lï¿½cio\n" +
              						"Contact Marcio Roberto at marcio.rdaraujo@gmail.com with questions or comments.\n"
              						;
           JButton help = new JButton("Help");
@@ -164,7 +157,7 @@ public class MipsXray extends AbstractMarsToolAndApplication{
    	    gc = ge.getDefaultScreenDevice().getDefaultConfiguration();
    	    try {
    			  BufferedImage im =  ImageIO.read( 
-   					  getClass().getResource(Globals.imagesPath+"datapath.png") );
+   					  getClass().getResource(Globals.IMAGES_PATH +"datapath.png") );
    	
    		       int transparency = im.getColorModel().getTransparency();
    		       datapath =  gc.createCompatibleImage( im.getWidth(), im.getHeight(),
@@ -177,11 +170,11 @@ public class MipsXray extends AbstractMarsToolAndApplication{
    	     } 
    	     catch(IOException e) {
    	       System.out.println("Load Image error for " +
-   	    		   getClass().getResource(Globals.imagesPath+"datapath.png") + ":\n" + e); 
+   	    		   getClass().getResource(Globals.IMAGES_PATH +"datapath.png") + ":\n" + e);
    	       		   e.printStackTrace();
    	     }
    	     System.setProperty("sun.java2d.translaccel", "true"); 
-            ImageIcon icon = new ImageIcon(getClass().getResource(Globals.imagesPath+"datapath.png"));
+            ImageIcon icon = new ImageIcon(getClass().getResource(Globals.IMAGES_PATH +"datapath.png"));
             Image im = icon.getImage();
             icon = new ImageIcon(im);
             
@@ -202,7 +195,7 @@ public class MipsXray extends AbstractMarsToolAndApplication{
       	    gc = ge.getDefaultScreenDevice().getDefaultConfiguration();
       	    try {
       			  BufferedImage im =  ImageIO.read( 
-      					  getClass().getResource(Globals.imagesPath+figure) );
+      					  getClass().getResource(Globals.IMAGES_PATH +figure) );
       	
       		       int transparency = im.getColorModel().getTransparency();
       		       datapath =  gc.createCompatibleImage( im.getWidth(), im.getHeight(),
@@ -215,11 +208,11 @@ public class MipsXray extends AbstractMarsToolAndApplication{
       	     } 
       	     catch(IOException e) {
       	       System.out.println("Load Image error for " +
-      	    		   getClass().getResource(Globals.imagesPath+figure) + ":\n" + e); 
+      	    		   getClass().getResource(Globals.IMAGES_PATH +figure) + ":\n" + e);
       	       		   e.printStackTrace();
       	     }
       	     System.setProperty("sun.java2d.translaccel", "true"); 
-               ImageIcon icon = new ImageIcon(getClass().getResource(Globals.imagesPath+figure));
+               ImageIcon icon = new ImageIcon(getClass().getResource(Globals.IMAGES_PATH +figure));
                Image im = icon.getImage();
                icon = new ImageIcon(im);
                
@@ -298,18 +291,18 @@ public class MipsXray extends AbstractMarsToolAndApplication{
            Class cs = this.getClass();
            try{
                runAssembleAction = new RunAssembleAction("Assemble",  
-                       new ImageIcon(tk.getImage(cs.getResource(Globals.imagesPath+"Assemble22.png"))),
+                       new ImageIcon(tk.getImage(cs.getResource(Globals.IMAGES_PATH +"Assemble22.png"))),
    							  "Assemble the current file and clear breakpoints", new Integer(KeyEvent.VK_A),
    							  KeyStroke.getKeyStroke( KeyEvent.VK_F3, 0), 
    							  mainUI);			
 
                runStepAction = new RunStepAction("Step", 
-                       new ImageIcon(tk.getImage(cs.getResource(Globals.imagesPath+"StepForward22.png"))),
+                       new ImageIcon(tk.getImage(cs.getResource(Globals.IMAGES_PATH +"StepForward22.png"))),
    							  "Run one step at a time", new Integer(KeyEvent.VK_T),
    							  KeyStroke.getKeyStroke( KeyEvent.VK_F7, 0),
    							  mainUI);	
                runBackstepAction = new RunBackstepAction("Backstep", 
-                       new ImageIcon(tk.getImage(cs.getResource(Globals.imagesPath+"StepBack22.png"))),
+                       new ImageIcon(tk.getImage(cs.getResource(Globals.IMAGES_PATH +"StepBack22.png"))),
    							  "Undo the last step", new Integer(KeyEvent.VK_B),
    							  KeyStroke.getKeyStroke( KeyEvent.VK_F8, 0), 
    							  mainUI);		
@@ -1112,7 +1105,7 @@ class DatapathAnimation extends JPanel
 	 private void initImages(){
 		 try {
 			 BufferedImage im =  ImageIO.read( 
-					 getClass().getResource(Globals.imagesPath+"datapath.png") );
+					 getClass().getResource(Globals.IMAGES_PATH +"datapath.png") );
 
 			 int transparency = im.getColorModel().getTransparency();
 			 datapath =  gc.createCompatibleImage(
@@ -1124,7 +1117,7 @@ class DatapathAnimation extends JPanel
 		 } 
 		 catch(IOException e) {
 			 System.out.println("Load Image error for " +
-					 getClass().getResource(Globals.imagesPath+"datapath.png") + ":\n" + e); 
+					 getClass().getResource(Globals.IMAGES_PATH +"datapath.png") + ":\n" + e);
 		 }
 	 } 
 

@@ -1,8 +1,10 @@
-   package mars.mips.instructions.syscalls;
-   import mars.util.*;
-   import mars.simulator.*;
-   import mars.mips.hardware.*;
-   import mars.*;
+package mars.mips.instructions.syscalls;
+
+import mars.ProcessingException;
+import mars.ProgramStatement;
+import mars.mips.hardware.Coprocessor1;
+import mars.simulator.Exceptions;
+import mars.util.SystemIO;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -30,37 +32,30 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
- */
+*/
 
-
-/** 
+/**
  * Service to read the bits of input float into $f0
  */
- 
-    public class SyscallReadFloat extends AbstractSyscall {
-   /**
-    * Build an instance of the Read Float syscall.  Default service number
-    * is 6 and name is "ReadFloat".
-    */
-       public SyscallReadFloat() {
-         super(6, "ReadFloat");
-      }
-      
-   /**
-   * Performs syscall function to read the bits of input float into $f0
-   */
-       public void simulate(ProgramStatement statement) throws ProcessingException {
-         float floatValue = 0;
-         try
-         {
-            floatValue = SystemIO.readFloat(this.getNumber());
-         } 
-             catch (NumberFormatException e)
-            {
-               throw new ProcessingException(statement,
-                  "invalid float input (syscall "+this.getNumber()+")",
-						Exceptions.SYSCALL_EXCEPTION);
-            }
-         Coprocessor1.updateRegister(0, Float.floatToRawIntBits(floatValue));
-      }
-   }
+public class SyscallReadFloat extends AbstractSyscall {
+    /**
+     * Build an instance of the Read Float syscall.  Default service number
+     * is 6 and name is "ReadFloat".
+     */
+    public SyscallReadFloat() {
+        super(6, "ReadFloat");
+    }
+
+    /**
+     * Performs syscall function to read the bits of input float into $f0
+     */
+    public void simulate(ProgramStatement statement) throws ProcessingException {
+        try {
+            float floatValue = SystemIO.readFloat(this.getNumber());
+            Coprocessor1.updateRegister(0, Float.floatToRawIntBits(floatValue));
+        }
+        catch (NumberFormatException e) {
+            throw new ProcessingException(statement, "invalid float input (syscall " + this.getNumber() + ")", Exceptions.SYSCALL_EXCEPTION);
+        }
+    }
+}

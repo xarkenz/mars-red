@@ -1,8 +1,9 @@
-   package mars.venus;
-   import java.awt.event.*;
-   import javax.swing.*;
+package mars.venus;
+
+import javax.swing.*;
+import java.awt.event.ActionEvent;
 	
-	/*
+/*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
@@ -28,28 +29,25 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
+*/
+
+/**
+ * Parent class for Action subclasses to be defined for every menu/toolbar option.
  */
-	
-	/**
-	 * parent class for Action subclasses to be defined for every menu/toolbar
-	 * option.
-	 */
-	 
-    public class GuiAction extends AbstractAction {
-      protected VenusUI mainUI;
-     
-       protected GuiAction(String name, Icon icon, String descrip,
-                             Integer mnemonic, KeyStroke accel, VenusUI gui) {
-         super(name, icon);
-         putValue(SHORT_DESCRIPTION, descrip);
-         putValue(MNEMONIC_KEY, mnemonic);  
-         putValue(ACCELERATOR_KEY, accel);
-         mainUI = gui;
-      }
-		/** 
-		 * does nothing by default.  Should be over-ridden by subclass
-		 */
-       public void actionPerformed(ActionEvent e) {
-       
-      }
-   }
+public abstract class GuiAction extends AbstractAction {
+    protected VenusUI gui;
+
+    protected GuiAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+        super(name, icon);
+        putValue(SHORT_DESCRIPTION, description);
+        putValue(MNEMONIC_KEY, mnemonic);
+        putValue(ACCELERATOR_KEY, accel);
+        this.gui = gui;
+    }
+
+    /**
+     * Should be overridden by subclasses to carry out the action they represent.
+     */
+    @Override
+    public abstract void actionPerformed(ActionEvent e);
+}

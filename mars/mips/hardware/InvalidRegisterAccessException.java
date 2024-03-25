@@ -1,5 +1,4 @@
 package mars.mips.hardware;
-import mars.*;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -27,25 +26,20 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
- */
+*/
 
 /**
  * Represents attempt to access double precision register using an odd
  * (e.g. $f1, $f23) register name.
- * 
+ *
  * @author Pete Sanderson
  * @version July 2005
- **/
-
-public class InvalidRegisterAccessException extends Exception {  
-   private ErrorList errs;
-
-   /**
-    * Constructor for IllegalRegisterException.
-    * 
-    **/
-   public InvalidRegisterAccessException() {
-   }
-
- }
+ */
+public class InvalidRegisterAccessException extends Exception {
+    /**
+     * Constructor for IllegalRegisterException.
+     */
+    public InvalidRegisterAccessException() {
+    }
+}
    

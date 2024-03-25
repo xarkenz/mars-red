@@ -1,6 +1,8 @@
-   package mars;
-   import java.util.*;
-   import java.io.*;
+package mars;
+
+import java.util.*;
+import java.io.*;
+
 /*
 Copyright (c) 2003-2012,  Pete Sanderson and Kenneth Vollmar
 
@@ -27,172 +29,179 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
- */
- 
+*/
+
 /**
  * Maintains list of generated error messages, regardless of source (tokenizing, parsing,
  * assembly, execution).
- * 
+ *
  * @author Pete Sanderson
  * @version August 2003
- **/
+ */
+public class ErrorList {
+    private final ArrayList<ErrorMessage> messages;
+    private int errorCount;
+    private int warningCount;
+    public static final String ERROR_MESSAGE_PREFIX = "Error";
+    public static final String WARNING_MESSAGE_PREFIX = "Warning";
+    public static final String FILENAME_PREFIX = " in ";
+    public static final String LINE_PREFIX = " line ";
+    public static final String POSITION_PREFIX = " column ";
+    public static final String MESSAGE_SEPARATOR = ": ";
 
-    public class ErrorList {
-      private ArrayList messages;
-      private int errorCount;
-      private int warningCount;
-      public static final String ERROR_MESSAGE_PREFIX = "Error";
-      public static final String WARNING_MESSAGE_PREFIX = "Warning";
-      public static final String FILENAME_PREFIX = " in ";
-      public static final String LINE_PREFIX = " line ";
-      public static final String POSITION_PREFIX = " column ";
-      public static final String MESSAGE_SEPARATOR = ": ";
-   	
-   
-   /** 
-   * Constructor for ErrorList
-   **/
-   
-       public ErrorList() {
-         messages = new ArrayList();
-         errorCount = 0;
-         warningCount = 0;
-      }
-   
-   /**
-    *  Get ArrayList of error messages.
-    *  @return ArrayList of ErrorMessage objects
-    */
-       public ArrayList getErrorMessages() {
-         return messages;
-      }
-   	  
-   /**
-   * Determine whether error has occured or not.
-   * @return <tt>true</tt> if an error has occurred (does not include warnings), <tt>false</tt> otherwise.
-   **/
-       public boolean errorsOccurred() {
-         return (errorCount != 0 );
-      }
-   
-   /**
-   * Determine whether warning has occured or not.
-   * @return <tt>true</tt> if an warning has occurred, <tt>false</tt> otherwise.
-   **/
-       public boolean warningsOccurred() {
-         return (warningCount != 0 );
-      }
-   
-   /** Add new error message to end of list.
-   * @param mess ErrorMessage object to be added to end of error list.
-   **/
-       public void add(ErrorMessage mess){
-         add(mess, messages.size());
-      }
-   
-   /** Add new error message at specified index position.
-   * @param mess ErrorMessage object to be added to end of error list.
-   * @param index position in error list
-   **/       
-       public void add(ErrorMessage mess, int index) {
-         if (errorCount > getErrorLimit()) {
+    /**
+     * Constructor for ErrorList
+     */
+    public ErrorList() {
+        messages = new ArrayList<>();
+        errorCount = 0;
+        warningCount = 0;
+    }
+
+    /**
+     * Get ArrayList of error messages.
+     *
+     * @return ArrayList of ErrorMessage objects.
+     */
+    public ArrayList<ErrorMessage> getErrorMessages() {
+        return messages;
+    }
+
+    /**
+     * Determine whether error has occurred or not.
+     *
+     * @return <tt>true</tt> if an error has occurred (does not include warnings), <tt>false</tt> otherwise.
+     */
+    public boolean errorsOccurred() {
+        return errorCount != 0;
+    }
+
+    /**
+     * Determine whether warning has occurred or not.
+     *
+     * @return <tt>true</tt> if an warning has occurred, <tt>false</tt> otherwise.
+     */
+    public boolean warningsOccurred() {
+        return warningCount != 0;
+    }
+
+    /**
+     * Add new error message to end of list.
+     *
+     * @param message ErrorMessage object to be added to end of error list.
+     */
+    public void add(ErrorMessage message) {
+        add(message, messages.size());
+    }
+
+    /**
+     * Add new error message at specified index position.
+     *
+     * @param message ErrorMessage object to be added to end of error list.
+     * @param index   position in error list
+     */
+    public void add(ErrorMessage message, int index) {
+        if (errorCount > getErrorLimit()) {
             return;
-         }
-         if (errorCount == getErrorLimit()) {
-            messages.add(new ErrorMessage((MIPSprogram)null, mess.getLine(), mess.getPosition(),"Error Limit of "+getErrorLimit()+" exceeded."));
+        }
+        if (errorCount == getErrorLimit()) {
+            messages.add(new ErrorMessage((MIPSprogram) null, message.getLine(), message.getPosition(), "Error Limit of " + getErrorLimit() + " exceeded."));
             errorCount++; // subsequent errors will not be added; see if statement above
             return;
-         }
-         messages.add(index, mess);
-         if (mess.isWarning()) {
+        }
+        messages.add(index, message);
+        if (message.isWarning()) {
             warningCount++;
-         } 
-         else {
+        }
+        else {
             errorCount++;
-         }
-      }
-       
-   
-   /**
-   * Count of number of error messages in list.
-   * @return Number of error messages in list.
-   **/
-   
-       public int errorCount() {
-         return this.errorCount;
-      }
-   
-   /**
-   * Count of number of warning messages in list.
-   * @return Number of warning messages in list.
-   **/
-   
-       public int warningCount() {
-         return this.warningCount;
-      }
-   
-   /**
-   * Check to see if error limit has been exceeded.
-   * @return True if error limit exceeded, false otherwise.
-   **/
-   
-       public boolean errorLimitExceeded() {
-         return this.errorCount > getErrorLimit();
-      }
-   
-   /**
-   * Get limit on number of error messages to be generated
-   * by one assemble operation.
-   * @return error limit.
-   **/
-   
-       public int getErrorLimit() {
-         return Globals.maximumErrorMessages;
-      }
-   
-   /**
-   * Produce error report.
-      * @return String containing report.
-   **/
-       public String generateErrorReport() {
-         return generateReport(ErrorMessage.ERROR);
-      }
-   
-   /**
-   * Produce warning report.
-   * @return String containing report.
-   **/
-       public String generateWarningReport() {
-         return generateReport(ErrorMessage.WARNING);
-      }	
-   
-   /**
-   * Produce report containing both warnings and errors, warnings first.
-   * @return String containing report.
-   **/      
-       public String generateErrorAndWarningReport() {
-         return generateWarningReport()+generateErrorReport();
-      }
-   	
-   // Produces either error or warning report.
-       private String generateReport(boolean isWarning) {
-         StringBuffer report = new StringBuffer("");
-         String reportLine;
-         for (int i = 0; i < messages.size(); i++) {
-            ErrorMessage m = (ErrorMessage) messages.get(i);
-            if  ((isWarning && m.isWarning()) || (!isWarning && !m.isWarning())) {
-               reportLine = ((isWarning) ? WARNING_MESSAGE_PREFIX : ERROR_MESSAGE_PREFIX) + FILENAME_PREFIX;
-               if (m.getFilename().length() > 0) 
-                  reportLine = reportLine + (new File(m.getFilename()).getPath()); //.getName());
-               if (m.getLine() > 0)
-                  reportLine = reportLine + LINE_PREFIX  +m.getMacroExpansionHistory()+ m.getLine();
-               if (m.getPosition() > 0)
-                  reportLine = reportLine + POSITION_PREFIX + m.getPosition();
-               reportLine = reportLine + MESSAGE_SEPARATOR + m.getMessage() + "\n";
-               report.append(reportLine);
+        }
+    }
+
+    /**
+     * Count of number of error messages in list.
+     *
+     * @return Number of error messages in list.
+     */
+    public int errorCount() {
+        return this.errorCount;
+    }
+
+    /**
+     * Count of number of warning messages in list.
+     *
+     * @return Number of warning messages in list.
+     */
+    public int warningCount() {
+        return this.warningCount;
+    }
+
+    /**
+     * Check to see if error limit has been exceeded.
+     *
+     * @return True if error limit exceeded, false otherwise.
+     */
+    public boolean errorLimitExceeded() {
+        return this.errorCount > getErrorLimit();
+    }
+
+    /**
+     * Get limit on number of error messages to be generated
+     * by one assemble operation.
+     *
+     * @return error limit.
+     */
+    public int getErrorLimit() {
+        return Globals.maximumErrorMessages;
+    }
+
+    /**
+     * Produce error report.
+     *
+     * @return String containing report.
+     */
+    public String generateErrorReport() {
+        return generateReport(ErrorMessage.ERROR);
+    }
+
+    /**
+     * Produce warning report.
+     *
+     * @return String containing report.
+     */
+    public String generateWarningReport() {
+        return generateReport(ErrorMessage.WARNING);
+    }
+
+    /**
+     * Produce report containing both warnings and errors, warnings first.
+     *
+     * @return String containing report.
+     */
+    public String generateErrorAndWarningReport() {
+        return generateWarningReport() + generateErrorReport();
+    }
+
+    // Produces either error or warning report.
+    private String generateReport(boolean reportWarnings) {
+        StringBuilder report = new StringBuilder();
+        for (ErrorMessage message : messages) {
+            if (message.isWarning() == reportWarnings) {
+                String reportLine = ((reportWarnings) ? WARNING_MESSAGE_PREFIX : ERROR_MESSAGE_PREFIX) + FILENAME_PREFIX;
+                if (!message.getFilename().isEmpty()) {
+                    reportLine = reportLine + (new File(message.getFilename()).getPath());
+                }
+                if (message.getLine() > 0) {
+                    reportLine = reportLine + LINE_PREFIX + message.getMacroExpansionHistory() + message.getLine();
+                }
+                if (message.getPosition() > 0) {
+                    reportLine = reportLine + POSITION_PREFIX + message.getPosition();
+                }
+                reportLine = reportLine + MESSAGE_SEPARATOR + message.getMessage() + "\n";
+                report.append(reportLine);
             }
-         }
-         return report.toString();
-      }
-   }  // ErrorList
+        }
+        return report.toString();
+    }
+}
 

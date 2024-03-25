@@ -1,17 +1,12 @@
    package mars.tools;
    import mars.*;
    import mars.util.*;
-   import mars.assembler.*;
-   import mars.mips.instructions.*;
    import mars.mips.hardware.*;
    import java.util.*;
-   import java.io.*;
    import java.awt.*;
    import java.awt.event.*;
    import javax.swing.*;
-   import javax.swing.event.*;
    import javax.swing.border.*;
-   import javax.swing.text.html.*;
 	
 	/*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -389,7 +384,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	// If display is attached to a register then update the register value.
        private synchronized void updateAnyAttachedRegister(int intValue) {
          if (attachedRegister != null) {
-            synchronized (Globals.memoryAndRegistersLock) {
+            synchronized (Globals.MEMORY_AND_REGISTERS_LOCK) {
                attachedRegister.setValue(intValue);
             }
          	// HERE'S A HACK!!  Want to immediately display the updated register value in MARS

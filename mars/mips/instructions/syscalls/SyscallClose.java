@@ -1,7 +1,9 @@
-   package mars.mips.instructions.syscalls;
-   import mars.util.*;
-   import mars.mips.hardware.*;
-   import mars.*;
+package mars.mips.instructions.syscalls;
+
+import mars.ProcessingException;
+import mars.ProgramStatement;
+import mars.mips.hardware.RegisterFile;
+import mars.util.SystemIO;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -29,27 +31,26 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
- */
+*/
 
-
-/** 
+/**
  * Service to close file descriptor given in $a0.
- *
  */
- 
-    public class SyscallClose extends AbstractSyscall {
-   /**
-    * Build an instance of the Close syscall.  Default service number
-    * is 16 and name is "Close".
-    */
-       public SyscallClose() {
-         super(16, "Close");
-      }
-      
-   /**
-   * Performs syscall function to close file descriptor given in $a0.
-   */
-       public void simulate(ProgramStatement statement) throws ProcessingException {
-         SystemIO.closeFile(RegisterFile.getValue(4)); 
-      }
-   }
+public class SyscallClose extends AbstractSyscall {
+    /**
+     * Build an instance of the Close syscall.  Default service number
+     * is 16 and name is "Close".
+     */
+    public SyscallClose() {
+        super(16, "Close");
+    }
+
+    /**
+     * Performs syscall function to close file descriptor given in $a0.
+     */
+    public void simulate(ProgramStatement statement) throws ProcessingException {
+        int fd = RegisterFile.getValue(4); // $a0: file descriptor
+
+        SystemIO.closeFile(fd);
+    }
+}

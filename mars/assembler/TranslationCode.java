@@ -26,23 +26,22 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
- */
+*/
 
 /**
- * This interface is intended for use by ExtendedInstruction objects to define, using
- * the translate() method, how to translate the extended (pseudo) instruction into
- * a sequence of one or more basic instructions, which can then be translated into 
- * binary machine code.
- * 
+ * This interface is intended for use by {@link mars.mips.instructions.ExtendedInstruction}
+ * objects to define, using the {@link #translate()} method, how to translate
+ * the extended (pseudo) instruction into a sequence of one or more basic instructions,
+ * which can then be translated into binary machine code.
+ *
  * @author Pete Sanderson
  * @version August 2003
  */
-
 public interface TranslationCode {
-      /**
-       *  This is a callback method defined in anonymous class specified as 
-       *  argument to ExtendedInstruction constructor.  It is called when
-       *  assembler finds a program statement matching that ExtendedInstruction,
-       */
-	public void translate();
+    /**
+     * This is a callback method defined in anonymous class specified as
+     * argument to {@link mars.mips.instructions.ExtendedInstruction} constructor.
+     * It is called when assembler finds a program statement matching that instruction.
+     */
+    void translate();
 }

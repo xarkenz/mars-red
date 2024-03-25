@@ -26,34 +26,40 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
- */
+*/
 
 /**
  * Object provided to Observers of runtime access to MIPS register.
  * Observer can get the access type (R/W) and register number.
- * 
- * @author Pete Sanderson 
+ *
+ * @author Pete Sanderson
  * @version July 2005
  */
-
 public class RegisterAccessNotice extends AccessNotice {
-   private String registerName;
+    private final String registerName;
 
-  /** Constructor will be called only within this package, so assume
-   *  register number is in valid range.
-	*/
-  RegisterAccessNotice(int type, String registerName) {
-     super(type);
-	  this.registerName = registerName;
-  }
- /** Fetch the register number of register accessed. */
-  public String getRegisterName() {
-     return registerName;
-  }
- /** String representation indicates access type and which register */
+    /**
+     * Constructor will be called only within this package, so assume
+     * register number is in valid range.
+     */
+    RegisterAccessNotice(int accessType, String registerName) {
+        super(accessType);
+        this.registerName = registerName;
+    }
+
+    /**
+     * Fetch the name of the register accessed.
+     *
+     * @return A register name such as $zero.
+     */
+    public String getRegisterName() {
+        return registerName;
+    }
+
+    /**
+     * @return String indicating access type and register.
+     */
     public String toString() {
-     return ((this.getAccessType()==AccessNotice.READ) ? "R " : "W ") +
-	         "Reg " + registerName;
-  }
-  
+        return ((this.getAccessType() == AccessNotice.READ) ? "R " : "W ") + "Reg " + registerName;
+    }
 }

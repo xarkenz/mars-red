@@ -1,8 +1,10 @@
-   package mars.mips.instructions.syscalls;
-   import mars.util.*;
-	import mars.simulator.*;
-   import mars.mips.hardware.*;
-   import mars.*;
+package mars.mips.instructions.syscalls;
+
+import mars.Globals;
+import mars.ProcessingException;
+import mars.ProgramStatement;
+import mars.mips.hardware.RegisterFile;
+import mars.simulator.Exceptions;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -30,36 +32,32 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
- */
+*/
 
-
-/** 
+/**
  * Service to allocate amount of heap memory specified in $a0, putting address into $v0.
- *
  */
- 
-    public class SyscallSbrk extends AbstractSyscall {
-   /**
-    * Build an instance of the Sbrk syscall.  Default service number
-    * is 9 and name is "Sbrk".
-    */
-       public SyscallSbrk() {
-         super(9, "Sbrk");
-      }
-      
-   /**
-   * Performs syscall function to allocate amount of heap memory specified in $a0, putting address into $v0.
-   */
-       public void simulate(ProgramStatement statement) throws ProcessingException {
-         int address = 0;
-         try {
-            address = Globals.memory.allocateBytesFromHeap(RegisterFile.getValue(4));
-         } 
-             catch (IllegalArgumentException iae) {
-               throw new ProcessingException(statement,
-                                       iae.getMessage()+" (syscall "+this.getNumber()+")",
-                                       Exceptions.SYSCALL_EXCEPTION);
-            }
-         RegisterFile.updateRegister(2, address);
-      }
-   }
+public class SyscallSbrk extends AbstractSyscall {
+    /**
+     * Build an instance of the Sbrk syscall.  Default service number
+     * is 9 and name is "Sbrk".
+     */
+    public SyscallSbrk() {
+        super(9, "Sbrk");
+    }
+
+    /**
+     * Performs syscall function to allocate amount of heap memory specified in $a0, putting address into $v0.
+     */
+    public void simulate(ProgramStatement statement) throws ProcessingException {
+        int numBytes = RegisterFile.getValue(4); // $a0: number of bytes to allocate
+
+        try {
+            int address = Globals.memory.allocateBytesFromHeap(numBytes);
+            RegisterFile.updateRegister(2, address); // Put address into $v0
+        }
+        catch (IllegalArgumentException e) {
+            throw new ProcessingException(statement, e.getMessage() + " (syscall " + this.getNumber() + ")", Exceptions.SYSCALL_EXCEPTION);
+        }
+    }
+}

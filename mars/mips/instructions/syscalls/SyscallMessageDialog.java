@@ -1,9 +1,12 @@
-   package mars.mips.instructions.syscalls;
-   import mars.util.*;
-   import mars.mips.hardware.*;
-	import mars.simulator.*;
-   import mars.*;
-import javax.swing.JOptionPane;
+package mars.mips.instructions.syscalls;
+
+import mars.Globals;
+import mars.ProcessingException;
+import mars.ProgramStatement;
+import mars.mips.hardware.AddressErrorException;
+import mars.mips.hardware.RegisterFile;
+
+import javax.swing.*;
 
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
@@ -31,60 +34,48 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
- */
+*/
 
 /**
  * Service to display a message to user.
- *
  */
+public class SyscallMessageDialog extends AbstractSyscall {
+    /**
+     * Build an instance of the syscall with its default service number and name.
+     */
+    public SyscallMessageDialog() {
+        super(55, "MessageDialog");
+    }
 
-    public class SyscallMessageDialog extends AbstractSyscall {
-   /**
-    * Build an instance of the syscall with its default service number and name.
-    */
-       public SyscallMessageDialog() {
-         super(55, "MessageDialog");
-      }
+    /**
+     * System call to display a message to user.
+     */
+    public void simulate(ProgramStatement statement) throws ProcessingException {
+        // Input arguments:
+        //   $a0 = address of null-terminated string that is the message to user
+        //   $a1 = the type of the message to the user, which is one of:
+        //       0: error message
+        //       1: information message
+        //       2: warning message
+        //       3: question message
+        //       other: plain message
+        // Output: none
 
-   /**
-   * System call to display a message to user.
-   */
-       public void simulate(ProgramStatement statement) throws ProcessingException {
-          // Input arguments:
-          //   $a0 = address of null-terminated string that is the message to user
-          //   $a1 = the type of the message to the user, which is one of:
-          //       1: error message
-          //       2: information message
-          //       3: warning message
-          //       4: question message
-          //       other: plain message
-          // Output: none
+        String message;
+        try {
+            // Read a null-terminated string from memory
+            message = Globals.memory.getNullTerminatedString(RegisterFile.getValue(4));
+        }
+        catch (AddressErrorException e) {
+            throw new ProcessingException(statement, e);
+        }
 
-         String message = new String(); // = "";
-         int byteAddress = RegisterFile.getValue(4);
-         char ch[] = { ' '}; // Need an array to convert to String
-         try
-         {
-            ch[0] = (char) Globals.memory.getByte(byteAddress);
-            while (ch[0] != 0) // only uses single location ch[0]
-            {
-               message = message.concat(new String(ch)); // parameter to String constructor is a char[] array
-               byteAddress++;
-               ch[0] = (char) Globals.memory.getByte(byteAddress);
-            }
-         }
-             catch (AddressErrorException e)
-            {
-               throw new ProcessingException(statement, e);
-            }
-
-
-            // Display the dialog.
-            int msgType = RegisterFile.getValue(5);
-            if (msgType < 0 || msgType > 3) msgType = -1; // See values in http://java.sun.com/j2se/1.5.0/docs/api/constant-values.html
-            JOptionPane.showMessageDialog(null, message, null, msgType );
-            
-
-       }
-
-   }
+        // Display the dialog
+        int messageType = RegisterFile.getValue(5);
+        // See values in http://java.sun.com/j2se/1.5.0/docs/api/constant-values.html
+        if (messageType < JOptionPane.ERROR_MESSAGE || messageType > JOptionPane.QUESTION_MESSAGE) {
+            messageType = JOptionPane.PLAIN_MESSAGE;
+        }
+        JOptionPane.showMessageDialog(null, message, null, messageType);
+    }
+}

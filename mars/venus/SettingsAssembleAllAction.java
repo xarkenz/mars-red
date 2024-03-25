@@ -1,13 +1,12 @@
-   package mars.venus;
-   import mars.simulator.*;
-	import mars.*;
-   import java.util.*;
-   import java.awt.*;
-   import java.awt.event.*;
-   import javax.swing.*;
-   import java.io.*;
-	
-	/*
+package mars.venus;
+
+import mars.Globals;
+import mars.Settings;
+
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+
+/*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
@@ -33,23 +32,18 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
+*/
+
+/**
+ * Action class for the Settings menu item to determine whether assemble operation applies
+ * only to current file or to all files in its directory.
  */
-	
-   /**
-    * Action class for the Settings menu item to determine whether assemble operation applies
-	 * only to current file or to all files in its directory.
-    */
-    public class SettingsAssembleAllAction extends GuiAction  {
-   	
-   
-       public SettingsAssembleAllAction(String name, Icon icon, String descrip,
-                             Integer mnemonic, KeyStroke accel, VenusUI gui) {
-         super(name, icon, descrip, mnemonic, accel, gui);
-      }
-   		 
-       public void actionPerformed(ActionEvent e) {
-		   Globals.getSettings().setAssembleAllEnabled(
-		       ((JCheckBoxMenuItem) e.getSource()).isSelected());
-      }
-   	   	
-   }
+public class SettingsAssembleAllAction extends GuiAction {
+    public SettingsAssembleAllAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+        super(name, icon, description, mnemonic, accel, gui);
+    }
+
+    public void actionPerformed(ActionEvent e) {
+        Globals.getSettings().setBoolean(Settings.ASSEMBLE_ALL_ENABLED, ((JCheckBoxMenuItem) e.getSource()).isSelected());
+    }
+}

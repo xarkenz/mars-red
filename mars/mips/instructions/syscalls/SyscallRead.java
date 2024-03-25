@@ -1,8 +1,11 @@
-   package mars.mips.instructions.syscalls;
-   import mars.util.*;
-   import mars.mips.hardware.*;
-   import mars.simulator.*;
-   import mars.*;
+package mars.mips.instructions.syscalls;
+
+import mars.Globals;
+import mars.ProcessingException;
+import mars.ProgramStatement;
+import mars.mips.hardware.AddressErrorException;
+import mars.mips.hardware.RegisterFile;
+import mars.util.SystemIO;
 
 /*
 Copyright (c) 2003-2009,  Pete Sanderson and Kenneth Vollmar
@@ -30,65 +33,44 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
- */
+*/
 
-
-/** 
+/**
  * Service to read from file descriptor given in $a0.  $a1 specifies buffer
  * and $a2 specifies length.  Number of characters read is returned in $v0.
  * (this was changed from $a0 in MARS 3.7 for SPIM compatibility.  The table
- * in COD erroneously shows $a0). *
+ * in COD erroneously shows $a0).
  */
- 
-    public class SyscallRead extends AbstractSyscall {
-   /**
-    * Build an instance of the Read file syscall.  Default service number
-    * is 14 and name is "Read".
-    */
-       public SyscallRead() {
-         super(14, "Read");
-      }
-      
-   /**
-   * Performs syscall function to read from file descriptor given in $a0.  $a1 specifies buffer
-   * and $a2 specifies length.  Number of characters read is returned in $v0 (starting MARS 3.7). 
-   */
-       public void simulate(ProgramStatement statement) throws ProcessingException {
-         int byteAddress = RegisterFile.getValue(5); // destination of characters read from file
-         byte b = 0;
-         int index = 0;
-         byte myBuffer[] = new byte[RegisterFile.getValue(6)]; // specified length
-         // Call to SystemIO.xxxx.read(xxx,xxx,xxx)  returns actual length
-         int retLength = SystemIO.readFromFile(
-                                 RegisterFile.getValue(4), // fd
-                                 myBuffer, // buffer
-                                 RegisterFile.getValue(6)); // length
-         RegisterFile.updateRegister(2, retLength); // set returned value in register
+public class SyscallRead extends AbstractSyscall {
+    /**
+     * Build an instance of the Read file syscall.  Default service number
+     * is 14 and name is "Read".
+     */
+    public SyscallRead() {
+        super(14, "Read");
+    }
 
-         // Getting rid of processing exception.  It is the responsibility of the
-			// user program to check the syscall's return value.  MARS should not
-			// re-emptively terminate MIPS execution because of it.  Thanks to
-			// UCLA student Duy Truong for pointing this out.  DPS 28-July-2009
-         /*
-         if (retLength < 0) // some error in opening file
-         {
-            throw new ProcessingException(statement,
-                                    SystemIO.getFileErrorMessage()+" (syscall 14)",
-                                    Exceptions.SYSCALL_EXCEPTION);
-         }
-			*/                
-         // copy bytes from returned buffer into MARS memory
-         try
-         {
-            while (index < retLength)
-            {
-               Globals.memory.setByte(byteAddress++,
-                                        myBuffer[index++]);
+    /**
+     * Performs syscall function to read from file descriptor given in $a0.  $a1 specifies buffer
+     * and $a2 specifies length.  Number of characters read is returned in $v0 (starting MARS 3.7).
+     */
+    public void simulate(ProgramStatement statement) throws ProcessingException {
+        int fd = RegisterFile.getValue(4); // $a0: file descriptor
+        int byteAddress = RegisterFile.getValue(5); // $a1: destination of characters to read from file
+        int maxLength = RegisterFile.getValue(6); // $a2: user-requested length
+
+        byte[] buffer = new byte[maxLength];
+        int readLength = SystemIO.readFromFile(fd, buffer, maxLength);
+        RegisterFile.updateRegister(2, readLength); // Put return value in $v0
+
+        // Copy bytes from intermediate buffer into MARS memory
+        try {
+            for (int index = 0; index < readLength; index++) {
+                Globals.memory.setByte(byteAddress++, buffer[index]);
             }
-         } 
-             catch (AddressErrorException e)
-            {
-               throw new ProcessingException(statement, e);
-            }
-      }
-   }
+        }
+        catch (AddressErrorException e) {
+            throw new ProcessingException(statement, e);
+        }
+    }
+}

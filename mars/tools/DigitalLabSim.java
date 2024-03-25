@@ -4,14 +4,13 @@ import java.awt.event.*;
 import java.util.*;
 
 import javax.swing.*;
-import javax.swing.Timer;
 
 import mars.Globals;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Coprocessor0;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.MemoryAccessNotice;
-import mars.simulator.Exceptions;
+
 @SuppressWarnings("serial")
 /* Add these two lines in exceptions.java file
  * public static final int EXTERNAL_INTERRUPT_TIMER = 0x00000100; //Add for digital Lab Sim
@@ -19,7 +18,7 @@ import mars.simulator.Exceptions;
 */
 
 /*
- * Didier Teifreto LIFC Université de franche-Comté www.lifc.univ-fcomte.fr/~teifreto
+ * Didier Teifreto LIFC Universitï¿½ de franche-Comtï¿½ www.lifc.univ-fcomte.fr/~teifreto
  * didier.teifreto@univ-fcomte.fr
  */
 public class DigitalLabSim extends AbstractMarsToolAndApplication {
@@ -106,7 +105,7 @@ public class DigitalLabSim extends AbstractMarsToolAndApplication {
     }
     private synchronized void updateMMIOControlAndData(int dataAddr, int dataValue) {
         if (!this.isBeingUsedAsAMarsTool || (this.isBeingUsedAsAMarsTool && connectButton.isConnected())) {
-           synchronized (Globals.memoryAndRegistersLock) {
+           synchronized (Globals.MEMORY_AND_REGISTERS_LOCK) {
               try {
               		Globals.memory.setByte(dataAddr, dataValue);
               } 

@@ -1,5 +1,7 @@
-   package mars.mips.instructions.syscalls;
-	import java.util.HashMap;
+package mars.mips.instructions.syscalls;
+
+import java.util.HashMap;
+import java.util.Random;
 
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
@@ -27,17 +29,50 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
- */
+*/
 
-
-/** 
+/**
  * This small class serves only to hold a static HashMap for storing
  * random number generators for use by all the random number generator
  * syscalls.
  */
- 
-    public class RandomStreams {
-      /** Collection of pseudorandom number streams available for use in Rand-type syscalls.
-       * The streams are by default not seeded. */
-		 static final HashMap randomStreams = new HashMap();
-   }
+public class RandomStreams {
+    /**
+     * Collection of pseudorandom number streams available for use in the random syscalls.
+     * The streams are by default not seeded.
+     */
+    public static final HashMap<Integer, Random> randomStreams = new HashMap<>();
+
+    /**
+     * Get the pseudorandom number stream corresponding to the given index.
+     * A new stream is created and returned if no stream currently exists for the index.
+     *
+     * @param index The index used to access the {@link #randomStreams} map.
+     * @return Random stream for the index.
+     */
+    public static Random getStream(int index) {
+        Random stream = randomStreams.get(index);
+        if (stream == null) {
+            stream = new Random(); // create a non-seeded stream
+            randomStreams.put(index, stream);
+        }
+        return stream;
+    }
+
+    /**
+     * Set the seed of the pseudorandom number stream corresponding to the given index.
+     * A new stream is created with the seed if no stream currently exists for the index.
+     *
+     * @param index The index used to access the {@link #randomStreams} map.
+     * @param seed The value to seed the random stream with.
+     */
+    public static void setStreamSeed(int index, long seed) {
+        Random stream = randomStreams.get(index);
+        if (stream == null) {
+            randomStreams.put(index, new Random(seed));
+        }
+        else {
+            stream.setSeed(seed);
+        }
+    }
+}

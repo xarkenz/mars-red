@@ -1,13 +1,12 @@
-   package mars.venus;
-   import mars.simulator.*;
-	import mars.*;
-   import java.util.*;
-   import java.awt.*;
-   import java.awt.event.*;
-   import javax.swing.*;
-   import java.io.*;
-	
-	/*
+package mars.venus;
+
+import mars.Globals;
+import mars.Settings;
+
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+
+/*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
@@ -33,29 +32,27 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
+*/
+
+/**
+ * Action class for the Settings menu item to control whether or not
+ * program arguments can be entered and used.  If so, a text field
+ * will be displayed where they can be interactively entered.
  */
-	
-   /**
-    * Action class for the Settings menu item to control whether or not
-	 * program arguments can be entered and used.  If so, a text field
-	 * will be displayed where they can be interactively entered.
-    */
-    public class SettingsProgramArgumentsAction extends GuiAction  {
-   	
-   
-       public SettingsProgramArgumentsAction(String name, Icon icon, String descrip,
-                             Integer mnemonic, KeyStroke accel, VenusUI gui) {
-         super(name, icon, descrip, mnemonic, accel, gui);
-      }
-   		 
-       public void actionPerformed(ActionEvent e) {
-		   boolean selected = ((JCheckBoxMenuItem)e.getSource()).isSelected();
-		   Globals.getSettings().setProgramArguments(selected);
-			if (selected) {
-			   Globals.getGui().getMainPane().getExecutePane().getTextSegmentWindow().addProgramArgumentsPanel();
-			} else {
-			   Globals.getGui().getMainPane().getExecutePane().getTextSegmentWindow().removeProgramArgumentsPanel();			
-			}
-      }
-   	   	
-   }
+public class SettingsProgramArgumentsAction extends GuiAction {
+    public SettingsProgramArgumentsAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+        super(name, icon, description, mnemonic, accel, gui);
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        boolean selected = ((JCheckBoxMenuItem) e.getSource()).isSelected();
+        Globals.getSettings().setBoolean(Settings.PROGRAM_ARGUMENTS, selected);
+        if (selected) {
+            Globals.getGui().getMainPane().getExecutePane().getTextSegmentWindow().addProgramArgumentsPanel();
+        }
+        else {
+            Globals.getGui().getMainPane().getExecutePane().getTextSegmentWindow().removeProgramArgumentsPanel();
+        }
+    }
+}

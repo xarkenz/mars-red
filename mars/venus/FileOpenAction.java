@@ -1,15 +1,9 @@
-   package mars.venus;
-   import mars.*;
-   import mars.util.*;
-   import java.util.ArrayList;
-   import java.awt.*;
-   import java.awt.event.*;
-   import javax.swing.*;
-   import javax.swing.filechooser.FileFilter;
-   import java.io.*;
-   import java.beans.*;
+package mars.venus;
+
+import javax.swing.*;
+import java.awt.event.ActionEvent;
 	
-	/*
+/*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
@@ -35,31 +29,23 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
+*/
+
+/**
+ * Action for the File -> Open menu item
  */
- 
+public class FileOpenAction extends GuiAction {
+    public FileOpenAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+        super(name, icon, description, mnemonic, accel, gui);
+    }
+
     /**
-    * Action  for the File -> Open menu item
-    */   			
-    public class FileOpenAction extends GuiAction {
-    
-      private File mostRecentlyOpenedFile;
-      private JFileChooser fileChooser;
-      private int fileFilterCount;
-      private ArrayList fileFilterList;
-      private PropertyChangeListener listenForUserAddedFileFilter;
-   	 
-       public FileOpenAction(String name, Icon icon, String descrip,
-                             Integer mnemonic, KeyStroke accel, VenusUI gui) {
-         super(name, icon, descrip, mnemonic, accel, gui);
-      }
-   	 
-       /**
-   	  * Launch a file chooser for name of file to open
-   	  *
-   	  * @param e component triggering this call
-   	  */
-       public void actionPerformed(ActionEvent e) {
-         mainUI.editor.open();
-      }
-   
-   }      
+     * Launch a file chooser for name of file to open
+     *
+     * @param e component triggering this call
+     */
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        gui.editor.open();
+    }
+}

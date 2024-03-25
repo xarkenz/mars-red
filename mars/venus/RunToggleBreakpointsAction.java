@@ -1,10 +1,11 @@
-   package mars.venus;
-   import mars.*;
-   import java.awt.event.*;
-   import javax.swing.*;
-   import javax.swing.event.*;
-	
-	/*
+package mars.venus;
+
+import mars.Globals;
+
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+
+/*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
@@ -30,30 +31,29 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
+*/
+
+/**
+ * Action class for the Run menu item to clear execution breakpoints that have been set.
+ * It is a listener and is notified whenever a breakpoint is added or removed, thus will
+ * set its enabled status true or false depending on whether breakpoints remain after that action.
  */
-	
-   /**
-    * Action class for the Run menu item to clear execution breakpoints that have been set.
-	 * It is a listener and is notified whenever a breakpoint is added or removed, thus will
-	 * set its enabled status true or false depending on whether breakpoints remain after that action. 
-    */
-    public class RunToggleBreakpointsAction extends GuiAction  {
-   	
-       /**
-		  * Create the object and register with text segment window as a listener on its table model.
-		  * The table model has not been created yet, so text segment window will hang onto this
-		  * registration info and transfer it to the table model upon creation (which happens with
-		  * each successful assembly).
-		  */
-       public RunToggleBreakpointsAction(String name, Icon icon, String descrip,
-                             Integer mnemonic, KeyStroke accel, VenusUI gui) {
-         super(name, icon, descrip, mnemonic, accel, gui);
-               }
-   	 /**
-		  *  When this option is selected, tell text segment window to clear breakpoints in its table model.
-		  */
-       public void actionPerformed(ActionEvent e) {
-         Globals.getGui().getMainPane().getExecutePane().getTextSegmentWindow().toggleBreakpoints();
-			      }
-   	   	
-   }
+public class RunToggleBreakpointsAction extends GuiAction {
+    /**
+     * Create the object and register with text segment window as a listener on its table model.
+     * The table model has not been created yet, so text segment window will hang onto this
+     * registration info and transfer it to the table model upon creation (which happens with
+     * each successful assembly).
+     */
+    public RunToggleBreakpointsAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+        super(name, icon, description, mnemonic, accel, gui);
+    }
+
+    /**
+     * When this option is selected, tell text segment window to clear breakpoints in its table model.
+     */
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        Globals.getGui().getMainPane().getExecutePane().getTextSegmentWindow().toggleBreakpoints();
+    }
+}

@@ -1,11 +1,12 @@
-   package mars.mips.hardware;
+package mars.mips.hardware;
 
-   import java.util.Observer;
+import mars.Globals;
+import mars.Settings;
+import mars.assembler.SymbolTable;
+import mars.mips.instructions.Instruction;
+import mars.util.Binary;
 
-   import mars.Globals;
-   import mars.assembler.SymbolTable;
-   import mars.mips.instructions.Instruction;
-   import mars.util.Binary;
+import java.util.Observer;
 
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
@@ -33,307 +34,317 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
- */
+*/
 
 /**
-  *  Represents the collection of MIPS registers.
-  *   @author Jason Bumgarner, Jason Shrewsbury
-  *   @version June 2003
-  **/
+ * Represents the collection of MIPS registers.
+ *
+ * @author Jason Bumgarner, Jason Shrewsbury
+ * @version June 2003
+ */
+public class RegisterFile {
+    public static final int GLOBAL_POINTER_REGISTER = 28;
+    public static final int STACK_POINTER_REGISTER = 29;
 
-    public  class RegisterFile {
-   
-      public static final int GLOBAL_POINTER_REGISTER = 28;
-      public static final int STACK_POINTER_REGISTER = 29;
-   
-      private static Register [] regFile = 
-          { new Register("$zero", 0, 0), new Register("$at", 1, 0),
-         	new Register("$v0", 2, 0),new Register("$v1", 3, 0),
-         	new Register("$a0", 4, 0),new Register("$a1", 5, 0),
-         	new Register("$a2", 6, 0),new Register("$a3", 7, 0),
-         	new Register("$t0", 8, 0),new Register("$t1", 9, 0),
-         	new Register("$t2", 10, 0),new Register("$t3", 11, 0), 
-         	new Register("$t4", 12, 0),new Register("$t5", 13, 0),
-         	new Register("$t6", 14, 0),new Register("$t7", 15, 0),
-         	new Register("$s0", 16, 0),new Register("$s1", 17, 0),
-         	new Register("$s2", 18, 0),new Register("$s3", 19, 0),
-         	new Register("$s4", 20, 0),new Register("$s5", 21, 0),
-         	new Register("$s6", 22, 0),new Register("$s7", 23, 0),
-         	new Register("$t8", 24, 0),new Register("$t9", 25, 0),
-         	new Register("$k0", 26, 0),new Register("$k1", 27, 0),
-         	new Register("$gp", GLOBAL_POINTER_REGISTER, Memory.globalPointer),
-         	new Register("$sp", STACK_POINTER_REGISTER, Memory.stackPointer),
-         	new Register("$fp", 30, 0),new Register("$ra", 31, 0)
-           };
-         												  
-      private static Register programCounter= new Register("pc", 32, Memory.textBaseAddress); 
-      private static Register hi= new Register("hi", 33, 0);//this is an internal register with arbitrary number
-      private static Register lo= new Register("lo", 34, 0);// this is an internal register with arbitrary number
-   		 
-   
-   	/**
-   	  *  Method for displaying the register values for debugging.
-   	  **/	 
-   		 
-       public static void showRegisters(){
-         for (int i=0; i< regFile.length; i++){
-            System.out.println("Name: " + regFile[i].getName());
-            System.out.println("Number: " + regFile[i].getNumber());
-            System.out.println("Value: " + regFile[i].getValue());	
-            System.out.println(""); 
-         }
-      }
-      
-   
-      
-   	/**
-   	  *  This method updates the register value who's number is num.  Also handles the lo and hi registers
-   	  *   @param num Register to set the value of.
-   	  *   @param val The desired value for the register.
-   	  **/
-   	  
-       public static int updateRegister(int num, int val){
-         int old = 0;
-         if(num == 0){
-            //System.out.println("You can not change the value of the zero register.");
-         }
-         else {
-            for (int i=0; i< regFile.length; i++){
-               if(regFile[i].getNumber()== num) {
-                  old = (Globals.getSettings().getBackSteppingEnabled())
-                        ? Globals.program.getBackStepper().addRegisterFileRestore(num,regFile[i].setValue(val))
-                     	: regFile[i].setValue(val);
-                  break;
-               }
+    private static final Register[] registers = {
+        new Register("$zero", 0, 0),
+        new Register("$at", 1, 0),
+        new Register("$v0", 2, 0),
+        new Register("$v1", 3, 0),
+        new Register("$a0", 4, 0),
+        new Register("$a1", 5, 0),
+        new Register("$a2", 6, 0),
+        new Register("$a3", 7, 0),
+        new Register("$t0", 8, 0),
+        new Register("$t1", 9, 0),
+        new Register("$t2", 10, 0),
+        new Register("$t3", 11, 0),
+        new Register("$t4", 12, 0),
+        new Register("$t5", 13, 0),
+        new Register("$t6", 14, 0),
+        new Register("$t7", 15, 0),
+        new Register("$s0", 16, 0),
+        new Register("$s1", 17, 0),
+        new Register("$s2", 18, 0),
+        new Register("$s3", 19, 0),
+        new Register("$s4", 20, 0),
+        new Register("$s5", 21, 0),
+        new Register("$s6", 22, 0),
+        new Register("$s7", 23, 0),
+        new Register("$t8", 24, 0),
+        new Register("$t9", 25, 0),
+        new Register("$k0", 26, 0),
+        new Register("$k1", 27, 0),
+        new Register("$gp", GLOBAL_POINTER_REGISTER, Memory.globalPointer),
+        new Register("$sp", STACK_POINTER_REGISTER, Memory.stackPointer),
+        new Register("$fp", 30, 0),
+        new Register("$ra", 31, 0),
+    };
+
+    private static final Register programCounter = new Register("pc", 32, Memory.textBaseAddress);
+    private static final Register hi = new Register("hi", 33, 0); // this is an internal register with arbitrary number
+    private static final Register lo = new Register("lo", 34, 0); // this is an internal register with arbitrary number
+
+    /**
+     * Display the register values for debugging purposes.
+     */
+    public static void showRegisters() {
+        for (Register register : registers) {
+            System.out.println("Name: " + register.getName());
+            System.out.println("Number: " + register.getNumber());
+            System.out.println("Value: " + register.getValue());
+            System.out.println();
+        }
+    }
+
+    /**
+     * Update the register value whose number is given, unless it is {@code $zero}.
+     * Also handles the internal lo and hi registers.
+     *
+     * @param number Register to set the value of.
+     * @param value The desired value for the register.
+     * @return The previous value of the register.
+     */
+    public static int updateRegister(int number, int value) {
+        int previousValue;
+        // The $zero register cannot be updated
+        if (1 <= number && number < registers.length) {
+            // Originally, this used a linear search to figure out which register to update.
+            // Since all registers 0-31 are present in order, a simple array access should work.
+            // - Sean Clarke 03/2024
+            previousValue = registers[number].setValue(value);
+        }
+        else if (number == hi.getNumber()) {
+            // Update the internal hi register
+            previousValue = hi.setValue(value);
+        }
+        else if (number == lo.getNumber()) {
+            // Update the internal lo register
+            previousValue = lo.setValue(value);
+        }
+        else {
+            // $zero or invalid register, do nothing
+            return 0;
+        }
+
+        if (Globals.getSettings().getBackSteppingEnabled()) {
+            return Globals.program.getBackStepper().addRegisterFileRestore(number, previousValue);
+        }
+        else {
+            return previousValue;
+        }
+    }
+
+    /**
+     * Sets the value of the register given to the value given.
+     *
+     * @param name Name of register to set the value of.
+     * @param value The desired value for the register.
+     * @return The previous value of the register.
+     */
+    public static int updateRegister(String name, int value) {
+        if (!name.equals("zero")) {
+            for (int i = 0; i < registers.length; i++) {
+                if (registers[i].getName().equals(name)) {
+                    return updateRegister(i, value);
+                }
             }
-         }
-         if(num== 33){//updates the hi register
-            old = (Globals.getSettings().getBackSteppingEnabled())
-               	      ? Globals.program.getBackStepper().addRegisterFileRestore(num,hi.setValue(val))
-               			: hi.setValue(val);
-         }
-         else if(num== 34){// updates the low register
-            old = (Globals.getSettings().getBackSteppingEnabled())
-               	      ? Globals.program.getBackStepper().addRegisterFileRestore(num,lo.setValue(val))
-               			: lo.setValue(val);
-         }
-         return old;
-      }
-   	
-   	/**
-   	  *  Sets the value of the register given to the value given.
-   	  *   @param reg Name of register to set the value of.
-   	  *   @param val The desired value for the register.
-   	  **/
-   	
-       public static void updateRegister(String reg, int val){
-         if(reg.equals("zero")){
-            //System.out.println("You can not change the value of the zero register.");
-         }
-         else{
-            for (int i=0; i< regFile.length; i++){
-               if(regFile[i].getName().equals(reg)) {
-                  updateRegister(i,val);
-                  break;
-               }
-            }}
-      }
-      
-      /**
-   	  *  Returns the value of the register who's number is num.
-   	  *   @param num The register number.
-   	  *   @return The value of the given register.
-   	  **/
-   	
-       public static int getValue(int num){
-         if(num==33){
+        }
+        return 0;
+    }
+
+    /**
+     * Returns the value of the register whose number is given.
+     *
+     * @param number The register number.
+     * @return The value of the given register.
+     */
+    public static int getValue(int number) {
+        if (number == hi.getNumber()) {
             return hi.getValue();
-         }
-         else if(num==34){
+        }
+        else if (number == lo.getNumber()) {
             return lo.getValue();
-         }
-         else  
-            return regFile[num].getValue();
-            
-      }
-      		
-      	/**
-   		  *  For getting the number representation of the register.
-   		  *   @param n The string formatted register name to look for.
-   		  *   @return The number of the register represented by the string
-   		  *   or -1 if no match.
-   		  **/	
-      		
-       public static int getNumber(String n){
-         int j=-1;
-         for (int i=0; i< regFile.length; i++){
-            if(regFile[i].getName().equals(n)) {
-               j= regFile[i].getNumber();
-               break;
+        }
+        else {
+            return registers[number].getValue();
+        }
+    }
+
+    /**
+     * Get register number corresponding to given name.
+     *
+     * @param name The string formatted register name to look for, in $zero format.
+     * @return The number of the register represented by the string,
+     *     or -1 if no match was found.
+     */
+    public static int getNumber(String name) {
+        // check for register mnemonic $zero thru $ra
+        // just do linear search; there aren't that many registers
+        for (Register register : registers) {
+            if (register.getName().equals(name)) {
+                return register.getNumber();
             }
-         } 
-         return j;     
-      }
-      
-   	/**
-   	  *  For returning the set of registers.
-   	  *   @return The set of registers.
-   	  **/
-   	
-       public static Register[] getRegisters(){
-         return regFile;
-      }
-      
-   	/**
-   	  *  Get register object corresponding to given name.  If no match, return null.
-   	  *   @param Rname The register name, either in $0 or $zero format.
-   	  *   @return The register object,or null if not found.
-   	  **/
-   	
-       public static Register getUserRegister(String Rname) {
-         Register reg = null;
-         if (Rname.charAt(0) == '$') {
-            try {
-                   // check for register number 0-31.
-               reg = regFile[Binary.stringToInt(Rname.substring(1))];    // KENV 1/6/05
+        }
+        return -1;
+    }
+
+    /**
+     * Get the set of accessible registers, not including pc, hi, or lo.
+     *
+     * @return The set of registers.
+     */
+    public static Register[] getRegisters() {
+        return registers;
+    }
+
+    /**
+     * Get the register object corresponding to a given name.
+     *
+     * @param name The register name, either in $0 or $zero format.
+     * @return The register object, or null if not found.
+     */
+    public static Register getUserRegister(String name) {
+        if (name.isEmpty() || name.charAt(0) != '$') {
+            return null;
+        }
+        try {
+            // Check for register number 0-31
+            return registers[Binary.stringToInt(name.substring(1))]; // KENV 1/6/05
+        }
+        catch (Exception e) {
+            // Handles both NumberFormat and ArrayIndexOutOfBounds
+            // Check for register mnemonic $zero thru $ra
+            // Just do linear search; there aren't that many registers
+            for (Register register : registers) {
+                if (register.getName().equals(name)) {
+                    return register;
+                }
             }
-                catch (Exception e) {
-                   // handles both NumberFormat and ArrayIndexOutOfBounds
-                   // check for register mnemonic $zero thru $ra
-                  reg = null; // just to be sure
-                   // just do linear search; there aren't that many registers
-                  for (int i=0; i < regFile.length; i++) {
-                     if (Rname.equals(regFile[i].getName())) {
-                        reg = regFile[i];
-                        break;
-                     }
-                  }
-               }
-         }
-         return reg;
-      }
-   
-   	/**
-   	  *  For initializing the Program Counter.  Do not use this to implement jumps and
-   	  *  branches, as it will NOT record a backstep entry with the restore value.
-   	  *  If you need backstepping capability, use setProgramCounter instead.
-   	  *   @param value The value to set the Program Counter to.
-   	  **/
-     
-       public static void initializeProgramCounter(int value){
-         programCounter.setValue(value);
-      }
-   	
-   	/**
-   	 *  Will initialize the Program Counter to either the default reset value, or the address 
-   	 *  associated with source program global label "main", if it exists as a text segment label
-   	 *  and the global setting is set.
-   	 *  @param startAtMain  If true, will set program counter to address of statement labeled
-   	 *  'main' (or other defined start label) if defined.  If not defined, or if parameter false,
-   	 *  will set program counter to default reset value.
-   	 **/
-   	 
-       public static void initializeProgramCounter(boolean startAtMain) {  
-         int mainAddr = Globals.symbolTable.getAddress(SymbolTable.getStartLabel());
-         if (startAtMain && mainAddr != SymbolTable.NOT_FOUND && (Memory.inTextSegment(mainAddr) || Memory.inKernelTextSegment(mainAddr))) {
+            return null;
+        }
+    }
+
+    /**
+     * Initialize the Program Counter.  Do not use this to implement jumps and
+     * branches, as it will NOT record a backstep entry with the restore value.
+     * If you need backstepping capability, use {@link #setProgramCounter(int)} instead.
+     *
+     * @param value The value to set the Program Counter to.
+     */
+    public static void initializeProgramCounter(int value) {
+        programCounter.setValue(value);
+    }
+
+    /**
+     * Will initialize the Program Counter to either the default reset value, or the address
+     * associated with source program global label "main", if it exists as a text segment label
+     * and the global setting is set.
+     *
+     * @param startAtMain If true, will set program counter to address of statement labeled
+     *                    'main' (or other defined start label) if defined.  If not defined, or if parameter false,
+     *                    will set program counter to default reset value.
+     */
+    public static void initializeProgramCounter(boolean startAtMain) {
+        int mainAddr = Globals.symbolTable.getAddress(SymbolTable.getStartLabel());
+        if (startAtMain && mainAddr != SymbolTable.NOT_FOUND && (Memory.inTextSegment(mainAddr) || Memory.inKernelTextSegment(mainAddr))) {
             initializeProgramCounter(mainAddr);
-         } 
-         else {
+        }
+        else {
             initializeProgramCounter(programCounter.getResetValue());
-         }
-      }
-   	
-   	/**
-   	  *  For setting the Program Counter.  Note that ordinary PC update should be done using
-   	  *  incrementPC() method. Use this only when processing jumps and branches.
-   	  *   @param value The value to set the Program Counter to.
-   	  *   @return previous PC value
-   	  **/
-     
-       public static int setProgramCounter(int value){
-         int old = programCounter.getValue();
-         programCounter.setValue(value);
-         if (Globals.getSettings().getBackSteppingEnabled()) {
+        }
+    }
+
+    /**
+     * Set the value of the program counter.  Note that an ordinary PC update should be done using
+     * the {@link #incrementPC()} method; use this only when processing jumps and branches.
+     *
+     * @param value The value to set the Program Counter to.
+     * @return The previous program counter value.
+     */
+    public static int setProgramCounter(int value) {
+        int old = programCounter.getValue();
+        programCounter.setValue(value);
+        if (Globals.getSettings().getBackSteppingEnabled()) {
             Globals.program.getBackStepper().addPCRestore(old);
-         } 
-         return old;
-      }
-     
-     /**
-      *  For returning the program counters value.
-   	  *  @return The program counters value as an int.
-   	  **/
-   	 
-       public static int getProgramCounter(){
-         return programCounter.getValue();
-      }
-   
-     /**
-      *  Returns Register object for program counter.  Use with caution.
-   	*  @return program counter's Register object.
-   	*/
-       public static Register getProgramCounterRegister() {
-         return programCounter;
-      }
-   	
-     /**
-      *  For returning the program counter's initial (reset) value.
-   	  *  @return The program counter's initial value
-   	  **/
-   	 
-       public static int getInitialProgramCounter(){
-         return programCounter.getResetValue();
-      }
-   	
-   	/**
-   	  *  Method to reinitialize the values of the registers.
-   	  *  <b>NOTE:</b> Should <i>not</i> be called from command-mode MARS because this
-   	  *  this method uses global settings from the registry.  Command-mode must operate
-   	  *  using only the command switches, not registry settings.  It can be called
-   	  *  from tools running stand-alone, and this is done in 
-   	  *  <code>AbstractMarsToolAndApplication</code>.
-   	  **/
-   	
-       public static void resetRegisters(){
-         for(int i=0; i< regFile.length; i++){
-            regFile[i].resetValue();
-         }
-         initializeProgramCounter(Globals .getSettings().getStartAtMain());// replaces "programCounter.resetValue()", DPS 3/3/09
-         hi.resetValue();
-         lo.resetValue();
-      }
-      
-     /**
-       *  Method to increment the Program counter in the general case (not a jump or branch).
-   	 **/
-   
-       public static void incrementPC(){
-         programCounter.setValue(programCounter.getValue() + Instruction.INSTRUCTION_LENGTH);
-      }
-   
-      /**
-   	 *  Each individual register is a separate object and Observable.  This handy method
-   	 *  will add the given Observer to each one.  Currently does not apply to Program
-   	 *  Counter.
-   	 */
-       public static void addRegistersObserver(Observer observer) {
-         for (int i=0; i<regFile.length; i++) {
-            regFile[i].addObserver(observer);
-         }
-         hi.addObserver(observer);
-         lo.addObserver(observer);
-      }
-   	
-      /**
-   	 *  Each individual register is a separate object and Observable.  This handy method
-   	 *  will delete the given Observer from each one.  Currently does not apply to Program
-   	 *  Counter.
-   	 */
-       public static void deleteRegistersObserver(Observer observer) {
-         for (int i=0; i<regFile.length; i++) {
-            regFile[i].deleteObserver(observer);
-         }
-         hi.deleteObserver(observer);
-         lo.deleteObserver(observer);
-      }
-   }
+        }
+        return old;
+    }
+
+    /**
+     * Get the current program counter value.
+     *
+     * @return The program counter value as an int.
+     */
+    public static int getProgramCounter() {
+        return programCounter.getValue();
+    }
+
+    /**
+     * Get the Register object for program counter.  Use with caution.
+     *
+     * @return program counter's Register object.
+     */
+    public static Register getProgramCounterRegister() {
+        return programCounter;
+    }
+
+    /**
+     * Get the program counter's initial (reset) value.
+     *
+     * @return The program counter's initial value
+     */
+    public static int getInitialProgramCounter() {
+        return programCounter.getResetValue();
+    }
+
+    /**
+     * Reinitialize the values of the registers.
+     * <b>NOTE:</b> Should <i>not</i> be called from command-mode MARS because this
+     * this method uses global settings from the registry.  Command-mode must operate
+     * using only the command switches, not registry settings.  It can be called
+     * from tools running stand-alone, and this is done in
+     * {@link mars.tools.AbstractMarsToolAndApplication}.
+     */
+    public static void resetRegisters() {
+        for (Register register : registers) {
+            register.resetValue();
+        }
+        initializeProgramCounter(Globals.getSettings().getBoolean(Settings.START_AT_MAIN)); // replaces "programCounter.resetValue()", DPS 3/3/09
+        hi.resetValue();
+        lo.resetValue();
+    }
+
+    /**
+     * Increment the Program counter in the general case (not a jump or branch).
+     */
+    public static void incrementPC() {
+        programCounter.setValue(programCounter.getValue() + Instruction.INSTRUCTION_LENGTH_BYTES);
+    }
+
+    /**
+     * Each individual register is a separate object and Observable.  This handy method
+     * will add the given Observer to each one.  Currently does not apply to Program
+     * Counter.
+     */
+    public static void addRegistersObserver(Observer observer) {
+        for (Register register : registers) {
+            register.addObserver(observer);
+        }
+        hi.addObserver(observer);
+        lo.addObserver(observer);
+    }
+
+    /**
+     * Each individual register is a separate object and Observable.  This handy method
+     * will delete the given Observer from each one.  Currently does not apply to Program
+     * Counter.
+     */
+    public static void deleteRegistersObserver(Observer observer) {
+        for (Register register : registers) {
+            register.deleteObserver(observer);
+        }
+        hi.deleteObserver(observer);
+        lo.deleteObserver(observer);
+    }
+}
