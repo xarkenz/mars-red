@@ -716,8 +716,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          	// but that code was not written for event-driven update (e.g. Observer) --
          	// it was written to poll the memory cells for their values.  So we force it to do so.
          
-            if (Globals.getGui() != null && Globals.getGui().getMainPane().getExecutePane().getTextSegmentWindow().getCodeHighlighting() ) {
-               Globals.getGui().getMainPane().getExecutePane().getDataSegmentWindow().updateValues();
+            if (Globals.getGUI() != null && Globals.getGUI().getMainPane().getExecutePane().getTextSegmentWindow().getCodeHighlighting() ) {
+               Globals.getGUI().getMainPane().getExecutePane().getDataSegmentWindow().updateValues();
             }
          }
       }

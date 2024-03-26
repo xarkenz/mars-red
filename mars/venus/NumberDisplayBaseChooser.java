@@ -7,7 +7,6 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 	
 	/*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -79,7 +78,7 @@ public class NumberDisplayBaseChooser extends JCheckBox {
                 }
             }
             // Better to use notify, but I am tired...
-            Globals.getGui().getMainPane().getExecutePane().numberDisplayBaseChanged(choose);
+            Globals.getGUI().getMainPane().getExecutePane().numberDisplayBaseChanged(choose);
         });
     }
 

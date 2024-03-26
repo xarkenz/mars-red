@@ -212,7 +212,7 @@ public class EditorFont {
      * @throws NullPointerException if string is null
      */
     public static String substituteSpacesForTabs(String string) {
-        return substituteSpacesForTabs(string, Globals.getSettings().getEditorTabSize());
+        return substituteSpacesForTabs(string, Globals.getSettings().editorTabSize.get());
     }
 
     /**

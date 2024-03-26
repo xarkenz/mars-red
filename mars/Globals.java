@@ -4,6 +4,7 @@ import mars.assembler.SymbolTable;
 import mars.mips.hardware.Memory;
 import mars.mips.instructions.InstructionSet;
 import mars.mips.instructions.syscalls.SyscallNumberOverride;
+import mars.settings.Settings;
 import mars.util.PropertiesFile;
 import mars.venus.VenusUI;
 
@@ -48,9 +49,87 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class Globals {
     // List these first because they are referenced by methods called at initialization.
-    private static final String configPropertiesFile = "Config";
-    private static final String syscallPropertiesFile = "Syscall";
+    private static final String CONFIG_PATH = "Config";
+    private static final String SYSCALLS_PATH = "Syscalls";
 
+    /**
+     * Lock variable used at head of synchronized block to guard MIPS memory and registers
+     */
+    public static final Object MEMORY_AND_REGISTERS_LOCK = new Object();
+    /**
+     * String to GUI's RunI/O text area when echoing user input from pop-up dialog.
+     */
+    public static final String USER_INPUT_PREFIX = "**** user input : ";
+    /**
+     * Path to folder that contains images
+     */
+    // The leading "/" in filepath prevents package name from being pre-pended.
+    public static final String IMAGES_PATH = "/images/";
+    /**
+     * Path to folder that contains help text
+     */
+    public static final String HELP_PATH = "/help/";
+    /**
+     * The current MARS version number. Can't wait for "initialize()" call to get it.
+     */
+    public static final String MARS_VERSION = "4.5";
+    /**
+     * List of accepted file extensions for MIPS assembly source files.
+     */
+    public static final ArrayList<String> FILE_EXTENSIONS = getFileExtensions();
+    /**
+     * Maximum length of scrolled message window (MARS Messages and Run I/O)
+     */
+    public static final int MAXIMUM_MESSAGE_CHARACTERS = getMessageLimit();
+    /**
+     * Maximum number of assembler errors produced by one assemble operation
+     */
+    public static final int MAXIMUM_ERROR_MESSAGES = getErrorLimit();
+    /**
+     * Maximum number of back-step operations to buffer
+     */
+    public static final int MAXIMUM_BACKSTEPS = getBackstepLimit();
+    /**
+     * MARS copyright years
+     */
+    public static final String COPYRIGHT_YEARS = "2003-2014";
+    /**
+     * MARS copyright holders
+     */
+    public static final String COPYRIGHT_HOLDERS = "Pete Sanderson and Kenneth Vollmar";
+    /**
+     * Placeholder for non-printable ASCII codes
+     */
+    public static final String ASCII_NON_PRINT = getAsciiNonPrint();
+    /**
+     * Array of strings to display for ASCII codes in ASCII display of data segment. ASCII code 0-255 is array index.
+     */
+    public static final String[] ASCII_TABLE = getAsciiStrings();
+
+    /**
+     * MARS exit code -- useful with SYSCALL 17 when running from command line (not GUI)
+     */
+    public static int exitCode = 0;
+    /**
+     * Flag that indicates whether the RunSpeedPanel has been created.
+     */
+    public static boolean runSpeedPanelExists = false;
+    /**
+     * Flag to determine whether or not to produce internal debugging information.
+     */
+    public static boolean debug = false;
+    /**
+     * Flag that indicates whether instructionSet has been initialized.
+     */
+    private static boolean initialized = false;
+    /**
+     * Object that contains various settings that can be accessed modified internally.
+     */
+    private static Settings settings;
+    /**
+     * The GUI being used (if any) with this simulator.
+     */
+    private static VenusUI gui = null;
     /**
      * The set of implemented MIPS instructions.
      */
@@ -67,91 +146,12 @@ public class Globals {
      * Simulated MIPS memory component.
      */
     public static Memory memory;
-    /**
-     * Lock variable used at head of synchronized block to guard MIPS memory and registers
-     */
-    public static final Object MEMORY_AND_REGISTERS_LOCK = new Object();
-    /**
-     * Flag to determine whether or not to produce internal debugging information.
-     */
-    public static boolean debug = false;
-    /**
-     * Object that contains various settings that can be accessed modified internally.
-     */
-    static Settings settings;
-    /**
-     * String to GUI's RunI/O text area when echoing user input from pop-up dialog.
-     */
-    public static String userInputAlert = "**** user input : ";
-    /**
-     * Path to folder that contains images
-     */
-    // The leading "/" in filepath prevents package name from being pre-pended.
-    public static final String IMAGES_PATH = "/images/";
-    /**
-     * Path to folder that contains help text
-     */
-    public static final String helpPath = "/help/";
-    /* Flag that indicates whether or not instructionSet has been initialized. */
-    private static boolean initialized = false;
-    /* The GUI being used (if any) with this simulator. */
-    static VenusUI gui = null;
-    /**
-     * The current MARS version number. Can't wait for "initialize()" call to get it.
-     */
-    public static final String MARS_VERSION = "4.5";
-    /**
-     * List of accepted file extensions for MIPS assembly source files.
-     */
-    public static final ArrayList<String> fileExtensions = getFileExtensions();
-    /**
-     * Maximum length of scrolled message window (MARS Messages and Run I/O)
-     */
-    public static final int maximumMessageCharacters = getMessageLimit();
-    /**
-     * Maximum number of assembler errors produced by one assemble operation
-     */
-    public static final int maximumErrorMessages = getErrorLimit();
-    /**
-     * Maximum number of back-step operations to buffer
-     */
-    public static final int maximumBacksteps = getBackstepLimit();
-    /**
-     * MARS copyright years
-     */
-    public static final String COPYRIGHT_YEARS = getCopyrightYears();
-    /**
-     * MARS copyright holders
-     */
-    public static final String COPYRIGHT_HOLDERS = getCopyrightHolders();
-    /**
-     * Placeholder for non-printable ASCII codes
-     */
-    public static final String ASCII_NON_PRINT = getAsciiNonPrint();
-    /**
-     * Array of strings to display for ASCII codes in ASCII display of data segment. ASCII code 0-255 is array index.
-     */
-    public static final String[] ASCII_TABLE = getAsciiStrings();
-    /**
-     * MARS exit code -- useful with SYSCALL 17 when running from command line (not GUI)
-     */
-    public static int exitCode = 0;
 
-    public static boolean runSpeedPanelExists = false;
-
-    private static String getCopyrightYears() {
-        return "2003-2014";
+    public static void setGUI(VenusUI gui) {
+        Globals.gui = gui;
     }
 
-    private static String getCopyrightHolders() {
-        return "Pete Sanderson and Kenneth Vollmar";
-    }
-
-    public static void setGui(VenusUI g) {
-        gui = g;
-    }
-
-    public static VenusUI getGui() {
+    public static VenusUI getGUI() {
         return gui;
     }
 
@@ -162,45 +162,55 @@ public class Globals {
     /**
      * Method called once upon system initialization to create the global data structures.
      */
-    public static void initialize(boolean gui) {
+    public static void initialize() {
         if (!initialized) {
-            memory = Memory.getInstance();  //clients can use Memory.getInstance instead of Globals.memory
+            memory = Memory.getInstance();  // clients can use Memory.getInstance instead of Globals.memory
             instructionSet = new InstructionSet();
             instructionSet.populate();
-            symbolTable = new SymbolTable("global");
-            settings = new Settings(gui);
+            symbolTable = new SymbolTable("<global>");
+            settings = new Settings();
             initialized = true;
             debug = false;
             memory.clear(); // will establish memory configuration from setting
         }
     }
 
-    // Read byte limit of Run I/O or MARS Messages text to buffer.
+    /**
+     * Read byte limit of Run I/O or MARS Messages text to buffer.
+     */
     private static int getMessageLimit() {
-        return getIntegerProperty(configPropertiesFile, "MessageLimit", 1000000);
+        return getIntegerProperty(CONFIG_PATH, "MessageLimit", 1000000);
     }
 
-    // Read limit on number of error messages produced by one assemble operation.
+    /**
+     * Read limit on number of error messages produced by one assemble operation.
+     */
     private static int getErrorLimit() {
-        return getIntegerProperty(configPropertiesFile, "ErrorLimit", 200);
+        return getIntegerProperty(CONFIG_PATH, "ErrorLimit", 200);
     }
 
-    // Read backstep limit (number of operations to buffer) from properties file.
+    /**
+     * Read backstep limit (number of operations to buffer) from properties file.
+     */
     private static int getBackstepLimit() {
-        return getIntegerProperty(configPropertiesFile, "BackstepLimit", 1000);
+        return getIntegerProperty(CONFIG_PATH, "BackstepLimit", 1000);
     }
 
-    // Read ASCII default display character for non-printing characters, from properties file.
+    /**
+     * Read ASCII default display character for non-printing characters, from properties file.
+     */
     public static String getAsciiNonPrint() {
-        String anp = getPropertyEntry(configPropertiesFile, "AsciiNonPrint");
+        String anp = getPropertyEntry(CONFIG_PATH, "AsciiNonPrint");
         return (anp == null) ? "." : ((anp.equals("space")) ? " " : anp);
     }
 
-    // Read ASCII strings for codes 0-255, from properties file. If string
-    // value is "null", substitute value of ASCII_NON_PRINT.  If string is
-    // "space", substitute string containing one space character.
+    /**
+     * Read ASCII strings for codes 0-255, from properties file. If string
+     * value is "null", substitute value of ASCII_NON_PRINT.  If string is
+     * "space", substitute string containing one space character.
+     */
     private static String[] getAsciiStrings() {
-        String let = getPropertyEntry(configPropertiesFile, "AsciiTable");
+        String let = getPropertyEntry(CONFIG_PATH, "AsciiTable");
         String placeHolder = getAsciiNonPrint();
         String[] lets = let.split(" +");
         int maxLength = 0;
@@ -217,8 +227,10 @@ public class Globals {
         return lets;
     }
 
-    // Read and return integer property value for given file and property name.
-    // Default value is returned if property file or name not found.
+    /**
+     * Read and return integer property value for given file and property name.
+     * Default value is returned if property file or name not found.
+     */
     private static int getIntegerProperty(String propertiesFile, String propertyName, int defaultValue) {
         int limit = defaultValue;  // just in case no entry is found
         Properties properties = PropertiesFile.loadPropertiesFromFile(propertiesFile);
@@ -230,11 +242,13 @@ public class Globals {
         return limit;
     }
 
-    // Read assembly language file extensions from properties file.  Resulting
-    // string is tokenized into array list (assume StringTokenizer default delimiters).
+    /**
+     * Read assembly language file extensions from properties file.  Resulting
+     * string is tokenized into array list (assume StringTokenizer default delimiters).
+     */
     private static ArrayList<String> getFileExtensions() {
         ArrayList<String> extensionsList = new ArrayList<>();
-        String extensions = getPropertyEntry(configPropertiesFile, "Extensions");
+        String extensions = getPropertyEntry(CONFIG_PATH, "Extensions");
         if (extensions != null) {
             StringTokenizer st = new StringTokenizer(extensions);
             while (st.hasMoreTokens()) {
@@ -254,7 +268,7 @@ public class Globals {
      */
     public static ArrayList<String> getExternalTools() {
         ArrayList<String> toolsList = new ArrayList<>();
-        String tools = getPropertyEntry(configPropertiesFile, "ExternalTools");
+        String tools = getPropertyEntry(CONFIG_PATH, "ExternalTools");
         if (tools != null) {
             StringTokenizer st = new StringTokenizer(tools, ";");
             while (st.hasMoreTokens()) {
@@ -283,7 +297,7 @@ public class Globals {
      */
     public ArrayList<SyscallNumberOverride> getSyscallOverrides() {
         ArrayList<SyscallNumberOverride> overrides = new ArrayList<>();
-        Properties properties = PropertiesFile.loadPropertiesFromFile(syscallPropertiesFile);
+        Properties properties = PropertiesFile.loadPropertiesFromFile(SYSCALLS_PATH);
         Enumeration<Object> keys = properties.keys();
         while (keys.hasMoreElements()) {
             String key = (String) keys.nextElement();

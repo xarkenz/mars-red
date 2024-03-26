@@ -2,7 +2,7 @@ package mars.mips.instructions;
 
 import mars.Globals;
 import mars.MIPSprogram;
-import mars.Settings;
+import mars.settings.Settings;
 import mars.assembler.Symbol;
 import mars.assembler.TokenList;
 import mars.mips.hardware.Coprocessor1;
@@ -216,7 +216,7 @@ public class ExtendedInstruction extends Instruction {
         // additional changes, so for now I will generate "nop" in either case, then come back to it for the
         // next major release.
         if (instruction.contains("DBNOP")) {
-            return Globals.getSettings().getBoolean(Settings.DELAYED_BRANCHING_ENABLED) ? "nop" : "";
+            return Globals.getSettings().delayedBranchingEnabled.get() ? "nop" : "";
         }
         // substitute first operand token for template's RG1 or OP1, second for RG2 or OP2, etc
         for (int op = 1; op < tokens.size(); op++) {
@@ -497,7 +497,7 @@ public class ExtendedInstruction extends Instruction {
             try {
                 String disabled = instruction.substring(index + 5, index + 6);
                 String enabled = instruction.substring(index + 6, index + 7);
-                instruction = substitute(instruction, "BROFF" + disabled + enabled, Globals.getSettings().getBoolean(Settings.DELAYED_BRANCHING_ENABLED) ? enabled : disabled);
+                instruction = substitute(instruction, "BROFF" + disabled + enabled, Globals.getSettings().delayedBranchingEnabled.get() ? enabled : disabled);
             }
             catch (IndexOutOfBoundsException e) {
                 instruction = substitute(instruction, "BROFF", "BAD_PSEUDO_OP_SPEC");
@@ -632,7 +632,7 @@ public class ExtendedInstruction extends Instruction {
         // then don't count the nop in the instruction length.   DPS 23-Jan-2008
         int instructionCount = 0;
         for (String instruction : translationList) {
-            if (instruction.contains("DBNOP") && !Globals.getSettings().getBoolean(Settings.DELAYED_BRANCHING_ENABLED)) {
+            if (instruction.contains("DBNOP") && !Globals.getSettings().delayedBranchingEnabled.get()) {
                 continue;
             }
             instructionCount++;

@@ -390,8 +390,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          	// HERE'S A HACK!!  Want to immediately display the updated register value in MARS
          	// but that code was not written for event-driven update (e.g. Observer) --
          	// it was written to poll the registers for their values.  So we force it to do so.
-            if (Globals.getGui() != null) {
-               Globals.getGui().getRegistersPane().getCoprocessor1Window().updateRegisters();
+            if (Globals.getGUI() != null) {
+               Globals.getGUI().getRegistersPane().getCoprocessor1Window().updateRegisters();
             }
          }
       }

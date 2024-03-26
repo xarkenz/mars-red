@@ -6,6 +6,7 @@ import mars.mips.hardware.Memory;
 import mars.mips.instructions.BasicInstruction;
 import mars.mips.instructions.ExtendedInstruction;
 import mars.mips.instructions.Instruction;
+import mars.settings.Settings;
 import mars.util.Binary;
 import mars.util.SystemIO;
 
@@ -382,7 +383,7 @@ public class Assembler {
             ProgramStatement statement1 = statements.get(i);
             ProgramStatement statement2 = statements.get(i + 1);
             if (statement1.getAddress() == statement2.getAddress()) {
-                errors.add(new ErrorMessage(statement2.getSourceMIPSprogram(), statement2.getSourceLine(), 0, "Duplicate text segment address: " + mars.venus.NumberDisplayBaseChooser.formatUnsignedInteger(statement2.getAddress(), (Globals.getSettings().getBoolean(Settings.DISPLAY_ADDRESSES_IN_HEX)) ? 16 : 10) + " already occupied by " + statement1.getSourceFile() + " line " + statement1.getSourceLine() + " (caused by use of " + ((Memory.inTextSegment(statement2.getAddress())) ? ".text" : ".ktext") + " operand)"));
+                errors.add(new ErrorMessage(statement2.getSourceMIPSprogram(), statement2.getSourceLine(), 0, "Duplicate text segment address: " + mars.venus.NumberDisplayBaseChooser.formatUnsignedInteger(statement2.getAddress(), (Globals.getSettings().displayAddressesInHex.get()) ? 16 : 10) + " already occupied by " + statement1.getSourceFile() + " line " + statement1.getSourceLine() + " (caused by use of " + ((Memory.inTextSegment(statement2.getAddress())) ? ".text" : ".ktext") + " operand)"));
             }
         }
     }

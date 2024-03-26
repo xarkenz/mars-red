@@ -155,7 +155,7 @@
             // final JFrame frame = new JFrame("ScavengerHunt");
             // Recommended by Pete Sanderson, 2 Nov. 2006, so that the Tool window and
             // MARS window can be on the screen at the same time.
-            final JDialog frame = new JDialog(Globals.getGui(),"ScavengerHunt");
+            final JDialog frame = new JDialog(Globals.getGUI(),"ScavengerHunt");
          
             // System.out.println("ScavengerHuntRunnable.constructor: starting....");
          

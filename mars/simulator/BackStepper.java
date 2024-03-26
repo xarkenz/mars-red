@@ -63,7 +63,7 @@ public class BackStepper {
      */
     public BackStepper() {
         engaged = true;
-        backSteps = new BackStepStack(Globals.maximumBacksteps);
+        backSteps = new BackStepStack(Globals.MAXIMUM_BACKSTEPS);
     }
 
     /**

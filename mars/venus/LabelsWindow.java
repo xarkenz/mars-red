@@ -6,6 +6,7 @@ import mars.assembler.Symbol;
 import mars.assembler.SymbolTable;
 import mars.mips.hardware.Memory;
 import mars.util.Binary;
+import mars.venus.actions.run.RunAssembleAction;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
@@ -127,12 +128,7 @@ public class LabelsWindow extends JInternalFrame {
      */
     public LabelsWindow() {
         super("Labels", true, false, true, true);
-        try {
-            sortState = Integer.parseInt(Globals.getSettings().getLabelSortState());
-        }
-        catch (NumberFormatException nfe) {
-            sortState = 0;
-        }
+        sortState = Globals.getSettings().labelSortState.get();
         columnNames = sortColumnHeadings[sortState];
         tableSortComparator = tableSortingComparators[sortState];
         Container contentPane = this.getContentPane();
@@ -267,10 +263,10 @@ public class LabelsWindow extends JInternalFrame {
             }
             // Scroll to this address, either in Text Segment display or Data Segment display
             if (Memory.inTextSegment(address) || Memory.inKernelTextSegment(address)) {
-                Globals.getGui().getMainPane().getExecutePane().getTextSegmentWindow().selectStepAtAddress(address);
+                Globals.getGUI().getMainPane().getExecutePane().getTextSegmentWindow().selectStepAtAddress(address);
             }
             else {
-                Globals.getGui().getMainPane().getExecutePane().getDataSegmentWindow().selectCellForAddress(address);
+                Globals.getGUI().getMainPane().getExecutePane().getDataSegmentWindow().selectCellForAddress(address);
             }
         }
     }
@@ -304,7 +300,7 @@ public class LabelsWindow extends JInternalFrame {
         // builds the Table containing labels and addresses for this symbol table.
         private JTable generateLabelTable() {
             SymbolTable symbolTable = (myMIPSprogram == null) ? Globals.symbolTable : myMIPSprogram.getLocalSymbolTable();
-            int addressBase = Globals.getGui().getMainPane().getExecutePane().getAddressDisplayBase();
+            int addressBase = Globals.getGUI().getMainPane().getExecutePane().getAddressDisplayBase();
             if (textLabels.isSelected() && dataLabels.isSelected()) {
                 symbols = symbolTable.getAllSymbols();
             }
@@ -342,7 +338,7 @@ public class LabelsWindow extends JInternalFrame {
             if (labelPanel.getComponentCount() == 0) {
                 return; // ignore if no content to change
             }
-            int addressBase = Globals.getGui().getMainPane().getExecutePane().getAddressDisplayBase();
+            int addressBase = Globals.getGUI().getMainPane().getExecutePane().getAddressDisplayBase();
             int address;
             String formattedAddress;
             int numSymbols = (labelData == null) ? 0 : labelData.length;
@@ -464,10 +460,10 @@ public class LabelsWindow extends JInternalFrame {
                     sortState = sortStateTransitions[sortState][realIndex];
                     tableSortComparator = tableSortingComparators[sortState];
                     columnNames = sortColumnHeadings[sortState];
-                    Globals.getSettings().setLabelSortState(Integer.valueOf(sortState).toString());
+                    Globals.getSettings().labelSortState.set(sortState);
                     setupTable();
-                    Globals.getGui().getMainPane().getExecutePane().setLabelWindowVisibility(false);
-                    Globals.getGui().getMainPane().getExecutePane().setLabelWindowVisibility(true);
+                    Globals.getGUI().getMainPane().getExecutePane().setLabelWindowVisibility(false);
+                    Globals.getGUI().getMainPane().getExecutePane().setLabelWindowVisibility(true);
                 }
 
                 @Override

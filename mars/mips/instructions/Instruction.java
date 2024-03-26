@@ -75,7 +75,7 @@ public abstract class Instruction {
      *
      * @return operation mnemonic (e.g. addi, sw)
      */
-    public String getName() {
+    public String getMnemonic() {
         return mnemonic;
     }
 

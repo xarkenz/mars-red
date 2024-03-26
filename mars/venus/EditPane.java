@@ -1,7 +1,7 @@
 package mars.venus;
 
 import mars.Globals;
-import mars.Settings;
+import mars.settings.Settings;
 import mars.venus.editors.MARSTextEditingArea;
 import mars.venus.editors.generic.GenericTextArea;
 import mars.venus.editors.jeditsyntax.JEditBasedTextArea;
@@ -72,7 +72,7 @@ public class EditPane extends JPanel implements Observer {
         this.fileStatus = new FileStatus();
         lineNumbers = new JLabel();
 
-        if (Globals.getSettings().getBoolean(Settings.GENERIC_TEXT_EDITOR)) {
+        if (Globals.getSettings().useGenericTextEditor.get()) {
             this.sourceCode = new GenericTextArea(this, lineNumbers);
         }
         else {
@@ -105,10 +105,10 @@ public class EditPane extends JPanel implements Observer {
                     setFileStatus(FileStatus.EDITED);
                 }
                 if (getFileStatus() == FileStatus.NEW_EDITED) {
-                    gui.editor.setTitle("", getFilename(), getFileStatus());
+                    gui.getEditor().setTitle("", getFilename(), getFileStatus());
                 }
                 else {
-                    gui.editor.setTitle(getPathname(), getFilename(), getFileStatus());
+                    gui.getEditor().setTitle(getPathname(), getFilename(), getFileStatus());
                 }
 
                 FileStatus.setEdited(true);
@@ -122,7 +122,7 @@ public class EditPane extends JPanel implements Observer {
                         FileStatus.set(FileStatus.EDITED);
                 }
 
-                Globals.getGui().getMainPane().getExecutePane().clearPane(); // DPS 9-Aug-2011
+                Globals.getGUI().getMainPane().getExecutePane().clearPane(); // DPS 9-Aug-2011
 
                 if (showingLineNumbers()) {
                     lineNumbers.setText(getLineNumbersList(sourceCode.getDocument()));
@@ -143,8 +143,7 @@ public class EditPane extends JPanel implements Observer {
         showLineNumbers = new JCheckBox("Show Line Numbers");
         showLineNumbers.setToolTipText("If checked, will display line number for each line of text.");
         showLineNumbers.setEnabled(false);
-        // Show line numbers by default.
-        showLineNumbers.setSelected(Globals.getSettings().getEditorLineNumbersDisplayed());
+        showLineNumbers.setSelected(Globals.getSettings().displayEditorLineNumbers.get());
 
         this.setSourceCode("", false);
 
@@ -164,8 +163,8 @@ public class EditPane extends JPanel implements Observer {
                 lineNumbers.setVisible(false);
             }
             sourceCode.revalidate(); // added 16 Jan 2012 to assure label redrawn.
-            Globals.getSettings().setBoolean(Settings.EDITOR_LINE_NUMBERS_DISPLAYED, showLineNumbers.isSelected());
-            // needed because caret disappears when checkbox clicked
+            Globals.getSettings().displayEditorLineNumbers.set(showLineNumbers.isSelected());
+            // Needed because caret disappears when checkbox clicked
             sourceCode.setCaretVisible(true);
             sourceCode.requestFocusInWindow();
         });
@@ -180,10 +179,10 @@ public class EditPane extends JPanel implements Observer {
     }
 
     /**
-     * For initalizing the source code when opening an ASM file
+     * For initializing the source code when opening an ASM file.
      *
      * @param s        String containing text
-     * @param editable set true if code is editable else false
+     * @param editable Set true if code is editable else false
      */
     public void setSourceCode(String s, boolean editable) {
         sourceCode.setSourceCode(s, editable);
@@ -220,7 +219,7 @@ public class EditPane extends JPanel implements Observer {
                 lineNumberList.append(lineStr).append("&nbsp;<br>");
             }
             else {
-                lineNumberList.append(SPACES.substring(0, leadingSpaces * 6)).append(lineStr).append("&nbsp;<br>");
+                lineNumberList.append(SPACES, 0, leadingSpaces * 6).append(lineStr).append("&nbsp;<br>");
             }
         }
         lineNumberList.append("<br></html>");
@@ -395,17 +394,11 @@ public class EditPane extends JPanel implements Observer {
     }
 
     /**
-     * Update state of Edit menu's Undo menu item.
+     * Automatically update whether the Undo and Redo actions are enabled or disabled
+     * based on the status of the {@link javax.swing.undo.UndoManager}.
      */
-    public void updateUndoState() {
-        gui.editUndoAction.updateUndoState();
-    }
-
-    /**
-     * Update state of Edit menu's Redo menu item.
-     */
-    public void updateRedoState() {
-        gui.editRedoAction.updateRedoState();
+    public void updateUndoRedoActions() {
+        gui.updateUndoRedoActions();
     }
 
     /**
@@ -588,9 +581,9 @@ public class EditPane extends JPanel implements Observer {
     @Override
     public void update(Observable fontChanger, Object arg) {
         sourceCode.setFont(Globals.getSettings().getEditorFont());
-        sourceCode.setLineHighlightEnabled(Globals.getSettings().getBoolean(Settings.EDITOR_CURRENT_LINE_HIGHLIGHTING));
-        sourceCode.setCaretBlinkRate(Globals.getSettings().getCaretBlinkRate());
-        sourceCode.setTabSize(Globals.getSettings().getEditorTabSize());
+        sourceCode.setLineHighlightEnabled(Globals.getSettings().highlightCurrentEditorLine.get());
+        sourceCode.setCaretBlinkRate(Globals.getSettings().caretBlinkRate.get());
+        sourceCode.setTabSize(Globals.getSettings().editorTabSize.get());
         sourceCode.updateSyntaxStyles();
         sourceCode.revalidate();
         // We want line numbers to be displayed same size but always PLAIN style.

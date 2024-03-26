@@ -14,7 +14,6 @@
    import java.awt.Toolkit;
    import java.util.Hashtable;
    import java.util.StringTokenizer;
-   import java.util.Properties;
 
 /**
  * The default input handler. It maps sequences of keystrokes into actions
@@ -198,7 +197,7 @@
                currentBindings = bindings;
                // No binding for this keyStroke, pass it to menu 
                // (mnemonic, accelerator).  DPS 4-may-2010
-               mars.Globals.getGui().dispatchEventToMenu(evt);
+               mars.Globals.getGUI().dispatchEventToMenu(evt);
                evt.consume();
                return;
             }

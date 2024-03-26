@@ -2,7 +2,7 @@ package mars.mips.dump;
 
 import mars.Globals;
 import mars.ProgramStatement;
-import mars.Settings;
+import mars.settings.Settings;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
 import mars.util.Binary;
@@ -83,11 +83,11 @@ public class SegmentWindowDumpFormat extends AbstractDumpFormat {
         // TODO: This could use a bit of cleanup -Sean Clarke
         PrintStream out = new PrintStream(new FileOutputStream(file));
 
-        boolean hexAddresses = Globals.getSettings().getBoolean(Settings.DISPLAY_ADDRESSES_IN_HEX);
+        boolean hexAddresses = Globals.getSettings().displayAddressesInHex.get();
 
         // If address in data segment, print in same format as Data Segment Window
         if (Memory.inDataSegment(firstAddress)) {
-            boolean hexValues = Globals.getSettings().getBoolean(Settings.DISPLAY_VALUES_IN_HEX);
+            boolean hexValues = Globals.getSettings().displayValuesInHex.get();
             int offset = 0;
             StringBuilder string = new StringBuilder();
             try {

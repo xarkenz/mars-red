@@ -9,15 +9,22 @@
 
 package mars.venus.editors.jeditsyntax.tokenmarker;
 
+import mars.Globals;
 import mars.assembler.Directive;
 import mars.assembler.TokenType;
+import mars.mips.hardware.Coprocessor1;
+import mars.mips.hardware.Register;
+import mars.mips.hardware.RegisterFile;
 import mars.mips.instructions.BasicInstruction;
 import mars.mips.instructions.Instruction;
 import mars.venus.editors.jeditsyntax.KeywordMap;
 import mars.venus.editors.jeditsyntax.PopupHelpItem;
 
 import javax.swing.text.Segment;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * MIPS token marker.
@@ -25,6 +32,13 @@ import java.util.*;
  * @author Pete Sanderson (2010) and Slava Pestov (1999)
  */
 public class MIPSTokenMarker extends TokenMarker {
+    // private members
+    private static KeywordMap cKeywords;
+    private static String[] tokenLabels, tokenExamples;
+    private final KeywordMap keywords;
+    private int lastOffset;
+    private int lastKeyword;
+
     public MIPSTokenMarker() {
         this(getKeywords());
     }
@@ -87,26 +101,26 @@ public class MIPSTokenMarker extends TokenMarker {
                 case Token.NULL:
                     switch (c) {
                         case '"':
-                            doKeyword(line, i, c);
-                           if (backslash) {
-                              backslash = false;
-                           }
-                           else {
-                              addToken(i - lastOffset, token);
-                              token = Token.LITERAL1;
-                              lastOffset = lastKeyword = i;
-                           }
+                            doKeyword(line, i);
+                            if (backslash) {
+                                backslash = false;
+                            }
+                            else {
+                                addToken(i - lastOffset, token);
+                                token = Token.LITERAL1;
+                                lastOffset = lastKeyword = i;
+                            }
                             break;
                         case '\'':
-                            doKeyword(line, i, c);
-                           if (backslash) {
-                              backslash = false;
-                           }
-                           else {
-                              addToken(i - lastOffset, token);
-                              token = Token.LITERAL2;
-                              lastOffset = lastKeyword = i;
-                           }
+                            doKeyword(line, i);
+                            if (backslash) {
+                                backslash = false;
+                            }
+                            else {
+                                addToken(i - lastOffset, token);
+                                token = Token.LITERAL2;
+                                lastOffset = lastKeyword = i;
+                            }
                             break;
                         case ':':
                       /*  Original code for ':' case, replaced 3 Aug 2010. Details below.
@@ -131,7 +145,7 @@ public class MIPSTokenMarker extends TokenMarker {
                             // MIPS identifier (otherwise would catch, say, 0 (zero) in .word 0:10)
                             backslash = false;
                             //String lab = new String(array, lastOffset, i1-lastOffset-1).trim();
-                            boolean validIdentifier = false;
+                            boolean validIdentifier;
                             try {
                                 validIdentifier = TokenType.isValidIdentifier(new String(array, lastOffset, i1 - lastOffset - 1).trim());
                             }
@@ -145,7 +159,7 @@ public class MIPSTokenMarker extends TokenMarker {
                             break;
                         case '#':
                             backslash = false;
-                            doKeyword(line, i, c);
+                            doKeyword(line, i);
                             if (length - i >= 1) {
                                 addToken(i - lastOffset, token);
                                 addToken(length - i, Token.COMMENT1);
@@ -156,40 +170,40 @@ public class MIPSTokenMarker extends TokenMarker {
                         default:
                             backslash = false;
                             // . and $ added 4/6/10 DPS; % added 12/12 M.Sekhavat
-                           if (!Character.isLetterOrDigit(c) && c != '_' && c != '.' && c != '$' && c != '%') {
-                              doKeyword(line, i, c);
-                           }
+                            if (!Character.isLetterOrDigit(c) && c != '_' && c != '.' && c != '$' && c != '%') {
+                                doKeyword(line, i);
+                            }
                             break;
                     }
                     break;
                 case Token.LITERAL1:
-                   if (backslash) {
-                      backslash = false;
-                   }
-                   else if (c == '"') {
-                      addToken(i1 - lastOffset, token);
-                      token = Token.NULL;
-                      lastOffset = lastKeyword = i1;
-                   }
+                    if (backslash) {
+                        backslash = false;
+                    }
+                    else if (c == '"') {
+                        addToken(i1 - lastOffset, token);
+                        token = Token.NULL;
+                        lastOffset = lastKeyword = i1;
+                    }
                     break;
                 case Token.LITERAL2:
-                   if (backslash) {
-                      backslash = false;
-                   }
-                   else if (c == '\'') {
-                      addToken(i1 - lastOffset, Token.LITERAL1);
-                      token = Token.NULL;
-                      lastOffset = lastKeyword = i1;
-                   }
+                    if (backslash) {
+                        backslash = false;
+                    }
+                    else if (c == '\'') {
+                        addToken(i1 - lastOffset, Token.LITERAL1);
+                        token = Token.NULL;
+                        lastOffset = lastKeyword = i1;
+                    }
                     break;
                 default:
                     throw new InternalError("Invalid state: " + token);
             }
         }
 
-       if (token == Token.NULL) {
-          doKeyword(line, length, '\0');
-       }
+        if (token == Token.NULL) {
+            doKeyword(line, length);
+        }
 
         switch (token) {
             case Token.LITERAL1:
@@ -199,9 +213,9 @@ public class MIPSTokenMarker extends TokenMarker {
                 break;
             case Token.KEYWORD2:
                 addToken(length - lastOffset, token);
-               if (!backslash) {
-                  token = Token.NULL;
-               }
+                if (!backslash) {
+                    token = Token.NULL;
+                }
             default:
                 addToken(length - lastOffset, token);
                 break;
@@ -218,33 +232,32 @@ public class MIPSTokenMarker extends TokenMarker {
      * @param tokenText the source String that matched to the token
      * @return ArrayList of PopupHelpItem objects, one per match.
      */
-    public ArrayList getTokenExactMatchHelp(Token token, String tokenText) {
-        ArrayList matches = null;
+    public ArrayList<PopupHelpItem> getTokenExactMatchHelp(Token token, String tokenText) {
+        ArrayList<PopupHelpItem> helpItems = null;
         if (token != null && token.id == Token.KEYWORD1) {
-            ArrayList instrMatches = mars.Globals.instructionSet.matchOperator(tokenText);
-            if (instrMatches.size() > 0) {
+            ArrayList<Instruction> instructionMatches = Globals.instructionSet.matchOperator(tokenText);
+            if (!instructionMatches.isEmpty()) {
                 int realMatches = 0;
-                matches = new ArrayList();
-                for (int i = 0; i < instrMatches.size(); i++) {
-                    Instruction inst = (Instruction) instrMatches.get(i);
-                    if (mars.Globals.getSettings().getExtendedAssemblerEnabled() || inst instanceof BasicInstruction) {
-                        matches.add(new PopupHelpItem(tokenText, inst.getExampleFormat(), inst.getDescription()));
+                helpItems = new ArrayList<>();
+                for (Instruction instruction : instructionMatches) {
+                    if (Globals.getSettings().extendedAssemblerEnabled.get() || instruction instanceof BasicInstruction) {
+                        helpItems.add(new PopupHelpItem(tokenText, instruction.getExampleFormat(), instruction.getDescription()));
                         realMatches++;
                     }
                 }
                 if (realMatches == 0) {
-                    matches.add(new PopupHelpItem(tokenText, tokenText, "(is not a basic instruction)"));
+                    helpItems.add(new PopupHelpItem(tokenText, tokenText, "(is not a basic instruction)"));
                 }
             }
         }
         if (token != null && token.id == Token.KEYWORD2) {
             Directive dir = Directive.matchDirective(tokenText);
             if (dir != null) {
-                matches = new ArrayList();
-                matches.add(new PopupHelpItem(tokenText, dir.getName(), dir.getDescription()));
+                helpItems = new ArrayList<>();
+                helpItems.add(new PopupHelpItem(tokenText, dir.getName(), dir.getDescription()));
             }
         }
-        return matches;
+        return helpItems;
     }
 
     /**
@@ -258,9 +271,7 @@ public class MIPSTokenMarker extends TokenMarker {
      * @return ArrayList of PopupHelpItem objects, one per match.
      */
 
-    public ArrayList getTokenPrefixMatchHelp(String line, Token tokenList, Token token, String tokenText) {
-        ArrayList matches = null;
-
+    public ArrayList<PopupHelpItem> getTokenPrefixMatchHelp(String line, Token tokenList, Token token, String tokenText) {
         // CASE:  Unlikely boundary case...
         if (tokenList == null || tokenList.id == Token.END) {
             return null;
@@ -274,7 +285,6 @@ public class MIPSTokenMarker extends TokenMarker {
         // Let's see if the line already contains an instruction or directive.  If so, we need its token
         // text as well so we can do the match.  Also need to distinguish the case where current
         // token is also an instruction/directive (moreThanOneKeyword variable).
-
         Token tokens = tokenList;
         String keywordTokenText = null;
         byte keywordType = -1;
@@ -339,36 +349,36 @@ public class MIPSTokenMarker extends TokenMarker {
         //             directives start with "."
 
         if (token != null && token.id == Token.NULL) {
-
             String trimmedTokenText = tokenText.trim();
 
             // Subcase: no KEYWORD1 or KEYWORD2 but current token contains nothing but white space.  We're done.
-            if (keywordTokenText == null && trimmedTokenText.length() == 0) {
+            if (keywordTokenText == null && trimmedTokenText.isEmpty()) {
                 return null;
             }
 
             // Subcase: no KEYWORD1 or KEYWORD2.  Generate text based on prefix match of trimmed current token.
-            if (keywordTokenText == null && trimmedTokenText.length() > 0) {
+            if (keywordTokenText == null && !trimmedTokenText.isEmpty()) {
                 if (trimmedTokenText.charAt(0) == '.') {
                     return getTextFromDirectiveMatch(trimmedTokenText, false);
                 }
-                else if (trimmedTokenText.length() >= mars.Globals.getSettings().getEditorPopupPrefixLength()) {
+                else if (trimmedTokenText.length() >= mars.Globals.getSettings().editorPopupPrefixLength.get()) {
                     return getTextFromInstructionMatch(trimmedTokenText, false);
                 }
             }
         }
+
         // should never get here...
         return null;
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // Return ArrayList of PopupHelpItem for match of directives.  If second argument
-    // true, will do exact match.  If false, will do prefix match.  Returns null
-    // if no matches.
-    private ArrayList getTextFromDirectiveMatch(String tokenText, boolean exact) {
-        ArrayList matches = null;
+    /**
+     * Return ArrayList of PopupHelpItem for match of directives.  If second argument
+     * true, will do exact match.  If false, will do prefix match.  Returns null
+     * if no matches.
+     */
+    private ArrayList<PopupHelpItem> getTextFromDirectiveMatch(String tokenText, boolean isExact) {
         List<Directive> directiveMatches = null;
-        if (exact) {
+        if (isExact) {
             Directive directive = Directive.matchDirective(tokenText);
             if (directive != null) {
                 directiveMatches = new ArrayList<>();
@@ -378,69 +388,66 @@ public class MIPSTokenMarker extends TokenMarker {
         else {
             directiveMatches = Directive.prefixMatchDirectives(tokenText);
         }
+
+        ArrayList<PopupHelpItem> results = null;
         if (directiveMatches != null) {
-            matches = new ArrayList();
-            for (int i = 0; i < directiveMatches.size(); i++) {
-                Directive directive = directiveMatches.get(i);
-                matches.add(new PopupHelpItem(tokenText, directive.getName(), directive.getDescription(), exact));
+            results = new ArrayList<>();
+            for (Directive directive : directiveMatches) {
+                results.add(new PopupHelpItem(tokenText, directive.getName(), directive.getDescription(), isExact));
             }
         }
-        return matches;
+
+        return results;
     }
 
-    // Return text for match of instruction mnemonic.  If second argument true, will
-    // do exact match.  If false, will do prefix match.   Text is returned as ArrayList
-    // of PopupHelpItem objects. If no matches, returns null.
-    private ArrayList getTextFromInstructionMatch(String tokenText, boolean exact) {
-        String text = null;
-        ArrayList matches = null;
-        ArrayList results = new ArrayList();
-        if (exact) {
-            matches = mars.Globals.instructionSet.matchOperator(tokenText);
+    /**
+     * Return text for match of instruction mnemonic.  If second argument true, will
+     * do exact match.  If false, will do prefix match.   Text is returned as ArrayList
+     * of PopupHelpItem objects. If no matches, returns null.
+     */
+    private ArrayList<PopupHelpItem> getTextFromInstructionMatch(String tokenText, boolean isExact) {
+        ArrayList<Instruction> instructionMatches;
+        if (isExact) {
+            instructionMatches = Globals.instructionSet.matchOperator(tokenText);
         }
         else {
-            matches = mars.Globals.instructionSet.prefixMatchOperator(tokenText);
+            instructionMatches = Globals.instructionSet.prefixMatchOperator(tokenText);
         }
-        if (matches == null) {
+        if (instructionMatches == null) {
             return null;
         }
+
+        ArrayList<PopupHelpItem> results = new ArrayList<>();
         int realMatches = 0;
-        HashMap insts = new HashMap();
-        TreeSet mnemonics = new TreeSet();
-        for (int i = 0; i < matches.size(); i++) {
-            Instruction inst = (Instruction) matches.get(i);
-            if (mars.Globals.getSettings().getExtendedAssemblerEnabled() || inst instanceof BasicInstruction) {
-                if (exact) {
-                    results.add(new PopupHelpItem(tokenText, inst.getExampleFormat(), inst.getDescription(), exact));
+        Map<String, String> mnemonicDescriptions = new HashMap<>();
+        for (Instruction instruction : instructionMatches) {
+            if (Globals.getSettings().extendedAssemblerEnabled.get() || instruction instanceof BasicInstruction) {
+                if (isExact) {
+                    results.add(new PopupHelpItem(tokenText, instruction.getExampleFormat(), instruction.getDescription(), true));
                 }
                 else {
-                    String mnemonic = inst.getExampleFormat().split(" ")[0];
-                    if (!insts.containsKey(mnemonic)) {
-                        mnemonics.add(mnemonic);
-                        insts.put(mnemonic, inst.getDescription());
+                    if (!mnemonicDescriptions.containsKey(instruction.getMnemonic())) {
+                        mnemonicDescriptions.put(instruction.getMnemonic(), instruction.getDescription());
                     }
                 }
                 realMatches++;
             }
         }
+
         if (realMatches == 0) {
-            if (exact) {
-                results.add(new PopupHelpItem(tokenText, tokenText, "(not a basic instruction)", exact));
+            if (isExact) {
+                results.add(new PopupHelpItem(tokenText, tokenText, "(not a basic instruction)", true));
             }
             else {
                 return null;
             }
         }
-        else {
-            if (!exact) {
-                Iterator mnemonicList = mnemonics.iterator();
-                while (mnemonicList.hasNext()) {
-                    String mnemonic = (String) mnemonicList.next();
-                    String info = (String) insts.get(mnemonic);
-                    results.add(new PopupHelpItem(tokenText, mnemonic, info, exact));
-                }
+        else if (!isExact) {
+            for (Map.Entry<String, String> entry : mnemonicDescriptions.entrySet()) {
+                results.add(new PopupHelpItem(tokenText, entry.getKey(), entry.getValue(), false));
             }
         }
+
         return results;
     }
 
@@ -450,78 +457,43 @@ public class MIPSTokenMarker extends TokenMarker {
      *
      * @return KeywordMap where key is the keyword and associated value is the token type (e.g. Token.KEYWORD1).
      */
-
     public static KeywordMap getKeywords() {
         if (cKeywords == null) {
             cKeywords = new KeywordMap(false);
-            // add Instruction mnemonics
-            java.util.ArrayList instructionSet = mars.Globals.instructionSet.getInstructionList();
-            for (int i = 0; i < instructionSet.size(); i++) {
-                cKeywords.add(((mars.mips.instructions.Instruction) instructionSet.get(i)).getName(), Token.KEYWORD1);
+            // Add instruction mnemonics
+            for (Instruction instruction : Globals.instructionSet.getAllInstructions()) {
+                cKeywords.add(instruction.getMnemonic(), Token.KEYWORD1);
             }
             // add assembler directives
-            Directive[] directiveSet = Directive.values();
-            for (int i = 0; i < directiveSet.length; i++) {
-                cKeywords.add(directiveSet[i].getName(), Token.KEYWORD2);
+            for (Directive directive : Directive.values()) {
+                cKeywords.add(directive.getName(), Token.KEYWORD2);
             }
             // add integer register file
-            mars.mips.hardware.Register[] registerFile = mars.mips.hardware.RegisterFile.getRegisters();
-            for (int i = 0; i < registerFile.length; i++) {
-                cKeywords.add(registerFile[i].getName(), Token.KEYWORD3);
-                cKeywords.add("$" + i, Token.KEYWORD3);  // also recognize $0, $1, $2, etc
+            for (Register register : RegisterFile.getRegisters()) {
+                cKeywords.add(register.getName(), Token.KEYWORD3);
+                cKeywords.add("$" + register.getNumber(), Token.KEYWORD3);  // also recognize $0, $1, $2, etc
             }
             // add Coprocessor 1 (floating point) register file
-            mars.mips.hardware.Register[] coprocessor1RegisterFile = mars.mips.hardware.Coprocessor1.getRegisters();
-            for (int i = 0; i < coprocessor1RegisterFile.length; i++) {
-                cKeywords.add(coprocessor1RegisterFile[i].getName(), Token.KEYWORD3);
+            for (Register register : Coprocessor1.getRegisters()) {
+                cKeywords.add(register.getName(), Token.KEYWORD3);
             }
             // Note: Coprocessor 0 registers referenced only by number: $8, $12, $13, $14. These are already in the map
-
         }
         return cKeywords;
     }
 
-    // private members
-    private static KeywordMap cKeywords;
-    private static String[] tokenLabels, tokenExamples;
-    private final KeywordMap keywords;
-    private int lastOffset;
-    private int lastKeyword;
-
-    private boolean doKeyword(Segment line, int i, char c) {
+    private void doKeyword(Segment line, int i) {
         int i1 = i + 1;
 
         int len = i - lastKeyword;
         byte id = keywords.lookup(line, lastKeyword, len);
         if (id != Token.NULL) {
-            // If this is a Token.KEYWORD1 and line already contains a keyword,
-            // then assume this one is a label reference and ignore it.
-            //   if (id == Token.KEYWORD1 && tokenListContainsKeyword()) {
-            //    }
-            //    else {
-           if (lastKeyword != lastOffset) {
-              addToken(lastKeyword - lastOffset, Token.NULL);
-           }
+            if (lastKeyword != lastOffset) {
+                addToken(lastKeyword - lastOffset, Token.NULL);
+            }
             addToken(len, id);
             lastOffset = i;
-            //  }
         }
         lastKeyword = i1;
-        return false;
-    }
-
-    private boolean tokenListContainsKeyword() {
-        Token token = firstToken;
-        boolean result = false;
-        String str = "";
-        while (token != null) {
-            str += token.id + "(" + token.length + ") ";
-           if (token.id == Token.KEYWORD1 || token.id == Token.KEYWORD2 || token.id == Token.KEYWORD3) {
-              result = true;
-           }
-            token = token.next;
-        }
-        System.out.println(result + " " + str);
-        return result;
     }
 }

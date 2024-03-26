@@ -1,7 +1,13 @@
 package mars.venus;
 
 import mars.Globals;
-import mars.Settings;
+import mars.settings.Settings;
+import mars.venus.actions.edit.*;
+import mars.venus.actions.file.*;
+import mars.venus.actions.help.HelpAboutAction;
+import mars.venus.actions.help.HelpHelpAction;
+import mars.venus.actions.run.*;
+import mars.venus.actions.settings.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -49,15 +55,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * here primarily so both can share the Action objects.
  */
 public class VenusUI extends JFrame {
-    JMenuBar menu;
-    JToolBar toolbar;
-    MainPane mainPane;
-    RegistersPane registersPane;
-    RegistersWindow registersTab;
-    Coprocessor1Window coprocessor1Tab;
-    Coprocessor0Window coprocessor0Tab;
-    MessagesPane messagesPane;
-    JSplitPane splitter, horizonSplitter;
+    private final JMenuBar menu;
+    private final JToolBar toolbar;
+    private final MainPane mainPane;
+    private final RegistersPane registersPane;
+    private final RegistersWindow registersTab;
+    private final Coprocessor1Window coprocessor1Tab;
+    private final Coprocessor0Window coprocessor0Tab;
+    private final MessagesPane messagesPane;
+    private final Editor editor;
 
     private final String baseTitle;
     private int menuState = FileStatus.NO_FILE;
@@ -65,7 +71,6 @@ public class VenusUI extends JFrame {
     // PLEASE PUT THESE TWO (& THEIR METHODS) SOMEWHERE THEY BELONG, NOT HERE
     private static boolean reset = true; // registers/memory reset for execution
     private static boolean started = false; // started execution
-    Editor editor;
 
     // Components of the menubar
     private JMenu file, run, help, edit, settings;
@@ -133,7 +138,7 @@ public class VenusUI extends JFrame {
         super(title);
         this.baseTitle = title;
         this.editor = new Editor(this);
-        Globals.setGui(this);
+        Globals.setGUI(this);
 
         double screenWidth = Toolkit.getDefaultToolkit().getScreenSize().getWidth();
         double screenHeight = Toolkit.getDefaultToolkit().getScreenSize().getHeight();
@@ -149,11 +154,7 @@ public class VenusUI extends JFrame {
         Dimension mainPanePreferredSize = new Dimension((int) (screenWidth * mainWidthPct), (int) (screenHeight * mainHeightPct));
         Dimension registersPanePreferredSize = new Dimension((int) (screenWidth * registersWidthPct), (int) (screenHeight * registersHeightPct));
 
-        // the "restore" size (window control button that toggles with maximize)
-        // I want to keep it large, with enough room for user to get handles
-        //this.setSize((int)(screenWidth*.8),(int)(screenHeight*.8));
-
-        Globals.initialize(true);
+        Globals.initialize();
 
         // Image courtesy of NASA/JPL.
         URL im = this.getClass().getResource(Globals.IMAGES_PATH + "RedMars16.gif");
@@ -183,18 +184,14 @@ public class VenusUI extends JFrame {
         registersPane = new RegistersPane(this, registersTab, coprocessor1Tab, coprocessor0Tab);
         registersPane.setPreferredSize(registersPanePreferredSize);
 
-        //Insets defaultTabInsets = (Insets)UIManager.get("TabbedPane.tabInsets");
-        //UIManager.put("TabbedPane.tabInsets", new Insets(1, 1, 1, 1));
         mainPane = new MainPane(this, editor, registersTab, coprocessor1Tab, coprocessor0Tab);
-        //UIManager.put("TabbedPane.tabInsets", defaultTabInsets);
-
         mainPane.setPreferredSize(mainPanePreferredSize);
         messagesPane = new MessagesPane();
         messagesPane.setPreferredSize(messagesPanePreferredSize);
-        splitter = new JSplitPane(JSplitPane.VERTICAL_SPLIT, mainPane, messagesPane);
+        JSplitPane splitter = new JSplitPane(JSplitPane.VERTICAL_SPLIT, mainPane, messagesPane);
         splitter.setOneTouchExpandable(true);
         splitter.resetToPreferredSizes();
-        horizonSplitter = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, splitter, registersPane);
+        JSplitPane horizonSplitter = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, splitter, registersPane);
         horizonSplitter.setOneTouchExpandable(true);
         horizonSplitter.resetToPreferredSizes();
 
@@ -221,6 +218,7 @@ public class VenusUI extends JFrame {
         // This is invoked when opening the app.  It will set the app to
         // appear at full screen size.
         this.addWindowListener(new WindowAdapter() {
+            @Override
             public void windowOpened(WindowEvent e) {
                 VenusUI.this.setExtendedState(JFrame.MAXIMIZED_BOTH);
             }
@@ -229,6 +227,7 @@ public class VenusUI extends JFrame {
         // This is invoked when exiting the app through the X icon.  It will in turn
         // check for unsaved edits before exiting.
         this.addWindowListener(new WindowAdapter() {
+            @Override
             public void windowClosing(WindowEvent e) {
                 if (VenusUI.this.editor.closeAll()) {
                     System.exit(0);
@@ -245,7 +244,7 @@ public class VenusUI extends JFrame {
         this.setVisible(true);
     }
 
-    /*
+    /**
      * Action objects are used instead of action listeners because one can be easily shared between
      * a menu item and a toolbar button.  Does nice things like disable both if the action is
      * disabled, etc.
@@ -268,7 +267,7 @@ public class VenusUI extends JFrame {
             editUndoAction = new EditUndoAction("Undo", new ImageIcon(tk.getImage(cs.getResource(Globals.IMAGES_PATH + "Undo22.png"))), "Undo last edit", KeyEvent.VK_U, KeyStroke.getKeyStroke(KeyEvent.VK_Z, tk.getMenuShortcutKeyMaskEx()), this);
             editRedoAction = new EditRedoAction("Redo", new ImageIcon(tk.getImage(cs.getResource(Globals.IMAGES_PATH + "Redo22.png"))), "Redo last edit", KeyEvent.VK_R, KeyStroke.getKeyStroke(KeyEvent.VK_Y, tk.getMenuShortcutKeyMaskEx()), this);
             editCutAction = new EditCutAction("Cut", new ImageIcon(tk.getImage(cs.getResource(Globals.IMAGES_PATH + "Cut22.gif"))), "Cut", KeyEvent.VK_C, KeyStroke.getKeyStroke(KeyEvent.VK_X, tk.getMenuShortcutKeyMaskEx()), this);
-            editCopyAction = new EditCopyAction("Copy", new ImageIcon(tk.getImage(cs.getResource(Globals.IMAGES_PATH + "Copy22.png"))), "Copy", KeyEvent.VK_O, KeyStroke.getKeyStroke(KeyEvent.VK_C, tk.getMenuShortcutKeyMaskEx()), this);
+            editCopyAction = new EditCopyAction(this, "Copy", new ImageIcon(tk.getImage(cs.getResource(Globals.IMAGES_PATH + "Copy22.png"))), "Copy", KeyEvent.VK_O, KeyStroke.getKeyStroke(KeyEvent.VK_C, tk.getMenuShortcutKeyMaskEx()));
             editPasteAction = new EditPasteAction("Paste", new ImageIcon(tk.getImage(cs.getResource(Globals.IMAGES_PATH + "Paste22.png"))), "Paste", KeyEvent.VK_P, KeyStroke.getKeyStroke(KeyEvent.VK_V, tk.getMenuShortcutKeyMaskEx()), this);
             editFindReplaceAction = new EditFindReplaceAction("Find/Replace", new ImageIcon(tk.getImage(cs.getResource(Globals.IMAGES_PATH + "Find22.png"))), "Find/Replace", KeyEvent.VK_F, KeyStroke.getKeyStroke(KeyEvent.VK_F, tk.getMenuShortcutKeyMaskEx()), this);
             editSelectAllAction = new EditSelectAllAction("Select All", null, "Select All", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_A, tk.getMenuShortcutKeyMaskEx()), this);
@@ -308,14 +307,11 @@ public class VenusUI extends JFrame {
         }
     }
 
-    /*
-     * build the menus and connect them to action objects (which serve as action listeners
+    /**
+     * Build the menus and connect them to action objects (which serve as action listeners
      * shared between menu item and corresponding toolbar icon).
      */
     private JMenuBar setUpMenuBar() {
-        Toolkit tk = Toolkit.getDefaultToolkit();
-        Class<?> cs = this.getClass();
-
         JMenuBar menuBar = new JMenuBar();
         file = new JMenu("File");
         file.setMnemonic(KeyEvent.VK_F);
@@ -326,8 +322,11 @@ public class VenusUI extends JFrame {
         settings = new JMenu("Settings");
         settings.setMnemonic(KeyEvent.VK_S);
         help = new JMenu("Help");
-        help.setMnemonic(KeyEvent.VK_H);
         // slight bug: user typing alt-H activates help menu item directly, not help menu
+        help.setMnemonic(KeyEvent.VK_H);
+
+        Toolkit tk = Toolkit.getDefaultToolkit();
+        Class<?> cs = this.getClass();
 
         fileNew = new JMenuItem(fileNewAction);
         fileNew.setIcon(new ImageIcon(tk.getImage(cs.getResource(Globals.IMAGES_PATH + "New16.png"))));
@@ -418,33 +417,33 @@ public class VenusUI extends JFrame {
         run.add(runToggleBreakpoints);
 
         settingsLabel = new JCheckBoxMenuItem(settingsLabelAction);
-        settingsLabel.setSelected(Globals.getSettings().getBoolean(Settings.LABEL_WINDOW_VISIBILITY));
+        settingsLabel.setSelected(Globals.getSettings().labelWindowVisible.get());
         settingsPopupInput = new JCheckBoxMenuItem(settingsPopupInputAction);
-        settingsPopupInput.setSelected(Globals.getSettings().getBoolean(Settings.POPUP_SYSCALL_INPUT));
+        settingsPopupInput.setSelected(Globals.getSettings().popupSyscallInput.get());
         settingsValueDisplayBase = new JCheckBoxMenuItem(settingsValueDisplayBaseAction);
-        settingsValueDisplayBase.setSelected(Globals.getSettings().getBoolean(Settings.DISPLAY_VALUES_IN_HEX));
+        settingsValueDisplayBase.setSelected(Globals.getSettings().displayValuesInHex.get());
         // Tell the corresponding JCheckBox in the Execute Pane about me -- it has already been created.
         mainPane.getExecutePane().getValueDisplayBaseChooser().setSettingsMenuItem(settingsValueDisplayBase);
         settingsAddressDisplayBase = new JCheckBoxMenuItem(settingsAddressDisplayBaseAction);
-        settingsAddressDisplayBase.setSelected(Globals.getSettings().getBoolean(Settings.DISPLAY_ADDRESSES_IN_HEX));
+        settingsAddressDisplayBase.setSelected(Globals.getSettings().displayAddressesInHex.get());
         // Tell the corresponding JCheckBox in the Execute Pane about me -- it has already been created.
         mainPane.getExecutePane().getAddressDisplayBaseChooser().setSettingsMenuItem(settingsAddressDisplayBase);
         settingsExtended = new JCheckBoxMenuItem(settingsExtendedAction);
-        settingsExtended.setSelected(Globals.getSettings().getBoolean(Settings.EXTENDED_ASSEMBLER_ENABLED));
+        settingsExtended.setSelected(Globals.getSettings().extendedAssemblerEnabled.get());
         settingsDelayedBranching = new JCheckBoxMenuItem(settingsDelayedBranchingAction);
-        settingsDelayedBranching.setSelected(Globals.getSettings().getBoolean(Settings.DELAYED_BRANCHING_ENABLED));
+        settingsDelayedBranching.setSelected(Globals.getSettings().delayedBranchingEnabled.get());
         settingsSelfModifyingCode = new JCheckBoxMenuItem(settingsSelfModifyingCodeAction);
-        settingsSelfModifyingCode.setSelected(Globals.getSettings().getBoolean(Settings.SELF_MODIFYING_CODE_ENABLED));
+        settingsSelfModifyingCode.setSelected(Globals.getSettings().selfModifyingCodeEnabled.get());
         settingsAssembleOnOpen = new JCheckBoxMenuItem(settingsAssembleOnOpenAction);
-        settingsAssembleOnOpen.setSelected(Globals.getSettings().getBoolean(Settings.ASSEMBLE_ON_OPEN_ENABLED));
+        settingsAssembleOnOpen.setSelected(Globals.getSettings().assembleOnOpenEnabled.get());
         settingsAssembleAll = new JCheckBoxMenuItem(settingsAssembleAllAction);
-        settingsAssembleAll.setSelected(Globals.getSettings().getBoolean(Settings.ASSEMBLE_ALL_ENABLED));
+        settingsAssembleAll.setSelected(Globals.getSettings().assembleAllEnabled.get());
         settingsWarningsAreErrors = new JCheckBoxMenuItem(settingsWarningsAreErrorsAction);
-        settingsWarningsAreErrors.setSelected(Globals.getSettings().getBoolean(Settings.WARNINGS_ARE_ERRORS));
+        settingsWarningsAreErrors.setSelected(Globals.getSettings().warningsAreErrors.get());
         settingsStartAtMain = new JCheckBoxMenuItem(settingsStartAtMainAction);
-        settingsStartAtMain.setSelected(Globals.getSettings().getBoolean(Settings.START_AT_MAIN));
+        settingsStartAtMain.setSelected(Globals.getSettings().startAtMain.get());
         settingsProgramArguments = new JCheckBoxMenuItem(settingsProgramArgumentsAction);
-        settingsProgramArguments.setSelected(Globals.getSettings().getBoolean(Settings.PROGRAM_ARGUMENTS));
+        settingsProgramArguments.setSelected(Globals.getSettings().useProgramArguments.get());
         settingsEditor = new JMenuItem(settingsEditorAction);
         settingsHighlighting = new JMenuItem(settingsHighlightingAction);
         settingsExceptionHandler = new JMenuItem(settingsExceptionHandlerAction);
@@ -491,7 +490,7 @@ public class VenusUI extends JFrame {
         return menuBar;
     }
 
-    /*
+    /**
      * Build the toolbar and connect items to action objects (which serve as action listeners
      * shared between toolbar icon and corresponding menu item).
      */
@@ -572,18 +571,19 @@ public class VenusUI extends JFrame {
         return toolBar;
     }
 
-    /*
+    /**
      * Determine from FileStatus what the menu state (enabled/disabled) should
      * be then call the appropriate method to set it.  Current states are:
-     *
-     * setMenuStateInitial: set upon startup and after File->Close
-     * setMenuStateEditingNew: set upon File->New
-     * setMenuStateEditing: set upon File->Open or File->Save or erroneous Run->Assemble
-     * setMenuStateRunnable: set upon successful Run->Assemble
-     * setMenuStateRunning: set upon Run->Go
-     * setMenuStateTerminated: set upon completion of simulated execution
+     * <ul>
+     * <li>setMenuStateInitial: set upon startup and after File->Close
+     * <li>setMenuStateEditingNew: set upon File->New
+     * <li>setMenuStateEditing: set upon File->Open or File->Save or erroneous Run->Assemble
+     * <li>setMenuStateRunnable: set upon successful Run->Assemble
+     * <li>setMenuStateRunning: set upon Run->Go
+     * <li>setMenuStateTerminated: set upon completion of simulated execution
+     * </ul>
      */
-    void setMenuState(int status) {
+    public void setMenuState(int status) {
         menuState = status;
         switch (status) {
             case FileStatus.NO_FILE -> setMenuStateInitial();
@@ -631,13 +631,14 @@ public class VenusUI extends JFrame {
         runToggleBreakpointsAction.setEnabled(false);
         helpHelpAction.setEnabled(true);
         helpAboutAction.setEnabled(true);
-        editUndoAction.updateUndoState();
-        editRedoAction.updateRedoState();
+        updateUndoRedoActions();
     }
 
-    /* Added DPS 9-Aug-2011, for newly-opened files.  Retain
-        existing Run menu state (except Assemble, which is always true).
-         Thus if there was a valid assembly it is retained. */
+    /*
+     * Added DPS 9-Aug-2011, for newly-opened files.  Retain
+     * existing Run menu state (except Assemble, which is always true).
+     * Thus if there was a valid assembly it is retained.
+     */
     void setMenuStateNotEdited() {
         // Note: undo and redo are handled separately by the undo manager
         fileNewAction.setEnabled(true);
@@ -650,6 +651,7 @@ public class VenusUI extends JFrame {
         fileDumpMemoryAction.setEnabled(false);
         filePrintAction.setEnabled(true);
         fileExitAction.setEnabled(true);
+        updateUndoRedoActions();
         editCutAction.setEnabled(true);
         editCopyAction.setEnabled(true);
         editPasteAction.setEnabled(true);
@@ -660,7 +662,7 @@ public class VenusUI extends JFrame {
         runAssembleAction.setEnabled(true);
         // If assemble-all, allow previous Run menu settings to remain.
         // Otherwise, clear them out.  DPS 9-Aug-2011
-        if (!Globals.getSettings().getBoolean(Settings.ASSEMBLE_ALL_ENABLED)) {
+        if (!Globals.getSettings().assembleAllEnabled.get()) {
             runGoAction.setEnabled(false);
             runStepAction.setEnabled(false);
             runBackstepAction.setEnabled(false);
@@ -672,8 +674,6 @@ public class VenusUI extends JFrame {
         }
         helpHelpAction.setEnabled(true);
         helpAboutAction.setEnabled(true);
-        editUndoAction.updateUndoState();
-        editRedoAction.updateRedoState();
     }
 
     void setMenuStateEditing() {
@@ -688,6 +688,7 @@ public class VenusUI extends JFrame {
         fileDumpMemoryAction.setEnabled(false);
         filePrintAction.setEnabled(true);
         fileExitAction.setEnabled(true);
+        updateUndoRedoActions();
         editCutAction.setEnabled(true);
         editCopyAction.setEnabled(true);
         editPasteAction.setEnabled(true);
@@ -706,8 +707,6 @@ public class VenusUI extends JFrame {
         runToggleBreakpointsAction.setEnabled(false);
         helpHelpAction.setEnabled(true);
         helpAboutAction.setEnabled(true);
-        editUndoAction.updateUndoState();
-        editRedoAction.updateRedoState();
     }
 
     /**
@@ -725,6 +724,7 @@ public class VenusUI extends JFrame {
         fileDumpMemoryAction.setEnabled(false);
         filePrintAction.setEnabled(true);
         fileExitAction.setEnabled(true);
+        updateUndoRedoActions();
         editCutAction.setEnabled(true);
         editCopyAction.setEnabled(true);
         editPasteAction.setEnabled(true);
@@ -743,8 +743,6 @@ public class VenusUI extends JFrame {
         runToggleBreakpointsAction.setEnabled(false);
         helpHelpAction.setEnabled(true);
         helpAboutAction.setEnabled(true);
-        editUndoAction.updateUndoState();
-        editRedoAction.updateRedoState();
     }
 
     /**
@@ -762,6 +760,7 @@ public class VenusUI extends JFrame {
         fileDumpMemoryAction.setEnabled(true);
         filePrintAction.setEnabled(true);
         fileExitAction.setEnabled(true);
+        updateUndoRedoActions();
         editCutAction.setEnabled(true);
         editCopyAction.setEnabled(true);
         editPasteAction.setEnabled(true);
@@ -779,8 +778,6 @@ public class VenusUI extends JFrame {
         runToggleBreakpointsAction.setEnabled(true);
         helpHelpAction.setEnabled(true);
         helpAboutAction.setEnabled(true);
-        editUndoAction.updateUndoState();
-        editRedoAction.updateRedoState();
     }
 
     /**
@@ -797,6 +794,8 @@ public class VenusUI extends JFrame {
         fileDumpMemoryAction.setEnabled(false);
         filePrintAction.setEnabled(false);
         fileExitAction.setEnabled(false);
+        editUndoAction.setEnabled(false); // DPS 10 Jan 2008
+        editRedoAction.setEnabled(false); // DPS 10 Jan 2008
         editCutAction.setEnabled(false);
         editCopyAction.setEnabled(false);
         editPasteAction.setEnabled(false);
@@ -814,8 +813,6 @@ public class VenusUI extends JFrame {
         runToggleBreakpointsAction.setEnabled(false);
         helpHelpAction.setEnabled(true);
         helpAboutAction.setEnabled(true);
-        editUndoAction.setEnabled(false);//updateUndoState(); // DPS 10 Jan 2008
-        editRedoAction.setEnabled(false);//updateRedoState(); // DPS 10 Jan 2008
     }
 
     /**
@@ -833,6 +830,7 @@ public class VenusUI extends JFrame {
         fileDumpMemoryAction.setEnabled(true);
         filePrintAction.setEnabled(true);
         fileExitAction.setEnabled(true);
+        updateUndoRedoActions();
         editCutAction.setEnabled(true);
         editCopyAction.setEnabled(true);
         editPasteAction.setEnabled(true);
@@ -850,8 +848,15 @@ public class VenusUI extends JFrame {
         runToggleBreakpointsAction.setEnabled(true);
         helpHelpAction.setEnabled(true);
         helpAboutAction.setEnabled(true);
-        editUndoAction.updateUndoState();
-        editRedoAction.updateRedoState();
+    }
+
+    /**
+     * Automatically update whether the Undo and Redo actions are enabled or disabled
+     * based on the status of the {@link javax.swing.undo.UndoManager}.
+     */
+    public void updateUndoRedoActions() {
+        editUndoAction.updateEnabledStatus();
+        editRedoAction.updateEnabledStatus();
     }
 
     /**
@@ -878,7 +883,7 @@ public class VenusUI extends JFrame {
     }
 
     /**
-     * To set whether the register values are reset.
+     * Set whether the register values are reset.
      *
      * @param reset Boolean true if the register values have been reset.
      */
@@ -887,7 +892,7 @@ public class VenusUI extends JFrame {
     }
 
     /**
-     * To set whether MIPS program execution has started.
+     * Set whether MIPS program execution has started.
      *
      * @param started true if the MIPS program execution has started.
      */
@@ -896,7 +901,7 @@ public class VenusUI extends JFrame {
     }
 
     /**
-     * To find out whether the register values are reset.
+     * Get whether the register values are reset.
      *
      * @return Boolean true if the register values have been reset.
      */
@@ -905,7 +910,7 @@ public class VenusUI extends JFrame {
     }
 
     /**
-     * To find out whether MIPS program is currently executing.
+     * Get whether MIPS program is currently executing.
      *
      * @return true if MIPS program is currently executing.
      */
@@ -914,7 +919,7 @@ public class VenusUI extends JFrame {
     }
 
     /**
-     * Get reference to Editor object associated with this GUI.
+     * Get a reference to the text editor associated with this GUI.
      *
      * @return Editor for the GUI.
      */
@@ -923,18 +928,18 @@ public class VenusUI extends JFrame {
     }
 
     /**
-     * Get reference to messages pane associated with this GUI.
+     * Get a reference to the main pane associated with this GUI.
      *
-     * @return MessagesPane object associated with the GUI.
+     * @return MainPane for the GUI.
      */
     public MainPane getMainPane() {
         return mainPane;
     }
 
     /**
-     * Get reference to messages pane associated with this GUI.
+     * Get a reference to the messages pane associated with this GUI.
      *
-     * @return MessagesPane object associated with the GUI.
+     * @return MessagesPane for the GUI.
      */
     public MessagesPane getMessagesPane() {
         return messagesPane;
@@ -943,32 +948,32 @@ public class VenusUI extends JFrame {
     /**
      * Get reference to registers pane associated with this GUI.
      *
-     * @return RegistersPane object associated with the GUI.
+     * @return RegistersPane for the GUI.
      */
     public RegistersPane getRegistersPane() {
         return registersPane;
     }
 
     /**
-     * Get reference to settings menu item for display base of memory/register values.
+     * Get a reference to the settings menu checkbox for the display base of memory/register values.
      *
-     * @return the menu item
+     * @return The checkbox menu item.
      */
     public JCheckBoxMenuItem getValueDisplayBaseMenuItem() {
         return settingsValueDisplayBase;
     }
 
     /**
-     * Get reference to settings menu item for display base of memory/register values.
+     * Get a reference to the settings menu checkbox for the display base of memory addresses.
      *
-     * @return the menu item
+     * @return The checkbox menu item.
      */
     public JCheckBoxMenuItem getAddressDisplayBaseMenuItem() {
         return settingsAddressDisplayBase;
     }
 
     /**
-     * Return reference to the Run->Assemble item's action.  Needed by File->Open in case
+     * Get a reference to the Run->Assemble action.  Needed by File->Open in case the
      * assemble-upon-open flag is set.
      *
      * @return the Action object for the Run->Assemble operation.

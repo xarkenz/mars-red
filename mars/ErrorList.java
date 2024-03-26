@@ -152,7 +152,7 @@ public class ErrorList {
      * @return error limit.
      */
     public int getErrorLimit() {
-        return Globals.maximumErrorMessages;
+        return Globals.MAXIMUM_ERROR_MESSAGES;
     }
 
     /**

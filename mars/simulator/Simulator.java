@@ -8,9 +8,9 @@ import mars.mips.hardware.RegisterFile;
 import mars.mips.instructions.BasicInstruction;
 import mars.util.Binary;
 import mars.util.SystemIO;
-import mars.venus.RunGoAction;
+import mars.venus.actions.run.RunGoAction;
 import mars.venus.RunSpeedPanel;
-import mars.venus.RunStepAction;
+import mars.venus.actions.run.RunStepAction;
 
 import javax.swing.*;
 import java.util.ArrayList;
@@ -90,7 +90,7 @@ public class Simulator extends Observable {
 
     private Simulator() {
         simulatorThread = null;
-        if (Globals.getGui() != null) {
+        if (Globals.getGUI() != null) {
             interactiveGUIUpdater = new UpdateGUI();
         }
     }
@@ -225,7 +225,7 @@ public class Simulator extends Observable {
          * @param starter        the GUI component responsible for this call, usually GO or STEP.  null if none.
          */
         SimulatorThread(MIPSprogram program, int programCounter, int maxSteps, int[] breakPoints, AbstractAction starter) {
-            super(Globals.getGui() != null);
+            super(Globals.getGUI() != null);
             this.program = program;
             this.programCounter = programCounter;
             this.maxSteps = maxSteps;
@@ -430,7 +430,7 @@ public class Simulator extends Observable {
                 if (interactiveGUIUpdater != null && maxSteps != 1 && RunSpeedPanel.getInstance().getRunSpeed() < RunSpeedPanel.UNLIMITED_SPEED) {
                     SwingUtilities.invokeLater(interactiveGUIUpdater);
                 }
-                if (Globals.getGui() != null || Globals.runSpeedPanelExists) { // OR added by DPS 24 July 2008 to enable speed control by stand-alone tool
+                if (Globals.getGUI() != null || Globals.runSpeedPanelExists) { // OR added by DPS 24 July 2008 to enable speed control by stand-alone tool
                     if (maxSteps != 1 && RunSpeedPanel.getInstance().getRunSpeed() < RunSpeedPanel.UNLIMITED_SPEED) {
                         try {
                             Thread.sleep((int) (1000 / RunSpeedPanel.getInstance().getRunSpeed())); // make sure it's never zero!
@@ -488,7 +488,7 @@ public class Simulator extends Observable {
          */
         public void finished() {
             // If running from the command-line, then there is no GUI to update.
-            if (Globals.getGui() == null) {
+            if (Globals.getGUI() == null) {
                 return;
             }
             String starterName = (String) starter.getValue(AbstractAction.NAME);
@@ -517,15 +517,15 @@ public class Simulator extends Observable {
 
     private static class UpdateGUI implements Runnable {
         public void run() {
-            if (Globals.getGui().getRegistersPane().getSelectedComponent() == Globals.getGui().getMainPane().getExecutePane().getRegistersWindow()) {
-                Globals.getGui().getMainPane().getExecutePane().getRegistersWindow().updateRegisters();
+            if (Globals.getGUI().getRegistersPane().getSelectedComponent() == Globals.getGUI().getMainPane().getExecutePane().getRegistersWindow()) {
+                Globals.getGUI().getMainPane().getExecutePane().getRegistersWindow().updateRegisters();
             }
             else {
-                Globals.getGui().getMainPane().getExecutePane().getCoprocessor1Window().updateRegisters();
+                Globals.getGUI().getMainPane().getExecutePane().getCoprocessor1Window().updateRegisters();
             }
-            Globals.getGui().getMainPane().getExecutePane().getDataSegmentWindow().updateValues();
-            Globals.getGui().getMainPane().getExecutePane().getTextSegmentWindow().setCodeHighlighting(true);
-            Globals.getGui().getMainPane().getExecutePane().getTextSegmentWindow().highlightStepAtPC();
+            Globals.getGUI().getMainPane().getExecutePane().getDataSegmentWindow().updateValues();
+            Globals.getGUI().getMainPane().getExecutePane().getTextSegmentWindow().setCodeHighlighting(true);
+            Globals.getGUI().getMainPane().getExecutePane().getTextSegmentWindow().highlightStepAtPC();
         }
     }
 }

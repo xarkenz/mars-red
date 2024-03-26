@@ -3,8 +3,6 @@ package mars.venus;
 import mars.Globals;
 
 import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import java.awt.*;
 	
 /*
@@ -49,22 +47,23 @@ public class RunSpeedPanel extends JPanel {
      * will not attempt to update register and memory contents as each instruction
      * is executed.  This is the only possible value for command-line use of Mars.
      */
-    public final static double UNLIMITED_SPEED = 40;
+    public static final double UNLIMITED_SPEED = 40;
 
-    private final static int SPEED_INDEX_MIN = 0;
-    private final static int SPEED_INDEX_MAX = 40;
-    private final static int SPEED_INDEX_INIT = 40;
+    private static final int SPEED_INDEX_MIN = 0;
+    private static final int SPEED_INDEX_MAX = 40;
+    private static final int SPEED_INDEX_INIT = 40;
     private static final int SPEED_INDEX_INTERACTION_LIMIT = 35;
-    private final double[] speedTable = {
+    private static final double[] RUN_SPEED_TABLE = {
         .05, .1, .2, .3, .4, .5, 1, 2, 3, 4, 5, // 0-10
         6, 7, 8, 9, 10, 11, 12, 13, 14, 15, // 11-20
         16, 17, 18, 19, 20, 21, 22, 23, 24, 25, // 21-30
         26, 27, 28, 29, 30, UNLIMITED_SPEED, UNLIMITED_SPEED, // 31-37
         UNLIMITED_SPEED, UNLIMITED_SPEED, UNLIMITED_SPEED // 38-40
     };
-    private JLabel sliderLabel = null;
-    private static RunSpeedPanel runSpeedPanel = null;
+
     private volatile int runSpeedIndex = SPEED_INDEX_MAX;
+
+    private static RunSpeedPanel instance = null;
 
     /**
      * Retrieve the run speed panel object.
@@ -72,11 +71,11 @@ public class RunSpeedPanel extends JPanel {
      * @return The run speed panel.
      */
     public static RunSpeedPanel getInstance() {
-        if (runSpeedPanel == null) {
-            runSpeedPanel = new RunSpeedPanel();
+        if (instance == null) {
+            instance = new RunSpeedPanel();
             Globals.runSpeedPanelExists = true; // DPS 24 July 2008 (needed for standalone tools)
         }
-        return runSpeedPanel;
+        return instance;
     }
 
     /**
@@ -84,12 +83,22 @@ public class RunSpeedPanel extends JPanel {
      */
     private RunSpeedPanel() {
         super(new BorderLayout());
+
+        this.setToolTipText("Simulation speed for program execution. At "
+            + ((int) RUN_SPEED_TABLE[SPEED_INDEX_INTERACTION_LIMIT])
+            + " instructions per second or less, the interface is updated after each instruction.");
+
+        final JLabel sliderLabel = new JLabel(setLabel(runSpeedIndex));
+        sliderLabel.setHorizontalAlignment(JLabel.CENTER);
+        sliderLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        this.add(sliderLabel, BorderLayout.NORTH);
+
         JSlider runSpeedSlider = new JSlider(JSlider.HORIZONTAL, SPEED_INDEX_MIN, SPEED_INDEX_MAX, SPEED_INDEX_INIT);
         runSpeedSlider.setMajorTickSpacing(5);
         runSpeedSlider.setPaintTicks(true); // Create the label table
-        runSpeedSlider.addChangeListener(e -> {
+        runSpeedSlider.addChangeListener(event -> {
             // Revise label as user slides and update current index when sliding stops
-            JSlider source = (JSlider) e.getSource();
+            JSlider source = (JSlider) event.getSource();
             if (!source.getValueIsAdjusting()) {
                 runSpeedIndex = source.getValue();
             }
@@ -97,14 +106,7 @@ public class RunSpeedPanel extends JPanel {
                 sliderLabel.setText(setLabel(source.getValue()));
             }
         });
-        sliderLabel = new JLabel(setLabel(runSpeedIndex));
-        sliderLabel.setHorizontalAlignment(JLabel.CENTER);
-        sliderLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        this.add(sliderLabel, BorderLayout.NORTH);
         this.add(runSpeedSlider, BorderLayout.SOUTH);
-        this.setToolTipText("Simulation speed for program execution. At "
-            + ((int) speedTable[SPEED_INDEX_INTERACTION_LIMIT])
-            + " instructions per second or less, the interface is updated after each instruction.");
     }
 
     /**
@@ -114,7 +116,7 @@ public class RunSpeedPanel extends JPanel {
      * @return Run speed setting in instructions/second.
      */
     public double getRunSpeed() {
-        return speedTable[runSpeedIndex];
+        return RUN_SPEED_TABLE[runSpeedIndex];
     }
 
     /**
@@ -123,11 +125,11 @@ public class RunSpeedPanel extends JPanel {
     private String setLabel(int index) {
         StringBuilder result = new StringBuilder("Run speed: ");
         if (index <= SPEED_INDEX_INTERACTION_LIMIT) {
-            if (speedTable[index] < 1) {
-                result.append(speedTable[index]).append(" instructions per second");
+            if (RUN_SPEED_TABLE[index] < 1) {
+                result.append(RUN_SPEED_TABLE[index]).append(" instructions per second");
             }
             else {
-                result.append((int) speedTable[index]).append(" instructions per second");
+                result.append((int) RUN_SPEED_TABLE[index]).append(" instructions per second");
             }
         }
         else {

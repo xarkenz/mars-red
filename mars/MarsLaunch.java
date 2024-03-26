@@ -1,8 +1,11 @@
 package mars;
 
+import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.FlatLaf;
 import mars.mips.dump.DumpFormat;
 import mars.mips.dump.DumpFormatLoader;
 import mars.mips.hardware.*;
+import mars.settings.Settings;
 import mars.simulator.ProgramArgumentList;
 import mars.util.Binary;
 import mars.util.FilenameFinder;
@@ -10,10 +13,7 @@ import mars.util.MemoryDump;
 import mars.venus.VenusUI;
 
 import javax.swing.*;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Observable;
@@ -88,58 +88,61 @@ public class MarsLaunch {
      * Mars takes a number of command line arguments.<br>
      * Usage:  Mars  [options] filename<br>
      * Valid options (not case sensitive, separate by spaces) are:<br>
-     * a  -- assemble only, do not simulate<br>
-     * ad  -- both a and d<br>
-     * ae<n>  -- terminate MARS with integer exit code <n> if an assemble error occurs.<br>
-     * ascii  -- display memory or register contents interpreted as ASCII
-     * b  -- brief - do not display register/memory address along with contents<br>
-     * d  -- print debugging statements<br>
-     * da  -- both a and d<br>
-     * db  -- MIPS delayed branching is enabled.<br>
-     * dec  -- display memory or register contents in decimal.<br>
-     * dump  -- dump memory contents to file.  Option has 3 arguments, e.g. <br>
-     * <tt>dump &lt;segment&gt; &lt;format&gt; &lt;file&gt;</tt>.  Also supports<br>
-     * an address range (see <i>m-n</i> below).  Current supported <br>
-     * segments are <tt>.text</tt> and <tt>.data</tt>.  Current supported dump formats <br>
-     * are <tt>Binary</tt>, <tt>HexText</tt>, <tt>BinaryText</tt>.<br>
-     * h  -- display help.  Use by itself and with no filename</br>
-     * hex  -- display memory or register contents in hexadecimal (default)<br>
-     * ic  -- display count of MIPS basic instructions 'executed'");
-     * mc  -- set memory configuration.  Option has 1 argument, e.g.<br>
-     * <tt>mc &lt;config$gt;</tt>, where &lt;config$gt; is <tt>Default</tt><br>
-     * for the MARS default 32-bit address space, <tt>CompactDataAtZero</tt> for<br>
-     * a 32KB address space with data segment at address 0, or <tt>CompactTextAtZero</tt><br>
-     * for a 32KB address space with text segment at address 0.<br>
-     * me  -- display MARS messages to standard err instead of standard out. Can separate via redirection.</br>
-     * nc  -- do not display copyright notice (for cleaner redirected/piped output).</br>
-     * np  -- No Pseudo-instructions allowed ("ne" will work also).<br>
-     * p  -- Project mode - assemble all files in the same directory as given file.<br>
-     * se<n>  -- terminate MARS with integer exit code <n> if a simulation (run) error occurs.<br>
-     * sm  -- Start execution at Main - Execution will start at program statement globally labeled main.<br>
-     * smc  -- Self Modifying Code - Program can write and branch to either text or data segment<br>
-     * we  -- assembler Warnings will be considered Errors<br>
-     * <n>  -- where <n> is an integer maximum count of steps to simulate.<br>
-     * If 0, negative or not specified, there is no maximum.<br>
-     * $<reg>  -- where <reg> is number or name (e.g. 5, t3, f10) of register whose <br>
-     * content to display at end of run.  Option may be repeated.<br>
-     * <reg_name>  -- where <reg_name> is name (e.g. t3, f10) of register whose <br>
-     * content to display at end of run.  Option may be repeated. $ not required.<br>
-     * <m>-<n>  -- memory address range from <m> to <n> whose contents to<br>
-     * display at end of run. <m> and <n> may be hex or decimal,<br>
-     * <m> <= <n>, both must be on word boundary.  Option may be repeated.<br>
-     * pa  -- Program Arguments follow in a space-separated list.  This<br>
-     * option must be placed AFTER ALL FILE NAMES, because everything<br>
-     * that follows it is interpreted as a program argument to be<br>
-     * made available to the MIPS program at runtime.<br>
+     * <ul>
+     * <li>a  -- assemble only, do not simulate<br>
+     * <li>ad  -- both a and d<br>
+     * <li>ae&lt;n&gt;  -- terminate MARS with integer exit code &lt;n&gt; if an assemble error occurs.<br>
+     * <li>ascii  -- display memory or register contents interpreted as ASCII
+     * <li>b  -- brief - do not display register/memory address along with contents<br>
+     * <li>d  -- print debugging statements<br>
+     * <li>da  -- both a and d<br>
+     * <li>db  -- MIPS delayed branching is enabled.<br>
+     * <li>dec  -- display memory or register contents in decimal.<br>
+     * <li>dump  -- dump memory contents to file.  Option has 3 arguments, e.g. <br>
+     *   <tt>dump &lt;segment&gt; &lt;format&gt; &lt;file&gt;</tt>.  Also supports<br>
+     *   an address range (see <i>m-n</i> below).  Current supported <br>
+     *   segments are <tt>.text</tt> and <tt>.data</tt>.  Current supported dump formats <br>
+     *   are <tt>Binary</tt>, <tt>HexText</tt>, <tt>BinaryText</tt>.<br>
+     * <li>h  -- display help.  Use by itself and with no filename</br>
+     * <li>hex  -- display memory or register contents in hexadecimal (default)<br>
+     * <li>ic  -- display count of MIPS basic instructions 'executed'");
+     * <li>mc  -- set memory configuration.  Option has 1 argument, e.g.<br>
+     *   <tt>mc &lt;config$gt;</tt>, where &lt;config&gt; is <tt>Default</tt><br>
+     *   for the MARS default 32-bit address space, <tt>CompactDataAtZero</tt> for<br>
+     *   a 32KB address space with data segment at address 0, or <tt>CompactTextAtZero</tt><br>
+     *   for a 32KB address space with text segment at address 0.<br>
+     * <li>me  -- display MARS messages to standard err instead of standard out. Can separate via redirection.</br>
+     * <li>nc  -- do not display copyright notice (for cleaner redirected/piped output).</br>
+     * <li>np  -- No Pseudo-instructions allowed ("ne" will work also).<br>
+     * <li>p  -- Project mode - assemble all files in the same directory as given file.<br>
+     * <li>se&lt;n&gt;  -- terminate MARS with integer exit code &lt;n&gt; if a simulation (run) error occurs.<br>
+     * <li>sm  -- Start execution at Main - Execution will start at program statement globally labeled main.<br>
+     * <li>smc  -- Self Modifying Code - Program can write and branch to either text or data segment<br>
+     * <li>we  -- assembler Warnings will be considered Errors<br>
+     * <li>&lt;n&gt;  -- where &lt;n&gt; is an integer maximum count of steps to simulate.<br>
+     *   If 0, negative or not specified, there is no maximum.<br>
+     * <li>$&lt;reg&gt;  -- where &lt;reg&gt; is number or name (e.g. 5, t3, f10) of register whose <br>
+     *   content to display at end of run.  Option may be repeated.<br>
+     * <li>&lt;reg_name&gt;  -- where &lt;reg_name&gt; is name (e.g. t3, f10) of register whose <br>
+     *   content to display at end of run.  Option may be repeated. $ not required.<br>
+     * <li>&lt;m&gt;-&lt;n&gt;  -- memory address range from &lt;m&gt; to &lt;n&gt; whose contents to<br>
+     *   display at end of run. &lt;m&gt; and &lt;n&gt; may be hex or decimal,<br>
+     *   &lt;m&gt; <= &lt;n&gt;, both must be on word boundary.  Option may be repeated.<br>
+     * <li>pa  -- Program Arguments follow in a space-separated list.  This<br>
+     *   option must be placed AFTER ALL FILE NAMES, because everything<br>
+     *   that follows it is interpreted as a program argument to be<br>
+     *   made available to the MIPS program at runtime.<br>
+     * </ul>
      */
     public MarsLaunch(String[] args) {
-        boolean gui = (args.length == 0);
-        Globals.initialize(gui);
-        if (gui) {
-            launchIDE();
+        Globals.initialize();
+        if (args.length == 0) {
+            // Running graphical user interface
+            launchGUI();
         }
-        else { // running from command line.
-            // assure command mode works in headless environment (generates exception if not)
+        else {
+            // Running from command line
+            // Assure command mode works in headless environment (generates exception if not)
             System.setProperty("java.awt.headless", "true");
             simulate = true;
             displayFormat = HEXADECIMAL;
@@ -228,26 +231,29 @@ public class MarsLaunch {
         }
     }
 
-    /////////////////////////////////////////////////////////////////
-    // There are no command arguments, so run in interactive mode by
-    // launching the GUI-fronted integrated development environment.
-
-    private void launchIDE() {
-        // System.setProperty("apple.laf.useScreenMenuBar", "true"); // Puts MARS menu on Mac OS menu bar
+    /**
+     * There are no command arguments, so run in interactive mode by
+     * launching the GUI-fronted integrated development environment.
+     */
+    private void launchGUI() {
         new MarsSplashScreen(SPLASH_DURATION_MILLIS).showSplash();
         SwingUtilities.invokeLater(() -> {
-            //
+            // Designate the "themes" folder for theme style overrides
+            FlatLaf.registerCustomDefaultsSource("themes");
+            // Set up the look and feel
+            FlatDarkLaf.setup();
+            // Initialize the GUI
             new VenusUI("MARS Red " + Globals.MARS_VERSION);
         });
     }
 
-    //////////////////////////////////////////////////////////////////////
-    // Parse command line arguments.  The initial parsing has already been
-    // done, since each space-separated argument is already in a String array
-    // element.  Here, we check for validity, set switch variables as appropriate
-    // and build data structures.  For help option (h), display the help.
-    // Returns true if command args parse OK, false otherwise.
-
+    /**
+     * Parse command line arguments.  The initial parsing has already been
+     * done, since each space-separated argument is already in a String array
+     * element.  Here, we check for validity, set switch variables as appropriate
+     * and build data structures.  For help option (h), display the help.
+     * Returns true if command args parse OK, false otherwise.
+     */
     private boolean parseCommandArgs(String[] args) {
         String noCopyrightSwitch = "nc";
         String displayMessagesToErrSwitch = "me";
@@ -453,12 +459,12 @@ public class MarsLaunch {
         }
         boolean programRan = false;
         try {
-            Globals.getSettings().setBooleanSettingNonPersistent(Settings.DELAYED_BRANCHING_ENABLED, delayedBranching);
-            Globals.getSettings().setBooleanSettingNonPersistent(Settings.SELF_MODIFYING_CODE_ENABLED, selfModifyingCode);
+            Globals.getSettings().delayedBranchingEnabled.setNonPersistent(delayedBranching);
+            Globals.getSettings().selfModifyingCodeEnabled.setNonPersistent(selfModifyingCode);
             File mainFile = new File(filenameList.get(0)).getAbsoluteFile();// First file is "main" file
             ArrayList<String> filesToAssemble;
             if (assembleProject) {
-                filesToAssemble = FilenameFinder.getFilenameList(mainFile.getParent(), Globals.fileExtensions);
+                filesToAssemble = FilenameFinder.getFilenameList(mainFile.getParent(), Globals.FILE_EXTENSIONS);
                 if (filenameList.size() > 1) {
                     // Using "p" project option PLUS listing more than one filename on command line.
                     // Add the additional files, avoiding duplicates.

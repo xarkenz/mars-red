@@ -1,7 +1,7 @@
 package mars.venus;
 
 import mars.Globals;
-import mars.Settings;
+import mars.settings.Settings;
 import mars.mips.hardware.*;
 import mars.simulator.Simulator;
 import mars.simulator.SimulatorNotice;
@@ -216,7 +216,7 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
      *
      * @param address data segment address of word to be selected.
      */
-    void highlightCellForAddress(int address) {
+    public void highlightCellForAddress(int address) {
         Point rowColumn = displayCellForAddress(address);
         if (rowColumn == null || rowColumn.x < 0 || rowColumn.y < 0) {
             return;
@@ -414,8 +414,8 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
      */
     private JScrollPane generateDataPanel() {
         dataData = new Object[NUMBER_OF_ROWS][NUMBER_OF_COLUMNS];
-        int valueBase = Globals.getGui().getMainPane().getExecutePane().getValueDisplayBase();
-        int addressBase = Globals.getGui().getMainPane().getExecutePane().getAddressDisplayBase();
+        int valueBase = Globals.getGUI().getMainPane().getExecutePane().getValueDisplayBase();
+        int addressBase = Globals.getGUI().getMainPane().getExecutePane().getAddressDisplayBase();
         int address = this.homeAddress;
         for (int row = 0; row < NUMBER_OF_ROWS; row++) {
             dataData[row][ADDRESS_COLUMN] = NumberDisplayBaseChooser.formatUnsignedInteger(address, addressBase);
@@ -492,7 +492,7 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
     }
 
     private int getValueDisplayFormat() {
-        return (asciiDisplay) ? NumberDisplayBaseChooser.ASCII : Globals.getGui().getMainPane().getExecutePane().getValueDisplayBase();
+        return (asciiDisplay) ? NumberDisplayBaseChooser.ASCII : Globals.getGUI().getMainPane().getExecutePane().getValueDisplayBase();
     }
 
     /**
@@ -507,7 +507,7 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
             return;
         }
         int valueBase = getValueDisplayFormat();
-        int addressBase = Globals.getGui().getMainPane().getExecutePane().getAddressDisplayBase();
+        int addressBase = Globals.getGUI().getMainPane().getExecutePane().getAddressDisplayBase();
         int address = firstAddr;
         TableModel dataModel = dataTable.getModel();
         for (int row = 0; row < NUMBER_OF_ROWS; row++) {
@@ -523,15 +523,15 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
                     // temporarily enabling the setting as "non persistent" so it won't write through to the registry.
                     if (Memory.inTextSegment(address)) {
                         int displayValue = 0;
-                        if (!Globals.getSettings().getBoolean(Settings.SELF_MODIFYING_CODE_ENABLED)) {
-                            Globals.getSettings().setBooleanSettingNonPersistent(Settings.SELF_MODIFYING_CODE_ENABLED, true);
+                        if (!Globals.getSettings().selfModifyingCodeEnabled.get()) {
+                            Globals.getSettings().selfModifyingCodeEnabled.setNonPersistent(true);
                             try {
                                 displayValue = Globals.memory.getWordNoNotify(address);
                             }
                             catch (AddressErrorException e1) {
                                 // Still got an exception?  Doesn't seem possible but if we drop through it will write default value 0.
                             }
-                            Globals.getSettings().setBooleanSettingNonPersistent(Settings.SELF_MODIFYING_CODE_ENABLED, false);
+                            Globals.getSettings().selfModifyingCodeEnabled.setNonPersistent(false);
                         }
                         ((DataTableModel) dataModel).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(displayValue, valueBase), row, column);
                     }
@@ -560,7 +560,7 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
         }
         int row = offset / BYTES_PER_ROW;
         int column = (offset % BYTES_PER_ROW) / BYTES_PER_VALUE + 1; // column 0 reserved for address
-        int valueBase = Globals.getGui().getMainPane().getExecutePane().getValueDisplayBase();
+        int valueBase = Globals.getGUI().getMainPane().getExecutePane().getValueDisplayBase();
         ((DataTableModel) dataTable.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(value, valueBase), row, column);
     }
 
@@ -572,7 +572,7 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
         if (tablePanel.getComponentCount() == 0) {
             return; // ignore if no content to change
         }
-        int addressBase = Globals.getGui().getMainPane().getExecutePane().getAddressDisplayBase();
+        int addressBase = Globals.getGUI().getMainPane().getExecutePane().getAddressDisplayBase();
         int address = this.firstAddress;
         String formattedAddress;
         for (int i = 0; i < NUMBER_OF_ROWS; i++) {
@@ -605,7 +605,7 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
      * Reset all data display values to 0
      */
     public void resetValues() {
-        int valueBase = Globals.getGui().getMainPane().getExecutePane().getValueDisplayBase();
+        int valueBase = Globals.getGUI().getMainPane().getExecutePane().getValueDisplayBase();
         TableModel dataModel = dataTable.getModel();
         for (int row = 0; row < NUMBER_OF_ROWS; row++) {
             for (int column = 1; column < NUMBER_OF_COLUMNS; column++) {
@@ -642,7 +642,7 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
         heapButton.setEnabled(true);
         extnButton.setEnabled(true);
         mmioButton.setEnabled(true);
-        textButton.setEnabled(settings.getBoolean(Settings.SELF_MODIFYING_CODE_ENABLED));
+        textButton.setEnabled(settings.selfModifyingCodeEnabled.get());
         kernButton.setEnabled(true);
         prevButton.setEnabled(true);
         nextButton.setEnabled(true);
@@ -937,7 +937,7 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
                     return;
                 }
             }
-            int valueBase = Globals.getGui().getMainPane().getExecutePane().getValueDisplayBase();
+            int valueBase = Globals.getGUI().getMainPane().getExecutePane().getValueDisplayBase();
             data[row][col] = NumberDisplayBaseChooser.formatNumber(val, valueBase);
             fireTableCellUpdated(row, col);
         }
@@ -962,7 +962,7 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
 
             cell.setHorizontalAlignment(SwingConstants.RIGHT);
             int rowFirstAddress = Binary.stringToInt(table.getValueAt(row, ADDRESS_COLUMN).toString());
-            if (settings.getBoolean(Settings.DATA_SEGMENT_HIGHLIGHTING) && addressHighlighting && rowFirstAddress == addressRowFirstAddress && column == addressColumn) {
+            if (settings.highlightDataSegment.get() && addressHighlighting && rowFirstAddress == addressRowFirstAddress && column == addressColumn) {
                 cell.setBackground(settings.getColorSettingByPosition(Settings.DATASEGMENT_HIGHLIGHT_BACKGROUND));
                 cell.setForeground(settings.getColorSettingByPosition(Settings.DATASEGMENT_HIGHLIGHT_FOREGROUND));
                 cell.setFont(settings.getFontByPosition(Settings.DATASEGMENT_HIGHLIGHT_FONT));

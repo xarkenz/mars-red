@@ -1,7 +1,7 @@
 package mars.util;
 
 import mars.Globals;
-import mars.Settings;
+import mars.settings.Settings;
 
 import java.io.*;
 	
@@ -83,7 +83,7 @@ public class SystemIO {
      */
     public static int readInteger(int serviceNumber) {
         String input = "0";
-        if (Globals.getGui() == null) {
+        if (Globals.getGUI() == null) {
             try {
                 input = getInputReader().readLine();
             }
@@ -91,11 +91,11 @@ public class SystemIO {
             }
         }
         else {
-            if (Globals.getSettings().getBoolean(Settings.POPUP_SYSCALL_INPUT)) {
-                input = Globals.getGui().getMessagesPane().getInputString("Enter an integer value (syscall " + serviceNumber + ")");
+            if (Globals.getSettings().popupSyscallInput.get()) {
+                input = Globals.getGUI().getMessagesPane().getInputString("Enter an integer value (syscall " + serviceNumber + ")");
             }
             else {
-                input = Globals.getGui().getMessagesPane().getInputString(-1);
+                input = Globals.getGUI().getMessagesPane().getInputString(-1);
             }
         }
 
@@ -113,7 +113,7 @@ public class SystemIO {
      */
     public static float readFloat(int serviceNumber) {
         String input = "0";
-        if (Globals.getGui() == null) {
+        if (Globals.getGUI() == null) {
             try {
                 input = getInputReader().readLine();
             }
@@ -121,11 +121,11 @@ public class SystemIO {
             }
         }
         else {
-            if (Globals.getSettings().getBoolean(Settings.POPUP_SYSCALL_INPUT)) {
-                input = Globals.getGui().getMessagesPane().getInputString("Enter a float value (syscall " + serviceNumber + ")");
+            if (Globals.getSettings().popupSyscallInput.get()) {
+                input = Globals.getGUI().getMessagesPane().getInputString("Enter a float value (syscall " + serviceNumber + ")");
             }
             else {
-                input = Globals.getGui().getMessagesPane().getInputString(-1);
+                input = Globals.getGUI().getMessagesPane().getInputString(-1);
             }
         }
         return Float.parseFloat(input.trim());
@@ -141,7 +141,7 @@ public class SystemIO {
      */
     public static double readDouble(int serviceNumber) {
         String input = "0";
-        if (Globals.getGui() == null) {
+        if (Globals.getGUI() == null) {
             try {
                 input = getInputReader().readLine();
             }
@@ -149,11 +149,11 @@ public class SystemIO {
             }
         }
         else {
-            if (Globals.getSettings().getBoolean(Settings.POPUP_SYSCALL_INPUT)) {
-                input = Globals.getGui().getMessagesPane().getInputString("Enter a double value (syscall " + serviceNumber + ")");
+            if (Globals.getSettings().popupSyscallInput.get()) {
+                input = Globals.getGUI().getMessagesPane().getInputString("Enter a double value (syscall " + serviceNumber + ")");
             }
             else {
-                input = Globals.getGui().getMessagesPane().getInputString(-1);
+                input = Globals.getGUI().getMessagesPane().getInputString(-1);
             }
         }
         return Double.parseDouble(input.trim());
@@ -163,11 +163,11 @@ public class SystemIO {
      * Implements syscall having 4 in $v0, to print a string.
      */
     public static void printString(String string) {
-        if (Globals.getGui() == null) {
+        if (Globals.getGUI() == null) {
             System.out.print(string);
         }
         else {
-            Globals.getGui().getMessagesPane().postRunMessage(string);
+            Globals.getGUI().getMessagesPane().postRunMessage(string);
         }
     }
 
@@ -180,7 +180,7 @@ public class SystemIO {
      */
     public static String readString(int serviceNumber, int maxLength) {
         String input = "";
-        if (Globals.getGui() == null) {
+        if (Globals.getGUI() == null) {
             try {
                 input = getInputReader().readLine();
             }
@@ -188,11 +188,11 @@ public class SystemIO {
             }
         }
         else {
-            if (Globals.getSettings().getBoolean(Settings.POPUP_SYSCALL_INPUT)) {
-                input = Globals.getGui().getMessagesPane().getInputString("Enter a string of maximum length " + maxLength + " (syscall " + serviceNumber + ")");
+            if (Globals.getSettings().popupSyscallInput.get()) {
+                input = Globals.getGUI().getMessagesPane().getInputString("Enter a string of maximum length " + maxLength + " (syscall " + serviceNumber + ")");
             }
             else {
-                input = Globals.getGui().getMessagesPane().getInputString(maxLength);
+                input = Globals.getGUI().getMessagesPane().getInputString(maxLength);
                 if (input.endsWith("\n")) {
                     input = input.substring(0, input.length() - 1);
                 }
@@ -216,7 +216,7 @@ public class SystemIO {
      */
     public static int readChar(int serviceNumber) {
         String input = "0";
-        if (Globals.getGui() == null) {
+        if (Globals.getGUI() == null) {
             try {
                 input = getInputReader().readLine();
             }
@@ -224,11 +224,11 @@ public class SystemIO {
             }
         }
         else {
-            if (Globals.getSettings().getBoolean(Settings.POPUP_SYSCALL_INPUT)) {
-                input = Globals.getGui().getMessagesPane().getInputString("Enter a character value (syscall " + serviceNumber + ")");
+            if (Globals.getSettings().popupSyscallInput.get()) {
+                input = Globals.getGUI().getMessagesPane().getInputString("Enter a character value (syscall " + serviceNumber + ")");
             }
             else {
-                input = Globals.getGui().getMessagesPane().getInputString(1);
+                input = Globals.getGUI().getMessagesPane().getInputString(1);
             }
         }
         // The whole try-catch is not really necessary in this case since I'm
@@ -254,9 +254,9 @@ public class SystemIO {
     public static int writeToFile(int fd, byte[] buffer, int lengthRequested) {
         /////////////// DPS 8-Jan-2013  ////////////////////////////////////////////////////
         /// Write to STDOUT or STDERR file descriptor while using IDE - write to Messages pane.
-        if ((fd == STDOUT || fd == STDERR) && Globals.getGui() != null) {
+        if ((fd == STDOUT || fd == STDERR) && Globals.getGUI() != null) {
             String data = new String(buffer);
-            Globals.getGui().getMessagesPane().postRunMessage(data);
+            Globals.getGUI().getMessagesPane().postRunMessage(data);
             return data.length();
         }
         ///////////////////////////////////////////////////////////////////////////////////
@@ -311,8 +311,8 @@ public class SystemIO {
     public static int readFromFile(int fd, byte[] myBuffer, int lengthRequested) {
         /////////////// DPS 8-Jan-2013  //////////////////////////////////////////////////
         /// Read from STDIN file descriptor while using IDE - get input from Messages pane.
-        if (fd == STDIN && Globals.getGui() != null) {
-            String input = Globals.getGui().getMessagesPane().getInputString(lengthRequested);
+        if (fd == STDIN && Globals.getGUI() != null) {
+            String input = Globals.getGUI().getMessagesPane().getInputString(lengthRequested);
             byte[] bytesRead = input.getBytes();
             for (int i = 0; i < myBuffer.length; i++) {
                 myBuffer[i] = (i < bytesRead.length) ? bytesRead[i] : 0;

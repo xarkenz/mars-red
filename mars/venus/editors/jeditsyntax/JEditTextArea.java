@@ -10,7 +10,7 @@
 package mars.venus.editors.jeditsyntax;
 
 import mars.Globals;
-import mars.Settings;
+import mars.settings.Settings;
 import mars.venus.editors.jeditsyntax.tokenmarker.*; 
 import javax.swing.event.*;
 import javax.swing.text.*;
@@ -2252,7 +2252,7 @@ public class JEditTextArea extends JComponent
 	  * @return String containing auto-indent characters to be inserted into text
 	  */    
    public String getAutoIndent() {
-      return (Globals.getSettings().getBoolean(Settings.AUTO_INDENT)) ? getLeadingWhiteSpace() : "";
+      return (Globals.getSettings().autoIndentEnabled.get()) ? getLeadingWhiteSpace() : "";
    }
 
     /**
@@ -2339,7 +2339,7 @@ public class JEditTextArea extends JComponent
     // Compose and display syntax-sensitive help. Typically invoked upon typing a key.
 	 // Results in popup menu.  Is not used for creating tool tips.
    private void applySyntaxSensitiveHelp() {
-      if (!mars.Globals.getSettings().getBoolean(mars.Settings.POPUP_INSTRUCTION_GUIDANCE)) {
+      if (!mars.Globals.getSettings().popupInstructionGuidance.get()) {
          return;
       }
       int line = getCaretLine(); 

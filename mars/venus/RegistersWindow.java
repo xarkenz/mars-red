@@ -1,7 +1,7 @@
 package mars.venus;
 
 import mars.Globals;
-import mars.Settings;
+import mars.settings.Settings;
 import mars.mips.hardware.AccessNotice;
 import mars.mips.hardware.Register;
 import mars.mips.hardware.RegisterAccessNotice;
@@ -87,7 +87,7 @@ public class RegistersWindow extends JPanel implements Observer {
      * @return The array object with the data for the window.
      */
     public Object[][] setupWindow() {
-        int valueBase = NumberDisplayBaseChooser.getBase(Globals.getSettings().getBoolean(Settings.DISPLAY_VALUES_IN_HEX));
+        int valueBase = NumberDisplayBaseChooser.getBase(Globals.getSettings().displayValuesInHex.get());
         Object[][] tableData = new Object[35][3];
         for (Register register : RegisterFile.getRegisters()) {
             tableData[register.getNumber()][0] = register.getName();
@@ -115,7 +115,7 @@ public class RegistersWindow extends JPanel implements Observer {
     public void clearWindow() {
         this.clearHighlighting();
         RegisterFile.resetRegisters();
-        this.updateRegisters(Globals.getGui().getMainPane().getExecutePane().getValueDisplayBase());
+        this.updateRegisters(Globals.getGUI().getMainPane().getExecutePane().getValueDisplayBase());
     }
 
     /**
@@ -142,7 +142,7 @@ public class RegistersWindow extends JPanel implements Observer {
      * update register display using current number base (10 or 16)
      */
     public void updateRegisters() {
-        updateRegisters(Globals.getGui().getMainPane().getExecutePane().getValueDisplayBase());
+        updateRegisters(Globals.getGUI().getMainPane().getExecutePane().getValueDisplayBase());
     }
 
     /**
@@ -208,7 +208,7 @@ public class RegistersWindow extends JPanel implements Observer {
                 // AddressCellRenderer class in DataSegmentWindow.java.
                 this.highlighting = true;
                 this.highlightCellForRegister((Register) observable);
-                Globals.getGui().getRegistersPane().setSelectedComponent(this);
+                Globals.getGUI().getRegistersPane().setSelectedComponent(this);
             }
         }
     }
@@ -243,7 +243,7 @@ public class RegistersWindow extends JPanel implements Observer {
             JLabel cell = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
             cell.setFont(font);
             cell.setHorizontalAlignment(alignment);
-            if (Globals.getSettings().getBoolean(Settings.REGISTERS_HIGHLIGHTING) && highlighting && row == highlightRow) {
+            if (Globals.getSettings().highlightRegisters.get() && highlighting && row == highlightRow) {
                 cell.setBackground(Globals.getSettings().getColorSettingByPosition(Settings.REGISTER_HIGHLIGHT_BACKGROUND));
                 cell.setForeground(Globals.getSettings().getColorSettingByPosition(Settings.REGISTER_HIGHLIGHT_FOREGROUND));
                 cell.setFont(Globals.getSettings().getFontByPosition(Settings.REGISTER_HIGHLIGHT_FONT));
@@ -332,7 +332,7 @@ public class RegistersWindow extends JPanel implements Observer {
             synchronized (Globals.MEMORY_AND_REGISTERS_LOCK) {
                 RegisterFile.updateRegister(row, intValue);
             }
-            int valueBase = Globals.getGui().getMainPane().getExecutePane().getValueDisplayBase();
+            int valueBase = Globals.getGUI().getMainPane().getExecutePane().getValueDisplayBase();
             data[row][col] = NumberDisplayBaseChooser.formatNumber(intValue, valueBase);
             fireTableCellUpdated(row, col);
         }

@@ -1,7 +1,7 @@
 package mars.venus;
 
 import mars.Globals;
-import mars.Settings;
+import mars.settings.Settings;
 import mars.mips.hardware.*;
 import mars.simulator.Simulator;
 import mars.simulator.SimulatorNotice;
@@ -127,7 +127,7 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
         Object[][] tableData = new Object[registers.length][3];
         for (int i = 0; i < registers.length; i++) {
             tableData[i][0] = registers[i].getName();
-            tableData[i][1] = NumberDisplayBaseChooser.formatFloatNumber(registers[i].getValue(), NumberDisplayBaseChooser.getBase(Globals.getSettings().getBoolean(Settings.DISPLAY_VALUES_IN_HEX)));
+            tableData[i][1] = NumberDisplayBaseChooser.formatFloatNumber(registers[i].getValue(), NumberDisplayBaseChooser.getBase(Globals.getSettings().displayValuesInHex.get()));
             if (i % 2 == 0) {
                 // even numbered double registers
                 long longValue = 0;
@@ -137,7 +137,7 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
                 catch (InvalidRegisterAccessException e) {
                     // cannot happen since i must be even
                 }
-                tableData[i][2] = NumberDisplayBaseChooser.formatDoubleNumber(longValue, NumberDisplayBaseChooser.getBase(Globals.getSettings().getBoolean(Settings.DISPLAY_VALUES_IN_HEX)));
+                tableData[i][2] = NumberDisplayBaseChooser.formatDoubleNumber(longValue, NumberDisplayBaseChooser.getBase(Globals.getSettings().displayValuesInHex.get()));
             }
             else {
                 tableData[i][2] = "";
@@ -152,7 +152,7 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
     public void clearWindow() {
         this.clearHighlighting();
         Coprocessor1.resetRegisters();
-        this.updateRegisters(Globals.getGui().getMainPane().getExecutePane().getValueDisplayBase());
+        this.updateRegisters(Globals.getGUI().getMainPane().getExecutePane().getValueDisplayBase());
         Coprocessor1.clearConditionFlags();
         this.updateConditionFlagDisplay();
     }
@@ -181,7 +181,7 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
      * Redisplay registers using current display number base (10 or 16)
      */
     public void updateRegisters() {
-        updateRegisters(Globals.getGui().getMainPane().getExecutePane().getValueDisplayBase());
+        updateRegisters(Globals.getGUI().getMainPane().getExecutePane().getValueDisplayBase());
     }
 
     /**
@@ -271,7 +271,7 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
                 // AddressCellRenderer class in DataSegmentWindow.java.
                 this.highlighting = true;
                 this.highlightCellForRegister((Register) observable);
-                Globals.getGui().getRegistersPane().setSelectedComponent(this);
+                Globals.getGUI().getRegistersPane().setSelectedComponent(this);
             }
         }
     }
@@ -306,7 +306,7 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
             JLabel cell = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
             cell.setFont(font);
             cell.setHorizontalAlignment(alignment);
-            if (Globals.getSettings().getBoolean(Settings.REGISTERS_HIGHLIGHTING) && highlighting && row == highlightRow) {
+            if (Globals.getSettings().highlightRegisters.get() && highlighting && row == highlightRow) {
                 cell.setBackground(Globals.getSettings().getColorSettingByPosition(Settings.REGISTER_HIGHLIGHT_BACKGROUND));
                 cell.setForeground(Globals.getSettings().getColorSettingByPosition(Settings.REGISTER_HIGHLIGHT_FOREGROUND));
                 cell.setFont(Globals.getSettings().getFontByPosition(Settings.REGISTER_HIGHLIGHT_FONT));
@@ -380,7 +380,7 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
          */
         @Override
         public void setValueAt(Object value, int row, int col) {
-            int valueBase = Globals.getGui().getMainPane().getExecutePane().getValueDisplayBase();
+            int valueBase = Globals.getGUI().getMainPane().getExecutePane().getValueDisplayBase();
             String stringValue = value.toString();
             try {
                 if (col == FLOAT_COLUMN) {

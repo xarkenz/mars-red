@@ -3,7 +3,6 @@ package mars.mips.instructions;
 import mars.Globals;
 import mars.ProcessingException;
 import mars.ProgramStatement;
-import mars.Settings;
 import mars.mips.hardware.*;
 import mars.mips.instructions.syscalls.Syscall;
 import mars.simulator.DelayedBranch;
@@ -70,7 +69,7 @@ public class InstructionSet {
     /**
      * Retrieve the current instruction set.
      */
-    public ArrayList<Instruction> getInstructionList() {
+    public ArrayList<Instruction> getAllInstructions() {
         return instructionList;
     }
 
@@ -1547,7 +1546,7 @@ public class InstructionSet {
         ArrayList<Instruction> matchingInstructions = null;
         // Linear search for now....
         for (Instruction instruction : instructionList) {
-            if (instruction.getName().equalsIgnoreCase(name)) {
+            if (instruction.getMnemonic().equalsIgnoreCase(name)) {
                 if (matchingInstructions == null) {
                     matchingInstructions = new ArrayList<>();
                 }
@@ -1570,7 +1569,7 @@ public class InstructionSet {
         // Linear search for now....
         if (name != null) {
             for (Instruction instruction : instructionList) {
-                if (instruction.getName().toLowerCase().startsWith(name.toLowerCase())) {
+                if (instruction.getMnemonic().toLowerCase().startsWith(name.toLowerCase())) {
                     if (matchingInstructions == null) {
                         matchingInstructions = new ArrayList<>();
                     }
@@ -1613,7 +1612,7 @@ public class InstructionSet {
     // the bottom (currently line 194, heavily commented).
 
     private void processBranch(int displacement) {
-        if (Globals.getSettings().getBoolean(Settings.DELAYED_BRANCHING_ENABLED)) {
+        if (Globals.getSettings().delayedBranchingEnabled.get()) {
             // Register the branch target address (absolute byte address).
             DelayedBranch.register(RegisterFile.getProgramCounter() + (displacement << 2));
         }
@@ -1634,7 +1633,7 @@ public class InstructionSet {
      */
 
     private void processJump(int targetAddress) {
-        if (Globals.getSettings().getBoolean(Settings.DELAYED_BRANCHING_ENABLED)) {
+        if (Globals.getSettings().delayedBranchingEnabled.get()) {
             DelayedBranch.register(targetAddress);
         }
         else {
@@ -1656,7 +1655,7 @@ public class InstructionSet {
 
     private void processReturnAddress(int register) {
         RegisterFile.updateRegister(register, RegisterFile.getProgramCounter()
-            + ((Globals.getSettings().getBoolean(Settings.DELAYED_BRANCHING_ENABLED)) ? Instruction.INSTRUCTION_LENGTH_BYTES : 0));
+            + ((Globals.getSettings().delayedBranchingEnabled.get()) ? Instruction.INSTRUCTION_LENGTH_BYTES : 0));
     }
 
     private static class MatchMap implements Comparable<MatchMap> {

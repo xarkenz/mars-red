@@ -10,6 +10,7 @@ import mars.mips.instructions.BasicInstruction;
 import mars.mips.instructions.BasicInstructionFormat;
 import mars.mips.instructions.Instruction;
 import mars.util.Binary;
+import mars.venus.NumberDisplayBaseChooser;
 
 import java.util.ArrayList;
 
@@ -569,9 +570,8 @@ public class ProgramStatement {
         }
     }
 
-    //////////////////////////////////////////////////////////////////////////////
-    //  Given operand (register or integer) and mask character ('f', 's', or 't'),
-    //  generate the correct sequence of bits and replace the mask with them.
+    // Given operand (register or integer) and mask character ('f', 's', or 't'),
+    // generate the correct sequence of bits and replace the mask with them.
     private void insertBinaryCode(int value, char mask, ErrorList errors) {
         int startPos = this.machineStatement.indexOf(mask);
         int endPos = this.machineStatement.lastIndexOf(mask);
@@ -587,22 +587,21 @@ public class ProgramStatement {
         this.machineStatement = state;
     }
 
-    //////////////////////////////////////////////////////////////////////////////
     /*
-     *   Given a model BasicInstruction and the assembled (not source) operand array for a statement,
-     *   this method will construct the corresponding basic instruction list.  This method is
-     *   used by the constructor that is given only the int address and binary code.  It is not
-     *   intended to be used when source code is available.  DPS 11-July-2013
+     * Given a model BasicInstruction and the assembled (not source) operand array for a statement,
+     * this method will construct the corresponding basic instruction list.  This method is
+     * used by the constructor that is given only the int address and binary code.  It is not
+     * intended to be used when source code is available.  DPS 11-July-2013
      */
     private BasicStatementList buildBasicStatementListFromBinaryCode(int binary, BasicInstruction instr, int[] operands, int numOperands) {
         BasicStatementList statementList = new BasicStatementList();
-        int tokenListCounter = 1;  // index 0 is operator; operands start at index 1
+        int tokenListCounter = 1; // index 0 is operator; operands start at index 1
         if (instr == null) {
             statementList.addString(INVALID_OPERATOR);
             return statementList;
         }
         else {
-            statementList.addString(instr.getName() + " ");
+            statementList.addString(instr.getMnemonic() + " ");
         }
         for (int i = 0; i < numOperands; i++) {
             // add separator if not at end of token list AND neither current nor 
@@ -686,8 +685,8 @@ public class ProgramStatement {
         }
 
         public String toString() {
-            int addressBase = (Globals.getSettings().getBoolean(Settings.DISPLAY_ADDRESSES_IN_HEX)) ? mars.venus.NumberDisplayBaseChooser.HEXADECIMAL : mars.venus.NumberDisplayBaseChooser.DECIMAL;
-            int valueBase = (Globals.getSettings().getBoolean(Settings.DISPLAY_VALUES_IN_HEX)) ? mars.venus.NumberDisplayBaseChooser.HEXADECIMAL : mars.venus.NumberDisplayBaseChooser.DECIMAL;
+            int addressBase = (Globals.getSettings().displayAddressesInHex.get()) ? NumberDisplayBaseChooser.HEXADECIMAL : NumberDisplayBaseChooser.DECIMAL;
+            int valueBase = (Globals.getSettings().displayValuesInHex.get()) ? NumberDisplayBaseChooser.HEXADECIMAL : NumberDisplayBaseChooser.DECIMAL;
 
             StringBuilder result = new StringBuilder();
             for (ListElement element : list) {
@@ -696,14 +695,14 @@ public class ProgramStatement {
                         result.append(element.stringValue);
                         break;
                     case TYPE_ADDRESS:
-                        result.append(mars.venus.NumberDisplayBaseChooser.formatNumber(element.intValue, addressBase));
+                        result.append(NumberDisplayBaseChooser.formatNumber(element.intValue, addressBase));
                         break;
                     case TYPE_VALUE:
-                        if (valueBase == mars.venus.NumberDisplayBaseChooser.HEXADECIMAL) {
+                        if (valueBase == NumberDisplayBaseChooser.HEXADECIMAL) {
                             result.append(Binary.intToHexString(element.intValue)); // 13-July-2011, was: intToHalfHexString()
                         }
                         else {
-                            result.append(mars.venus.NumberDisplayBaseChooser.formatNumber(element.intValue, valueBase));
+                            result.append(NumberDisplayBaseChooser.formatNumber(element.intValue, valueBase));
                         }
                     default:
                         break;

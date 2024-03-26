@@ -162,7 +162,7 @@ public class MemoryConfigurations {
             defaultConfiguration = configurations.get(0);
             currentConfiguration = defaultConfiguration;
             // Get current config from settings
-            setCurrentConfiguration(getConfigurationByName(Globals.getSettings().getMemoryConfiguration()));
+            setCurrentConfiguration(getConfigurationByName(Globals.getSettings().memoryConfiguration.get()));
         }
     }
 

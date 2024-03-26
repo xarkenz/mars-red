@@ -58,9 +58,9 @@ import mars.mips.hardware.Memory;
 import mars.mips.hardware.MemoryAccessNotice;
 import mars.mips.instructions.BasicInstruction;
 import mars.mips.instructions.BasicInstructionFormat;
-import mars.venus.RunAssembleAction;
-import mars.venus.RunBackstepAction;
-import mars.venus.RunStepAction;
+import mars.venus.actions.run.RunAssembleAction;
+import mars.venus.actions.run.RunBackstepAction;
+import mars.venus.actions.run.RunStepAction;
 import mars.venus.VenusUI;
 
 public class MipsXray extends AbstractMarsToolAndApplication{
@@ -148,7 +148,7 @@ public class MipsXray extends AbstractMarsToolAndApplication{
 
       // Insert image in the panel and configure the parameters to run animation.
       protected JComponent buildMainDisplayArea() {
-   	   mainUI = Globals.getGui();
+   	   mainUI = Globals.getGUI();
    	   this.createActionObjects();
    	   toolbar= this.setUpToolBar();
    	  
@@ -186,7 +186,7 @@ public class MipsXray extends AbstractMarsToolAndApplication{
     }
       
       protected JComponent buildMainDisplayArea(String figure) {
-      	   mainUI = Globals.getGui();
+      	   mainUI = Globals.getGUI();
       	   this.createActionObjects();
       	   toolbar= this.setUpToolBar();
       	  

@@ -3,7 +3,7 @@ package mars.venus;
 import mars.Globals;
 import mars.MIPSprogram;
 import mars.ProcessingException;
-import mars.Settings;
+import mars.settings.Settings;
 import mars.mips.hardware.RegisterFile;
 import mars.util.FilenameFinder;
 
@@ -16,7 +16,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-		
+
 /*
 Copyright (c) 2003-2010,  Pete Sanderson and Kenneth Vollmar
 
@@ -51,9 +51,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @author Pete Sanderson
  */
 public class EditTabbedPane extends JTabbedPane {
-    MainPane mainPane;
-
     private final VenusUI gui;
+    private final MainPane mainPane;
     private final Editor editor;
     private final FileOpener fileOpener;
 
@@ -67,12 +66,12 @@ public class EditTabbedPane extends JTabbedPane {
         this.fileOpener = new FileOpener(editor);
         this.mainPane = mainPane;
         this.editor.setEditTabbedPane(this);
-        this.addChangeListener(e -> {
+        this.addChangeListener(event -> {
             EditPane editPane = (EditPane) getSelectedComponent();
             if (editPane != null) {
                 // New IF statement to permit free traversal of edit panes w/o invalidating
                 // assembly if assemble-all is selected.  DPS 9-Aug-2011
-                if (Globals.getSettings().getBoolean(mars.Settings.ASSEMBLE_ALL_ENABLED)) {
+                if (Globals.getSettings().assembleAllEnabled.get()) {
                     EditTabbedPane.this.updateTitles(editPane);
                 }
                 else {
@@ -440,7 +439,7 @@ public class EditTabbedPane extends JTabbedPane {
         if (editPane == null) {
             FileStatus.set(FileStatus.NO_FILE);
             this.editor.setTitle("", "", FileStatus.NO_FILE);
-            Globals.getGui().setMenuState(FileStatus.NO_FILE);
+            Globals.getGUI().setMenuState(FileStatus.NO_FILE);
         }
         else {
             FileStatus.set(editPane.getFileStatus());
@@ -460,7 +459,7 @@ public class EditTabbedPane extends JTabbedPane {
     private void updateTitlesAndMenuState(EditPane editPane) {
         editor.setTitle(editPane.getPathname(), editPane.getFilename(), editPane.getFileStatus());
         editPane.updateStaticFileStatus(); //  for legacy code that depends on the static FileStatus (pre 4.0)
-        Globals.getGui().setMenuState(editPane.getFileStatus());
+        Globals.getGUI().setMenuState(editPane.getFileStatus());
     }
 
     /**
@@ -536,7 +535,7 @@ public class EditTabbedPane extends JTabbedPane {
             // Note: add sequence is significant - last one added becomes default.
             fileFilters = new ArrayList<>();
             fileFilters.add(fileChooser.getAcceptAllFileFilter());
-            fileFilters.add(FilenameFinder.getFileFilter(Globals.fileExtensions, "Assembler Files", true));
+            fileFilters.add(FilenameFinder.getFileFilter(Globals.FILE_EXTENSIONS, "Assembler Files", true));
             fileFilterCount = 0; // this will trigger fileChooser file filter load in next line
             setChoosableFileFilters();
         }
@@ -553,7 +552,7 @@ public class EditTabbedPane extends JTabbedPane {
             // Set default to previous file opened, if any.  This is useful in conjunction
             // with option to assemble file automatically upon opening.  File likely to have
             // been edited externally (e.g. by Mipster).
-            if (Globals.getSettings().getBoolean(Settings.ASSEMBLE_ON_OPEN_ENABLED) && mostRecentlyOpenedFile != null) {
+            if (Globals.getSettings().assembleOnOpenEnabled.get() && mostRecentlyOpenedFile != null) {
                 fileChooser.setSelectedFile(mostRecentlyOpenedFile);
             }
 
@@ -567,7 +566,7 @@ public class EditTabbedPane extends JTabbedPane {
 
                 // possibly send this file right through to the assembler by firing Run->Assemble's
                 // actionPerformed() method.
-                if (theFile.canRead() && Globals.getSettings().getBoolean(Settings.ASSEMBLE_ON_OPEN_ENABLED)) {
+                if (theFile.canRead() && Globals.getSettings().assembleOnOpenEnabled.get()) {
                     gui.getRunAssembleAction().actionPerformed(null);
                 }
             }
@@ -638,7 +637,7 @@ public class EditTabbedPane extends JTabbedPane {
 
                 // If assemble-all, then allow opening of any file w/o invalidating assembly.
                 // DPS 9-Aug-2011
-                if (Globals.getSettings().getBoolean(mars.Settings.ASSEMBLE_ALL_ENABLED)) {
+                if (Globals.getSettings().assembleAllEnabled.get()) {
                     updateTitles(editPane);
                 }
                 else {// this was the original code...

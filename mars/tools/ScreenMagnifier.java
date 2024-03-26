@@ -1,6 +1,5 @@
    package mars.tools;
 
-   import java.text.*;
    import java.awt.*;
    import java.awt.event.*;
    import java.awt.image.*;
@@ -114,7 +113,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          createSettings();
       	// If running withint MARS, set to its icon image; if not fuggetit.
          try {
-            this.setIconImage(mars.Globals.getGui().getIconImage());
+            this.setIconImage(mars.Globals.getGUI().getIconImage());
          } 
              catch (Exception e) { }
          getContentPane().setLayout(new BorderLayout());
@@ -290,7 +289,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       	// If this doesn't work, e.g. getGui() returns null, then there
       	// are no alternatives so just let what would happen, happen.
          try {
-            mars.Globals.getGui().update(mars.Globals.getGui().getGraphics());
+            mars.Globals.getGUI().update(mars.Globals.getGUI().getGraphics());
          } 
              catch (Exception e) { }
          // Perform the screen capture.

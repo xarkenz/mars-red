@@ -2,7 +2,7 @@ package mars.venus;
 
 import mars.Globals;
 import mars.ProgramStatement;
-import mars.Settings;
+import mars.settings.Settings;
 import mars.mips.hardware.*;
 import mars.simulator.Simulator;
 import mars.simulator.SimulatorNotice;
@@ -111,7 +111,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
      * Should convert the lines of code over to the table rows and columns.
      **/
     public void setupTable() {
-        int addressBase = Globals.getGui().getMainPane().getExecutePane().getAddressDisplayBase();
+        int addressBase = Globals.getGUI().getMainPane().getExecutePane().getAddressDisplayBase();
         codeHighlighting = true;
         breakpointsEnabled = true;
         ArrayList<ProgramStatement> sourceStatementList = Globals.program.getMachineList();
@@ -192,12 +192,12 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
 
         tableScroller = new JScrollPane(table, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
         contentPane.add(tableScroller);
-        if (Globals.getSettings().getBoolean(Settings.PROGRAM_ARGUMENTS)) {
+        if (Globals.getSettings().useProgramArguments.get()) {
             addProgramArgumentsPanel();
         }
 
         deleteAsTextSegmentObserver();
-        if (Globals.getSettings().getBoolean(Settings.SELF_MODIFYING_CODE_ENABLED)) {
+        if (Globals.getSettings().selfModifyingCodeEnabled.get()) {
             addAsTextSegmentObserver();
         }
     }
@@ -252,7 +252,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
         if (contentPane.getComponentCount() == 0) {
             return; // ignore if no content to change
         }
-        int addressBase = Globals.getGui().getMainPane().getExecutePane().getAddressDisplayBase();
+        int addressBase = Globals.getGUI().getMainPane().getExecutePane().getAddressDisplayBase();
         String formattedAddress;
         for (int i = 0; i < intAddresses.length; i++) {
             formattedAddress = NumberDisplayBaseChooser.formatUnsignedInteger(intAddresses[i], addressBase);
@@ -309,14 +309,14 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
                 // Seems reasonable for text segment display to be accurate in cases where existing code is overwritten
                 // even when running at unlimited speed.  DPS 10-July-2013
                 deleteAsTextSegmentObserver();
-                if (Globals.getSettings().getBoolean(Settings.SELF_MODIFYING_CODE_ENABLED)) { // && (notice.getRunSpeed() != RunSpeedPanel.UNLIMITED_SPEED || notice.getMaxSteps()==1)) {
+                if (Globals.getSettings().selfModifyingCodeEnabled.get()) { // && (notice.getRunSpeed() != RunSpeedPanel.UNLIMITED_SPEED || notice.getMaxSteps()==1)) {
                     addAsTextSegmentObserver();
                 }
             }
         }
         else if (observable == Globals.getSettings()) {
             deleteAsTextSegmentObserver();
-            if (Globals.getSettings().getBoolean(Settings.SELF_MODIFYING_CODE_ENABLED)) {
+            if (Globals.getSettings().selfModifyingCodeEnabled.get()) {
                 addAsTextSegmentObserver();
             }
         }
@@ -380,7 +380,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
                 // the MIPS program is running, and even then only in timed or step mode.  There are good reasons
                 // for that.  So we'll pretend to be Memory observable and send it a fake memory write update.
                 try {
-                    Globals.getGui().getMainPane().getExecutePane().getDataSegmentWindow().update(Memory.getInstance(), new MemoryAccessNotice(AccessNotice.WRITE, address, value));
+                    Globals.getGUI().getMainPane().getExecutePane().getDataSegmentWindow().update(Memory.getInstance(), new MemoryAccessNotice(AccessNotice.WRITE, address, value));
                 }
                 catch (Exception e) {
                     // Not sure if anything bad can happen in this sequence, but if anything does we can let it go.
@@ -393,7 +393,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
      * Called by RunResetAction to restore display of any table rows that were
      * overwritten due to self-modifying code feature.
      */
-    void resetModifiedSourceCode() {
+    public void resetModifiedSourceCode() {
         if (executeMods != null && !executeMods.isEmpty()) {
             for (Enumeration<ModifiedCode> elements = executeMods.elements(); elements.hasMoreElements(); ) {
                 ModifiedCode mc = elements.nextElement();
@@ -636,16 +636,24 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
      * Re-order the Text segment columns according to saved preferences.
      */
     private void reorderColumns() {
-        TableColumnModel oldtcm = table.getColumnModel();
-        TableColumnModel newtcm = new DefaultTableColumnModel();
-        int[] savedColumnOrder = Globals.getSettings().getTextColumnOrder();
+        TableColumnModel oldModel = table.getColumnModel();
+        TableColumnModel newModel = new DefaultTableColumnModel();
         // Apply ordering only if correct number of columns.
+        Integer[] savedColumnOrder = getSavedColumnOrder();
         if (savedColumnOrder.length == table.getColumnCount()) {
             for (int column : savedColumnOrder) {
-                newtcm.addColumn(oldtcm.getColumn(column));
+                newModel.addColumn(oldModel.getColumn(column));
             }
-            table.setColumnModel(newtcm);
+            table.setColumnModel(newModel);
         }
+    }
+
+    private Integer[] getSavedColumnOrder() {
+        String columnOrder = Globals.getSettings().textSegmentColumnOrder.get();
+        // TODO: error handling
+        return Arrays.stream(columnOrder.split("\\s+"))
+            .map(Integer::valueOf)
+            .toArray(Integer[]::new);
     }
 
     /**
@@ -712,7 +720,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
         public boolean isCellEditable(int row, int col) {
             //Note that the data/cell address is constant,
             //no matter where the cell appears onscreen.
-            return col == BREAK_COLUMN || (col == CODE_COLUMN && Globals.getSettings().getBoolean(Settings.SELF_MODIFYING_CODE_ENABLED));
+            return col == BREAK_COLUMN || (col == CODE_COLUMN && Globals.getSettings().selfModifyingCodeEnabled.get());
         }
 
         /**
@@ -773,7 +781,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             Component cell = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            TextSegmentWindow textSegment = Globals.getGui().getMainPane().getExecutePane().getTextSegmentWindow();
+            TextSegmentWindow textSegment = Globals.getGUI().getMainPane().getExecutePane().getTextSegmentWindow();
             Settings settings = Globals.getSettings();
             boolean highlighting = textSegment.getCodeHighlighting();
 
@@ -1032,17 +1040,19 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
         // When column moves, save the new column order.
         @Override
         public void columnMoved(TableColumnModelEvent e) {
-            int[] columnOrder = new int[table.getColumnCount()];
+            Integer[] columnOrder = new Integer[table.getColumnCount()];
             for (int i = 0; i < columnOrder.length; i++) {
                 columnOrder[i] = table.getColumnModel().getColumn(i).getModelIndex();
             }
             // If movement is slow, this event may fire multiple times w/o
             // actually changing the column order.  If new column order is
             // same as previous, do not save changes to persistent store.
-            int[] oldOrder = Globals.getSettings().getTextColumnOrder();
+            Integer[] savedColumnOrder = getSavedColumnOrder();
             for (int i = 0; i < columnOrder.length; i++) {
-                if (oldOrder[i] != columnOrder[i]) {
-                    Globals.getSettings().setTextColumnOrder(columnOrder);
+                if (!Objects.equals(savedColumnOrder[i], columnOrder[i])) {
+                    // Join column numbers into a space-separated string
+                    String columnOrderString = String.join(" ", Arrays.stream(columnOrder).map(Object::toString).toList());
+                    Globals.getSettings().textSegmentColumnOrder.set(columnOrderString);
                     break;
                 }
             }

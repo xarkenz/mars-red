@@ -3,7 +3,7 @@ package mars.tools;
 import mars.Globals;
 import mars.MIPSprogram;
 import mars.ProcessingException;
-import mars.Settings;
+import mars.settings.Settings;
 import mars.mips.hardware.*;
 import mars.simulator.Simulator;
 import mars.util.FilenameFinder;
@@ -145,7 +145,7 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
         theWindow = this;
         this.isBeingUsedAsAMarsTool = false;
         this.setTitle(this.title);
-        Globals.initialize(true);
+        Globals.initialize();
         // assure the dialog goes away if user clicks the X
         this.addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
@@ -184,7 +184,7 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
      */
     public void action() {
         this.isBeingUsedAsAMarsTool = true;
-        dialog = new JDialog(Globals.getGui(), this.title);
+        dialog = new JDialog(Globals.getGUI(), this.title);
         // assure the dialog goes away if user clicks the X
         dialog.addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
@@ -202,7 +202,7 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
         initializePostGUI();
         dialog.setContentPane(contentPane);
         dialog.pack();
-        dialog.setLocationRelativeTo(Globals.getGui());
+        dialog.setLocationRelativeTo(Globals.getGUI());
         dialog.setVisible(true);
     }
 
@@ -323,7 +323,7 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
                 fileChooser.setSelectedFile(mostRecentlyOpenedFile);
             }
             // DPS 13 June 2007.  The next 4 lines add file filter to file chooser.
-            FileFilter defaultFileFilter = FilenameFinder.getFileFilter(Globals.fileExtensions, "Assembler Files", true);
+            FileFilter defaultFileFilter = FilenameFinder.getFileFilter(Globals.FILE_EXTENSIONS, "Assembler Files", true);
             fileChooser.addChoosableFileFilter(defaultFileFilter);
             fileChooser.addChoosableFileFilter(fileChooser.getAcceptAllFileFilter());
             fileChooser.setFileFilter(defaultFileFilter);
@@ -653,8 +653,8 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
     private class CreateAssembleRunMIPSprogram implements Runnable {
         public void run() {
             String exceptionHandler = null;
-            if (Globals.getSettings().getBoolean(Settings.EXCEPTION_HANDLER_ENABLED) && Globals.getSettings().getExceptionHandler() != null && !Globals.getSettings().getExceptionHandler().isEmpty()) {
-                exceptionHandler = Globals.getSettings().getExceptionHandler();
+            if (Globals.getSettings().exceptionHandlerEnabled.get() && Globals.getSettings().exceptionHandlerPath.get() != null && !Globals.getSettings().exceptionHandlerPath.get().isEmpty()) {
+                exceptionHandler = Globals.getSettings().exceptionHandlerPath.get();
             }
 
             Thread.currentThread().setPriority(Thread.NORM_PRIORITY - 1);
@@ -665,7 +665,7 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
             ArrayList<String> filesToAssemble;
             if (multiFileAssemble) {
                 // Setting (check box in file open dialog) calls for multiple file assembly
-                filesToAssemble = FilenameFinder.getFilenameList(new File(fileToAssemble).getParent(), Globals.fileExtensions);
+                filesToAssemble = FilenameFinder.getFilenameList(new File(fileToAssemble).getParent(), Globals.FILE_EXTENSIONS);
             }
             else {
                 filesToAssemble = new ArrayList<>();
@@ -682,7 +682,7 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
             }
 
             try {
-                program.assemble(programsToAssemble, Globals.getSettings().getBoolean(Settings.EXTENDED_ASSEMBLER_ENABLED), Globals.getSettings().getBoolean(Settings.WARNINGS_ARE_ERRORS));
+                program.assemble(programsToAssemble, Globals.getSettings().extendedAssemblerEnabled.get(), Globals.getSettings().warningsAreErrors.get());
             }
             catch (ProcessingException pe) {
                 operationStatusMessages.displayTerminatingMessage("Assembly Error: " + fileToAssemble);

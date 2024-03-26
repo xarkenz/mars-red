@@ -2,6 +2,7 @@ package mars.venus;
 
 import mars.tools.MarsTool;
 import mars.util.FilenameFinder;
+import mars.venus.actions.ToolAction;
 
 import javax.swing.*;
 import java.awt.event.KeyEvent;
@@ -108,26 +109,26 @@ public class ToolLoader {
         // it correctly.  Not sure how to create a Class object given an absolute
         // pathname.
         HashMap<String, String> tools = new HashMap<>();
-        for (String file : candidates) {
+        for (String filename : candidates) {
             // Do not add class if already encountered (happens if run in MARS development directory)
-            if (tools.containsKey(file)) {
+            if (tools.containsKey(filename)) {
                 continue;
             }
             else {
-                tools.put(file, file);
+                tools.put(filename, filename);
             }
-            if (!file.equals(MARSTOOL_INTERFACE)) {
+            if (!filename.equals(MARSTOOL_INTERFACE)) {
                 try {
                     // grab the class, make sure it implements MarsTool, instantiate, add to menu
-                    String toolClassName = CLASS_PREFIX + file.substring(0, file.indexOf(CLASS_EXTENSION) - 1);
-                    Class<?> clas = Class.forName(toolClassName);
-                    if (!MarsTool.class.isAssignableFrom(clas) || Modifier.isAbstract(clas.getModifiers()) || Modifier.isInterface(clas.getModifiers())) {
+                    String toolClassName = CLASS_PREFIX + filename.substring(0, filename.indexOf(CLASS_EXTENSION) - 1);
+                    Class<?> toolClass = Class.forName(toolClassName);
+                    if (!MarsTool.class.isAssignableFrom(toolClass) || Modifier.isAbstract(toolClass.getModifiers()) || Modifier.isInterface(toolClass.getModifiers())) {
                         continue;
                     }
-                    toolList.add(new MarsToolClassAndInstance(clas, (MarsTool) clas.getDeclaredConstructor().newInstance()));
+                    toolList.add(new MarsToolClassAndInstance(toolClass, (MarsTool) toolClass.getDeclaredConstructor().newInstance()));
                 }
                 catch (Exception e) {
-                    System.out.println("Error instantiating MarsTool from file " + file + ": " + e);
+                    System.out.println("Error instantiating MarsTool from file " + filename + ": " + e);
                 }
             }
         }

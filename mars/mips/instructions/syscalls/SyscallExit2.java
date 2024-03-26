@@ -51,7 +51,7 @@ public class SyscallExit2 extends AbstractSyscall {
      * return value is ignored.
      */
     public void simulate(ProgramStatement statement) throws ProcessingException {
-        if (Globals.getGui() == null) {
+        if (Globals.getGUI() == null) {
             Globals.exitCode = RegisterFile.getValue(4);
         }
         throw new ProcessingException(); // Empty error list indicates a clean exit

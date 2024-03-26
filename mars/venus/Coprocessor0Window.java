@@ -1,7 +1,7 @@
 package mars.venus;
 
 import mars.Globals;
-import mars.Settings;
+import mars.settings.Settings;
 import mars.mips.hardware.AccessNotice;
 import mars.mips.hardware.Coprocessor0;
 import mars.mips.hardware.Register;
@@ -95,7 +95,7 @@ public class Coprocessor0Window extends JPanel implements Observer {
             rowGivenRegNumber[registers[i].getNumber()] = i;
             tableData[i][0] = registers[i].getName();
             tableData[i][1] = registers[i].getNumber();
-            tableData[i][2] = NumberDisplayBaseChooser.formatNumber(registers[i].getValue(), NumberDisplayBaseChooser.getBase(Globals.getSettings().getBoolean(Settings.DISPLAY_VALUES_IN_HEX)));
+            tableData[i][2] = NumberDisplayBaseChooser.formatNumber(registers[i].getValue(), NumberDisplayBaseChooser.getBase(Globals.getSettings().displayValuesInHex.get()));
         }
         return tableData;
     }
@@ -106,7 +106,7 @@ public class Coprocessor0Window extends JPanel implements Observer {
     public void clearWindow() {
         this.clearHighlighting();
         Coprocessor0.resetRegisters();
-        this.updateRegisters(Globals.getGui().getMainPane().getExecutePane().getValueDisplayBase());
+        this.updateRegisters(Globals.getGUI().getMainPane().getExecutePane().getValueDisplayBase());
     }
 
     /**
@@ -133,7 +133,7 @@ public class Coprocessor0Window extends JPanel implements Observer {
      * Update register display using current display base (10 or 16)
      */
     public void updateRegisters() {
-        this.updateRegisters(Globals.getGui().getMainPane().getExecutePane().getValueDisplayBase());
+        this.updateRegisters(Globals.getGUI().getMainPane().getExecutePane().getValueDisplayBase());
     }
 
     /**
@@ -195,7 +195,7 @@ public class Coprocessor0Window extends JPanel implements Observer {
                 // AddressCellRenderer class in DataSegmentWindow.java.
                 this.highlighting = true;
                 this.highlightCellForRegister((Register) observable);
-                Globals.getGui().getRegistersPane().setSelectedComponent(this);
+                Globals.getGUI().getRegistersPane().setSelectedComponent(this);
             }
         }
     }
@@ -234,7 +234,7 @@ public class Coprocessor0Window extends JPanel implements Observer {
             JLabel cell = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
             cell.setFont(font);
             cell.setHorizontalAlignment(alignment);
-            if (Globals.getSettings().getBoolean(Settings.REGISTERS_HIGHLIGHTING) && highlighting && row == highlightRow) {
+            if (Globals.getSettings().highlightRegisters.get() && highlighting && row == highlightRow) {
                 cell.setBackground(Globals.getSettings().getColorSettingByPosition(Settings.REGISTER_HIGHLIGHT_BACKGROUND));
                 cell.setForeground(Globals.getSettings().getColorSettingByPosition(Settings.REGISTER_HIGHLIGHT_FOREGROUND));
                 cell.setFont(Globals.getSettings().getFontByPosition(Settings.REGISTER_HIGHLIGHT_FONT));
@@ -322,7 +322,7 @@ public class Coprocessor0Window extends JPanel implements Observer {
             synchronized (Globals.MEMORY_AND_REGISTERS_LOCK) {
                 Coprocessor0.updateRegister(Coprocessor0.getRegisters()[row].getNumber(), intValue);
             }
-            int valueBase = Globals.getGui().getMainPane().getExecutePane().getValueDisplayBase();
+            int valueBase = Globals.getGUI().getMainPane().getExecutePane().getValueDisplayBase();
             data[row][col] = NumberDisplayBaseChooser.formatNumber(intValue, valueBase);
             fireTableCellUpdated(row, col);
         }

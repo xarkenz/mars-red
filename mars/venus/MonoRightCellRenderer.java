@@ -3,7 +3,7 @@ package mars.venus;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
-	
+
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
 
@@ -35,10 +35,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * Use this to render Monospaced and right-aligned data in JTables.
  * I am using it to render integer addresses and values that are stored as
- * Strings containing either the decimal or hexidecimal version
+ * Strings containing either the decimal or hexadecimal version
  * of the integer value.
  */
-class MonoRightCellRenderer extends DefaultTableCellRenderer {
+public class MonoRightCellRenderer extends DefaultTableCellRenderer {
     public static final Font MONOSPACED_PLAIN_12POINT = new Font("Monospaced", Font.PLAIN, 12);
 
     @Override

@@ -45,14 +45,14 @@ public class PropertiesFile {
      * from specified properties file.  This may be used as an alternative
      * to readPropertiesFile() which uses a different implementation.
      *
-     * @param file Properties filename.  Do NOT include the file extension as
-     *             it is assumed to be ".properties" and is added here.
+     * @param filename Properties filename.  Do NOT include the file extension as
+     *                 it is assumed to be ".properties" and is added here.
      * @return Properties (Hashtable) of key-value pairs read from the file.
      */
-    public static Properties loadPropertiesFromFile(String file) {
+    public static Properties loadPropertiesFromFile(String filename) {
         Properties properties = new Properties();
         try {
-            InputStream input = PropertiesFile.class.getResourceAsStream("/" + file + ".properties");
+            InputStream input = PropertiesFile.class.getResourceAsStream("/" + filename + ".properties");
             properties.load(input);
         }
         catch (IOException | NullPointerException ignored) {

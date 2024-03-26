@@ -2,7 +2,7 @@ package mars.mips.hardware;
 
 import mars.Globals;
 import mars.ProgramStatement;
-import mars.Settings;
+import mars.settings.Settings;
 import mars.mips.instructions.Instruction;
 import mars.simulator.Exceptions;
 import mars.util.Binary;
@@ -379,7 +379,7 @@ public class Memory extends Observable {
             // Burch Mod (Jan 2013): replace throw with call to setStatement
             // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
 
-            if (Globals.getSettings().getBoolean(Settings.SELF_MODIFYING_CODE_ENABLED)) {
+            if (Globals.getSettings().selfModifyingCodeEnabled.get()) {
                 ProgramStatement oldStatement = getStatementNoNotify(address);
                 if (oldStatement != null) {
                     oldValue = oldStatement.getBinaryStatement();
@@ -441,7 +441,7 @@ public class Memory extends Observable {
         else if (inTextSegment(address)) {
             // Burch Mod (Jan 2013): replace throw with call to setStatement
             // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
-            if (Globals.getSettings().getBoolean(Settings.SELF_MODIFYING_CODE_ENABLED)) {
+            if (Globals.getSettings().selfModifyingCodeEnabled.get()) {
                 ProgramStatement oldStatement = getStatementNoNotify(address);
                 if (oldStatement != null) {
                     oldValue = oldStatement.getBinaryStatement();
@@ -614,7 +614,7 @@ public class Memory extends Observable {
         else if (inTextSegment(address)) {
             // Burch Mod (Jan 2013): replace throw with calls to getStatementNoNotify & getBinaryStatement
             // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
-            if (Globals.getSettings().getBoolean(Settings.SELF_MODIFYING_CODE_ENABLED)) {
+            if (Globals.getSettings().selfModifyingCodeEnabled.get()) {
                 ProgramStatement stmt = getStatementNoNotify(address);
                 value = stmt == null ? 0 : stmt.getBinaryStatement();
             }
@@ -681,7 +681,7 @@ public class Memory extends Observable {
         else if (inTextSegment(address)) {
             // Burch Mod (Jan 2013): replace throw with calls to getStatementNoNotify & getBinaryStatement
             // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
-            if (Globals.getSettings().getBoolean(Settings.SELF_MODIFYING_CODE_ENABLED)) {
+            if (Globals.getSettings().selfModifyingCodeEnabled.get()) {
                 ProgramStatement stmt = getStatementNoNotify(address);
                 value = stmt == null ? 0 : stmt.getBinaryStatement();
             }
@@ -867,7 +867,7 @@ public class Memory extends Observable {
         if (!wordAligned(address)) {
             throw new AddressErrorException("fetch address for text segment not aligned to word boundary ", Exceptions.ADDRESS_EXCEPTION_LOAD, address);
         }
-        if (!Globals.getSettings().getBoolean(Settings.SELF_MODIFYING_CODE_ENABLED) && !(inTextSegment(address) || inKernelTextSegment(address))) {
+        if (!Globals.getSettings().selfModifyingCodeEnabled.get() && !(inTextSegment(address) || inKernelTextSegment(address))) {
             throw new AddressErrorException("fetch address for text segment out of range ", Exceptions.ADDRESS_EXCEPTION_LOAD, address);
         }
         if (inTextSegment(address)) {
@@ -1166,7 +1166,7 @@ public class Memory extends Observable {
     // is from command mode, Globals.program is null but still want ability to observe.
     //
     private void notifyAnyObservers(int type, int address, int length, int value) {
-        if ((Globals.program != null || Globals.getGui() == null) && !this.observables.isEmpty()) {
+        if ((Globals.program != null || Globals.getGUI() == null) && !this.observables.isEmpty()) {
             for (MemoryObservable observable : this.observables) {
                 if (observable.match(address)) {
                     observable.notifyObserver(new MemoryAccessNotice(type, address, length, value));
