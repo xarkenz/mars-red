@@ -52,7 +52,7 @@ public class ColorSetting {
             // Value has changed, write it to persistent storage
             String value = Binary.intToHexString(color.getRed() << 16 | color.getGreen() << 8 | color.getBlue());
             settings.saveStringSetting(this.key, value, this.notifies);
+            this.color = color;
         }
-        this.color = color;
     }
 }

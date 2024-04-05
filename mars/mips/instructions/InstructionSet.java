@@ -82,9 +82,7 @@ public class InstructionSet {
      * @see ExtendedInstruction
      */
     public void populate() {
-        /* Here is where the parade begins.  Every instruction is added to the set here.*/
-
-        // ////////////////////////////////////   BASIC INSTRUCTIONS START HERE ////////////////////////////////
+        //////////////////////////////// BASIC INSTRUCTIONS START HERE ////////////////////////////////
 
         instructionList.add(new BasicInstruction("nop", "Null operation : machine code is all zeroes", BasicInstructionFormat.R_FORMAT, "000000 00000 00000 00000 00000 000000", statement -> {
             // Hey I like this so far!
@@ -200,7 +198,6 @@ public class InstructionSet {
                 // specification says "no arithmetic exception under any circumstances".
                 return;
             }
-
             // Register 33 is HIGH and 34 is LOW
             RegisterFile.updateRegister(33, RegisterFile.getValue(operands[0]) % RegisterFile.getValue(operands[1]));
             RegisterFile.updateRegister(34, RegisterFile.getValue(operands[0]) / RegisterFile.getValue(operands[1]));
@@ -635,7 +632,7 @@ public class InstructionSet {
                 }
                 RegisterFile.updateRegister(operands[0], leadingOnes);
             }));
-        instructionList.add(new BasicInstruction("clz $t1,$t2", "Count number of leading zeroes : Set $t1 to the count of leading zero bits in $t2 starting at most significant bit positio", BasicInstructionFormat.R_FORMAT,
+        instructionList.add(new BasicInstruction("clz $t1,$t2", "Count number of leading zeroes : Set $t1 to the count of leading zero bits in $t2 starting at most significant bit position", BasicInstructionFormat.R_FORMAT,
             // See comments for "clo" instruction above.  They apply here too.
             "011100 sssss 00000 fffff 00000 100000", statement -> {
                 int[] operands = statement.getOperands();
@@ -1303,7 +1300,7 @@ public class InstructionSet {
             }
         }));
         instructionList.add(// no printed reference, got opcode from SPIM
-            new BasicInstruction("ldc1 $f2,-100($t2)", "Load double word Coprocessor 1 (FPU)) : Set $f2 to 64-bit value from effective memory doubleword address", BasicInstructionFormat.I_FORMAT, "110101 ttttt fffff ssssssssssssssss", statement -> {
+            new BasicInstruction("ldc1 $f2,-100($t2)", "Load double word Coprocessor 1 (FPU) : Set $f2 to 64-bit value from effective memory doubleword address", BasicInstructionFormat.I_FORMAT, "110101 ttttt fffff ssssssssssssssss", statement -> {
                 int[] operands = statement.getOperands();
                 if (operands[0] % 2 == 1) {
                     throw new ProcessingException(statement, "first register must be even-numbered");
@@ -1330,24 +1327,24 @@ public class InstructionSet {
                 throw new ProcessingException(statement, e);
             }
         }));
-        instructionList.add( // no printed reference, got opcode from SPIM
-            new BasicInstruction("sdc1 $f2,-100($t2)", "Store double word from Coprocessor 1 (FPU)) : Store 64 bit value in $f2 to effective memory doubleword address", BasicInstructionFormat.I_FORMAT, "111101 ttttt fffff ssssssssssssssss", statement -> {
-                int[] operands = statement.getOperands();
-                if (operands[0] % 2 == 1) {
-                    throw new ProcessingException(statement, "first register must be even-numbered");
-                }
-                // IF statement added by DPS 13-July-2011.
-                if (!Memory.doublewordAligned(RegisterFile.getValue(operands[2]) + operands[1])) {
-                    throw new ProcessingException(statement, new AddressErrorException("address not aligned on doubleword boundary ", Exceptions.ADDRESS_EXCEPTION_STORE, RegisterFile.getValue(operands[2]) + operands[1]));
-                }
-                try {
-                    Globals.memory.setWord(RegisterFile.getValue(operands[2]) + operands[1], Coprocessor1.getValue(operands[0]));
-                    Globals.memory.setWord(RegisterFile.getValue(operands[2]) + operands[1] + 4, Coprocessor1.getValue(operands[0] + 1));
-                }
-                catch (AddressErrorException e) {
-                    throw new ProcessingException(statement, e);
-                }
-            }));
+        // no printed reference, got opcode from SPIM
+        instructionList.add(new BasicInstruction("sdc1 $f2,-100($t2)", "Store double word from Coprocessor 1 (FPU) : Store 64 bit value in $f2 to effective memory doubleword address", BasicInstructionFormat.I_FORMAT, "111101 ttttt fffff ssssssssssssssss", statement -> {
+            int[] operands = statement.getOperands();
+            if (operands[0] % 2 == 1) {
+                throw new ProcessingException(statement, "first register must be even-numbered");
+            }
+            // IF statement added by DPS 13-July-2011.
+            if (!Memory.doublewordAligned(RegisterFile.getValue(operands[2]) + operands[1])) {
+                throw new ProcessingException(statement, new AddressErrorException("address not aligned on doubleword boundary ", Exceptions.ADDRESS_EXCEPTION_STORE, RegisterFile.getValue(operands[2]) + operands[1]));
+            }
+            try {
+                Globals.memory.setWord(RegisterFile.getValue(operands[2]) + operands[1], Coprocessor1.getValue(operands[0]));
+                Globals.memory.setWord(RegisterFile.getValue(operands[2]) + operands[1] + 4, Coprocessor1.getValue(operands[0] + 1));
+            }
+            catch (AddressErrorException e) {
+                throw new ProcessingException(statement, e);
+            }
+        }));
         ////////////////////////////  THE TRAP INSTRUCTIONS & ERET  ////////////////////////////
         instructionList.add(new BasicInstruction("teq $t1,$t2", "Trap if equal : Trap if $t1 is equal to $t2", BasicInstructionFormat.R_FORMAT, "000000 fffff sssss 00000 00000 110100", statement -> {
             int[] operands = statement.getOperands();

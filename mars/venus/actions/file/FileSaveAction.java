@@ -38,7 +38,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the File -> Save menu item
  */
 public class FileSaveAction extends VenusAction {
-    public FileSaveAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+    public FileSaveAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 

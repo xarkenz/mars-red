@@ -39,7 +39,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the Edit -> Undo menu item
  */
 public class EditUndoAction extends VenusAction {
-    public EditUndoAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+    public EditUndoAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
         setEnabled(false);
     }

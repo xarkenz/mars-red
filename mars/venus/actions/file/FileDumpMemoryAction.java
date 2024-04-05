@@ -68,7 +68,7 @@ public class FileDumpMemoryAction extends VenusAction {
     private JComboBox<String> segmentListSelector;
     private JComboBox<DumpFormat> formatListSelector;
 
-    public FileDumpMemoryAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+    public FileDumpMemoryAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 

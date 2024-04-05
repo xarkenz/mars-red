@@ -49,7 +49,7 @@ public class RunClearBreakpointsAction extends VenusAction implements TableModel
      * registration info and transfer it to the table model upon creation (which happens with
      * each successful assembly).
      */
-    public RunClearBreakpointsAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+    public RunClearBreakpointsAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
         Globals.getGUI().getMainPane().getExecutePane().getTextSegmentWindow().registerTableModelListener(this);
     }

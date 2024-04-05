@@ -93,7 +93,7 @@ public class SettingsHighlightingAction extends VenusAction {
     private static final String FONT_TOOL_TIP_TEXT = "Click, to select text font";
     private static final String DEFAULT_TOOL_TIP_TEXT = "Check, to select default color (disables color select buttons)";
     // Tool tips for the control buttons along the bottom
-    public static final String CLOSE_TOOL_TIP_TEXT = "Apply current settings and close dialog";
+    public static final String OK_TOOL_TIP_TEXT = "Apply current settings and close dialog";
     public static final String APPLY_TOOL_TIP_TEXT = "Apply current settings now and leave dialog open";
     public static final String RESET_TOOL_TIP_TEXT = "Reset to initial settings without applying";
     public static final String CANCEL_TOOL_TIP_TEXT = "Close dialog without applying current settings";
@@ -105,7 +105,7 @@ public class SettingsHighlightingAction extends VenusAction {
     /**
      * Create a new SettingsEditorAction.  Has all the GuiAction parameters.
      */
-    public SettingsHighlightingAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+    public SettingsHighlightingAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 
@@ -246,7 +246,7 @@ public class SettingsHighlightingAction extends VenusAction {
         // Bottom row - the control buttons for Apply&Close, Apply, Cancel
         Box controlPanel = Box.createHorizontalBox();
         JButton okButton = new JButton("Apply and Close");
-        okButton.setToolTipText(CLOSE_TOOL_TIP_TEXT);
+        okButton.setToolTipText(OK_TOOL_TIP_TEXT);
         okButton.addActionListener(e -> {
             setHighlightingSettings();
             closeDialog();

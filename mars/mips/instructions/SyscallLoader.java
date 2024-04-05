@@ -40,10 +40,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * This class provides functionality to bring external Syscall definitions
  * into MARS.  This permits anyone with knowledge of the Mars public interfaces,
  * in particular of the Memory and Register classes, to write custom MIPS syscall
- * functions. This is adapted from the ToolLoader class, which is in turn adapted
+ * functions. This is adapted from the {@link mars.venus.ToolLoader} class, which is in turn adapted
  * from Bret Barker's GameServer class from the book "Developing Games In Java".
  */
-class SyscallLoader {
+public class SyscallLoader {
     private static final String CLASS_PREFIX = "mars.mips.instructions.syscalls.";
     private static final String SYSCALLS_DIRECTORY_PATH = "mars/mips/instructions/syscalls";
     private static final String SYSCALL_INTERFACE = "Syscall.class";

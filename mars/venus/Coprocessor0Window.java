@@ -1,7 +1,6 @@
 package mars.venus;
 
 import mars.Globals;
-import mars.settings.Settings;
 import mars.mips.hardware.AccessNotice;
 import mars.mips.hardware.Coprocessor0;
 import mars.mips.hardware.Register;
@@ -13,10 +12,7 @@ import mars.util.Binary;
 import javax.swing.*;
 import javax.swing.event.TableModelEvent;
 import javax.swing.table.AbstractTableModel;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.JTableHeader;
 import java.awt.*;
-import java.awt.event.MouseEvent;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -58,8 +54,20 @@ public class Coprocessor0Window extends JPanel implements Observer {
     private static final int NUMBER_COLUMN = 1;
     private static final int VALUE_COLUMN = 2;
 
-    private final JTable table;
-    private int[] rowGivenRegNumber; // translate register number to table row.
+    private static final String[] HEADER_TIPS = {
+        "Each register has a tool tip describing its usage convention", // Name
+        "Register number.  In your program, precede it with $", // Number
+        "Current 32 bit value", // Value
+    };
+    private static final String[] REGISTER_TIPS = {
+        "Memory address at which address exception occurred", // $8 (vaddr)
+        "Interrupt mask and enable bits", // $12 (status)
+        "Exception type and pending interrupt bits", // $13 (cause)
+        "Address of instruction that caused exception", // $14 (epc)
+    };
+
+    private final RegistersTable table;
+    private int[] rowGivenRegisterNumber; // translate register number to table row.
     private boolean highlighting;
     private int highlightRow;
 
@@ -68,18 +76,14 @@ public class Coprocessor0Window extends JPanel implements Observer {
      */
     public Coprocessor0Window() {
         Simulator.getInstance().addObserver(this);
-        this.highlighting = false;
-        table = new MyTippedJTable(new RegTableModel(setupWindow()));
-        table.getColumnModel().getColumn(NAME_COLUMN).setPreferredWidth(50);
-        table.getColumnModel().getColumn(NUMBER_COLUMN).setPreferredWidth(25);
-        table.getColumnModel().getColumn(VALUE_COLUMN).setPreferredWidth(60);
-        // Display register values (String-ified) right-justified in mono font
-        table.getColumnModel().getColumn(NAME_COLUMN).setCellRenderer(new RegisterCellRenderer(MonoRightCellRenderer.MONOSPACED_PLAIN_12POINT, SwingConstants.LEFT));
-        table.getColumnModel().getColumn(NUMBER_COLUMN).setCellRenderer(new RegisterCellRenderer(MonoRightCellRenderer.MONOSPACED_PLAIN_12POINT, SwingConstants.RIGHT));
-        table.getColumnModel().getColumn(VALUE_COLUMN).setCellRenderer(new RegisterCellRenderer(MonoRightCellRenderer.MONOSPACED_PLAIN_12POINT, SwingConstants.RIGHT));
+        highlighting = false;
+        table = new RegistersTable(new RegisterTableModel(setupWindow()), HEADER_TIPS, REGISTER_TIPS);
+        table.setupColumn(NAME_COLUMN, 50, SwingConstants.LEFT);
+        table.setupColumn(NUMBER_COLUMN, 25, SwingConstants.LEFT);
+        table.setupColumn(VALUE_COLUMN, 60, SwingConstants.LEFT);
         table.setPreferredScrollableViewportSize(new Dimension(200, 700));
-        this.setLayout(new BorderLayout());  // table display will occupy entire width if widened
-        this.add(new JScrollPane(table, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED));
+        setLayout(new BorderLayout());  // table display will occupy entire width if widened
+        add(new JScrollPane(table, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED));
     }
 
     /**
@@ -90,12 +94,12 @@ public class Coprocessor0Window extends JPanel implements Observer {
     private Object[][] setupWindow() {
         Register[] registers = Coprocessor0.getRegisters();
         Object[][] tableData = new Object[registers.length][3];
-        rowGivenRegNumber = new int[32]; // maximum number of registers
-        for (int i = 0; i < registers.length; i++) {
-            rowGivenRegNumber[registers[i].getNumber()] = i;
-            tableData[i][0] = registers[i].getName();
-            tableData[i][1] = registers[i].getNumber();
-            tableData[i][2] = NumberDisplayBaseChooser.formatNumber(registers[i].getValue(), NumberDisplayBaseChooser.getBase(Globals.getSettings().displayValuesInHex.get()));
+        rowGivenRegisterNumber = new int[32]; // maximum number of registers
+        for (int row = 0; row < registers.length; row++) {
+            rowGivenRegisterNumber[registers[row].getNumber()] = row;
+            tableData[row][0] = registers[row].getName();
+            tableData[row][1] = "$" + registers[row].getNumber();
+            tableData[row][2] = NumberDisplayBaseChooser.formatNumber(registers[row].getValue(), NumberDisplayBaseChooser.getBase(Globals.getSettings().displayValuesInHex.get()));
         }
         return tableData;
     }
@@ -104,9 +108,9 @@ public class Coprocessor0Window extends JPanel implements Observer {
      * Reset and redisplay registers.
      */
     public void clearWindow() {
-        this.clearHighlighting();
+        clearHighlighting();
         Coprocessor0.resetRegisters();
-        this.updateRegisters(Globals.getGUI().getMainPane().getExecutePane().getValueDisplayBase());
+        updateRegisters(Globals.getGUI().getMainPane().getExecutePane().getValueDisplayBase());
     }
 
     /**
@@ -117,7 +121,7 @@ public class Coprocessor0Window extends JPanel implements Observer {
         if (table != null) {
             table.tableChanged(new TableModelEvent(table.getModel()));
         }
-        highlightRow = -1; // assure highlight will not occur upon re-assemble.
+        highlightRow = -1; // Assure highlight will not occur upon re-assemble
     }
 
     /**
@@ -133,7 +137,7 @@ public class Coprocessor0Window extends JPanel implements Observer {
      * Update register display using current display base (10 or 16)
      */
     public void updateRegisters() {
-        this.updateRegisters(Globals.getGUI().getMainPane().getExecutePane().getValueDisplayBase());
+        updateRegisters(Globals.getGUI().getMainPane().getExecutePane().getValueDisplayBase());
     }
 
     /**
@@ -143,7 +147,7 @@ public class Coprocessor0Window extends JPanel implements Observer {
      */
     public void updateRegisters(int base) {
         for (Register register : Coprocessor0.getRegisters()) {
-            this.updateRegisterValue(register.getNumber(), register.getValue(), base);
+            updateRegisterValue(register.getNumber(), register.getValue(), base);
         }
     }
 
@@ -154,7 +158,7 @@ public class Coprocessor0Window extends JPanel implements Observer {
      * @param value  New value.
      */
     public void updateRegisterValue(int number, int value, int base) {
-        ((RegTableModel) table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(value, base), rowGivenRegNumber[number], 2);
+        ((RegisterTableModel) table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(value, base), rowGivenRegisterNumber[number], 2);
     }
 
     /**
@@ -177,7 +181,7 @@ public class Coprocessor0Window extends JPanel implements Observer {
                 // or stepped mode.
                 if (notice.runSpeed() != RunSpeedPanel.UNLIMITED_SPEED || notice.maxSteps() == 1) {
                     Coprocessor0.addRegistersObserver(this);
-                    this.highlighting = true;
+                    highlighting = true;
                 }
             }
             else {
@@ -193,8 +197,8 @@ public class Coprocessor0Window extends JPanel implements Observer {
                 // as visually distinct as changing the background color, but will do for now.
                 // Ideally, use the same highlighting technique as for Text Segment -- see
                 // AddressCellRenderer class in DataSegmentWindow.java.
-                this.highlighting = true;
-                this.highlightCellForRegister((Register) observable);
+                highlighting = true;
+                highlightCellForRegister((Register) observable);
                 Globals.getGUI().getRegistersPane().setSelectedComponent(this);
             }
         }
@@ -210,55 +214,16 @@ public class Coprocessor0Window extends JPanel implements Observer {
         if (registerRow < 0) {
             return; // Not a valid Coprocessor0 register
         }
-        this.highlightRow = registerRow;
+        highlightRow = registerRow;
         table.tableChanged(new TableModelEvent(table.getModel()));
     }
 
-    /**
-     * Cell renderer for displaying register entries.  This does highlighting, so if you
-     * don't want highlighting for a given column, don't use this.  Currently we highlight
-     * all columns.
-     */
-    private class RegisterCellRenderer extends DefaultTableCellRenderer {
-        private final Font font;
-        private final int alignment;
-
-        public RegisterCellRenderer(Font font, int alignment) {
-            super();
-            this.font = font;
-            this.alignment = alignment;
-        }
-
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            JLabel cell = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            cell.setFont(font);
-            cell.setHorizontalAlignment(alignment);
-            if (Globals.getSettings().highlightRegisters.get() && highlighting && row == highlightRow) {
-                cell.setBackground(Globals.getSettings().getColorSettingByPosition(Settings.REGISTER_HIGHLIGHT_BACKGROUND));
-                cell.setForeground(Globals.getSettings().getColorSettingByPosition(Settings.REGISTER_HIGHLIGHT_FOREGROUND));
-                cell.setFont(Globals.getSettings().getFontByPosition(Settings.REGISTER_HIGHLIGHT_FONT));
-            }
-            else if (row % 2 == 0) {
-                cell.setBackground(Globals.getSettings().getColorSettingByPosition(Settings.EVEN_ROW_BACKGROUND));
-                cell.setForeground(Globals.getSettings().getColorSettingByPosition(Settings.EVEN_ROW_FOREGROUND));
-                cell.setFont(Globals.getSettings().getFontByPosition(Settings.EVEN_ROW_FONT));
-            }
-            else {
-                cell.setBackground(Globals.getSettings().getColorSettingByPosition(Settings.ODD_ROW_BACKGROUND));
-                cell.setForeground(Globals.getSettings().getColorSettingByPosition(Settings.ODD_ROW_FOREGROUND));
-                cell.setFont(Globals.getSettings().getFontByPosition(Settings.ODD_ROW_FONT));
-            }
-            return cell;
-        }
-    }
-
-    private static class RegTableModel extends AbstractTableModel {
+    private static class RegisterTableModel extends AbstractTableModel {
         private static final String[] COLUMN_NAMES = {"Name", "Number", "Value"};
 
         private final Object[][] data;
 
-        public RegTableModel(Object[][] data) {
+        public RegisterTableModel(Object[][] data) {
             this.data = data;
         }
 
@@ -333,63 +298,6 @@ public class Coprocessor0Window extends JPanel implements Observer {
         private void setDisplayAndModelValueAt(Object value, int row, int col) {
             data[row][col] = value;
             fireTableCellUpdated(row, col);
-        }
-    }
-
-    ///////////////////////////////////////////////////////////////////
-    //
-    // JTable subclass to provide custom tool tips for each of the
-    // register table column headers and for each register name in
-    // the first column. From Sun's JTable tutorial.
-    // http://java.sun.com/docs/books/tutorial/uiswing/components/table.html
-    //
-    private static class MyTippedJTable extends JTable {
-        MyTippedJTable(RegTableModel model) {
-            super(model);
-            this.setRowSelectionAllowed(true); // Highlights background color of entire row
-            this.setSelectionBackground(Color.GREEN);
-        }
-
-        private static final String[] REGISTER_TOOL_TIPS = {
-            "Memory address at which address exception occurred", // $8 (vaddr)
-            "Interrupt mask and enable bits", // $12 (status)
-            "Exception type and pending interrupt bits", // $13 (cause)
-            "Address of instruction that caused exception", // $14 (epc)
-        };
-
-        // Implement table cell tool tips.
-        @Override
-        public String getToolTipText(MouseEvent e) {
-            java.awt.Point p = e.getPoint();
-            int rowIndex = rowAtPoint(p);
-            int colIndex = columnAtPoint(p);
-            int realColumnIndex = convertColumnIndexToModel(colIndex);
-            if (realColumnIndex == NAME_COLUMN) {
-                return REGISTER_TOOL_TIPS[rowIndex];
-            }
-            else {
-                return super.getToolTipText(e);
-            }
-        }
-
-        private static final String[] COLUMN_TOOL_TIPS = {
-            "Each register has a tool tip describing its usage convention", // Name
-            "Register number.  In your program, precede it with $", // Number
-            "Current 32 bit value", // Value
-        };
-
-        // Implement table header tool tips.
-        @Override
-        protected JTableHeader createDefaultTableHeader() {
-            return new JTableHeader(columnModel) {
-                @Override
-                public String getToolTipText(MouseEvent e) {
-                    java.awt.Point p = e.getPoint();
-                    int index = columnModel.getColumnIndexAtX(p.x);
-                    int realIndex = columnModel.getColumn(index).getModelIndex();
-                    return COLUMN_TOOL_TIPS[realIndex];
-                }
-            };
         }
     }
 }

@@ -3,8 +3,6 @@ package mars.venus;
 import mars.util.EditorFont;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -50,6 +48,7 @@ public abstract class AbstractFontSettingDialog extends JDialog {
     JSpinner fontSizeSpinSelector;
     JLabel fontSample;
     protected Font currentFont;
+    protected JButton defaultButton;
 
     // Used to determine upon OK, whether or not anything has changed.
     String initialFontFamily;
@@ -63,28 +62,30 @@ public abstract class AbstractFontSettingDialog extends JDialog {
     public AbstractFontSettingDialog(Frame owner, String title, boolean modality, Font currentFont) {
         super(owner, title, modality);
         this.currentFont = currentFont;
-        JPanel overallPanel = new JPanel(new BorderLayout());
-        overallPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        overallPanel.add(buildDialogPanel(), BorderLayout.CENTER);
-        overallPanel.add(buildControlPanel(), BorderLayout.SOUTH);
-        this.setContentPane(overallPanel);
+        this.defaultButton = null;
+        JPanel content = new JPanel(new BorderLayout());
+        content.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        content.add(buildDialogPanel(), BorderLayout.CENTER);
+        content.add(buildControlPanel(), BorderLayout.SOUTH);
+        this.setContentPane(content);
         this.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
         this.addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent we) {
+            @Override
+            public void windowClosing(WindowEvent event) {
                 closeDialog();
             }
         });
         this.pack();
         this.setLocationRelativeTo(owner);
+        if (this.defaultButton != null) {
+            this.defaultButton.getRootPane().setDefaultButton(this.defaultButton);
+        }
     }
 
     /**
-     * Build he dialog area, not including control buttons at bottom.
+     * Build the dialog area, not including control buttons at bottom.
      */
     protected JPanel buildDialogPanel() {
-        JPanel contents = new JPanel(new BorderLayout(20, 20));
-        contents.setBorder(new EmptyBorder(10, 10, 10, 10));
-
         initialFontFamily = currentFont.getFamily();
         initialFontStyle = EditorFont.getStyle(currentFont.getStyle());
         initialFontSize = EditorFont.sizeIntToSizeString(currentFont.getSize());
@@ -109,49 +110,57 @@ public abstract class AbstractFontSettingDialog extends JDialog {
 
         fontSizeSelector = new JSlider(EditorFont.MIN_SIZE, EditorFont.MAX_SIZE, currentFont.getSize());
         fontSizeSelector.setToolTipText("Use slider to select font size from " + EditorFont.MIN_SIZE + " to " + EditorFont.MAX_SIZE + ".");
-        fontSizeSelector.addChangeListener(e -> {
-            int value = ((JSlider) e.getSource()).getValue();
+        fontSizeSelector.addChangeListener(event -> {
+            int value = ((JSlider) event.getSource()).getValue();
             fontSizeSpinSelector.setValue(value);
             fontSample.setFont(getFont());
         });
         SpinnerNumberModel fontSizeSpinnerModel = new SpinnerNumberModel(currentFont.getSize(), EditorFont.MIN_SIZE, EditorFont.MAX_SIZE, 1);
         fontSizeSpinSelector = new JSpinner(fontSizeSpinnerModel);
         fontSizeSpinSelector.setToolTipText("Current font size in points.");
-        fontSizeSpinSelector.addChangeListener(e -> {
-            Object value = ((JSpinner) e.getSource()).getValue();
+        fontSizeSpinSelector.addChangeListener(event -> {
+            Object value = ((JSpinner) event.getSource()).getValue();
             fontSizeSelector.setValue((Integer) value);
             fontSample.setFont(getFont());
         });
         // Action listener to update sample when family or style selected
-        ActionListener updateSample = (e -> fontSample.setFont(getFont()));
+        ActionListener updateSample = (event -> fontSample.setFont(getFont()));
         fontFamilySelector.addActionListener(updateSample);
         fontStyleSelector.addActionListener(updateSample);
 
-        JPanel familyStyleComponents = new JPanel(new GridLayout(2, 2, 4, 4));
-        familyStyleComponents.add(new JLabel("Font Family"));
-        familyStyleComponents.add(new JLabel("Font Style"));
+        JPanel familyStyleComponents = new JPanel(new GridLayout(2, 2, 12, 6));
+        familyStyleComponents.add(new JLabel("Font family:"));
+        familyStyleComponents.add(new JLabel("Font style:"));
         familyStyleComponents.add(fontFamilySelector);
         familyStyleComponents.add(fontStyleSelector);
 
-        fontSample = new JLabel("Sample of this font", SwingConstants.CENTER);
-        fontSample.setBorder(new LineBorder(Color.BLACK));
-        fontSample.setFont(getFont());
-        fontSample.setToolTipText("Dynamically updated font sample based on current settings");
-        JPanel sizeComponents = new JPanel();
-        sizeComponents.add(new JLabel("Font Size "));
+        JPanel sizeComponents = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 6));
+        sizeComponents.add(new JLabel("Font size:"));
         sizeComponents.add(fontSizeSelector);
         sizeComponents.add(fontSizeSpinSelector);
-        JPanel sizeAndSample = new JPanel(new GridLayout(2, 1, 4, 8));
-        sizeAndSample.add(sizeComponents);
-        sizeAndSample.add(fontSample);
-        contents.add(familyStyleComponents, BorderLayout.NORTH);
-        contents.add(sizeAndSample, BorderLayout.CENTER);
+
+        fontSample = new JLabel("The quick brown fox jumped over the lazy dog.", SwingConstants.CENTER);
+        fontSample.setOpaque(true);
+        fontSample.setBackground(UIManager.getColor("Venus.Editor.background"));
+        fontSample.setFont(getFont());
+        fontSample.setToolTipText("Dynamically updated font sample based on current settings");
+
+        Box fontOptionComponents = Box.createVerticalBox();
+        fontOptionComponents.add(familyStyleComponents);
+        fontOptionComponents.add(Box.createVerticalStrut(12));
+        fontOptionComponents.add(sizeComponents);
+
+        JPanel contents = new JPanel();
+        contents.setLayout(new BorderLayout(12, 12));
+        contents.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        contents.add(fontOptionComponents, BorderLayout.NORTH);
+        contents.add(fontSample, BorderLayout.CENTER);
         return contents;
     }
 
     /**
      * Build component containing the buttons for dialog control
-     * Such as OK, Cancel, Reset, Apply, etc.  These may vary
+     * such as OK, Cancel, Reset, Apply, etc.  These may vary
      * by application.
      */
     protected abstract Component buildControlPanel();
@@ -166,7 +175,7 @@ public abstract class AbstractFontSettingDialog extends JDialog {
     }
 
     /**
-     * User has clicked "Apply" or "Apply and Close" button.
+     * User has clicked Apply or OK button.
      */
     protected void performApply() {
         apply(this.getFont());
@@ -235,7 +244,7 @@ public abstract class AbstractFontSettingDialog extends JDialog {
 
         public ComboBoxRenderer() {
             setOpaque(true);
-            setBorder(new EmptyBorder(1, 1, 1, 1));
+            setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
             separator = new JSeparator(JSeparator.HORIZONTAL);
         }
 

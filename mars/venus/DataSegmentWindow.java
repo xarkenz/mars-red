@@ -266,10 +266,10 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
         int baseAddress = displayBaseAddressArray[desiredComboBoxIndex];
         if (baseAddress == -1) {
             if (desiredComboBoxIndex == GLOBAL_POINTER_ADDRESS_INDEX) {
-                baseAddress = RegisterFile.getValue(RegisterFile.GLOBAL_POINTER_REGISTER) - (RegisterFile.getValue(RegisterFile.GLOBAL_POINTER_REGISTER) % BYTES_PER_ROW);
+                baseAddress = RegisterFile.getValue(RegisterFile.GLOBAL_POINTER) - (RegisterFile.getValue(RegisterFile.GLOBAL_POINTER) % BYTES_PER_ROW);
             }
             else if (desiredComboBoxIndex == STACK_POINTER_BASE_ADDRESS_INDEX) {
-                baseAddress = RegisterFile.getValue(RegisterFile.STACK_POINTER_REGISTER) - (RegisterFile.getValue(RegisterFile.STACK_POINTER_REGISTER) % BYTES_PER_ROW);
+                baseAddress = RegisterFile.getValue(RegisterFile.STACK_POINTER) - (RegisterFile.getValue(RegisterFile.STACK_POINTER) % BYTES_PER_ROW);
             }
             else {
                 // Shouldn't happen since these are the only two
@@ -382,7 +382,7 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
             desiredComboBoxIndex = EXTERN_BASE_ADDRESS_INDEX;
         }
         // Check distance from global pointer; can be either side of it...
-        thisDistance = Math.abs(address - RegisterFile.getValue(RegisterFile.GLOBAL_POINTER_REGISTER)); // distance from global pointer
+        thisDistance = Math.abs(address - RegisterFile.getValue(RegisterFile.GLOBAL_POINTER)); // distance from global pointer
         if (thisDistance < shortDistance) {
             shortDistance = thisDistance;
             desiredComboBoxIndex = GLOBAL_POINTER_ADDRESS_INDEX;
@@ -400,7 +400,7 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
             desiredComboBoxIndex = HEAP_BASE_ADDRESS_INDEX;
         }
         // Check distance from stack pointer.  Can be on either side of it...
-        thisDistance = Math.abs(address - RegisterFile.getValue(RegisterFile.STACK_POINTER_REGISTER));
+        thisDistance = Math.abs(address - RegisterFile.getValue(RegisterFile.STACK_POINTER));
         if (thisDistance < shortDistance) {
             shortDistance = thisDistance;
             desiredComboBoxIndex = STACK_POINTER_BASE_ADDRESS_INDEX;
@@ -674,7 +674,7 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
         globButton.addActionListener(e -> {
             userOrKernelMode = USER_MODE;
             // get $gp global pointer, but guard against it having value below data segment
-            firstAddress = Math.max(Memory.dataSegmentBaseAddress, RegisterFile.getValue(RegisterFile.GLOBAL_POINTER_REGISTER));
+            firstAddress = Math.max(Memory.dataSegmentBaseAddress, RegisterFile.getValue(RegisterFile.GLOBAL_POINTER));
             // updateModelForMemoryRange requires argument to be multiple of 4
             // but for cleaner display we'll make it multiple of 32 (last nibble is 0).
             // This makes it easier to mentally calculate address from row address + column offset.
@@ -687,7 +687,7 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
         stakButton.addActionListener(e -> {
             userOrKernelMode = USER_MODE;
             // get $sp stack pointer, but guard against it having value below data segment
-            firstAddress = Math.max(Memory.dataSegmentBaseAddress, RegisterFile.getValue(RegisterFile.STACK_POINTER_REGISTER));
+            firstAddress = Math.max(Memory.dataSegmentBaseAddress, RegisterFile.getValue(RegisterFile.STACK_POINTER));
             // See comment above for gloButton...
             firstAddress = firstAddress - (firstAddress % BYTES_PER_ROW);
             homeAddress = Memory.stackBaseAddress;
@@ -956,7 +956,7 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
      * Will set background to highlight color if certain conditions met.
      */
     class AddressCellRenderer extends DefaultTableCellRenderer {
-       @Override
+        @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             JLabel cell = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
@@ -968,13 +968,13 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
                 cell.setFont(settings.getFontByPosition(Settings.DATASEGMENT_HIGHLIGHT_FONT));
             }
             else if (row % 2 == 0) {
-                cell.setBackground(settings.getColorSettingByPosition(Settings.EVEN_ROW_BACKGROUND));
-                cell.setForeground(settings.getColorSettingByPosition(Settings.EVEN_ROW_FOREGROUND));
+//                cell.setBackground(settings.getColorSettingByPosition(Settings.EVEN_ROW_BACKGROUND));
+//                cell.setForeground(settings.getColorSettingByPosition(Settings.EVEN_ROW_FOREGROUND));
                 cell.setFont(settings.getFontByPosition(Settings.EVEN_ROW_FONT));
             }
             else {
-                cell.setBackground(settings.getColorSettingByPosition(Settings.ODD_ROW_BACKGROUND));
-                cell.setForeground(settings.getColorSettingByPosition(Settings.ODD_ROW_FOREGROUND));
+//                cell.setBackground(settings.getColorSettingByPosition(Settings.ODD_ROW_BACKGROUND));
+//                cell.setForeground(settings.getColorSettingByPosition(Settings.ODD_ROW_FOREGROUND));
                 cell.setFont(settings.getFontByPosition(Settings.ODD_ROW_FONT));
             }
             return cell;

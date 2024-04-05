@@ -1,7 +1,6 @@
 package mars.venus.actions.settings;
 
 import mars.Globals;
-import mars.settings.Settings;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
 
@@ -42,7 +41,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * will be displayed where they can be interactively entered.
  */
 public class SettingsProgramArgumentsAction extends VenusAction {
-    public SettingsProgramArgumentsAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+    public SettingsProgramArgumentsAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 

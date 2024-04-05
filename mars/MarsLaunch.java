@@ -5,7 +5,6 @@ import com.formdev.flatlaf.FlatLaf;
 import mars.mips.dump.DumpFormat;
 import mars.mips.dump.DumpFormatLoader;
 import mars.mips.hardware.*;
-import mars.settings.Settings;
 import mars.simulator.ProgramArgumentList;
 import mars.util.Binary;
 import mars.util.FilenameFinder;
@@ -75,7 +74,7 @@ public class MarsLaunch {
     private ArrayList<String> registerDisplayList;
     private ArrayList<String> memoryDisplayList;
     private ArrayList<String> filenameList;
-    private MIPSprogram code;
+    private Program code;
     private int maxSteps;
     private int instructionCount;
     private PrintStream out; // stream for display of command line output
@@ -162,7 +161,7 @@ public class MarsLaunch {
             filenameList = new ArrayList<>();
             MemoryConfigurations.setCurrentConfiguration(MemoryConfigurations.getDefaultConfiguration());
             // do NOT use Globals.program for command line MARS -- it triggers 'backstep' log.
-            code = new MIPSprogram();
+            code = new Program();
             maxSteps = -1;
             out = System.out;
             if (parseCommandArgs(args)) {
@@ -243,7 +242,7 @@ public class MarsLaunch {
             // Set up the look and feel
             FlatDarkLaf.setup();
             // Initialize the GUI
-            new VenusUI("MARS Red " + Globals.MARS_VERSION);
+            new VenusUI(Globals.APPLICATION_NAME + " " + Globals.APPLICATION_VERSION);
         });
     }
 
@@ -489,7 +488,7 @@ public class MarsLaunch {
             if (Globals.debug) {
                 out.println("--------  TOKENIZING BEGINS  -----------");
             }
-            ArrayList<MIPSprogram> MIPSprogramsToAssemble = code.prepareFilesForAssembly(filesToAssemble, mainFile.getAbsolutePath(), null);
+            ArrayList<Program> MIPSprogramsToAssemble = code.prepareFilesForAssembly(filesToAssemble, mainFile.getAbsolutePath(), null);
             if (Globals.debug) {
                 out.println("--------  ASSEMBLY BEGINS  -----------");
             }
@@ -733,7 +732,7 @@ public class MarsLaunch {
                 return;
             }
         }
-        out.println("MARS " + Globals.MARS_VERSION + "  Copyright " + Globals.COPYRIGHT_YEARS + " " + Globals.COPYRIGHT_HOLDERS + "\n");
+        out.println("MARS " + Globals.APPLICATION_VERSION + "  Copyright " + Globals.COPYRIGHT_YEARS + " " + Globals.COPYRIGHT_HOLDERS + "\n");
     }
 
     ///////////////////////////////////////////////////////////////////////

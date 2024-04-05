@@ -8,6 +8,7 @@ import mars.simulator.SimulatorNotice;
 import mars.util.Binary;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.TableModelEvent;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -57,7 +58,47 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
     private static final int FLOAT_COLUMN = 1;
     private static final int DOUBLE_COLUMN = 2;
 
-    private final JTable table;
+    private static final String[] HEADER_TIPS = {
+        "Each register has a tool tip describing its usage convention", // Name
+        "32-bit single precision IEEE 754 floating point value", // Single
+        "64-bit double precision IEEE 754 floating point value (uses a pair of 32-bit registers)", // Double
+    };
+    private static final String[] REGISTER_TIPS = {
+        "Floating point subprogram return value", // $f0
+        "Should not be referenced explicitly in your program", // $f1
+        "Floating point subprogram return value", // $f2
+        "Should not be referenced explicitly in your program", // $f3
+        "Temporary (not preserved across call)", // $f4
+        "Should not be referenced explicitly in your program", // $f5
+        "Temporary (not preserved across call)", // $f6
+        "Should not be referenced explicitly in your program", // $f7
+        "Temporary (not preserved across call)", // $f8
+        "Should not be referenced explicitly in your program", // $f9
+        "Temporary (not preserved across call)", // $f10
+        "Should not be referenced explicitly in your program", // $f11
+        "Floating point subprogram argument 1", // $f12
+        "Should not be referenced explicitly in your program", // $f13
+        "Floating point subprogram argument 2", // $f14
+        "Should not be referenced explicitly in your program", // $f15
+        "Temporary (not preserved across call)", // $f16
+        "Should not be referenced explicitly in your program", // $f17
+        "Temporary (not preserved across call)", // $f18
+        "Should not be referenced explicitly in your program", // $f19
+        "Saved temporary (preserved across call)", // $f20
+        "Should not be referenced explicitly in your program", // $f21
+        "Saved temporary (preserved across call)", // $f22
+        "Should not be referenced explicitly in your program", // $f23
+        "Saved temporary (preserved across call)", // $f24
+        "Should not be referenced explicitly in your program", // $f25
+        "Saved temporary (preserved across call)", // $f26
+        "Should not be referenced explicitly in your program", // $f27
+        "Saved temporary (preserved across call)", // $f28
+        "Should not be referenced explicitly in your program", // $f29
+        "Saved temporary (preserved across call)", // $f30
+        "Should not be referenced explicitly in your program", // $f31
+    };
+
+    private final RegistersTable table;
     private final JCheckBox[] conditionFlagCheckBoxes;
     private boolean highlighting;
     private int highlightRow;
@@ -69,28 +110,24 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
         Simulator.getInstance().addObserver(this);
         // Display registers in table contained in scroll pane.
         this.setLayout(new BorderLayout()); // table display will occupy entire width if widened
-        table = new MyTippedJTable(new RegTableModel(setupWindow()));
-        table.getColumnModel().getColumn(NAME_COLUMN).setPreferredWidth(20);
-        table.getColumnModel().getColumn(FLOAT_COLUMN).setPreferredWidth(70);
-        table.getColumnModel().getColumn(DOUBLE_COLUMN).setPreferredWidth(130);
-        // Display register values (String-ified) right-justified in mono font
-        table.getColumnModel().getColumn(NAME_COLUMN).setCellRenderer(new RegisterCellRenderer(MonoRightCellRenderer.MONOSPACED_PLAIN_12POINT, SwingConstants.LEFT));
-        table.getColumnModel().getColumn(FLOAT_COLUMN).setCellRenderer(new RegisterCellRenderer(MonoRightCellRenderer.MONOSPACED_PLAIN_12POINT, SwingConstants.RIGHT));
-        table.getColumnModel().getColumn(DOUBLE_COLUMN).setCellRenderer(new RegisterCellRenderer(MonoRightCellRenderer.MONOSPACED_PLAIN_12POINT, SwingConstants.RIGHT));
+        table = new RegistersTable(new RegisterTableModel(setupWindow()), HEADER_TIPS, REGISTER_TIPS);
+        table.setupColumn(NAME_COLUMN, 20, SwingConstants.LEFT);
+        table.setupColumn(FLOAT_COLUMN, 70, SwingConstants.LEFT);
+        table.setupColumn(DOUBLE_COLUMN, 130, SwingConstants.LEFT);
         this.add(new JScrollPane(table, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER));
         // Display condition flags in panel below the registers
-        JPanel flagsPane = new JPanel(new BorderLayout());
+        JPanel flagsPane = new JPanel(new BorderLayout(0, 6));
+        flagsPane.setBorder(new EmptyBorder(6, 6, 6, 6));
         flagsPane.setToolTipText("Flags are used by certain floating point instructions, default flag is 0");
         flagsPane.add(new JLabel("Condition Flags", JLabel.CENTER), BorderLayout.NORTH);
         int numFlags = Coprocessor1.getConditionFlagCount();
         conditionFlagCheckBoxes = new JCheckBox[numFlags];
         JPanel checksPane = new JPanel(new GridLayout(2, numFlags / 2));
-        for (int i = 0; i < numFlags; i++) {
-            conditionFlagCheckBoxes[i] = new JCheckBox(Integer.toString(i));
-            conditionFlagCheckBoxes[i].addActionListener(this);
-            conditionFlagCheckBoxes[i].setBackground(Color.WHITE);
-            conditionFlagCheckBoxes[i].setToolTipText("Flag " + i);
-            checksPane.add(conditionFlagCheckBoxes[i]);
+        for (int flag = 0; flag < numFlags; flag++) {
+            conditionFlagCheckBoxes[flag] = new JCheckBox(Integer.toString(flag));
+            conditionFlagCheckBoxes[flag].addActionListener(this);
+            conditionFlagCheckBoxes[flag].setToolTipText("Flag " + flag);
+            checksPane.add(conditionFlagCheckBoxes[flag]);
         }
         flagsPane.add(checksPane, BorderLayout.CENTER);
         this.add(flagsPane, BorderLayout.SOUTH);
@@ -100,19 +137,19 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
      * Called when user clicks on a condition flag checkbox.
      * Updates both the display and the underlying Coprocessor 1 flag.
      *
-     * @param e component that triggered this call
+     * @param event The event that triggered this call
      */
     @Override
-    public void actionPerformed(ActionEvent e) {
-        JCheckBox checkBox = (JCheckBox) e.getSource();
-        int i = Integer.parseInt(checkBox.getText());
+    public void actionPerformed(ActionEvent event) {
+        JCheckBox checkBox = (JCheckBox) event.getSource();
+        int flag = Integer.parseInt(checkBox.getText());
         if (checkBox.isSelected()) {
             checkBox.setSelected(true);
-            Coprocessor1.setConditionFlag(i);
+            Coprocessor1.setConditionFlag(flag);
         }
         else {
             checkBox.setSelected(false);
-            Coprocessor1.clearConditionFlag(i);
+            Coprocessor1.clearConditionFlag(flag);
         }
     }
 
@@ -122,25 +159,24 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
      * @return The array object with the data for the window.
      */
     public Object[][] setupWindow() {
-        Register[] registers = Coprocessor1.getRegisters();
         this.highlighting = false;
-        Object[][] tableData = new Object[registers.length][3];
-        for (int i = 0; i < registers.length; i++) {
-            tableData[i][0] = registers[i].getName();
-            tableData[i][1] = NumberDisplayBaseChooser.formatFloatNumber(registers[i].getValue(), NumberDisplayBaseChooser.getBase(Globals.getSettings().displayValuesInHex.get()));
-            if (i % 2 == 0) {
-                // even numbered double registers
+        Object[][] tableData = new Object[32][3];
+        for (Register register : Coprocessor1.getRegisters()) {
+            tableData[register.getNumber()][0] = register.getName();
+            tableData[register.getNumber()][1] = NumberDisplayBaseChooser.formatFloatNumber(register.getValue(), NumberDisplayBaseChooser.getBase(Globals.getSettings().displayValuesInHex.get()));
+            if (register.getNumber() % 2 == 0) {
+                // Even numbered double registers
                 long longValue = 0;
                 try {
-                    longValue = Coprocessor1.getLongFromRegisterPair(registers[i].getName());
+                    longValue = Coprocessor1.getLongFromRegisterPair(register.getName());
                 }
                 catch (InvalidRegisterAccessException e) {
-                    // cannot happen since i must be even
+                    // Cannot happen since row must be even
                 }
-                tableData[i][2] = NumberDisplayBaseChooser.formatDoubleNumber(longValue, NumberDisplayBaseChooser.getBase(Globals.getSettings().displayValuesInHex.get()));
+                tableData[register.getNumber()][2] = NumberDisplayBaseChooser.formatDoubleNumber(longValue, NumberDisplayBaseChooser.getBase(Globals.getSettings().displayValuesInHex.get()));
             }
             else {
-                tableData[i][2] = "";
+                tableData[register.getNumber()][2] = "";
             }
         }
         return tableData;
@@ -150,11 +186,11 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
      * Reset and redisplay registers.
      */
     public void clearWindow() {
-        this.clearHighlighting();
+        clearHighlighting();
         Coprocessor1.resetRegisters();
-        this.updateRegisters(Globals.getGUI().getMainPane().getExecutePane().getValueDisplayBase());
+        updateRegisters(Globals.getGUI().getMainPane().getExecutePane().getValueDisplayBase());
         Coprocessor1.clearConditionFlags();
-        this.updateConditionFlagDisplay();
+        updateConditionFlagDisplay();
     }
 
     /**
@@ -165,7 +201,7 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
         if (table != null) {
             table.tableChanged(new TableModelEvent(table.getModel()));
         }
-        highlightRow = -1; // assure highlight will not occur upon re-assemble.
+        highlightRow = -1; // Assure highlight will not occur upon re-assemble
     }
 
     /**
@@ -219,7 +255,7 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
      * @param base   The number base for display (e.g. 10, 16)
      */
     public void updateFloatRegisterValue(int number, int value, int base) {
-        ((RegTableModel) table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatFloatNumber(value, base), number, FLOAT_COLUMN);
+        ((RegisterTableModel) table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatFloatNumber(value, base), number, FLOAT_COLUMN);
     }
 
     /**
@@ -230,7 +266,7 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
      * @param base   The number base for display (e.g. 10, 16)
      */
     public void updateDoubleRegisterValue(int number, long value, int base) {
-        ((RegTableModel) table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatDoubleNumber(value, base), number, DOUBLE_COLUMN);
+        ((RegisterTableModel) table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatDoubleNumber(value, base), number, DOUBLE_COLUMN);
     }
 
     /**
@@ -253,7 +289,7 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
                 // or stepped mode.
                 if (notice.runSpeed() != RunSpeedPanel.UNLIMITED_SPEED || notice.maxSteps() == 1) {
                     Coprocessor1.addRegistersObserver(this);
-                    this.highlighting = true;
+                    highlighting = true;
                 }
             }
             else {
@@ -269,8 +305,8 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
                 // as visually distinct as changing the background color, but will do for now.
                 // Ideally, use the same highlighting technique as for Text Segment -- see
                 // AddressCellRenderer class in DataSegmentWindow.java.
-                this.highlighting = true;
-                this.highlightCellForRegister((Register) observable);
+                highlighting = true;
+                highlightCellForRegister((Register) observable);
                 Globals.getGUI().getRegistersPane().setSelectedComponent(this);
             }
         }
@@ -282,55 +318,16 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
      * @param register Register object corresponding to row to be selected.
      */
     void highlightCellForRegister(Register register) {
-        this.highlightRow = register.getNumber();
+        highlightRow = register.getNumber();
         table.tableChanged(new TableModelEvent(table.getModel()));
     }
 
-    /**
-     * Cell renderer for displaying register entries.  This does highlighting, so if you
-     * don't want highlighting for a given column, don't use this.  Currently we highlight
-     * all columns.
-     */
-    private class RegisterCellRenderer extends DefaultTableCellRenderer {
-        private final Font font;
-        private final int alignment;
-
-        public RegisterCellRenderer(Font font, int alignment) {
-            super();
-            this.font = font;
-            this.alignment = alignment;
-        }
-
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            JLabel cell = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            cell.setFont(font);
-            cell.setHorizontalAlignment(alignment);
-            if (Globals.getSettings().highlightRegisters.get() && highlighting && row == highlightRow) {
-                cell.setBackground(Globals.getSettings().getColorSettingByPosition(Settings.REGISTER_HIGHLIGHT_BACKGROUND));
-                cell.setForeground(Globals.getSettings().getColorSettingByPosition(Settings.REGISTER_HIGHLIGHT_FOREGROUND));
-                cell.setFont(Globals.getSettings().getFontByPosition(Settings.REGISTER_HIGHLIGHT_FONT));
-            }
-            else if (row % 2 == 0) {
-                cell.setBackground(Globals.getSettings().getColorSettingByPosition(Settings.EVEN_ROW_BACKGROUND));
-                cell.setForeground(Globals.getSettings().getColorSettingByPosition(Settings.EVEN_ROW_FOREGROUND));
-                cell.setFont(Globals.getSettings().getFontByPosition(Settings.EVEN_ROW_FONT));
-            }
-            else {
-                cell.setBackground(Globals.getSettings().getColorSettingByPosition(Settings.ODD_ROW_BACKGROUND));
-                cell.setForeground(Globals.getSettings().getColorSettingByPosition(Settings.ODD_ROW_FOREGROUND));
-                cell.setFont(Globals.getSettings().getFontByPosition(Settings.ODD_ROW_FONT));
-            }
-            return cell;
-        }
-    }
-
-    private static class RegTableModel extends AbstractTableModel {
-        private static final String[] COLUMN_NAMES = {"Name", "Float", "Double"};
+    private static class RegisterTableModel extends AbstractTableModel {
+        private static final String[] COLUMN_NAMES = {"Name", "Single", "Double"};
 
         private final Object[][] data;
 
-        public RegTableModel(Object[][] data) {
+        public RegisterTableModel(Object[][] data) {
             this.data = data;
         }
 
@@ -448,91 +445,6 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
         private void setDisplayAndModelValueAt(Object value, int row, int col) {
             data[row][col] = value;
             fireTableCellUpdated(row, col);
-        }
-    }
-
-    ///////////////////////////////////////////////////////////////////
-    //
-    // JTable subclass to provide custom tool tips for each of the
-    // register table column headers and for each register name in
-    // the first column. From Sun's JTable tutorial.
-    // http://java.sun.com/docs/books/tutorial/uiswing/components/table.html
-    //
-    private static class MyTippedJTable extends JTable {
-        MyTippedJTable(RegTableModel model) {
-            super(model);
-            this.setRowSelectionAllowed(true); // Highlights background color of entire row
-            this.setSelectionBackground(Color.GREEN);
-        }
-
-        private static final String[] REGISTER_TOOL_TIPS = {
-            "Floating point subprogram return value", // $f0
-            "Should not be referenced explicitly in your program", // $f1
-            "Floating point subprogram return value", // $f2
-            "Should not be referenced explicitly in your program", // $f3
-            "Temporary (not preserved across call)", // $f4
-            "Should not be referenced explicitly in your program", // $f5
-            "Temporary (not preserved across call)", // $f6
-            "Should not be referenced explicitly in your program", // $f7
-            "Temporary (not preserved across call)", // $f8
-            "Should not be referenced explicitly in your program", // $f9
-            "Temporary (not preserved across call)", // $f10
-            "Should not be referenced explicitly in your program", // $f11
-            "Floating point subprogram argument 1", // $f12
-            "Should not be referenced explicitly in your program", // $f13
-            "Floating point subprogram argument 2", // $f14
-            "Should not be referenced explicitly in your program", // $f15
-            "Temporary (not preserved across call)", // $f16
-            "Should not be referenced explicitly in your program", // $f17
-            "Temporary (not preserved across call)", // $f18
-            "Should not be referenced explicitly in your program", // $f19
-            "Saved temporary (preserved across call)", // $f20
-            "Should not be referenced explicitly in your program", // $f21
-            "Saved temporary (preserved across call)", // $f22
-            "Should not be referenced explicitly in your program", // $f23
-            "Saved temporary (preserved across call)", // $f24
-            "Should not be referenced explicitly in your program", // $f25
-            "Saved temporary (preserved across call)", // $f26
-            "Should not be referenced explicitly in your program", // $f27
-            "Saved temporary (preserved across call)", // $f28
-            "Should not be referenced explicitly in your program", // $f29
-            "Saved temporary (preserved across call)", // $f30
-            "Should not be referenced explicitly in your program", // $f31
-        };
-
-        // Implement table cell tool tips.
-        @Override
-        public String getToolTipText(MouseEvent e) {
-            java.awt.Point p = e.getPoint();
-            int rowIndex = rowAtPoint(p);
-            int colIndex = columnAtPoint(p);
-            int realColumnIndex = convertColumnIndexToModel(colIndex);
-            if (realColumnIndex == NAME_COLUMN) {
-                return REGISTER_TOOL_TIPS[rowIndex];
-            }
-            else {
-                return super.getToolTipText(e);
-            }
-        }
-
-        private final String[] COLUMN_TOOL_TIPS = {
-            "Each register has a tool tip describing its usage convention", // Name
-            "32-bit single precision IEEE 754 floating point register", // Float
-            "64-bit double precision IEEE 754 floating point register (uses a pair of 32-bit registers)", // Double
-        };
-
-        // Implement table header tool tips.
-        @Override
-        protected JTableHeader createDefaultTableHeader() {
-            return new JTableHeader(columnModel) {
-                @Override
-                public String getToolTipText(MouseEvent e) {
-                    java.awt.Point p = e.getPoint();
-                    int index = columnModel.getColumnIndexAtX(p.x);
-                    int realIndex = columnModel.getColumn(index).getModelIndex();
-                    return COLUMN_TOOL_TIPS[realIndex];
-                }
-            };
         }
     }
 }

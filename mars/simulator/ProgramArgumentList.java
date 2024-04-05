@@ -112,15 +112,16 @@ public class ProgramArgumentList {
         }
     }
 
-    //////////////////////////////////////////////////////////////////////
-    // Place any program arguments into MIPS memory and registers
-    // Arguments are stored starting at highest word of non-kernel
-    // memory and working back toward runtime stack (there is a 4096
-    // byte gap in between).  The argument count (argc) and pointers
-    // to the arguments are stored on the runtime stack.  The stack
-    // pointer register $sp is adjusted accordingly and $a0 is set
-    // to the argument count (argc), and $a1 is set to the stack
-    // address holding the first argument pointer (argv).
+    /**
+     * Place any program arguments into MIPS memory and registers
+     * Arguments are stored starting at highest word of non-kernel
+     * memory and working back toward runtime stack (there is a 4096
+     * byte gap in between).  The argument count (argc) and pointers
+     * to the arguments are stored on the runtime stack.  The stack
+     * pointer register $sp is adjusted accordingly and $a0 is set
+     * to the argument count (argc), and $a1 is set to the stack
+     * address holding the first argument pointer (argv).
+     */
     public void storeProgramArguments() {
         if (programArgumentList == null || programArgumentList.isEmpty()) {
             return;

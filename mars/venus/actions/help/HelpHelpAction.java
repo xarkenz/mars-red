@@ -52,7 +52,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the Help -> Help menu item
  */
 public class HelpHelpAction extends VenusAction {
-    public HelpHelpAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+    public HelpHelpAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 
@@ -62,7 +62,7 @@ public class HelpHelpAction extends VenusAction {
     }
 
     // Light gray background color for alternating lines of the instruction lists
-    private static final Color ALT_BACKGROUND_COLOR = new Color(0xEE, 0xEE, 0xEE);
+    private static final Color ALT_BACKGROUND_COLOR = new Color(0x44, 0x44, 0x44);
 
     /**
      * Separates Instruction name descriptor from detailed (operation) description
@@ -83,18 +83,18 @@ public class HelpHelpAction extends VenusAction {
         tabbedPane.addTab("Acknowledgements", createHTMLHelpPanel("Acknowledgements.html"));
         tabbedPane.addTab("Instruction Set Song", createHTMLHelpPanel("MIPSInstructionSetSong.html"));
         // Create non-modal dialog. Based on java.sun.com "How to Make Dialogs", DialogDemo.java
-        final JDialog dialog = new JDialog(gui, "MARS " + Globals.MARS_VERSION + " Help");
+        final JDialog dialog = new JDialog(gui, "MARS Red " + Globals.APPLICATION_VERSION + " Help");
         // Ensure the dialog goes away if user clicks the X
         dialog.addWindowListener(new WindowAdapter() {
             @Override
-            public void windowClosing(WindowEvent e) {
+            public void windowClosing(WindowEvent event) {
                 dialog.setVisible(false);
                 dialog.dispose();
             }
         });
         // Add a "close" button to the non-modal help dialog.
         JButton closeButton = new JButton("Close");
-        closeButton.addActionListener(e1 -> {
+        closeButton.addActionListener(closeEvent -> {
             dialog.setVisible(false);
             dialog.dispose();
         });

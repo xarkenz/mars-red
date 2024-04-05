@@ -49,9 +49,9 @@ public class StringSetting {
     public void set(String value) {
         if (!Objects.equals(value, this.value)) {
             // Value has changed, write it to persistent storage
-            settings.saveStringSetting(this.key, this.value, this.notifies);
+            settings.saveStringSetting(this.key, value, this.notifies);
+            this.value = value;
         }
-        this.value = value;
     }
 
     /**

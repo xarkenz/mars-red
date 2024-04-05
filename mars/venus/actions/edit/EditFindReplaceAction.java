@@ -50,7 +50,7 @@ public class EditFindReplaceAction extends VenusAction {
     private static boolean caseSensitivity = true;
     JDialog findReplaceDialog;
 
-    public EditFindReplaceAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+    public EditFindReplaceAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 

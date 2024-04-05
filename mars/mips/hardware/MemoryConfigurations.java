@@ -205,9 +205,9 @@ public class MemoryConfigurations {
         if (config != currentConfiguration) {
             currentConfiguration = config;
             Globals.memory.clear();
-            RegisterFile.getUserRegister("$gp").changeResetValue(config.getGlobalPointer());
-            RegisterFile.getUserRegister("$sp").changeResetValue(config.getStackPointer());
-            RegisterFile.getProgramCounterRegister().changeResetValue(config.getTextBaseAddress());
+            RegisterFile.getUserRegister("$gp").setDefaultValue(config.getGlobalPointer());
+            RegisterFile.getUserRegister("$sp").setDefaultValue(config.getStackPointer());
+            RegisterFile.getProgramCounterRegister().setDefaultValue(config.getTextBaseAddress());
             RegisterFile.initializeProgramCounter(config.getTextBaseAddress());
             RegisterFile.resetRegisters();
             return true;

@@ -47,9 +47,9 @@ public class IntegerSetting {
     public void set(int value) {
         if (value != this.value) {
             // Value has changed, write it to persistent storage
-            settings.saveIntegerSetting(this.key, this.value, this.notifies);
+            settings.saveIntegerSetting(this.key, value, this.notifies);
+            this.value = value;
         }
-        this.value = value;
     }
 
     /**

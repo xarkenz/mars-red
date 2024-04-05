@@ -290,17 +290,15 @@ public class MipsXray extends AbstractMarsToolAndApplication{
            Toolkit tk = Toolkit.getDefaultToolkit();
            Class cs = this.getClass();
            try{
-               runAssembleAction = new RunAssembleAction("Assemble",  
+               runAssembleAction = new RunAssembleAction(mainUI, "Assemble",
                        new ImageIcon(tk.getImage(cs.getResource(Globals.IMAGES_PATH +"Assemble22.png"))),
    							  "Assemble the current file and clear breakpoints", new Integer(KeyEvent.VK_A),
-   							  KeyStroke.getKeyStroke( KeyEvent.VK_F3, 0), 
-   							  mainUI);			
+   							  KeyStroke.getKeyStroke( KeyEvent.VK_F3, 0));
 
-               runStepAction = new RunStepAction("Step", 
+               runStepAction = new RunStepAction(mainUI, "Step",
                        new ImageIcon(tk.getImage(cs.getResource(Globals.IMAGES_PATH +"StepForward22.png"))),
    							  "Run one step at a time", new Integer(KeyEvent.VK_T),
-   							  KeyStroke.getKeyStroke( KeyEvent.VK_F7, 0),
-   							  mainUI);	
+   							  KeyStroke.getKeyStroke( KeyEvent.VK_F7, 0));
                runBackstepAction = new RunBackstepAction("Backstep", 
                        new ImageIcon(tk.getImage(cs.getResource(Globals.IMAGES_PATH +"StepBack22.png"))),
    							  "Undo the last step", new Integer(KeyEvent.VK_B),

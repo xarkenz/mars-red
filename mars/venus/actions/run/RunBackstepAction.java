@@ -60,7 +60,7 @@ public class RunBackstepAction extends VenusAction {
             return;
         }
         VenusUI.setStarted(true);
-        gui.getMessagesPane().selectRunMessageTab();
+        gui.getMessagesPane().selectConsoleTab();
         ExecutePane executePane = gui.getMainPane().getExecutePane();
         executePane.getTextSegmentWindow().setCodeHighlighting(true);
 

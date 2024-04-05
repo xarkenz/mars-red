@@ -47,9 +47,9 @@ public class BooleanSetting {
     public void set(boolean value) {
         if (value != this.value) {
             // Value has changed, write it to persistent storage
-            settings.saveBooleanSetting(this.key, this.value, this.notifies);
+            settings.saveBooleanSetting(this.key, value, this.notifies);
+            this.value = value;
         }
-        this.value = value;
     }
 
     /**

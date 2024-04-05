@@ -79,7 +79,7 @@ public class MarsSplashScreen extends JWindow {
 
         // Build the splash screen
         JLabel title = new JLabel("MARS: Mips Assembler and Runtime Simulator", JLabel.CENTER);
-        JLabel copyright1 = new JLabel("<html><br><br>Version " + Globals.MARS_VERSION + " Copyright (c) " + Globals.COPYRIGHT_YEARS + "</html>", JLabel.CENTER);
+        JLabel copyright1 = new JLabel("<html><br><br>Version " + Globals.APPLICATION_VERSION + " Copyright (c) " + Globals.COPYRIGHT_YEARS + "</html>", JLabel.CENTER);
         JLabel copyright2 = new JLabel("<html><br><br>" + Globals.COPYRIGHT_HOLDERS + "</html>", JLabel.CENTER);
         title.setFont(new Font("Sans-Serif", Font.BOLD, 16));
         title.setForeground(Color.black);

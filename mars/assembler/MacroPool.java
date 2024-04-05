@@ -1,6 +1,6 @@
 package mars.assembler;
 
-import mars.MIPSprogram;
+import mars.Program;
 
 import java.util.ArrayList;
 
@@ -39,7 +39,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * {@link MacroPool#commitMacro(Token)} and the macro information stored in a
  * {@link Macro} instance will be added to {@link #macroList}.
  * <br>
- * Each {@link MIPSprogram} will have one {@link MacroPool}.
+ * Each {@link Program} will have one {@link MacroPool}.
  * <br>
  * NOTE: Forward referencing macros (macro expansion before its definition in
  * source code) and nested macro definitions (defining a macro inside another macro
@@ -48,7 +48,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @author M.H.Sekhavat &lt;sekhavat17@gmail.com&gt;
  */
 public class MacroPool {
-    private final MIPSprogram program;
+    private final Program program;
     /**
      * List of macros defined by now.
      */
@@ -69,7 +69,7 @@ public class MacroPool {
      *
      * @param mipsProgram associated MIPS program
      */
-    public MacroPool(MIPSprogram mipsProgram) {
+    public MacroPool(Program mipsProgram) {
         this.program = mipsProgram;
         macroList = new ArrayList<>();
         callStack = new ArrayList<>();

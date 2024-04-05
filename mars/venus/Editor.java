@@ -1,6 +1,7 @@
 package mars.venus;
 
 import java.io.File;
+import java.util.ArrayList;
  
 /*
 Copyright (c) 2003-2007,  Pete Sanderson and Kenneth Vollmar
@@ -71,9 +72,18 @@ public class Editor {
     }
 
     /**
-     * Set associated EditTabbedPane.  This is container for any/all open files.
+     * Get the associated EditTabbedPane.  This is the container for any/all open files.
      *
-     * @param editTabbedPane an existing editTabbedPane object
+     * @return the associated EditTabbedPane
+     */
+    public EditTabbedPane getEditTabbedPane() {
+        return editTabbedPane;
+    }
+
+    /**
+     * Set the associated EditTabbedPane.  This is the container for any/all open files.
+     *
+     * @param editTabbedPane an existing EditTabbedPane object
      */
     public void setEditTabbedPane(EditTabbedPane editTabbedPane) {
         this.editTabbedPane = editTabbedPane;
@@ -227,12 +237,14 @@ public class Editor {
     }
 
     /**
-     * Open file in a new tab.
+     * Launch a file chooser for the user to select one or more files,
+     * attempting to open them in new editor tabs afterward.
      *
-     * @return true if succeeded, else false.
+     * @return The list of files which could not be opened due to an error.
+     *     (Can be empty.)
      */
-    public boolean open() {
-        return editTabbedPane.openFile();
+    public ArrayList<File> open() {
+        return editTabbedPane.openFiles();
     }
 
     /**

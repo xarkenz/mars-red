@@ -39,18 +39,19 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @version August 2003
  */
 public class ErrorList {
+    public static final String ERROR_MESSAGE_PREFIX = "Error";
+    public static final String WARNING_MESSAGE_PREFIX = "Warning";
+    public static final String FILENAME_PREFIX = " in file ";
+    public static final String LINE_PREFIX = " on line ";
+    public static final String POSITION_PREFIX = ", column ";
+    public static final String MESSAGE_SEPARATOR = ":\n    ";
+
     private final ArrayList<ErrorMessage> messages;
     private int errorCount;
     private int warningCount;
-    public static final String ERROR_MESSAGE_PREFIX = "Error";
-    public static final String WARNING_MESSAGE_PREFIX = "Warning";
-    public static final String FILENAME_PREFIX = " in ";
-    public static final String LINE_PREFIX = " line ";
-    public static final String POSITION_PREFIX = " column ";
-    public static final String MESSAGE_SEPARATOR = ": ";
 
     /**
-     * Constructor for ErrorList
+     * Constructor for ErrorList.
      */
     public ErrorList() {
         messages = new ArrayList<>();
@@ -104,11 +105,12 @@ public class ErrorList {
         if (errorCount > getErrorLimit()) {
             return;
         }
-        if (errorCount == getErrorLimit()) {
-            messages.add(new ErrorMessage((MIPSprogram) null, message.getLine(), message.getPosition(), "Error Limit of " + getErrorLimit() + " exceeded."));
-            errorCount++; // subsequent errors will not be added; see if statement above
+        else if (errorCount == getErrorLimit()) {
+            messages.add(new ErrorMessage((Program) null, message.getLine(), message.getPosition(), "Error Limit of " + getErrorLimit() + " exceeded."));
+            errorCount++; // Subsequent errors will not be added; see if statement above
             return;
         }
+
         messages.add(index, message);
         if (message.isWarning()) {
             warningCount++;
@@ -182,23 +184,24 @@ public class ErrorList {
         return generateWarningReport() + generateErrorReport();
     }
 
-    // Produces either error or warning report.
+    /**
+     * Produce either error or warning report.
+     */
     private String generateReport(boolean reportWarnings) {
         StringBuilder report = new StringBuilder();
         for (ErrorMessage message : messages) {
             if (message.isWarning() == reportWarnings) {
-                String reportLine = ((reportWarnings) ? WARNING_MESSAGE_PREFIX : ERROR_MESSAGE_PREFIX) + FILENAME_PREFIX;
+                report.append((reportWarnings) ? WARNING_MESSAGE_PREFIX : ERROR_MESSAGE_PREFIX);
                 if (!message.getFilename().isEmpty()) {
-                    reportLine = reportLine + (new File(message.getFilename()).getPath());
+                    report.append(FILENAME_PREFIX).append('"').append(new File(message.getFilename()).getPath()).append('"');
                 }
                 if (message.getLine() > 0) {
-                    reportLine = reportLine + LINE_PREFIX + message.getMacroExpansionHistory() + message.getLine();
+                    report.append(LINE_PREFIX).append(message.getMacroExpansionHistory()).append(message.getLine());
                 }
                 if (message.getPosition() > 0) {
-                    reportLine = reportLine + POSITION_PREFIX + message.getPosition();
+                    report.append(POSITION_PREFIX).append(message.getPosition());
                 }
-                reportLine = reportLine + MESSAGE_SEPARATOR + message.getMessage() + "\n";
-                report.append(reportLine);
+                report.append(MESSAGE_SEPARATOR).append(message.getMessage()).append('\n');
             }
         }
         return report.toString();

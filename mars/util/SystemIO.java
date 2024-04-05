@@ -1,7 +1,6 @@
 package mars.util;
 
 import mars.Globals;
-import mars.settings.Settings;
 
 import java.io.*;
 	
@@ -167,7 +166,7 @@ public class SystemIO {
             System.out.print(string);
         }
         else {
-            Globals.getGUI().getMessagesPane().postRunMessage(string);
+            Globals.getGUI().getMessagesPane().writeToConsole(string);
         }
     }
 
@@ -256,7 +255,7 @@ public class SystemIO {
         /// Write to STDOUT or STDERR file descriptor while using IDE - write to Messages pane.
         if ((fd == STDOUT || fd == STDERR) && Globals.getGUI() != null) {
             String data = new String(buffer);
-            Globals.getGUI().getMessagesPane().postRunMessage(data);
+            Globals.getGUI().getMessagesPane().writeToConsole(data);
             return data.length();
         }
         ///////////////////////////////////////////////////////////////////////////////////

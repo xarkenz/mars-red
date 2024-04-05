@@ -2,7 +2,6 @@ package mars.venus.actions.run;
 
 import mars.Globals;
 import mars.ProcessingException;
-import mars.settings.Settings;
 import mars.mips.hardware.Coprocessor0;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.Memory;
@@ -48,7 +47,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the Run -> Reset menu item
  */
 public class RunResetAction extends VenusAction {
-    public RunResetAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+    public RunResetAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 
@@ -57,9 +56,6 @@ public class RunResetAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        RunGoAction.resetMaxSteps();
-        String name = this.getValue(Action.NAME).toString();
-        ExecutePane executePane = gui.getMainPane().getExecutePane();
         // The difficult part here is resetting the data segment.  Two approaches are:
         // 1. After each assembly, get a deep copy of the Globals.memory array
         //    containing data segment.  Then replace it upon reset.
@@ -69,10 +65,10 @@ public class RunResetAction extends VenusAction {
         // I am choosing the second approach although it will slow down the reset
         // operation.  The first approach requires additional Memory class methods.
         try {
-            Globals.program.assemble(RunAssembleAction.getMIPSprogramsToAssemble(), Globals.getSettings().extendedAssemblerEnabled.get(), Globals.getSettings().warningsAreErrors.get());
+            Globals.program.assemble(RunAssembleAction.getProgramsToAssemble(), Globals.getSettings().extendedAssemblerEnabled.get(), Globals.getSettings().warningsAreErrors.get());
         }
         catch (ProcessingException pe) {
-            gui.getMessagesPane().postMarsMessage("Unable to reset.  Please close file then re-open and re-assemble.\n");
+            gui.getMessagesPane().writeToMessages(getName() + ": unable to reset.  Please close file then re-open and re-assemble.\n");
             return;
         }
 
@@ -80,6 +76,7 @@ public class RunResetAction extends VenusAction {
         Coprocessor1.resetRegisters();
         Coprocessor0.resetRegisters();
 
+        ExecutePane executePane = gui.getMainPane().getExecutePane();
         executePane.getRegistersWindow().clearHighlighting();
         executePane.getRegistersWindow().updateRegisters();
         executePane.getCoprocessor1Window().clearHighlighting();
@@ -101,6 +98,6 @@ public class RunResetAction extends VenusAction {
         // Aug. 24, 2005 Ken Vollmar
         SystemIO.resetFiles(); // Ensure that I/O "file descriptors" are initialized for a new program run
 
-        gui.getMessagesPane().postRunMessage("\n" + name + ": reset completed.\n\n");
+        gui.getMessagesPane().writeToConsole(getName() + ": reset completed.\n\n");
     }
 }

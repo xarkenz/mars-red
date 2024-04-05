@@ -39,9 +39,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @version August 2005
  */
 public class Coprocessor0 {
-    /**
-     * Coprocessor register names
-     */
     public static final int VADDR = 8;
     public static final int STATUS = 12;
     public static final int CAUSE = 13;
@@ -54,23 +51,11 @@ public class Coprocessor0 {
     public static final int DEFAULT_STATUS_VALUE = 0x0000FF11;
 
     private static final Register[] registers = {
-        new Register("$8 (vaddr)", 8, 0),
-        new Register("$12 (status)", 12, DEFAULT_STATUS_VALUE),
-        new Register("$13 (cause)", 13, 0),
-        new Register("$14 (epc)", 14, 0),
+        new Register("vaddr", 8, 0),
+        new Register("status", 12, DEFAULT_STATUS_VALUE),
+        new Register("cause", 13, 0),
+        new Register("epc", 14, 0),
     };
-
-    /**
-     * Display the register values for debugging purposes.
-     */
-    public static void showRegisters() {
-        for (Register register : registers) {
-            System.out.println("Name: " + register.getName());
-            System.out.println("Number: " + register.getNumber());
-            System.out.println("Value: " + register.getValue());
-            System.out.println();
-        }
-    }
 
     /**
      * Sets the value of the register given to the value given.
@@ -186,7 +171,7 @@ public class Coprocessor0 {
      */
     public static void resetRegisters() {
         for (Register register : registers) {
-            register.resetValue();
+            register.resetValueToDefault();
         }
     }
 

@@ -1,7 +1,6 @@
 package mars.venus.actions.settings;
 
 import mars.Globals;
-import mars.settings.Settings;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
 
@@ -54,7 +53,7 @@ public class SettingsExceptionHandlerAction extends VenusAction {
     boolean initialSelected; // state of check box when dialog initiated.
     String initialPathname;  // selected exception handler when dialog initiated.
 
-    public SettingsExceptionHandlerAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+    public SettingsExceptionHandlerAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 

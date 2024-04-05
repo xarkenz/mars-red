@@ -48,10 +48,10 @@ public class MainPane extends JTabbedPane {
     /**
      * Constructor for the MainPane class.
      */
-    public MainPane(VenusUI appFrame, Editor editor, RegistersWindow regs, Coprocessor1Window cop1Regs, Coprocessor0Window cop0Regs) {
+    public MainPane(VenusUI mainUI, Editor editor, RegistersWindow regs, Coprocessor1Window cop1Regs, Coprocessor0Window cop0Regs) {
         super();
-        editTabbedPane = new EditTabbedPane(appFrame, editor, this);
-        executeTab = new ExecutePane(appFrame, regs, cop1Regs, cop0Regs);
+        editTabbedPane = new EditTabbedPane(mainUI, editor, this);
+        executeTab = new ExecutePane(mainUI, regs, cop1Regs, cop0Regs);
 
         String editTabTitle = "Edit";
         String executeTabTitle = "Execute";
@@ -71,8 +71,8 @@ public class MainPane extends JTabbedPane {
         // * See ExecutePane.setWindowsBounds documentation for more details.
         this.addChangeListener(new ChangeListener() {
             @Override
-            public void stateChanged(ChangeEvent ce) {
-                JTabbedPane tabbedPane = (JTabbedPane) ce.getSource();
+            public void stateChanged(ChangeEvent event) {
+                JTabbedPane tabbedPane = (JTabbedPane) event.getSource();
                 int index = tabbedPane.getSelectedIndex();
                 Component c = tabbedPane.getComponentAt(index);
                 ExecutePane executePane = MainPane.this.getExecutePane();
@@ -99,7 +99,7 @@ public class MainPane extends JTabbedPane {
      *
      * @return the editor tabbed pane
      */
-    public JComponent getEditTabbedPane() {
+    public EditTabbedPane getEditTabbedPane() {
         return editTabbedPane;
     }
 

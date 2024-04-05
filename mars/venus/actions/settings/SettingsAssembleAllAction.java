@@ -1,7 +1,6 @@
 package mars.venus.actions.settings;
 
 import mars.Globals;
-import mars.settings.Settings;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
 
@@ -41,7 +40,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * only to current file or to all files in its directory.
  */
 public class SettingsAssembleAllAction extends VenusAction {
-    public SettingsAssembleAllAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+    public SettingsAssembleAllAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 

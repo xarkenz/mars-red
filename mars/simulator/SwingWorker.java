@@ -21,7 +21,7 @@ import javax.swing.*;
  * creating it.
  */
 public abstract class SwingWorker {
-    private Object value;  // see getValue(), setValue()
+    private Object value;
 
     /**
      * Class to maintain reference to current worker thread
@@ -30,8 +30,8 @@ public abstract class SwingWorker {
     private static class ThreadVar {
         private Thread thread;
 
-        ThreadVar(Thread t) {
-            thread = t;
+        ThreadVar(Thread thread) {
+            this.thread = thread;
         }
 
         synchronized Thread get() {
@@ -54,10 +54,10 @@ public abstract class SwingWorker {
     }
 
     /**
-     * Set the value produced by worker thread
+     * Set the value produced by worker thread.
      */
-    private synchronized void setValue(Object x) {
-        value = x;
+    private synchronized void setValue(Object value) {
+        this.value = value;
     }
 
     /**
@@ -77,9 +77,9 @@ public abstract class SwingWorker {
      * to force the worker to stop what it's doing.
      */
     public void interrupt() {
-        Thread t = threadVar.get();
-        if (t != null) {
-            t.interrupt();
+        Thread thread = threadVar.get();
+        if (thread != null) {
+            thread.interrupt();
         }
         threadVar.clear();
     }
@@ -93,12 +93,12 @@ public abstract class SwingWorker {
      */
     public Object get() {
         while (true) {
-            Thread t = threadVar.get();
-            if (t == null) {
+            Thread thread = threadVar.get();
+            if (thread == null) {
                 return getValue();
             }
             try {
-                t.join();
+                thread.join();
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt(); // propagate
@@ -108,17 +108,13 @@ public abstract class SwingWorker {
     }
 
     /**
-     * Start a thread that will call the <code>construct</code> method
+     * Start a thread that will call the {@link #construct()} method
      * and then exit.
      *
      * @param useSwing Set true if MARS is running from GUI, false otherwise.
      */
     public SwingWorker(final boolean useSwing) {
-        final Runnable doFinished = new Runnable() {
-            public void run() {
-                finished();
-            }
-        };
+        final Runnable doFinished = this::finished;
 
         Runnable doConstruct = new Runnable() {
             public void run() {
@@ -139,20 +135,18 @@ public abstract class SwingWorker {
         };
 
         // Thread that represents executing MIPS program...
-        Thread t = new Thread(doConstruct, "MIPS");
+        Thread thread = new Thread(doConstruct, "MIPS");
 
-        //t.setPriority(Thread.NORM_PRIORITY-1);//******************
-
-        threadVar = new ThreadVar(t);
+        threadVar = new ThreadVar(thread);
     }
 
     /**
      * Start the worker thread.
      */
     public void start() {
-        Thread t = threadVar.get();
-        if (t != null) {
-            t.start();
+        Thread thread = threadVar.get();
+        if (thread != null) {
+            thread.start();
         }
     }
 }

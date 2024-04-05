@@ -1,7 +1,6 @@
 package mars.venus.actions.settings;
 
 import mars.Globals;
-import mars.settings.Settings;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
 
@@ -42,7 +41,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * warnings but not errors will not assemble.
  */
 public class SettingsStartAtMainAction extends VenusAction {
-    public SettingsStartAtMainAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+    public SettingsStartAtMainAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 

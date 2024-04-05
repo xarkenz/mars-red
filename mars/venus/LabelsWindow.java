@@ -1,7 +1,7 @@
 package mars.venus;
 
 import mars.Globals;
-import mars.MIPSprogram;
+import mars.Program;
 import mars.assembler.Symbol;
 import mars.assembler.SymbolTable;
 import mars.mips.hardware.Memory;
@@ -164,9 +164,9 @@ public class LabelsWindow extends JInternalFrame {
     private JScrollPane generateLabelScrollPane() {
         listOfLabelsForSymbolTable = new ArrayList<>();
         listOfLabelsForSymbolTable.add(new LabelsForSymbolTable(null)); // global symtab
-        ArrayList<MIPSprogram> programsToAssemble = RunAssembleAction.getMIPSprogramsToAssemble();
+        ArrayList<Program> programsToAssemble = RunAssembleAction.getProgramsToAssemble();
         Box allSymtabTables = Box.createVerticalBox();
-        for (MIPSprogram program : programsToAssemble) {
+        for (Program program : programsToAssemble) {
             listOfLabelsForSymbolTable.add(new LabelsForSymbolTable(program));
         }
         ArrayList<Box> tableNames = new ArrayList<>();
@@ -274,7 +274,7 @@ public class LabelsWindow extends JInternalFrame {
     ///////////////////////////////////////////////////////////////////
     // Represents one symbol table for the display.
     private class LabelsForSymbolTable {
-        private final MIPSprogram myMIPSprogram;
+        private final Program program;
         private Object[][] labelData;
         private JTable labelTable;
         private Symbol[] symbols;
@@ -282,10 +282,10 @@ public class LabelsWindow extends JInternalFrame {
         private final String tableName;
 
         // Associated MIPSprogram object.  If null, this represents global symbol table.
-        public LabelsForSymbolTable(MIPSprogram myMIPSprogram) {
-            this.myMIPSprogram = myMIPSprogram;
-            symbolTable = (myMIPSprogram == null) ? Globals.symbolTable : myMIPSprogram.getLocalSymbolTable();
-            tableName = (myMIPSprogram == null) ? "(global)" : new File(myMIPSprogram.getFilename()).getName();
+        public LabelsForSymbolTable(Program program) {
+            this.program = program;
+            symbolTable = (program == null) ? Globals.symbolTable : program.getLocalSymbolTable();
+            tableName = (program == null) ? "(global)" : new File(program.getFilename()).getName();
         }
 
         // Returns file name of associated file for local symbol table or "(global)"
@@ -299,7 +299,7 @@ public class LabelsWindow extends JInternalFrame {
 
         // builds the Table containing labels and addresses for this symbol table.
         private JTable generateLabelTable() {
-            SymbolTable symbolTable = (myMIPSprogram == null) ? Globals.symbolTable : myMIPSprogram.getLocalSymbolTable();
+            SymbolTable symbolTable = (program == null) ? Globals.symbolTable : program.getLocalSymbolTable();
             int addressBase = Globals.getGUI().getMainPane().getExecutePane().getAddressDisplayBase();
             if (textLabels.isSelected() && dataLabels.isSelected()) {
                 symbols = symbolTable.getAllSymbols();

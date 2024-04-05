@@ -8,136 +8,119 @@
  * remains intact in all source distributions of this package.
  */
 
-   package mars.venus.editors.jeditsyntax;
+package mars.venus.editors.jeditsyntax;
 
-   import mars.venus.editors.jeditsyntax.tokenmarker.*;
-   import javax.swing.text.Segment;
+import mars.venus.editors.jeditsyntax.tokenmarker.Token;
+
+import javax.swing.text.Segment;
 
 /**
  * A <code>KeywordMap</code> is similar to a hashtable in that it maps keys
- * to values. However, the `keys' are Swing segments. This allows lookups of
+ * to values. However, the `keys' are Swing {@link Segment}s. This allows lookups of
  * text substrings without the overhead of creating a new string object.
  * <p>
- * This class is used by <code>CTokenMarker</code> to map keywords to ids.
+ * This class is used by {@link mars.venus.editors.jeditsyntax.tokenmarker.MIPSTokenMarker}
+ * to map keywords to ids.
  *
  * @author Slava Pestov, Mike Dillon
  * @version $Id: KeywordMap.java,v 1.16 1999/12/13 03:40:30 sp Exp $
  */
-    public class KeywordMap
-   {
-   /**
-    * Creates a new <code>KeywordMap</code>.
-    * @param ignoreCase True if keys are case insensitive
-    */
-       public KeywordMap(boolean ignoreCase)
-      {
-         this(ignoreCase, 52);
-         this.ignoreCase = ignoreCase;
-      }
-   
-   /**
-    * Creates a new <code>KeywordMap</code>.
-    * @param ignoreCase True if the keys are case insensitive
-    * @param mapLength The number of `buckets' to create.
-    * A value of 52 will give good performance for most maps.
-    */
-       public KeywordMap(boolean ignoreCase, int mapLength)
-      {
-         this.mapLength = mapLength;
-         this.ignoreCase = ignoreCase;
-         map = new Keyword[mapLength];
-      }
-   
-   /**
-    * Looks up a key.
-    * @param text The text segment
-    * @param offset The offset of the substring within the text segment
-    * @param length The length of the substring
-    */
-       public byte lookup(Segment text, int offset, int length)
-      {
-         if(length == 0)
+public class KeywordMap {
+    private final KeywordNode[] map;
+    private boolean ignoreCase;
+
+    /**
+     * Creates a new <code>KeywordMap</code>.
+     *
+     * @param ignoreCase True if keys are case insensitive
+     */
+    public KeywordMap(boolean ignoreCase) {
+        this(ignoreCase, 52);
+        this.ignoreCase = ignoreCase;
+    }
+
+    /**
+     * Creates a new <code>KeywordMap</code>.
+     *
+     * @param ignoreCase True if the keys are case insensitive
+     * @param mapLength  The number of `buckets' to create.
+     *                   A value of 52 will give good performance for most maps.
+     */
+    public KeywordMap(boolean ignoreCase, int mapLength) {
+        this.mapLength = mapLength;
+        this.ignoreCase = ignoreCase;
+        map = new KeywordNode[mapLength];
+    }
+
+    /**
+     * Looks up a key.
+     *
+     * @param text   The text segment
+     * @param offset The offset of the substring within the text segment
+     * @param length The length of the substring
+     * @return The token type for the keyword
+     */
+    public byte lookup(Segment text, int offset, int length) {
+        if (length == 0) {
             return Token.NULL;
-         if (text.array[offset]=='%')
+        }
+        if (text.array[offset] == '%') {
             return Token.MACRO_ARG;  // added 12/12 M. Sekhavat
-         Keyword k = map[getSegmentMapKey(text, offset, length)];
-         while(k != null)
-         {
-            if(length != k.keyword.length)
-            {
-               k = k.next;
-               continue;
+        }
+        KeywordNode node = map[getSegmentMapKey(text, offset, length)];
+        while (node != null) {
+            if (length != node.keyword.length) {
+                node = node.next();
+                continue;
             }
-            if(SyntaxUtilities.regionMatches(ignoreCase,text,offset,
-            k.keyword))
-               return k.id;
-            k = k.next;
-         }
-         return Token.NULL;
-      }
-   
-   /**
-    * Adds a key-value mapping.
-    * @param keyword The key
-    * @Param id The value
-    */
-       public void add(String keyword, byte id)
-      {
-         int key = getStringMapKey(keyword);
-         map[key] = new Keyword(keyword.toCharArray(),id,map[key]);
-      }
-   
-   /**
-    * Returns true if the keyword map is set to be case insensitive,
-    * false otherwise.
-    */
-       public boolean getIgnoreCase()
-      {
-         return ignoreCase;
-      }
-   
-   /**
-    * Sets if the keyword map should be case insensitive.
-    * @param ignoreCase True if the keyword map should be case
-    * insensitive, false otherwise
-    */
-       public void setIgnoreCase(boolean ignoreCase)
-      {
-         this.ignoreCase = ignoreCase;
-      }
-   
-   // protected members
-      protected int mapLength;
-   
-       protected int getStringMapKey(String s)
-      {
-         return (Character.toUpperCase(s.charAt(0)) +
-            Character.toUpperCase(s.charAt(s.length()-1)))
-            % mapLength;
-      }
-   
-       protected int getSegmentMapKey(Segment s, int off, int len)
-      {
-         return (Character.toUpperCase(s.array[off]) +
-            Character.toUpperCase(s.array[off + len - 1]))
-            % mapLength;
-      }
-   
-   // private members
-       class Keyword
-      {
-          public Keyword(char[] keyword, byte id, Keyword next)
-         {
-            this.keyword = keyword;
-            this.id = id;
-            this.next = next;
-         }
-      
-         public char[] keyword;
-         public byte id;
-         public Keyword next;
-      }
-   
-      private Keyword[] map;
-      private boolean ignoreCase;
-   }
+            if (SyntaxUtilities.regionMatches(ignoreCase, text, offset, node.keyword())) {
+                return node.id();
+            }
+            node = node.next();
+        }
+        return Token.NULL;
+    }
+
+    /**
+     * Adds a key-value mapping.
+     *
+     * @param keyword The key
+     * @param id      The value
+     */
+    public void add(String keyword, byte id) {
+        int key = getStringMapKey(keyword);
+        map[key] = new KeywordNode(keyword.toCharArray(), id, map[key]);
+    }
+
+    /**
+     * Returns true if the keyword map is set to be case insensitive,
+     * false otherwise.
+     */
+    public boolean getIgnoreCase() {
+        return ignoreCase;
+    }
+
+    /**
+     * Sets if the keyword map should be case insensitive.
+     *
+     * @param ignoreCase True if the keyword map should be case
+     *                   insensitive, false otherwise
+     */
+    public void setIgnoreCase(boolean ignoreCase) {
+        this.ignoreCase = ignoreCase;
+    }
+
+    // protected members
+    protected int mapLength;
+
+    protected int getStringMapKey(String s) {
+        return (Character.toUpperCase(s.charAt(0)) + Character.toUpperCase(s.charAt(s.length() - 1))) % mapLength;
+    }
+
+    protected int getSegmentMapKey(Segment s, int off, int len) {
+        return (Character.toUpperCase(s.array[off]) + Character.toUpperCase(s.array[off + len - 1])) % mapLength;
+    }
+
+    private record KeywordNode(char[] keyword, byte id, KeywordNode next) {
+    }
+}

@@ -5,6 +5,7 @@ import mars.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -24,7 +25,7 @@ import java.util.Map;
  */
 public class Tokenizer {
     private ErrorList errors;
-    private MIPSprogram sourceMIPSprogram;
+    private Program sourceProgram;
     private HashMap<String, String> equivalents; // DPS 11-July-2012
 
     /**
@@ -39,25 +40,25 @@ public class Tokenizer {
      *
      * @param program A previously-existing MIPSprogram object or null if none.
      */
-    public Tokenizer(MIPSprogram program) {
+    public Tokenizer(Program program) {
         errors = new ErrorList();
-        sourceMIPSprogram = program;
+        sourceProgram = program;
     }
 
     /**
      * Will tokenize a complete MIPS program.  MIPS is line oriented (not free format),
      * so we will be line-oriented too.
      *
-     * @param sourceMIPSprogram The MIPSprogram to be tokenized.
+     * @param sourceProgram The MIPSprogram to be tokenized.
      * @return An ArrayList representing the tokenized program.  Each list member is a TokenList
      * that represents a tokenized source statement from the MIPS program.
      */
-    public ArrayList<TokenList> tokenize(MIPSprogram sourceMIPSprogram) throws ProcessingException {
-        this.sourceMIPSprogram = sourceMIPSprogram;
+    public ArrayList<TokenList> tokenize(Program sourceProgram) throws ProcessingException {
+        this.sourceProgram = sourceProgram;
         equivalents = new HashMap<>(); // DPS 11-July-2012
         ArrayList<TokenList> tokenList = new ArrayList<>();
-        ArrayList<SourceLine> source = processIncludes(sourceMIPSprogram, new HashMap<>()); // DPS 9-Jan-2013
-        sourceMIPSprogram.setSourceLineList(source);
+        ArrayList<SourceLine> source = processIncludes(sourceProgram, new HashMap<>()); // DPS 9-Jan-2013
+        sourceProgram.setSourceLineList(source);
         TokenList currentLineTokens;
         String sourceLine;
         for (int i = 0; i < source.size(); i++) {
@@ -86,8 +87,8 @@ public class Tokenizer {
     // files that themselves have .include.  Plus it will detect and report recursive
     // includes both direct and indirect.
     // DPS 11-Jan-2013
-    private ArrayList<SourceLine> processIncludes(MIPSprogram program, Map<String, String> includeFiles) throws ProcessingException {
-        ArrayList<String> source = program.getSourceList();
+    private ArrayList<SourceLine> processIncludes(Program program, Map<String, String> includeFiles) throws ProcessingException {
+        List<String> source = program.getSourceList();
         ArrayList<SourceLine> result = new ArrayList<>(source.size());
         for (int sourceIndex = 0; sourceIndex < source.size(); sourceIndex++) {
             String line = source.get(sourceIndex);
@@ -108,7 +109,7 @@ public class Tokenizer {
                         throw new ProcessingException(errors);
                     }
                     includeFiles.put(filename, filename);
-                    MIPSprogram incl = new MIPSprogram();
+                    Program incl = new Program();
                     try {
                         incl.readSource(filename);
                     } catch (ProcessingException p) {
@@ -140,7 +141,7 @@ public class Tokenizer {
      *                             contains one or more lexical (i.e. token) errors.
      */
     public TokenList tokenizeExampleInstruction(String example) throws ProcessingException {
-        TokenList result = tokenizeLine(sourceMIPSprogram, 0, example, false);
+        TokenList result = tokenizeLine(sourceProgram, 0, example, false);
         if (errors.errorsOccurred()) {
             throw new ProcessingException(errors);
         }
@@ -173,7 +174,7 @@ public class Tokenizer {
      */
     // Modified for release 4.3, to preserve existing API.
     public TokenList tokenizeLine(int lineNum, String line) {
-        return tokenizeLine(sourceMIPSprogram, lineNum, line, true);
+        return tokenizeLine(sourceProgram, lineNum, line, true);
     }
 
     /**
@@ -209,7 +210,7 @@ public class Tokenizer {
     public TokenList tokenizeLine(int lineNum, String theLine, ErrorList callerErrorList, boolean doEqvSubstitutes) {
         ErrorList saveList = this.errors;
         this.errors = callerErrorList;
-        TokenList tokens = this.tokenizeLine(sourceMIPSprogram, lineNum, theLine, doEqvSubstitutes);
+        TokenList tokens = this.tokenizeLine(sourceProgram, lineNum, theLine, doEqvSubstitutes);
         this.errors = saveList;
         return tokens;
     }
@@ -225,7 +226,7 @@ public class Tokenizer {
      * @param doEqvSubstitutes boolean param set true to perform .eqv substitutions, else false
      * @return the generated token list for that line
      */
-    public TokenList tokenizeLine(MIPSprogram program, int lineNum, String theLine, boolean doEqvSubstitutes) {
+    public TokenList tokenizeLine(Program program, int lineNum, String theLine, boolean doEqvSubstitutes) {
         TokenList result = new TokenList();
         if (theLine.isEmpty()) return result;
         // Will be faster to work with char arrays instead of strings
@@ -389,7 +390,7 @@ public class Tokenizer {
     // contains a symbol that was previously defined in an .eqv directive, in which case
     // the substitution needs to be made.
     // DPS 11-July-2012
-    private TokenList processEqv(MIPSprogram program, int lineNum, String theLine, TokenList tokens) {
+    private TokenList processEqv(Program program, int lineNum, String theLine, TokenList tokens) {
         // See if it is .eqv directive.  If so, record it...
         // Have to assure it is a well-formed statement right now (can't wait for assembler).
         if (tokens.size() > 2 && (tokens.get(0).getType() == TokenType.DIRECTIVE || tokens.get(2).getType() == TokenType.DIRECTIVE)) {
@@ -460,7 +461,7 @@ public class Tokenizer {
     }
 
     // Given candidate token and its position, will classify and record it.
-    private void processCandidateToken(char[] token, MIPSprogram program, int lineNum, String line, int tokenPos, int tokenStartPos, TokenList tokenList) {
+    private void processCandidateToken(char[] token, Program program, int lineNum, String line, int tokenPos, int tokenStartPos, TokenList tokenList) {
         String value = new String(token, 0, tokenPos);
         if (!value.isEmpty() && value.charAt(0) == '\'') value = preprocessCharacterLiteral(value);
         TokenType type = TokenType.matchTokenType(value);

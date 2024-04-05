@@ -93,8 +93,6 @@ public class FileStatus {
 
     private static int systemStatus; // set to one of the above
     private static boolean systemAssembled;
-    private static boolean systemSaved;
-    private static boolean systemEdited;
     private static String systemName;
     private static File systemFile;
 
@@ -124,24 +122,6 @@ public class FileStatus {
      */
     public static void setAssembled(boolean b) {
         systemAssembled = b;
-    }
-
-    /**
-     * Changes the value of saved to the parameter given.
-     *
-     * @param b boolean variable that tells what to set saved to .
-     */
-    public static void setSaved(boolean b) {
-        systemSaved = b;
-    }
-
-    /**
-     * Changes the value of edited to the parameter given.
-     *
-     * @param b boolean variable that tells what to set edited to.
-     */
-    public static void setEdited(boolean b) {
-        systemEdited = b;
     }
 
     /**
@@ -190,32 +170,12 @@ public class FileStatus {
     }
 
     /**
-     * Tells whether the file has been saved.
-     *
-     * @return Boolean variable that is true if the ASM file has been saved
-     */
-    public static boolean isSaved() {
-        return systemSaved;
-    }
-
-    /**
-     * Tells whether the file has been edited since it has been saved.
-     *
-     * @return Boolean value that returns true if the ASM file has been edited.
-     */
-    public static boolean isEdited() {
-        return systemEdited;
-    }
-
-    /**
      * Resets all the values in FileStatus
      */
     public static void reset() {
         systemStatus = NO_FILE;
         systemName = "";
         systemAssembled = false;
-        systemSaved = false;
-        systemEdited = false;
         systemFile = null;
     }
 
@@ -229,7 +189,7 @@ public class FileStatus {
     private File file;
 
     /**
-     * Create a FileStatus object with FileStatis.NO_FILE for status and null for file getters.
+     * Create a FileStatus object with {@link #NO_FILE} for status and null for current file.
      */
     public FileStatus() {
         this(FileStatus.NO_FILE, null);
@@ -239,7 +199,7 @@ public class FileStatus {
      * Create a FileStatus object with given status and file pathname.
      *
      * @param status   Initial file status.  See FileStatus static constants.
-     * @param pathname Full file pathname. See setPathname(String newPath) below.
+     * @param pathname Full file pathname. See {@link #setPathname(String)}.
      */
     public FileStatus(int status, String pathname) {
         this.status = status;
@@ -343,8 +303,6 @@ public class FileStatus {
         systemStatus = this.status;
         systemName = this.file.getPath();
         systemAssembled = false;
-        systemSaved = (status == NOT_EDITED || status == RUNNABLE || status == RUNNING || status == TERMINATED);
-        systemEdited = (status == NEW_EDITED || status == EDITED);
         systemFile = this.file;
     }
 }

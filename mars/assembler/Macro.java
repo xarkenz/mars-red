@@ -2,7 +2,7 @@ package mars.assembler;
 
 import mars.ErrorList;
 import mars.ErrorMessage;
-import mars.MIPSprogram;
+import mars.Program;
 import mars.mips.hardware.Coprocessor0;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.RegisterFile;
@@ -42,7 +42,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class Macro {
     private String name;
-    private MIPSprogram program;
+    private Program program;
     private final ArrayList<String> labels;
 
     /**
@@ -73,11 +73,11 @@ public class Macro {
         this.name = name;
     }
 
-    public MIPSprogram getProgram() {
+    public Program getProgram() {
         return program;
     }
 
-    public void setProgram(MIPSprogram program) {
+    public void setProgram(Program program) {
         this.program = program;
     }
 

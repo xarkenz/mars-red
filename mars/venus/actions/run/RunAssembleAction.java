@@ -5,7 +5,6 @@ import mars.mips.hardware.Coprocessor0;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
-import mars.settings.Settings;
 import mars.util.FilenameFinder;
 import mars.util.SystemIO;
 import mars.venus.*;
@@ -48,16 +47,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the Run -> Assemble menu item (and toolbar icon)
  */
 public class RunAssembleAction extends VenusAction {
-    private static ArrayList<MIPSprogram> MIPSprogramsToAssemble;
+    private static ArrayList<Program> MIPSprogramsToAssemble;
     // Threshold for adding filename to printed message of files being assembled.
     private static final int LINE_LENGTH_LIMIT = 60;
 
-    public RunAssembleAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+    public RunAssembleAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 
     // These are both used by RunResetAction to re-assemble under identical conditions.
-    public static ArrayList<MIPSprogram> getMIPSprogramsToAssemble() {
+    public static ArrayList<Program> getProgramsToAssemble() {
         return MIPSprogramsToAssemble;
     }
 
@@ -71,7 +70,7 @@ public class RunAssembleAction extends VenusAction {
                 gui.getEditor().save();
             }
             try {
-                Globals.program = new MIPSprogram();
+                Globals.program = new Program();
                 ArrayList<String> filesToAssemble;
                 if (Globals.getSettings().assembleAllEnabled.get()) {
                     // Setting calls for multiple file assembly
@@ -86,13 +85,13 @@ public class RunAssembleAction extends VenusAction {
                     exceptionHandler = Globals.getSettings().exceptionHandlerPath.get();
                 }
                 MIPSprogramsToAssemble = Globals.program.prepareFilesForAssembly(filesToAssemble, FileStatus.getFile().getPath(), exceptionHandler);
-                gui.getMessagesPane().postMarsMessage(buildFileNameList(name + ": assembling ", MIPSprogramsToAssemble));
+                gui.getMessagesPane().writeToMessages(buildFileNameList(name + ": assembling ", MIPSprogramsToAssemble));
                 // added logic to receive any warnings and output them.... DPS 11/28/06
                 ErrorList warnings = Globals.program.assemble(MIPSprogramsToAssemble, Globals.getSettings().extendedAssemblerEnabled.get(), Globals.getSettings().warningsAreErrors.get());
                 if (warnings.warningsOccurred()) {
-                    gui.getMessagesPane().postMarsMessage(warnings.generateWarningReport());
+                    gui.getMessagesPane().writeToMessages(warnings.generateWarningReport());
                 }
-                gui.getMessagesPane().postMarsMessage(name + ": operation completed successfully.\n\n");
+                gui.getMessagesPane().writeToMessages(name + ": operation completed successfully.\n\n");
                 FileStatus.setAssembled(true);
                 FileStatus.set(FileStatus.RUNNABLE);
                 RegisterFile.resetRegisters();
@@ -117,8 +116,8 @@ public class RunAssembleAction extends VenusAction {
             }
             catch (ProcessingException pe) {
                 String errorReport = pe.errors().generateErrorAndWarningReport();
-                gui.getMessagesPane().postMarsMessage(errorReport);
-                gui.getMessagesPane().postMarsMessage(name + ": operation completed with errors.\n\n");
+                gui.getMessagesPane().writeToMessages(errorReport);
+                gui.getMessagesPane().writeToMessages(name + ": operation completed with errors.\n\n");
                 // Select editor line containing first error, and corresponding error message.
                 ArrayList<ErrorMessage> errorMessages = pe.errors().getErrorMessages();
                 for (ErrorMessage message : errorMessages) {
@@ -149,7 +148,7 @@ public class RunAssembleAction extends VenusAction {
      * Handy little utility for building comma-separated list of filenames
      * while not letting line length get out of hand.
      */
-    private String buildFileNameList(String preamble, ArrayList<MIPSprogram> programList) {
+    private String buildFileNameList(String preamble, ArrayList<Program> programList) {
         StringBuilder result = new StringBuilder(preamble);
         int lineLength = result.length();
         for (int i = 0; i < programList.size(); i++) {

@@ -33,21 +33,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
 */
 
-// Adapted from RegisterFile class developed by Bumgarner et al in 2003.
-// The FPU registers will be implemented by Register objects.  Such objects
-// can only hold int values, but we can use Float.floatToIntBits() to translate
-// a 32 bit float value into its equivalent 32-bit int representation, and
-// Float.intBitsToFloat() to bring it back.  More importantly, there are 
-// similar methods Double.doubleToLongBits() and Double.LongBitsToDouble()
-// which can be used to extend a double value over 2 registers.  The resulting
-// long is split into 2 int values (high order 32 bits, low order 32 bits) for
-// storing into registers, and reassembled upon retrieval.
-
 /**
  * Represents Coprocessor 1, the Floating Point Unit (FPU)
  *
  * @author Pete Sanderson
  * @version July 2005
+ */
+/*
+ * Adapted from RegisterFile class developed by Bumgarner et al in 2003.
+ * The FPU registers will be implemented by Register objects.  Such objects
+ * can only hold int values, but we can use Float.floatToIntBits() to translate
+ * a 32 bit float value into its equivalent 32-bit int representation, and
+ * Float.intBitsToFloat() to bring it back.  More importantly, there are
+ * similar methods Double.doubleToLongBits() and Double.LongBitsToDouble()
+ * which can be used to extend a double value over 2 registers.  The resulting
+ * long is split into 2 int values (high order 32 bits, low order 32 bits) for
+ * storing into registers, and reassembled upon retrieval.
  */
 public class Coprocessor1 {
     private static final Register[] registers = {
@@ -88,18 +89,6 @@ public class Coprocessor1 {
     // The 8 condition flags will be stored in bits 0-7 for flags 0-7.
     private static final Register condition = new Register("cf", 32, 0);
     private static final int conditionFlagCount = 8;
-
-    /**
-     * Display the register values for debugging purposes.
-     */
-    public static void showRegisters() {
-        for (Register register : registers) {
-            System.out.println("Name: " + register.getName());
-            System.out.println("Number: " + register.getNumber());
-            System.out.println("Value: " + register.getValue());
-            System.out.println();
-        }
-    }
 
     /**
      * Set the value of the FPU register given to the value given.
@@ -405,7 +394,7 @@ public class Coprocessor1 {
      */
     public static void resetRegisters() {
         for (Register register : registers) {
-            register.resetValue();
+            register.resetValueToDefault();
         }
         clearConditionFlags();
     }

@@ -147,7 +147,7 @@ Represents occurrance of an error detected during tokenizing, assembly or simula
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD><CODE><B><A HREF="../mars/ErrorMessage.html#ErrorMessage(boolean, mars.MIPSprogram, int, int, java.lang.String)">ErrorMessage</A></B>(boolean&nbsp;isWarning,
-             <A HREF="../mars/MIPSprogram.html" title="class in mars">MIPSprogram</A>&nbsp;sourceMIPSprogram,
+             <A HREF="../mars/MIPSprogram.html" title="class in mars">MIPSprogram</A>&nbsp;sourceProgram,
              int&nbsp;line,
              int&nbsp;position,
              <A HREF="http://docs.oracle.com/javase/1.5.0/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message)</CODE>
@@ -167,7 +167,7 @@ Represents occurrance of an error detected during tokenizing, assembly or simula
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<B>Deprecated.</B>&nbsp;<I>Newer constructors replace the String filename parameter with a MIPSprogram parameter to provide more information.</I></TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../mars/ErrorMessage.html#ErrorMessage(mars.MIPSprogram, int, int, java.lang.String)">ErrorMessage</A></B>(<A HREF="../mars/MIPSprogram.html" title="class in mars">MIPSprogram</A>&nbsp;sourceMIPSprogram,
+<TD><CODE><B><A HREF="../mars/ErrorMessage.html#ErrorMessage(mars.MIPSprogram, int, int, java.lang.String)">ErrorMessage</A></B>(<A HREF="../mars/MIPSprogram.html" title="class in mars">MIPSprogram</A>&nbsp;sourceProgram,
              int&nbsp;line,
              int&nbsp;position,
              <A HREF="http://docs.oracle.com/javase/1.5.0/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message)</CODE>
@@ -378,7 +378,7 @@ ErrorMessage</H3>
 <A NAME="ErrorMessage(mars.MIPSprogram, int, int, java.lang.String)"><!-- --></A><H3>
 ErrorMessage</H3>
 <PRE>
-public <B>ErrorMessage</B>(<A HREF="../mars/MIPSprogram.html" title="class in mars">MIPSprogram</A>&nbsp;sourceMIPSprogram,
+public <B>ErrorMessage</B>(<A HREF="../mars/MIPSprogram.html" title="class in mars">MIPSprogram</A>&nbsp;sourceProgram,
                     int&nbsp;line,
                     int&nbsp;position,
                     <A HREF="http://docs.oracle.com/javase/1.5.0/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message)</PRE>
@@ -387,7 +387,7 @@ public <B>ErrorMessage</B>(<A HREF="../mars/MIPSprogram.html" title="class in ma
  if there were, it will adjust filename and line number so message reflects original file and line number.
 <P>
 <DL>
-<DT><B>Parameters:</B><DD><CODE>sourceMIPSprogram</CODE> - MIPSprogram object of source file in which this error appears.<DD><CODE>line</CODE> - Line number in source program being processed when error occurred.<DD><CODE>position</CODE> - Position within line being processed when error occurred.  Normally is starting
+<DT><B>Parameters:</B><DD><CODE>sourceProgram</CODE> - MIPSprogram object of source file in which this error appears.<DD><CODE>line</CODE> - Line number in source program being processed when error occurred.<DD><CODE>position</CODE> - Position within line being processed when error occurred.  Normally is starting
  position of source token.<DD><CODE>message</CODE> - String containing appropriate error message.</DL>
 </DL>
 <HR>
@@ -396,7 +396,7 @@ public <B>ErrorMessage</B>(<A HREF="../mars/MIPSprogram.html" title="class in ma
 ErrorMessage</H3>
 <PRE>
 public <B>ErrorMessage</B>(boolean&nbsp;isWarning,
-                    <A HREF="../mars/MIPSprogram.html" title="class in mars">MIPSprogram</A>&nbsp;sourceMIPSprogram,
+                    <A HREF="../mars/MIPSprogram.html" title="class in mars">MIPSprogram</A>&nbsp;sourceProgram,
                     int&nbsp;line,
                     int&nbsp;position,
                     <A HREF="http://docs.oracle.com/javase/1.5.0/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;message)</PRE>
@@ -405,7 +405,7 @@ public <B>ErrorMessage</B>(boolean&nbsp;isWarning,
  if there were, it will adjust filename and line number so message reflects original file and line number.
 <P>
 <DL>
-<DT><B>Parameters:</B><DD><CODE>isWarning</CODE> - set to WARNING if message is a warning not error, else set to ERROR or omit.<DD><CODE>sourceMIPSprogram</CODE> - MIPSprogram object of source file in which this error appears.<DD><CODE>line</CODE> - Line number in source program being processed when error occurred.<DD><CODE>position</CODE> - Position within line being processed when error occurred.  Normally is starting
+<DT><B>Parameters:</B><DD><CODE>isWarning</CODE> - set to WARNING if message is a warning not error, else set to ERROR or omit.<DD><CODE>sourceProgram</CODE> - MIPSprogram object of source file in which this error appears.<DD><CODE>line</CODE> - Line number in source program being processed when error occurred.<DD><CODE>position</CODE> - Position within line being processed when error occurred.  Normally is starting
  position of source token.<DD><CODE>message</CODE> - String containing appropriate error message.</DL>
 </DL>
 <HR>

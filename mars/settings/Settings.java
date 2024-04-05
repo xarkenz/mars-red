@@ -60,6 +60,8 @@ public class Settings extends Observable {
     /* Properties file used to hold default settings. */
     private static final String SETTINGS_FILENAME = "Settings";
 
+    // BOOLEAN SETTINGS
+
     /**
      * Flag to determine whether or not program being assembled is limited to
      * basic MIPS instructions and formats.
@@ -201,7 +203,7 @@ public class Settings extends Observable {
     public final BooleanSetting startAtMain = new BooleanSetting(
         this,
         "StartAtMain",
-        false,
+        true,
         true
     );
     /**
@@ -284,6 +286,8 @@ public class Settings extends Observable {
         selfModifyingCodeEnabled,
     };
 
+    // INTEGER SETTINGS
+
     /**
      * State for sorting label window display.
      */
@@ -328,6 +332,8 @@ public class Settings extends Observable {
         editorPopupPrefixLength,
     };
 
+    // STRING SETTINGS
+
     /**
      * Current specified exception handler file (a MIPS assembly source file).
      */
@@ -355,11 +361,18 @@ public class Settings extends Observable {
         "0 1 2 3 4",
         false
     );
+    public final StringSetting previouslyOpenFiles = new StringSetting(
+        this,
+        "PreviouslyOpenFiles",
+        "",
+        false
+    );
 
     public final StringSetting[] stringSettings = {
         exceptionHandlerPath,
         memoryConfiguration,
         textSegmentColumnOrder,
+        previouslyOpenFiles,
     };
 
     // FONT SETTINGS.  Each array position has associated name.
@@ -523,15 +536,15 @@ public class Settings extends Observable {
         initialize();
     }
 
-    /* **************************************************************************
-     This section contains all code related to syntax highlighting styles settings.
-     A style includes 3 components: color, bold (t/f), italic (t/f)
-    
-    The fallback defaults will come not from an array here, but from the
-    existing static method SyntaxUtilities.getDefaultSyntaxStyles()
-    in the mars.venus.editors.jeditsyntax package.  It returns an array
-    of SyntaxStyle objects.
-    */
+    /*
+     * This section contains all code related to syntax highlighting styles settings.
+     * A style includes 3 components: color, bold (t/f), italic (t/f)
+     *
+     * The fallback defaults will come not from an array here, but from the
+     * existing static method SyntaxUtilities.getDefaultSyntaxStyles()
+     * in the mars.venus.editors.jeditsyntax package.  It returns an array
+     * of SyntaxStyle objects.
+     */
     private String[] syntaxStyleColorSettingsValues;
     private boolean[] syntaxStyleBoldSettingsValues;
     private boolean[] syntaxStyleItalicSettingsValues;

@@ -6,12 +6,12 @@ import mars.mips.hardware.Memory;
 import mars.mips.instructions.BasicInstruction;
 import mars.mips.instructions.ExtendedInstruction;
 import mars.mips.instructions.Instruction;
-import mars.settings.Settings;
 import mars.util.Binary;
 import mars.util.SystemIO;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 
 /*
 Copyright (c) 2003-2012,  Pete Sanderson and Kenneth Vollmar
@@ -57,7 +57,7 @@ public class Assembler {
     private int externAddress;
     private boolean autoAlign;
     private Directive dataDirective;
-    private MIPSprogram fileCurrentlyBeingAssembled;
+    private Program fileCurrentlyBeingAssembled;
     private TokenList globalDeclarationList;
     private UserKernelAddressSpace textAddress;
     private UserKernelAddressSpace dataAddress;
@@ -87,7 +87,7 @@ public class Assembler {
      *     statement.
      * @see ProgramStatement
      */
-    public ArrayList<ProgramStatement> assemble(MIPSprogram tokenizedProgramFile, boolean extendedAssemblerEnabled) throws ProcessingException {
+    public ArrayList<ProgramStatement> assemble(Program tokenizedProgramFile, boolean extendedAssemblerEnabled) throws ProcessingException {
         return assemble(tokenizedProgramFile, extendedAssemblerEnabled, false);
     }
 
@@ -109,8 +109,8 @@ public class Assembler {
      *     statement.
      * @see ProgramStatement
      */
-    public ArrayList<ProgramStatement> assemble(MIPSprogram tokenizedProgramFile, boolean extendedAssemblerEnabled, boolean warningsAreErrors) throws ProcessingException {
-        ArrayList<MIPSprogram> tokenizedProgramFiles = new ArrayList<>();
+    public ArrayList<ProgramStatement> assemble(Program tokenizedProgramFile, boolean extendedAssemblerEnabled, boolean warningsAreErrors) throws ProcessingException {
+        ArrayList<Program> tokenizedProgramFiles = new ArrayList<>();
         tokenizedProgramFiles.add(tokenizedProgramFile);
         return this.assemble(tokenizedProgramFiles, extendedAssemblerEnabled, warningsAreErrors);
     }
@@ -131,7 +131,7 @@ public class Assembler {
      *     statement. Returns null if incoming array list is null or empty.
      * @see ProgramStatement
      */
-    public ArrayList<ProgramStatement> assemble(ArrayList<MIPSprogram> tokenizedProgramFiles, boolean extendedAssemblerEnabled) throws ProcessingException {
+    public ArrayList<ProgramStatement> assemble(ArrayList<Program> tokenizedProgramFiles, boolean extendedAssemblerEnabled) throws ProcessingException {
         return assemble(tokenizedProgramFiles, extendedAssemblerEnabled, false);
     }
 
@@ -154,7 +154,7 @@ public class Assembler {
      *     statement. Returns null if incoming array list is null or empty.
      * @see ProgramStatement
      */
-    public ArrayList<ProgramStatement> assemble(ArrayList<MIPSprogram> tokenizedProgramFiles, boolean extendedAssemblerEnabled, boolean warningsAreErrors) throws ProcessingException {
+    public ArrayList<ProgramStatement> assemble(ArrayList<Program> tokenizedProgramFiles, boolean extendedAssemblerEnabled, boolean warningsAreErrors) throws ProcessingException {
         if (tokenizedProgramFiles == null || tokenizedProgramFiles.isEmpty()) {
             return null;
         }
@@ -174,7 +174,7 @@ public class Assembler {
         // TO SECOND PASS. THIS ASSURES ALL SYMBOL TABLES ARE CORRECTLY BUILT.
         // THERE IS ONE GLOBAL SYMBOL TABLE (for identifiers declared .globl) PLUS
         // ONE LOCAL SYMBOL TABLE FOR EACH SOURCE FILE.
-        for (MIPSprogram tokenizedProgramFile : tokenizedProgramFiles) {
+        for (Program tokenizedProgramFile : tokenizedProgramFiles) {
             if (errors.errorLimitExceeded()) {
                 break;
             }
@@ -193,8 +193,8 @@ public class Assembler {
             // Clear out (initialize) symbol table related structures.
             fileCurrentlyBeingAssembled.getLocalSymbolTable().clear();
             currentFileDataSegmentForwardReferences.clear();
-            ArrayList<SourceLine> sourceLines = fileCurrentlyBeingAssembled.getSourceLines();
-            ArrayList<TokenList> tokenLists = fileCurrentlyBeingAssembled.getTokenLists();
+            List<SourceLine> sourceLines = fileCurrentlyBeingAssembled.getSourceLines();
+            List<TokenList> tokenLists = fileCurrentlyBeingAssembled.getTokenLists();
             ArrayList<ProgramStatement> parsedStatements = new ArrayList<>();
             // each file keeps its own macro definitions
             fileCurrentlyBeingAssembled.createMacroPool();
@@ -248,13 +248,12 @@ public class Assembler {
         if (Globals.debug) {
             System.out.println("Assembler second pass begins");
         }
-        for (MIPSprogram tokenizedProgramFile : tokenizedProgramFiles) {
+        for (Program tokenizedProgramFile : tokenizedProgramFiles) {
             if (errors.errorLimitExceeded()) {
                 break;
             }
             this.fileCurrentlyBeingAssembled = tokenizedProgramFile;
-            ArrayList<ProgramStatement> parsedList = fileCurrentlyBeingAssembled.getParsedList();
-            for (ProgramStatement statement : parsedList) {
+            for (ProgramStatement statement : fileCurrentlyBeingAssembled.getParsedStatements()) {
                 statement.buildBasicStatementFromBasicInstruction(errors);
                 if (errors.errorsOccurred()) {
                     throw new ProcessingException(errors);

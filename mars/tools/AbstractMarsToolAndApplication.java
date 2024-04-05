@@ -1,9 +1,8 @@
 package mars.tools;
 
 import mars.Globals;
-import mars.MIPSprogram;
+import mars.Program;
 import mars.ProcessingException;
-import mars.settings.Settings;
 import mars.mips.hardware.*;
 import mars.simulator.Simulator;
 import mars.util.FilenameFinder;
@@ -368,7 +367,7 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
         stopButton = new JButton("Stop");
         stopButton.setToolTipText("Terminate MIPS program execution");
         stopButton.setEnabled(false);
-        stopButton.addActionListener(e -> Simulator.getInstance().stopExecution(null));
+        stopButton.addActionListener(e -> Simulator.getInstance().stop(null));
         stopButton.addKeyListener(new EnterKeyListener(stopButton));
 
         JButton resetButton = new JButton("Reset");
@@ -659,7 +658,7 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
 
             Thread.currentThread().setPriority(Thread.NORM_PRIORITY - 1);
             Thread.yield();
-            MIPSprogram program = new MIPSprogram();
+            Program program = new Program();
             Globals.program = program; // Shouldn't have to do this...
             String fileToAssemble = mostRecentlyOpenedFile.getPath();
             ArrayList<String> filesToAssemble;
@@ -671,7 +670,7 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
                 filesToAssemble = new ArrayList<>();
                 filesToAssemble.add(fileToAssemble);
             }
-            ArrayList<MIPSprogram> programsToAssemble;
+            ArrayList<Program> programsToAssemble;
             try {
                 operationStatusMessages.displayNonTerminatingMessage("Assembling " + fileToAssemble);
                 programsToAssemble = program.prepareFilesForAssembly(filesToAssemble, fileToAssemble, exceptionHandler);

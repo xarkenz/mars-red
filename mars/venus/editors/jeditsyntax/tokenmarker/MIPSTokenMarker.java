@@ -54,10 +54,10 @@ public class MIPSTokenMarker extends TokenMarker {
             tokenLabels[Token.LITERAL1] = "String literal";
             tokenLabels[Token.LITERAL2] = "Character literal";
             tokenLabels[Token.LABEL] = "Label";
-            tokenLabels[Token.KEYWORD1] = "MIPS instruction";
+            tokenLabels[Token.KEYWORD1] = "Instruction mnemonic";
             tokenLabels[Token.KEYWORD2] = "Assembler directive";
             tokenLabels[Token.KEYWORD3] = "Register";
-            tokenLabels[Token.INVALID] = "In-progress, invalid";
+            tokenLabels[Token.INVALID] = "Invalid";
             tokenLabels[Token.MACRO_ARG] = "Macro parameter";
         }
         return tokenLabels;
@@ -66,14 +66,14 @@ public class MIPSTokenMarker extends TokenMarker {
     public static String[] getMIPSTokenExamples() {
         if (tokenExamples == null) {
             tokenExamples = new String[Token.ID_COUNT];
-            tokenExamples[Token.COMMENT1] = "# Load";
-            tokenExamples[Token.LITERAL1] = "\"First\"";
+            tokenExamples[Token.COMMENT1] = "# comment";
+            tokenExamples[Token.LITERAL1] = "\"string\"";
             tokenExamples[Token.LITERAL2] = "'\\n'";
             tokenExamples[Token.LABEL] = "main:";
             tokenExamples[Token.KEYWORD1] = "lui";
             tokenExamples[Token.KEYWORD2] = ".text";
             tokenExamples[Token.KEYWORD3] = "$zero";
-            tokenExamples[Token.INVALID] = "\"Regi";
+            tokenExamples[Token.INVALID] = "\"bad";
             tokenExamples[Token.MACRO_ARG] = "%arg";
         }
         return tokenExamples;
@@ -86,21 +86,25 @@ public class MIPSTokenMarker extends TokenMarker {
         lastKeyword = offset;
         int length = line.count + offset;
         boolean backslash = false;
+        boolean validLabelPosition = true;
 
         loop:
         for (int i = offset; i < length; i++) {
             int i1 = (i + 1);
 
             char c = array[i];
+            if (validLabelPosition && !Character.isWhitespace(c)) {
+                validLabelPosition = false;
+            }
             if (c == '\\') {
                 backslash = !backslash;
                 continue;
             }
 
             switch (token) {
-                case Token.NULL:
+                case Token.NULL -> {
                     switch (c) {
-                        case '"':
+                        case '"' -> {
                             doKeyword(line, i);
                             if (backslash) {
                                 backslash = false;
@@ -110,8 +114,8 @@ public class MIPSTokenMarker extends TokenMarker {
                                 token = Token.LITERAL1;
                                 lastOffset = lastKeyword = i;
                             }
-                            break;
-                        case '\'':
+                        }
+                        case '\'' -> {
                             doKeyword(line, i);
                             if (backslash) {
                                 backslash = false;
@@ -121,30 +125,16 @@ public class MIPSTokenMarker extends TokenMarker {
                                 token = Token.LITERAL2;
                                 lastOffset = lastKeyword = i;
                             }
-                            break;
-                        case ':':
-                      /*  Original code for ':' case, replaced 3 Aug 2010. Details below.
-                        if(lastKeyword == offset)
-                        { // Commenting out this IF statement permits recognition of keywords
-                          // used as labels when terminated with ":".  The most common example
-                          // is "b:" (where b is mnemonic for branch instruction). DPS 6-July-2010.
-                          //
-                          // if(doKeyword(line,i,c)) 
-                          //   break;
-                           backslash = false;
-                           addToken(i1 - lastOffset,Token.LABEL);
-                           lastOffset = lastKeyword = i1;
                         }
-                        else if(doKeyword(line,i,c))
-                           break;
-                     	break;
-                     */
-                            // Replacement code 3 Aug 2010.  Will recognize label definitions when:
-                            // (1) label is same as instruction name, (2) label begins after column 1,
-                            // (3) there are spaces between label name and colon, (4) label is valid
-                            // MIPS identifier (otherwise would catch, say, 0 (zero) in .word 0:10)
+                        case ':' -> {
+                            // 3 Aug 2010.  Will recognize label definitions when:
+                            // (1) Label is same as instruction name.
+                            // (2) Label begins after column 1.
+                            // (3) There are spaces between label name and colon.
+                            // (4) label is valid MIPS identifier (otherwise would catch something like "42:").
+                            // (5) [03/2024] Label is the first token in the line (otherwise would catch
+                            //     "notLabel:" in something like ".eqv notLabel 0 ; .byte notLabel:10"
                             backslash = false;
-                            //String lab = new String(array, lastOffset, i1-lastOffset-1).trim();
                             boolean validIdentifier;
                             try {
                                 validIdentifier = TokenType.isValidIdentifier(new String(array, lastOffset, i1 - lastOffset - 1).trim());
@@ -152,12 +142,12 @@ public class MIPSTokenMarker extends TokenMarker {
                             catch (StringIndexOutOfBoundsException e) {
                                 validIdentifier = false;
                             }
-                            if (validIdentifier) {
+                            if (validIdentifier && lastToken == null) {
                                 addToken(i1 - lastOffset, Token.LABEL);
                                 lastOffset = lastKeyword = i1;
                             }
-                            break;
-                        case '#':
+                        }
+                        case '#' -> {
                             backslash = false;
                             doKeyword(line, i);
                             if (length - i >= 1) {
@@ -166,17 +156,17 @@ public class MIPSTokenMarker extends TokenMarker {
                                 lastOffset = lastKeyword = length;
                                 break loop;
                             }
-                            break;
-                        default:
+                        }
+                        default -> {
                             backslash = false;
                             // . and $ added 4/6/10 DPS; % added 12/12 M.Sekhavat
                             if (!Character.isLetterOrDigit(c) && c != '_' && c != '.' && c != '$' && c != '%') {
                                 doKeyword(line, i);
                             }
-                            break;
+                        }
                     }
-                    break;
-                case Token.LITERAL1:
+                }
+                case Token.LITERAL1 -> {
                     if (backslash) {
                         backslash = false;
                     }
@@ -185,8 +175,8 @@ public class MIPSTokenMarker extends TokenMarker {
                         token = Token.NULL;
                         lastOffset = lastKeyword = i1;
                     }
-                    break;
-                case Token.LITERAL2:
+                }
+                case Token.LITERAL2 -> {
                     if (backslash) {
                         backslash = false;
                     }
@@ -195,9 +185,10 @@ public class MIPSTokenMarker extends TokenMarker {
                         token = Token.NULL;
                         lastOffset = lastKeyword = i1;
                     }
-                    break;
-                default:
+                }
+                default -> {
                     throw new InternalError("Invalid state: " + token);
+                }
             }
         }
 
@@ -206,19 +197,19 @@ public class MIPSTokenMarker extends TokenMarker {
         }
 
         switch (token) {
-            case Token.LITERAL1:
-            case Token.LITERAL2:
+            case Token.LITERAL1, Token.LITERAL2 -> {
                 addToken(length - lastOffset, Token.INVALID);
                 token = Token.NULL;
-                break;
-            case Token.KEYWORD2:
+            }
+            case Token.KEYWORD2 -> {
                 addToken(length - lastOffset, token);
                 if (!backslash) {
                     token = Token.NULL;
                 }
-            default:
+            }
+            default -> {
                 addToken(length - lastOffset, token);
-                break;
+            }
         }
 
         return token;

@@ -39,7 +39,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 public class Register extends Observable {
     private final String name;
     private final int number;
-    private int resetValue;
+    private int defaultValue;
     // volatile should be enough to allow safe multi-threaded access
     // w/o the use of synchronized methods.  getValue and setValue
     // are the only methods here used by the register collection
@@ -51,29 +51,55 @@ public class Register extends Observable {
      *
      * @param name   The name of the register.
      * @param number The number of the register.
-     * @param value The inital (and reset) value of the register.
+     * @param defaultValue  The default (and initial) value of the register.
      */
-    public Register(String name, int number, int value) {
+    public Register(String name, int number, int defaultValue) {
         this.name = name;
         this.number = number;
-        this.value = value;
-        this.resetValue = value;
+        this.value = defaultValue;
+        this.defaultValue = defaultValue;
     }
 
     /**
-     * Returns the name of the Register.
+     * Returns the name of the register.
      *
-     * @return name The name of the Register.
+     * @return The name of the register.
      */
     public String getName() {
         return name;
     }
 
     /**
-     * Returns the value of the Register.  Observers are notified
-     * of the READ operation.
+     * Returns the number of the register.
      *
-     * @return value The value of the Register.
+     * @return The number of the register.
+     */
+    public int getNumber() {
+        return number;
+    }
+
+    /**
+     * Returns the default (initial) value of the register.
+     *
+     * @return The default value of the register.
+     */
+    public int getDefaultValue() {
+        return defaultValue;
+    }
+
+    /**
+     * Change the register's default value, the value to which it will be
+     * set when {@link #resetValueToDefault()} is called.
+     */
+    public synchronized void setDefaultValue(int defaultValue) {
+        this.defaultValue = defaultValue;
+    }
+
+    /**
+     * Returns the value of the register.  Observers are notified
+     * of the {@link AccessNotice#READ} operation.
+     *
+     * @return The value of the register.
      */
     public synchronized int getValue() {
         notifyAnyObservers(AccessNotice.READ);
@@ -81,61 +107,35 @@ public class Register extends Observable {
     }
 
     /**
-     * Returns the value of the Register.  Observers are not notified.
+     * Returns the value of the register.  Observers are not notified.
      * Added for release 3.8.
      *
-     * @return value The value of the Register.
+     * @return The value of the register.
      */
     public synchronized int getValueNoNotify() {
         return value;
     }
 
     /**
-     * Returns the reset value of the Register.
+     * Sets the value of the register.
+     * Observers are notified of the {@link AccessNotice#WRITE} operation.
      *
-     * @return The reset (initial) value of the Register.
+     * @param value Value to set the register to.
+     * @return Previous value of the register.
      */
-    public int getResetValue() {
-        return resetValue;
-    }
-
-    /**
-     * Returns the number of the Register.
-     *
-     * @return number The number of the Register.
-     */
-    public int getNumber() {
-        return number;
-    }
-
-    /**
-     * Sets the value of the register to the val passed to it.
-     * Observers are notified of the WRITE operation.
-     *
-     * @param val Value to set the Register to.
-     * @return previous value of register
-     */
-    public synchronized int setValue(int val) {
-        int old = value;
-        value = val;
+    public synchronized int setValue(int value) {
+        int previousValue = this.value;
+        this.value = value;
         notifyAnyObservers(AccessNotice.WRITE);
-        return old;
+        return previousValue;
     }
 
     /**
      * Resets the value of the register to the value it was constructed with.
      * Observers are not notified.
      */
-    public synchronized void resetValue() {
-        value = resetValue;
-    }
-
-    /**
-     * Change the register's reset value; the value to which it will be
-     * set when <tt>resetValue()</tt> is called.
-     */
-    public synchronized void changeResetValue(int reset) {
-        resetValue = reset;
+    public synchronized void resetValueToDefault() {
+        value = defaultValue;
     }
 
     /**

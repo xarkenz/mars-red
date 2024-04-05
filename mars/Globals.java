@@ -72,7 +72,7 @@ public class Globals {
     /**
      * The current MARS version number. Can't wait for "initialize()" call to get it.
      */
-    public static final String MARS_VERSION = "4.5";
+    public static final String APPLICATION_VERSION = "4.5";
     /**
      * List of accepted file extensions for MIPS assembly source files.
      */
@@ -89,6 +89,10 @@ public class Globals {
      * Maximum number of back-step operations to buffer
      */
     public static final int MAXIMUM_BACKSTEPS = getBackstepLimit();
+    /**
+     * The name of the application
+     */
+    public static final String APPLICATION_NAME = "MARS Red";
     /**
      * MARS copyright years
      */
@@ -137,7 +141,7 @@ public class Globals {
     /**
      * the program currently being worked with.  Used by GUI only, not command line.
      */
-    public static MIPSprogram program;
+    public static Program program;
     /**
      * Symbol table for file currently being assembled.
      */

@@ -5,6 +5,8 @@ import mars.venus.VenusUI;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
+import java.io.File;
+import java.util.ArrayList;
 
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
@@ -38,17 +40,27 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the File -> Open menu item
  */
 public class FileOpenAction extends VenusAction {
-    public FileOpenAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+    public FileOpenAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 
     /**
-     * Launch a file chooser for name of file to open
+     * Launch a file chooser for the user to select one or more files,
+     * attempting to open them in new editor tabs afterward.
      *
      * @param event component triggering this call
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        gui.getEditor().open();
+        ArrayList<File> unopenedFiles = gui.getEditor().open();
+        if (!unopenedFiles.isEmpty()) {
+            StringBuilder message = new StringBuilder("<html>The following files could not be opened:<ul>");
+            for (File file : unopenedFiles) {
+                // The path name isn't sanitized, but it should be fine...?
+                message.append("<li>").append(file).append("</li>");
+            }
+            message.append("</ul></html>");
+            JOptionPane.showMessageDialog(gui, message, "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }

@@ -1,6 +1,6 @@
 package mars.assembler;
 
-import mars.MIPSprogram;
+import mars.Program;
 
 /*
 Copyright (c) 2003-2013,  Pete Sanderson and Kenneth Vollmar
@@ -41,7 +41,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 public class SourceLine {
     private final String source;
     private final String filename;
-    private final MIPSprogram mipsProgram;
+    private final Program mipsProgram;
     private final int lineNumber;
 
     /**
@@ -51,7 +51,7 @@ public class SourceLine {
      * @param mipsProgram The program (object representing source file) containing that line
      * @param lineNumber  The line number within that program where source appears.
      */
-    public SourceLine(String source, MIPSprogram mipsProgram, int lineNumber) {
+    public SourceLine(String source, Program mipsProgram, int lineNumber) {
         this.source = source;
         this.mipsProgram = mipsProgram;
         this.filename = (mipsProgram == null) ? null : mipsProgram.getFilename();
@@ -90,7 +90,7 @@ public class SourceLine {
      *
      * @return program as MIPSprogram object
      */
-    public MIPSprogram getMIPSprogram() {
+    public Program getMIPSprogram() {
         return mipsProgram;
     }
 }

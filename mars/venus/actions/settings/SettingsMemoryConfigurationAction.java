@@ -55,7 +55,7 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
     /**
      * Create a new SettingsEditorAction.  Has all the GuiAction parameters.
      */
-    public SettingsMemoryConfigurationAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+    public SettingsMemoryConfigurationAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 
@@ -167,7 +167,7 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
         private Component buildControlPanel() {
             Box controlPanel = Box.createHorizontalBox();
             JButton okButton = new JButton("Apply and Close");
-            okButton.setToolTipText(SettingsHighlightingAction.CLOSE_TOOL_TIP_TEXT);
+            okButton.setToolTipText(SettingsHighlightingAction.OK_TOOL_TIP_TEXT);
             okButton.addActionListener(e -> {
                 performApply();
                 performClose();
@@ -204,7 +204,7 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
                     // Stop execution if executing -- should NEVER happen because this
                     // Action's widget is disabled during MIPS execution.
                     if (FileStatus.get() == FileStatus.RUNNING) {
-                        Simulator.getInstance().stopExecution(SettingsMemoryConfigurationAction.this);
+                        Simulator.getInstance().stop(SettingsMemoryConfigurationAction.this);
                     }
                     Globals.getGUI().getRunAssembleAction().actionPerformed(null);
                 }

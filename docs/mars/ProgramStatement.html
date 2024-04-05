@@ -131,7 +131,7 @@ Represents one assembly/machine statement.  This represents the "bare machine" l
  instruction with no source code to refer back to.</TD>
 </TR>
 <TR BGCOLOR="white" CLASS="TableRowColor">
-<TD><CODE><B><A HREF="../mars/ProgramStatement.html#ProgramStatement(mars.MIPSprogram, java.lang.String, mars.assembler.TokenList, mars.assembler.TokenList, mars.mips.instructions.Instruction, int, int)">ProgramStatement</A></B>(<A HREF="../mars/MIPSprogram.html" title="class in mars">MIPSprogram</A>&nbsp;sourceMIPSprogram,
+<TD><CODE><B><A HREF="../mars/ProgramStatement.html#ProgramStatement(mars.MIPSprogram, java.lang.String, mars.assembler.TokenList, mars.assembler.TokenList, mars.mips.instructions.Instruction, int, int)">ProgramStatement</A></B>(<A HREF="../mars/MIPSprogram.html" title="class in mars">MIPSprogram</A>&nbsp;sourceProgram,
                  <A HREF="http://docs.oracle.com/javase/1.5.0/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;source,
                  <A HREF="../mars/assembler/TokenList.html" title="class in mars.assembler">TokenList</A>&nbsp;origTokenList,
                  <A HREF="../mars/assembler/TokenList.html" title="class in mars.assembler">TokenList</A>&nbsp;strippedTokenList,
@@ -351,7 +351,7 @@ Represents one assembly/machine statement.  This represents the "bare machine" l
 <A NAME="ProgramStatement(mars.MIPSprogram, java.lang.String, mars.assembler.TokenList, mars.assembler.TokenList, mars.mips.instructions.Instruction, int, int)"><!-- --></A><H3>
 ProgramStatement</H3>
 <PRE>
-public <B>ProgramStatement</B>(<A HREF="../mars/MIPSprogram.html" title="class in mars">MIPSprogram</A>&nbsp;sourceMIPSprogram,
+public <B>ProgramStatement</B>(<A HREF="../mars/MIPSprogram.html" title="class in mars">MIPSprogram</A>&nbsp;sourceProgram,
                         <A HREF="http://docs.oracle.com/javase/1.5.0/docs/api/java/lang/String.html?is-external=true" title="class or interface in java.lang">String</A>&nbsp;source,
                         <A HREF="../mars/assembler/TokenList.html" title="class in mars.assembler">TokenList</A>&nbsp;origTokenList,
                         <A HREF="../mars/assembler/TokenList.html" title="class in mars.assembler">TokenList</A>&nbsp;strippedTokenList,
@@ -363,7 +363,7 @@ public <B>ProgramStatement</B>(<A HREF="../mars/MIPSprogram.html" title="class i
  information.  These can be used by a debugger later on.
 <P>
 <DL>
-<DT><B>Parameters:</B><DD><CODE>sourceMIPSprogram</CODE> - The MIPSprogram object that contains this statement<DD><CODE>source</CODE> - The corresponding MIPS source statement.<DD><CODE>origTokenList</CODE> - Complete list of Token objects (includes labels, comments, parentheses, etc)<DD><CODE>strippedTokenList</CODE> - List of Token objects with all but operators and operands removed.<DD><CODE>inst</CODE> - The Instruction object for this statement's operator.<DD><CODE>textAddress</CODE> - The Text Segment address in memory where the binary machine code for this statement
+<DT><B>Parameters:</B><DD><CODE>sourceProgram</CODE> - The MIPSprogram object that contains this statement<DD><CODE>source</CODE> - The corresponding MIPS source statement.<DD><CODE>origTokenList</CODE> - Complete list of Token objects (includes labels, comments, parentheses, etc)<DD><CODE>strippedTokenList</CODE> - List of Token objects with all but operators and operands removed.<DD><CODE>inst</CODE> - The Instruction object for this statement's operator.<DD><CODE>textAddress</CODE> - The Text Segment address in memory where the binary machine code for this statement
  is stored.</DL>
 </DL>
 <HR>

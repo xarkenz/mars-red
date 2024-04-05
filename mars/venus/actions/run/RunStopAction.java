@@ -39,13 +39,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the Run -> Stop menu item
  */
 public class RunStopAction extends VenusAction {
-    public RunStopAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+    public RunStopAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 
     @Override
     public void actionPerformed(ActionEvent event) {
-        Simulator.getInstance().stopExecution(this);
-        // RunGoAction's "stopped" method will take care of the cleanup.
+        Simulator.getInstance().stop(this);
     }
 }

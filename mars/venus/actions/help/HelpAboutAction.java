@@ -39,7 +39,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the Help -> About menu item
  */
 public class HelpAboutAction extends VenusAction {
-    public HelpAboutAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+    public HelpAboutAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 
@@ -47,7 +47,7 @@ public class HelpAboutAction extends VenusAction {
     public void actionPerformed(ActionEvent event) {
         JOptionPane.showMessageDialog(
             gui,
-            "MARS Red " + Globals.MARS_VERSION
+            "MARS Red " + Globals.APPLICATION_VERSION
 				+ "\nCopyright © " + Globals.COPYRIGHT_YEARS
 				+ "\n" + Globals.COPYRIGHT_HOLDERS
 				+ "\nMARS is the MIPS Assembler and Runtime Simulator."

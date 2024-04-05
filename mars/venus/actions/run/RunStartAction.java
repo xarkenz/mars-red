@@ -11,7 +11,7 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 
 /*
-Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
+Copyright (c) 2003-2007,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
 and Kenneth Vollmar (kenvollmar@missouristate.edu)
@@ -39,15 +39,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action for the Run -> Step menu item
+ * Action for the Run -> Go menu item
  */
-public class RunStepAction extends VenusAction {
-    public RunStepAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
+public class RunStartAction extends VenusAction {
+    public RunStartAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 
     /**
-     * Perform next simulated instruction step.
+     * Run the MIPS program.
      */
     @Override
     public void actionPerformed(ActionEvent event) {
@@ -64,17 +64,19 @@ public class RunStepAction extends VenusAction {
                 }
             }
 
-            gui.getMainPane().getExecutePane().getTextSegmentWindow().setCodeHighlighting(true);
+            Globals.getGUI().getMainPane().getExecutePane().getTextSegmentWindow().setCodeHighlighting(false);
+            Globals.getGUI().getMainPane().getExecutePane().getTextSegmentWindow().unhighlightAllSteps();
 
             try {
-                Globals.program.simulateStepAtPC(this);
+                int[] breakPoints = gui.getMainPane().getExecutePane().getTextSegmentWindow().getSortedBreakPointsArray();
+                Globals.program.simulateFromPC(breakPoints, -1, this);
             }
             catch (ProcessingException e) {
                 // Ignore
             }
         }
         else {
-            // Note: this should never occur since Step is only enabled after successful assembly.
+            // Note: this should never occur since the Start action is only enabled after successful assembly.
             JOptionPane.showMessageDialog(gui, "The program must be assembled before it can be run.");
         }
     }

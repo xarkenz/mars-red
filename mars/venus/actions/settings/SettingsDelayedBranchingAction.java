@@ -1,7 +1,6 @@
 package mars.venus.actions.settings;
 
 import mars.Globals;
-import mars.settings.Settings;
 import mars.simulator.Simulator;
 import mars.venus.FileStatus;
 import mars.venus.actions.VenusAction;
@@ -51,7 +50,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class SettingsDelayedBranchingAction extends VenusAction {
 
-    public SettingsDelayedBranchingAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+    public SettingsDelayedBranchingAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 
@@ -62,7 +61,7 @@ public class SettingsDelayedBranchingAction extends VenusAction {
             // Stop execution if executing -- should NEVER happen because this
             // Action's widget is disabled during MIPS execution.
             if (FileStatus.get() == FileStatus.RUNNING) {
-                Simulator.getInstance().stopExecution(this);
+                Simulator.getInstance().stop(this);
             }
             Globals.getGUI().getRunAssembleAction().actionPerformed(null);
         }

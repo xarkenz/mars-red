@@ -1,7 +1,6 @@
 package mars.venus;
 
 import mars.Globals;
-import mars.settings.Settings;
 import mars.venus.editors.MARSTextEditingArea;
 import mars.venus.editors.generic.GenericTextArea;
 import mars.venus.editors.jeditsyntax.JEditBasedTextArea;
@@ -9,6 +8,7 @@ import mars.venus.editors.jeditsyntax.JEditBasedTextArea;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.text.Document;
 import javax.swing.undo.UndoManager;
 import java.awt.*;
 import java.io.BufferedReader;
@@ -54,7 +54,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @author Sanderson and Bumgarner
  */
 public class EditPane extends JPanel implements Observer {
-    private final MARSTextEditingArea sourceCode;
+    private final MARSTextEditingArea textEditingArea;
     private final VenusUI gui;
     private final JLabel caretPositionLabel;
     private final JCheckBox showLineNumbers;
@@ -64,27 +64,27 @@ public class EditPane extends JPanel implements Observer {
     /**
      * Constructor for the EditPane class.
      */
-    public EditPane(VenusUI appFrame) {
+    public EditPane(VenusUI gui) {
         super(new BorderLayout());
-        this.gui = appFrame;
+        this.gui = gui;
         // We want to be notified of editor font changes! See update() below.
         Globals.getSettings().addObserver(this);
         this.fileStatus = new FileStatus();
         lineNumbers = new JLabel();
 
         if (Globals.getSettings().useGenericTextEditor.get()) {
-            this.sourceCode = new GenericTextArea(this, lineNumbers);
+            this.textEditingArea = new GenericTextArea(this, lineNumbers);
         }
         else {
-            this.sourceCode = new JEditBasedTextArea(this, lineNumbers);
+            this.textEditingArea = new JEditBasedTextArea(this, lineNumbers);
         }
         // sourceCode is responsible for its own scrolling
-        this.add(this.sourceCode.getOuterComponent(), BorderLayout.CENTER);
+        this.add(this.textEditingArea.getOuterComponent(), BorderLayout.CENTER);
 
         // If source code is modified, will set flag to trigger/request file save.
-        sourceCode.getDocument().addDocumentListener(new DocumentListener() {
+        textEditingArea.getDocument().addDocumentListener(new DocumentListener() {
             @Override
-            public void insertUpdate(DocumentEvent e) {
+            public void insertUpdate(DocumentEvent event) {
                 // IF statement added DPS 9-Aug-2011
                 // This method is triggered when file contents added to document
                 // upon opening, even though not edited by user.  The IF
@@ -92,81 +92,78 @@ public class EditPane extends JPanel implements Observer {
                 if (FileStatus.get() == FileStatus.OPENING) {
                     setFileStatus(FileStatus.NOT_EDITED);
                     FileStatus.set(FileStatus.NOT_EDITED);
-                    if (showingLineNumbers()) {
-                        lineNumbers.setText(getLineNumbersList(sourceCode.getDocument()));
-                    }
-                    return;
-                }
-                // End of 9-Aug-2011 modification.
-                if (getFileStatus() == FileStatus.NEW_NOT_EDITED) {
-                    setFileStatus(FileStatus.NEW_EDITED);
-                }
-                if (getFileStatus() == FileStatus.NOT_EDITED) {
-                    setFileStatus(FileStatus.EDITED);
-                }
-                if (getFileStatus() == FileStatus.NEW_EDITED) {
-                    gui.getEditor().setTitle("", getFilename(), getFileStatus());
                 }
                 else {
-                    gui.getEditor().setTitle(getPathname(), getFilename(), getFileStatus());
-                }
+                    // End of 9-Aug-2011 modification.
+                    if (getFileStatus() == FileStatus.NEW_NOT_EDITED) {
+                        setFileStatus(FileStatus.NEW_EDITED);
+                    }
+                    if (getFileStatus() == FileStatus.NOT_EDITED) {
+                        setFileStatus(FileStatus.EDITED);
+                    }
+                    if (getFileStatus() == FileStatus.NEW_EDITED) {
+                        EditPane.this.gui.getEditor().setTitle("", getFilename(), getFileStatus());
+                    }
+                    else {
+                        EditPane.this.gui.getEditor().setTitle(getPathname(), getFilename(), getFileStatus());
+                    }
 
-                FileStatus.setEdited(true);
-                switch (FileStatus.get()) {
-                    case FileStatus.NEW_NOT_EDITED:
+                    if (FileStatus.get() == FileStatus.NEW_NOT_EDITED) {
                         FileStatus.set(FileStatus.NEW_EDITED);
-                        break;
-                    case FileStatus.NEW_EDITED:
-                        break;
-                    default:
+                    }
+                    else if (FileStatus.get() != FileStatus.NEW_EDITED) {
                         FileStatus.set(FileStatus.EDITED);
-                }
+                    }
 
-                Globals.getGUI().getMainPane().getExecutePane().clearPane(); // DPS 9-Aug-2011
+                    Globals.getGUI().getMainPane().getExecutePane().clearPane(); // DPS 9-Aug-2011
+                }
 
                 if (showingLineNumbers()) {
-                    lineNumbers.setText(getLineNumbersList(sourceCode.getDocument()));
+                    lineNumbers.setText(getLineNumbersList(textEditingArea.getDocument()));
                 }
             }
 
             @Override
-            public void removeUpdate(DocumentEvent e) {
-                this.insertUpdate(e);
+            public void removeUpdate(DocumentEvent event) {
+                this.insertUpdate(event);
             }
 
             @Override
-            public void changedUpdate(DocumentEvent e) {
-                this.insertUpdate(e);
+            public void changedUpdate(DocumentEvent event) {
+                this.insertUpdate(event);
             }
         });
 
-        showLineNumbers = new JCheckBox("Show Line Numbers");
-        showLineNumbers.setToolTipText("If checked, will display line number for each line of text.");
+        // TODO: This option should be in the editor settings??? -Sean Clarke
+        showLineNumbers = new JCheckBox("Show line numbers");
+        showLineNumbers.setToolTipText("When checked, line numbers are displayed on the left-hand side of the editor.");
         showLineNumbers.setEnabled(false);
         showLineNumbers.setSelected(Globals.getSettings().displayEditorLineNumbers.get());
 
         this.setSourceCode("", false);
 
-        lineNumbers.setFont(getLineNumberFont(sourceCode.getFont()));
+        lineNumbers.setFont(getLineNumberFont(textEditingArea.getFont()));
+        lineNumbers.setForeground(UIManager.getColor("Venus.Editor.lineNumbers.foreground"));
+        lineNumbers.setBackground(UIManager.getColor("Venus.Editor.lineNumbers.background"));
         lineNumbers.setVerticalAlignment(JLabel.TOP);
         lineNumbers.setText("");
         lineNumbers.setVisible(true);
 
         // Listener fires when "Show Line Numbers" check box is clicked.
-        showLineNumbers.addItemListener(e -> {
+        showLineNumbers.addItemListener(event -> {
             if (showLineNumbers.isSelected()) {
-                lineNumbers.setText(getLineNumbersList(sourceCode.getDocument()));
+                lineNumbers.setText(getLineNumbersList(textEditingArea.getDocument()));
                 lineNumbers.setVisible(true);
             }
             else {
                 lineNumbers.setText("");
                 lineNumbers.setVisible(false);
             }
-            sourceCode.revalidate(); // added 16 Jan 2012 to assure label redrawn.
+            textEditingArea.revalidate(); // added 16 Jan 2012 to assure label redrawn.
             Globals.getSettings().displayEditorLineNumbers.set(showLineNumbers.isSelected());
             // Needed because caret disappears when checkbox clicked
-            sourceCode.setCaretVisible(true);
-            sourceCode.requestFocusInWindow();
+            textEditingArea.setCaretVisible(true);
+            textEditingArea.requestFocusInWindow();
         });
 
         JPanel editInfo = new JPanel(new BorderLayout());
@@ -181,11 +178,15 @@ public class EditPane extends JPanel implements Observer {
     /**
      * For initializing the source code when opening an ASM file.
      *
-     * @param s        String containing text
-     * @param editable Set true if code is editable else false
+     * @param sourceCode String containing text
+     * @param editable   Set true if code is editable else false
      */
-    public void setSourceCode(String s, boolean editable) {
-        sourceCode.setSourceCode(s, editable);
+    public void setSourceCode(String sourceCode, boolean editable) {
+        this.textEditingArea.setSourceCode(sourceCode, editable);
+
+        if (showingLineNumbers()) {
+            lineNumbers.setText(getLineNumbersList(this.textEditingArea.getDocument()));
+        }
     }
 
     /**
@@ -197,7 +198,7 @@ public class EditPane extends JPanel implements Observer {
      * call this after setting the text.
      */
     public void discardAllUndoableEdits() {
-        sourceCode.discardAllUndoableEdits();
+        textEditingArea.discardAllUndoableEdits();
     }
 
     /**
@@ -206,21 +207,16 @@ public class EditPane extends JPanel implements Observer {
      * multiline label (it ignores '\n').  The line number list is a JLabel with
      * one line number per line.
      */
-    private static final String SPACES = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-
-    public String getLineNumbersList(javax.swing.text.Document doc) {
+    public String getLineNumbersList(Document doc) {
         StringBuilder lineNumberList = new StringBuilder("<html>");
-        int lineCount = doc.getDefaultRootElement().getElementCount(); //this.getSourceLineCount();
+        int lineCount = doc.getDefaultRootElement().getElementCount();
         int digits = Integer.toString(lineCount).length();
-        for (int i = 1; i <= lineCount; i++) {
-            String lineStr = Integer.toString(i);
-            int leadingSpaces = digits - lineStr.length();
-            if (leadingSpaces == 0) {
-                lineNumberList.append(lineStr).append("&nbsp;<br>");
-            }
-            else {
-                lineNumberList.append(SPACES, 0, leadingSpaces * 6).append(lineStr).append("&nbsp;<br>");
-            }
+        for (int lineNumber = 1; lineNumber <= lineCount; lineNumber++) {
+            String lineNumberStr = Integer.toString(lineNumber);
+            int leadingSpaces = digits - lineNumberStr.length() + 1;
+            lineNumberList.append("&nbsp;".repeat(Math.max(0, leadingSpaces)))
+                .append(lineNumberStr)
+                .append("&nbsp;<br>");
         }
         lineNumberList.append("<br></html>");
         return lineNumberList.toString();
@@ -238,7 +234,7 @@ public class EditPane extends JPanel implements Observer {
      * BufferedReader on StringReader seems to work better.
      */
     public int getSourceLineCount() {
-        BufferedReader bufStringReader = new BufferedReader(new StringReader(sourceCode.getText()));
+        BufferedReader bufStringReader = new BufferedReader(new StringReader(textEditingArea.getText()));
         int lineNums = 0;
         try {
             while (bufStringReader.readLine() != null) {
@@ -257,7 +253,7 @@ public class EditPane extends JPanel implements Observer {
      * @return Sting containing source code
      */
     public String getSource() {
-        return sourceCode.getText();
+        return textEditingArea.getText();
     }
 
     /**
@@ -317,7 +313,7 @@ public class EditPane extends JPanel implements Observer {
      * Delegates to text area's requestFocusInWindow method.
      */
     public void tellEditingComponentToRequestFocusInWindow() {
-        this.sourceCode.requestFocusInWindow();
+        this.textEditingArea.requestFocusInWindow();
     }
 
     /**
@@ -333,64 +329,64 @@ public class EditPane extends JPanel implements Observer {
      * @return the Undo manager
      */
     public UndoManager getUndoManager() {
-        return sourceCode.getUndoManager();
+        return textEditingArea.getUndoManager();
     }
 
-    //       Note: these are invoked only when copy/cut/paste are used from the
-    //     toolbar or menu or the defined menu Alt codes.  When
-    // 			Ctrl-C, Ctrl-X or Ctrl-V are used, this code is NOT invoked
-    // 			but the operation works correctly!
-    // 	The "set visible" operations are used because clicking on the toolbar
-    // 	icon causes both the selection highlighting AND the blinking cursor
-    // 	to disappear!  This does not happen when using menu selection or
-    // 	Ctrl-C/X/V
+    // Note: these are invoked only when copy/cut/paste are used from the
+    // toolbar or menu or the defined menu Alt codes.  When
+    // Ctrl-C, Ctrl-X or Ctrl-V are used, this code is NOT invoked
+    // but the operation works correctly!
+    // The "set visible" operations are used because clicking on the toolbar
+    // icon causes both the selection highlighting AND the blinking cursor
+    // to disappear!  This does not happen when using menu selection or
+    // Ctrl-C/X/V.
 
     /**
      * Copy currently-selected text into clipboard.
      */
     public void copyText() {
-        sourceCode.copy();
-        sourceCode.setCaretVisible(true);
-        sourceCode.setSelectionVisible(true);
+        textEditingArea.copy();
+        textEditingArea.setCaretVisible(true);
+        textEditingArea.setSelectionVisible(true);
     }
 
     /**
      * Cut currently-selected text into clipboard.
      */
     public void cutText() {
-        sourceCode.cut();
-        sourceCode.setCaretVisible(true);
+        textEditingArea.cut();
+        textEditingArea.setCaretVisible(true);
     }
 
     /**
      * Paste clipboard contents at cursor position.
      */
     public void pasteText() {
-        sourceCode.paste();
-        sourceCode.setCaretVisible(true);
+        textEditingArea.paste();
+        textEditingArea.setCaretVisible(true);
     }
 
     /**
      * Select all text.
      */
     public void selectAllText() {
-        sourceCode.selectAll();
-        sourceCode.setCaretVisible(true);
-        sourceCode.setSelectionVisible(true);
+        textEditingArea.selectAll();
+        textEditingArea.setCaretVisible(true);
+        textEditingArea.setSelectionVisible(true);
     }
 
     /**
      * Undo previous edit.
      */
     public void undo() {
-        sourceCode.undo();
+        textEditingArea.undo();
     }
 
     /**
      * Redo previously undone edit.
      */
     public void redo() {
-        sourceCode.redo();
+        textEditingArea.redo();
     }
 
     /**
@@ -447,7 +443,7 @@ public class EditPane extends JPanel implements Observer {
      * @return The column and line number coordinate as a Point.
      */
     public Point convertStreamPositionToLineColumn(int position) {
-        String textStream = sourceCode.getText();
+        String textStream = textEditingArea.getText();
         int line = 1;
         int column = 1;
         for (int i = 0; i < position; i++) {
@@ -471,7 +467,7 @@ public class EditPane extends JPanel implements Observer {
      * @return corresponding stream position.  Returns -1 if there is no corresponding position.
      */
     public int convertLineColumnToStreamPosition(int line, int column) {
-        String textStream = sourceCode.getText();
+        String textStream = textEditingArea.getText();
         int textLength = textStream.length();
         int textLine = 1;
         int textColumn = 1;
@@ -503,11 +499,11 @@ public class EditPane extends JPanel implements Observer {
             int lineEndPosition = convertLineColumnToStreamPosition(line + 1, 1) - 1;
             if (lineEndPosition < 0) { // DPS 19 Sept 2012.  Happens if "line" is last line of file.
 
-                lineEndPosition = sourceCode.getText().length() - 1;
+                lineEndPosition = textEditingArea.getText().length() - 1;
             }
             if (lineStartPosition >= 0) {
-                sourceCode.select(lineStartPosition, lineEndPosition);
-                sourceCode.setSelectionVisible(true);
+                textEditingArea.select(lineStartPosition, lineEndPosition);
+                textEditingArea.setSelectionVisible(true);
             }
         }
     }
@@ -537,7 +533,7 @@ public class EditPane extends JPanel implements Observer {
      * @return TEXT_FOUND or TEXT_NOT_FOUND, depending on the result.
      */
     public int doFindText(String find, boolean caseSensitive) {
-        return sourceCode.doFindText(find, caseSensitive);
+        return textEditingArea.doFindText(find, caseSensitive);
     }
 
     /**
@@ -553,15 +549,15 @@ public class EditPane extends JPanel implements Observer {
      * @return Returns TEXT_FOUND if not initially at end of selected match and matching
      *     occurrence is found.  Returns TEXT_NOT_FOUND if the text is not matched.
      *     Returns TEXT_REPLACED_NOT_FOUND_NEXT if replacement is successful but there are
-     *     no additional matches.  Returns TEXT_REPLACED_FOUND_NEXT if reaplacement is
+     *     no additional matches.  Returns TEXT_REPLACED_FOUND_NEXT if replacement is
      *     successful and there is at least one additional match.
      */
     public int doReplace(String find, String replace, boolean caseSensitive) {
-        return sourceCode.doReplace(find, replace, caseSensitive);
+        return textEditingArea.doReplace(find, replace, caseSensitive);
     }
 
     /**
-     * Finds and replaces <B>ALL</B> occurrences of text in a string in a forward search.
+     * Finds and replaces <b>ALL</b> occurrences of text in a string in a forward search.
      * All replacements are bundled into one CompoundEdit, so one Undo operation will
      * undo all of them.
      *
@@ -571,7 +567,7 @@ public class EditPane extends JPanel implements Observer {
      * @return the number of occurrences that were matched and replaced.
      */
     public int doReplaceAll(String find, String replace, boolean caseSensitive) {
-        return sourceCode.doReplaceAll(find, replace, caseSensitive);
+        return textEditingArea.doReplaceAll(find, replace, caseSensitive);
     }
 
     /**
@@ -580,12 +576,12 @@ public class EditPane extends JPanel implements Observer {
      */
     @Override
     public void update(Observable fontChanger, Object arg) {
-        sourceCode.setFont(Globals.getSettings().getEditorFont());
-        sourceCode.setLineHighlightEnabled(Globals.getSettings().highlightCurrentEditorLine.get());
-        sourceCode.setCaretBlinkRate(Globals.getSettings().caretBlinkRate.get());
-        sourceCode.setTabSize(Globals.getSettings().editorTabSize.get());
-        sourceCode.updateSyntaxStyles();
-        sourceCode.revalidate();
+        textEditingArea.setFont(Globals.getSettings().getEditorFont());
+        textEditingArea.setLineHighlightEnabled(Globals.getSettings().highlightCurrentEditorLine.get());
+        textEditingArea.setCaretBlinkRate(Globals.getSettings().caretBlinkRate.get());
+        textEditingArea.setTabSize(Globals.getSettings().editorTabSize.get());
+        textEditingArea.updateSyntaxStyles();
+        textEditingArea.revalidate();
         // We want line numbers to be displayed same size but always PLAIN style.
         // Easiest way to get same pixel height as source code is to set to same
         // font family as the source code! It can get a bit complicated otherwise
@@ -594,7 +590,7 @@ public class EditPane extends JPanel implements Observer {
         // in the editor form a separate column from the source code and if the
         // pixel height is not the same then the numbers will not line up with
         // the source lines.
-        lineNumbers.setFont(getLineNumberFont(sourceCode.getFont()));
+        lineNumbers.setFont(getLineNumberFont(textEditingArea.getFont()));
         lineNumbers.revalidate();
     }
 
@@ -604,6 +600,6 @@ public class EditPane extends JPanel implements Observer {
      * font for source code.
      */
     private Font getLineNumberFont(Font sourceFont) {
-        return (sourceCode.getFont().getStyle() == Font.PLAIN) ? sourceFont : new Font(sourceFont.getFamily(), Font.PLAIN, sourceFont.getSize());
+        return (textEditingArea.getFont().getStyle() == Font.PLAIN) ? sourceFont : new Font(sourceFont.getFamily(), Font.PLAIN, sourceFont.getSize());
     }
 }

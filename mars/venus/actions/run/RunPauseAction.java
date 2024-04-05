@@ -39,13 +39,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action class for the Run -> Pause menu item (and toolbar icon)
  */
 public class RunPauseAction extends VenusAction {
-    public RunPauseAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+    public RunPauseAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 
     @Override
     public void actionPerformed(ActionEvent event) {
-        Simulator.getInstance().stopExecution(this);
-        // RunGoAction's "paused" method will do the cleanup.
+        Simulator.getInstance().stop(this);
     }
 }
