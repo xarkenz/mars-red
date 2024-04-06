@@ -63,8 +63,12 @@ public class Application {
     /**
      * Path to folder that contains images
      */
-    // The leading "/" in filepath prevents package name from being pre-pended.
+    // The leading "/" in filepath prevents package name from being prepended.
     public static final String IMAGES_PATH = "/images/";
+    /**
+     * Path to folder that contains action icons
+     */
+    public static final String ACTION_ICONS_PATH = "/images/actions/";
     /**
      * Path to folder that contains help text
      */

@@ -30,6 +30,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import mars.Application;
 
+import javax.swing.*;
+
 /**
  * Interface for any tool that interacts with an executing MIPS program.
  * A qualifying tool must be a class in the Tools package that
@@ -51,10 +53,20 @@ import mars.Application;
  */
 public interface MarsTool {
     /**
-     * Return a name you have chosen for this tool.  It will appear as the
-     * menu item.
+     * Return the name you have chosen for this tool, which will be used for the
+     * menu item.  If not implemented, uses the class name.
      */
-    String getName();
+    default String getName() {
+        return this.getClass().getSimpleName();
+    }
+
+    /**
+     * Return the icon you have chosen for this tool, which will be used for the
+     * menu item.  If not implemented, no icon is displayed.
+     */
+    default Icon getIcon() {
+        return null;
+    }
 
     /**
      * Performs tool functions.  It will be invoked when the tool is selected

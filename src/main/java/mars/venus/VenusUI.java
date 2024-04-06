@@ -2,6 +2,7 @@ package mars.venus;
 
 import mars.Application;
 import mars.util.SVGIcon;
+import mars.venus.actions.ToolAction;
 import mars.venus.actions.edit.*;
 import mars.venus.actions.file.*;
 import mars.venus.actions.help.*;
@@ -14,6 +15,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.net.URL;
+import java.util.ArrayList;
 
 /*
 Copyright (c) 2003-2013,  Pete Sanderson and Kenneth Vollmar
@@ -44,7 +46,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Top level container for Venus GUI.
+ * Top level container for the Venus GUI.
  *
  * @author Sanderson and Team JSpim
  */
@@ -54,6 +56,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * here primarily so both can share the Action objects.
  */
 public class VenusUI extends JFrame {
+    // TODO: Make this configurable
+    public static final int ICON_SIZE = 24;
+
     private final JMenuBar menu;
     private final MainPane mainPane;
     private final RegistersPane registersPane;
@@ -67,18 +72,10 @@ public class VenusUI extends JFrame {
     private static boolean reset = true; // registers/memory reset for execution
     private static boolean started = false; // started execution
 
-    // Components of the menubar
-    private JMenu file, run, help, edit, settings;
-    private JMenuItem fileNew, fileOpen, fileClose, fileCloseAll, fileSave, fileSaveAs, fileSaveAll, fileDumpMemory, filePrint, fileExit;
-    private JMenuItem editUndo, editRedo, editCut, editCopy, editPaste, editFindReplace, editSelectAll;
-    private JMenuItem runGo, runStep, runBackstep, runReset, runAssemble, runStop, runPause, runClearBreakpoints, runToggleBreakpoints;
-    private JCheckBoxMenuItem settingsLabel, settingsPopupInput, settingsValueDisplayBase, settingsAddressDisplayBase, settingsExtended, settingsAssembleOnOpen, settingsAssembleAll, settingsWarningsAreErrors, settingsStartAtMain, settingsDelayedBranching, settingsProgramArguments, settingsSelfModifyingCode;
-    private JMenuItem settingsExceptionHandler, settingsEditor, settingsHighlighting, settingsMemoryConfiguration;
-    private JMenuItem helpHelp, helpAbout;
-
     // The "action" objects, which include action listeners.  One of each will be created then
     // shared between a menu item and its corresponding toolbar button.  This is a very cool
-    // technique because it relates the button and menu item so closely
+    // technique because it relates the button and menu item so closely.
+
     private FileNewAction fileNewAction;
     private FileOpenAction fileOpenAction;
     private FileCloseAction fileCloseAction;
@@ -89,6 +86,7 @@ public class VenusUI extends JFrame {
     private FileDumpMemoryAction fileDumpMemoryAction;
     private FilePrintAction filePrintAction;
     private FileExitAction fileExitAction;
+
     private EditUndoAction editUndoAction;
     private EditRedoAction editRedoAction;
     private EditCutAction editCutAction;
@@ -97,14 +95,16 @@ public class VenusUI extends JFrame {
     private EditFindReplaceAction editFindReplaceAction;
     private EditSelectAllAction editSelectAllAction;
     private RunAssembleAction runAssembleAction;
+
     private RunStartAction runStartAction;
     private RunStepAction runStepAction;
     private RunBackstepAction runBackstepAction;
-    private RunResetAction runResetAction;
-    private RunStopAction runStopAction;
     private RunPauseAction runPauseAction;
+    private RunStopAction runStopAction;
+    private RunResetAction runResetAction;
     private RunClearBreakpointsAction runClearBreakpointsAction;
     private RunToggleBreakpointsAction runToggleBreakpointsAction;
+
     private SettingsLabelAction settingsLabelAction;
     private SettingsPopupInputAction settingsPopupInputAction;
     private SettingsValueDisplayBaseAction settingsValueDisplayBaseAction;
@@ -121,11 +121,12 @@ public class VenusUI extends JFrame {
     private SettingsHighlightingAction settingsHighlightingAction;
     private SettingsMemoryConfigurationAction settingsMemoryConfigurationAction;
     private SettingsSelfModifyingCodeAction settingsSelfModifyingCodeAction;
+
     private HelpHelpAction helpHelpAction;
     private HelpAboutAction helpAboutAction;
 
     /**
-     * Constructor for the Class. Sets up a window object for the UI
+     * Create a new instance of the Venus GUI and show it once it is created.
      *
      * @param title Name of the window to be created.
      */
@@ -253,16 +254,16 @@ public class VenusUI extends JFrame {
         Class<?> cs = this.getClass();
 
         try {
-            fileNewAction = new FileNewAction(this, "New", new SVGIcon(cs.getResource(Application.IMAGES_PATH + "actions/new.svg").toString(), 24, 24), "Create a new file for editing", KeyEvent.VK_N, KeyStroke.getKeyStroke(KeyEvent.VK_N, tk.getMenuShortcutKeyMaskEx()));
-            fileOpenAction = new FileOpenAction(this, "Open...", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Open22.png"))), "Open a file for editing", KeyEvent.VK_O, KeyStroke.getKeyStroke(KeyEvent.VK_O, tk.getMenuShortcutKeyMaskEx()));
-            fileCloseAction = new FileCloseAction(this, "Close", null, "Close the current file", KeyEvent.VK_C, KeyStroke.getKeyStroke(KeyEvent.VK_W, tk.getMenuShortcutKeyMaskEx()));
-            fileCloseAllAction = new FileCloseAllAction(this, "Close All", null, "Close all open files", KeyEvent.VK_L, null);
-            fileSaveAction = new FileSaveAction(this, "Save", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Save22.png"))), "Save the current file", KeyEvent.VK_S, KeyStroke.getKeyStroke(KeyEvent.VK_S, tk.getMenuShortcutKeyMaskEx()));
-            fileSaveAsAction = new FileSaveAsAction(this, "Save as...", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "SaveAs22.png"))), "Save current file with different name", KeyEvent.VK_A, null);
-            fileSaveAllAction = new FileSaveAllAction(this, "Save All", null, "Save all open files", KeyEvent.VK_V, null);
-            fileDumpMemoryAction = new FileDumpMemoryAction(this, "Dump Memory...", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Dump22.png"))), "Dump machine code or data in an available format", KeyEvent.VK_D, KeyStroke.getKeyStroke(KeyEvent.VK_D, tk.getMenuShortcutKeyMaskEx()));
-            filePrintAction = new FilePrintAction(this, "Print...", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Print22.gif"))), "Print current file", KeyEvent.VK_P, null);
-            fileExitAction = new FileExitAction(this, "Exit", null, "Exit " + Application.NAME, KeyEvent.VK_X, null);
+            fileNewAction = new FileNewAction(this, "New", getSVGIcon("new.svg"), "Create a new file for editing", KeyEvent.VK_N, KeyStroke.getKeyStroke(KeyEvent.VK_N, tk.getMenuShortcutKeyMaskEx()));
+            fileOpenAction = new FileOpenAction(this, "Open...", getSVGIcon("open.svg"), "Open a file for editing", KeyEvent.VK_O, KeyStroke.getKeyStroke(KeyEvent.VK_O, tk.getMenuShortcutKeyMaskEx()));
+            fileCloseAction = new FileCloseAction(this, "Close", getSVGIcon("close.svg"), "Close the current file", KeyEvent.VK_C, KeyStroke.getKeyStroke(KeyEvent.VK_W, tk.getMenuShortcutKeyMaskEx()));
+            fileCloseAllAction = new FileCloseAllAction(this, "Close All", getSVGIcon("close_all.svg"), "Close all open files", KeyEvent.VK_L, null);
+            fileSaveAction = new FileSaveAction(this, "Save", getSVGIcon("save.svg"), "Save the current file", KeyEvent.VK_S, KeyStroke.getKeyStroke(KeyEvent.VK_S, tk.getMenuShortcutKeyMaskEx()));
+            fileSaveAsAction = new FileSaveAsAction(this, "Save As...", getSVGIcon("save_as.svg"), "Save current file with different name", KeyEvent.VK_A, null);
+            fileSaveAllAction = new FileSaveAllAction(this, "Save All", getSVGIcon("save_all.svg"), "Save all open files", KeyEvent.VK_V, null);
+            fileDumpMemoryAction = new FileDumpMemoryAction(this, "Dump Memory...", getSVGIcon("dump_memory.svg"), "Dump machine code or data in an available format", KeyEvent.VK_D, KeyStroke.getKeyStroke(KeyEvent.VK_D, tk.getMenuShortcutKeyMaskEx()));
+            filePrintAction = new FilePrintAction(this, "Print...", getSVGIcon("print.svg"), "Print current file", KeyEvent.VK_P, null);
+            fileExitAction = new FileExitAction(this, "Exit", getSVGIcon("exit.svg"), "Exit " + Application.NAME, KeyEvent.VK_X, null);
 
             editUndoAction = new EditUndoAction(this, "Undo", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Undo22.png"))), "Undo last edit", KeyEvent.VK_U, KeyStroke.getKeyStroke(KeyEvent.VK_Z, tk.getMenuShortcutKeyMaskEx()));
             editRedoAction = new EditRedoAction(this, "Redo", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Redo22.png"))), "Redo last edit", KeyEvent.VK_R, KeyStroke.getKeyStroke(KeyEvent.VK_Y, tk.getMenuShortcutKeyMaskEx()));
@@ -286,11 +287,11 @@ public class VenusUI extends JFrame {
             settingsPopupInputAction = new SettingsPopupInputAction(this, "Use dialog for user input", null, "If set, use popup dialog for input syscalls (5, 6, 7, 8, 12) instead of console input", null, null);
             settingsValueDisplayBaseAction = new SettingsValueDisplayBaseAction(this, "Hexadecimal values", null, "Toggle between hexadecimal and decimal display of memory/register values", null, null);
             settingsAddressDisplayBaseAction = new SettingsAddressDisplayBaseAction(this, "Hexadecimal addresses", null, "Toggle between hexadecimal and decimal display of memory addresses", null, null);
-            settingsExtendedAction = new SettingsExtendedAction(this, "Allow extended (pseudo) instructions", null, "If set, MIPS extended (pseudo) instructions are formats are permitted.", null, null);
+            settingsExtendedAction = new SettingsExtendedAction(this, "Allow extended (pseudo) instructions", getSVGIcon("extended_instruction.svg"), "If set, MIPS extended (pseudo) instructions are formats are permitted.", null, null);
             settingsAssembleOnOpenAction = new SettingsAssembleOnOpenAction(this, "Assemble files when opened", null, "If set, a file will be automatically assembled as soon as it is opened.  File Open dialog will show most recently opened file.", null, null);
             settingsAssembleAllAction = new SettingsAssembleAllAction(this, "Assemble all files in current directory", null, "If set, all files in current directory will be assembled when Assemble operation is selected.", null, null);
             settingsWarningsAreErrorsAction = new SettingsWarningsAreErrorsAction(this, "Promote assembler warnings to errors", null, "If set, assembler warnings will be interpreted as errors and prevent successful assembly.", null, null);
-            settingsStartAtMainAction = new SettingsStartAtMainAction(this, "Use \"main\" as program entry point", null, "If set, assembler will initialize Program Counter to text address globally labeled 'main', if defined.", null, null);
+            settingsStartAtMainAction = new SettingsStartAtMainAction(this, "Use \"main\" as program entry point", getSVGIcon("basic_instruction.svg"), "If set, assembler will initialize Program Counter to text address globally labeled 'main', if defined.", null, null);
             settingsProgramArgumentsAction = new SettingsProgramArgumentsAction(this, "Allow program arguments", null, "If set, program arguments for MIPS program can be entered in border of Text Segment window.", null, null);
             settingsDelayedBranchingAction = new SettingsDelayedBranchingAction(this, "Delayed branching", null, "If set, delayed branching will occur during MIPS execution.", null, null);
             settingsSelfModifyingCodeAction = new SettingsSelfModifyingCodeAction(this, "Self-modifying code", null, "If set, the MIPS program can write and branch to both text and data segments.", null, null);
@@ -299,7 +300,7 @@ public class VenusUI extends JFrame {
             settingsExceptionHandlerAction = new SettingsExceptionHandlerAction(this, "Exception Handler...", null, "If set, the specified exception handler file will be included in all Assemble operations.", null, null);
             settingsMemoryConfigurationAction = new SettingsMemoryConfigurationAction(this, "Memory Configuration...", null, "View and modify memory segment base addresses for simulated MIPS.", null, null);
 
-            helpHelpAction = new HelpHelpAction(this, "Help...", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Help22.png"))), "Help", KeyEvent.VK_H, KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0));
+            helpHelpAction = new HelpHelpAction(this, "Help...", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Help22.png"))), "Help", KeyEvent.VK_H, KeyStroke.getKeyStroke(KeyEvent.VK_H, tk.getMenuShortcutKeyMaskEx()));
             helpAboutAction = new HelpAboutAction(this, "About...", null, "Information about " + Application.NAME, null, null);
         }
         catch (Exception e) {
@@ -309,157 +310,116 @@ public class VenusUI extends JFrame {
         }
     }
 
+    private Icon getSVGIcon(String filename) {
+        URL url = this.getClass().getResource(Application.ACTION_ICONS_PATH + filename);
+        return url == null ? null : new SVGIcon(url, ICON_SIZE, ICON_SIZE);
+    }
+
     /**
      * Build the menus and connect them to action objects (which serve as action listeners
      * shared between menu item and corresponding toolbar icon).
      */
     private JMenuBar setUpMenuBar() {
         JMenuBar menuBar = new JMenuBar();
-        file = new JMenu("File");
-        file.setMnemonic(KeyEvent.VK_F);
-        edit = new JMenu("Edit");
-        edit.setMnemonic(KeyEvent.VK_E);
-        run = new JMenu("Run");
-        run.setMnemonic(KeyEvent.VK_R);
-        settings = new JMenu("Settings");
-        settings.setMnemonic(KeyEvent.VK_S);
-        help = new JMenu("Help");
-        // slight bug: user typing alt-H activates help menu item directly, not help menu
-        help.setMnemonic(KeyEvent.VK_H);
 
-        fileNew = new JMenuItem(fileNewAction);
-        fileOpen = new JMenuItem(fileOpenAction);
-        fileClose = new JMenuItem(fileCloseAction);
-        fileCloseAll = new JMenuItem(fileCloseAllAction);
-        fileSave = new JMenuItem(fileSaveAction);
-        fileSaveAs = new JMenuItem(fileSaveAsAction);
-        fileSaveAll = new JMenuItem(fileSaveAllAction);
-        fileDumpMemory = new JMenuItem(fileDumpMemoryAction);
-        filePrint = new JMenuItem(filePrintAction);
-        fileExit = new JMenuItem(fileExitAction);
+        JMenu fileMenu = new JMenu("File");
+        fileMenu.setMnemonic(KeyEvent.VK_F);
+        fileMenu.add(new JMenuItem(fileNewAction));
+        fileMenu.add(new JMenuItem(fileOpenAction));
+        fileMenu.add(new JMenuItem(fileCloseAction));
+        fileMenu.add(new JMenuItem(fileCloseAllAction));
+        fileMenu.addSeparator();
+        fileMenu.add(new JMenuItem(fileSaveAction));
+        fileMenu.add(new JMenuItem(fileSaveAsAction));
+        fileMenu.add(new JMenuItem(fileSaveAllAction));
+        fileMenu.addSeparator();
+        fileMenu.add(new JMenuItem(fileDumpMemoryAction));
+        fileMenu.add(new JMenuItem(filePrintAction));
+        fileMenu.addSeparator();
+        fileMenu.add(new JMenuItem(fileExitAction));
+        menuBar.add(fileMenu);
 
-        file.add(fileNew);
-        file.add(fileOpen);
-        file.add(fileClose);
-        file.add(fileCloseAll);
-        file.addSeparator();
-        file.add(fileSave);
-        file.add(fileSaveAs);
-        file.add(fileSaveAll);
-        file.add(fileDumpMemory);
-        file.addSeparator();
-        file.add(filePrint);
-        file.addSeparator();
-        file.add(fileExit);
+        JMenu editMenu = new JMenu("Edit");
+        editMenu.setMnemonic(KeyEvent.VK_E);
+        editMenu.add(new JMenuItem(editUndoAction));
+        editMenu.add(new JMenuItem(editRedoAction));
+        editMenu.addSeparator();
+        editMenu.add(new JMenuItem(editCutAction));
+        editMenu.add(new JMenuItem(editCopyAction));
+        editMenu.add(new JMenuItem(editPasteAction));
+        editMenu.addSeparator();
+        editMenu.add(new JMenuItem(editFindReplaceAction));
+        editMenu.addSeparator();
+        editMenu.add(new JMenuItem(editSelectAllAction));
+        menuBar.add(editMenu);
 
-        editUndo = new JMenuItem(editUndoAction);
-        editRedo = new JMenuItem(editRedoAction);
-        editCut = new JMenuItem(editCutAction);
-        editCopy = new JMenuItem(editCopyAction);
-        editPaste = new JMenuItem(editPasteAction);
-        editFindReplace = new JMenuItem(editFindReplaceAction);
-        editSelectAll = new JMenuItem(editSelectAllAction);
-        edit.add(editUndo);
-        edit.add(editRedo);
-        edit.addSeparator();
-        edit.add(editCut);
-        edit.add(editCopy);
-        edit.add(editPaste);
-        edit.addSeparator();
-        edit.add(editFindReplace);
-        edit.add(editSelectAll);
+        JMenu runMenu = new JMenu("Run");
+        runMenu.setMnemonic(KeyEvent.VK_R);
+        runMenu.add(new JMenuItem(runAssembleAction));
+        runMenu.add(new JMenuItem(runStartAction));
+        runMenu.add(new JMenuItem(runStepAction));
+        runMenu.add(new JMenuItem(runBackstepAction));
+        runMenu.add(new JMenuItem(runPauseAction));
+        runMenu.add(new JMenuItem(runStopAction));
+        runMenu.add(new JMenuItem(runResetAction));
+        runMenu.addSeparator();
+        runMenu.add(new JMenuItem(runClearBreakpointsAction));
+        runMenu.add(new JMenuItem(runToggleBreakpointsAction));
+        menuBar.add(runMenu);
 
-        runAssemble = new JMenuItem(runAssembleAction);
-        runGo = new JMenuItem(runStartAction);
-        runStep = new JMenuItem(runStepAction);
-        runBackstep = new JMenuItem(runBackstepAction);
-        runReset = new JMenuItem(runResetAction);
-        runStop = new JMenuItem(runStopAction);
-        runPause = new JMenuItem(runPauseAction);
-        runClearBreakpoints = new JMenuItem(runClearBreakpointsAction);
-        runToggleBreakpoints = new JMenuItem(runToggleBreakpointsAction);
+        JMenu settingsMenu = new JMenu("Settings");
+        settingsMenu.setMnemonic(KeyEvent.VK_S);
+        settingsMenu.add(createMenuCheckBox(settingsLabelAction, Application.getSettings().labelWindowVisible.get()));
+        settingsMenu.add(createMenuBaseChooser(settingsAddressDisplayBaseAction, Application.getSettings().displayAddressesInHex.get(), mainPane.getExecutePane().getAddressDisplayBaseChooser()));
+        settingsMenu.add(createMenuBaseChooser(settingsValueDisplayBaseAction, Application.getSettings().displayValuesInHex.get(), mainPane.getExecutePane().getValueDisplayBaseChooser()));
+        settingsMenu.addSeparator();
+        settingsMenu.add(createMenuCheckBox(settingsAssembleOnOpenAction, Application.getSettings().assembleOnOpenEnabled.get()));
+        settingsMenu.add(createMenuCheckBox(settingsAssembleAllAction, Application.getSettings().assembleAllEnabled.get()));
+        settingsMenu.add(createMenuCheckBox(settingsWarningsAreErrorsAction, Application.getSettings().warningsAreErrors.get()));
+        settingsMenu.add(createMenuCheckBox(settingsStartAtMainAction, Application.getSettings().startAtMain.get()));
+        settingsMenu.add(createMenuCheckBox(settingsExtendedAction, Application.getSettings().extendedAssemblerEnabled.get()));
+        settingsMenu.addSeparator();
+        settingsMenu.add(createMenuCheckBox(settingsProgramArgumentsAction, Application.getSettings().useProgramArguments.get()));
+        settingsMenu.add(createMenuCheckBox(settingsPopupInputAction, Application.getSettings().popupSyscallInput.get()));
+        settingsMenu.add(createMenuCheckBox(settingsDelayedBranchingAction, Application.getSettings().delayedBranchingEnabled.get()));
+        settingsMenu.add(createMenuCheckBox(settingsSelfModifyingCodeAction, Application.getSettings().selfModifyingCodeEnabled.get()));
+        settingsMenu.addSeparator();
+        settingsMenu.add(new JMenuItem(settingsEditorAction));
+        settingsMenu.add(new JMenuItem(settingsHighlightingAction));
+        settingsMenu.add(new JMenuItem(settingsExceptionHandlerAction));
+        settingsMenu.add(new JMenuItem(settingsMemoryConfigurationAction));
+        menuBar.add(settingsMenu);
 
-        run.add(runAssemble);
-        run.add(runGo);
-        run.add(runStep);
-        run.add(runBackstep);
-        run.add(runPause);
-        run.add(runStop);
-        run.add(runReset);
-        run.addSeparator();
-        run.add(runClearBreakpoints);
-        run.add(runToggleBreakpoints);
-
-        settingsLabel = new JCheckBoxMenuItem(settingsLabelAction);
-        settingsLabel.setSelected(Application.getSettings().labelWindowVisible.get());
-        settingsPopupInput = new JCheckBoxMenuItem(settingsPopupInputAction);
-        settingsPopupInput.setSelected(Application.getSettings().popupSyscallInput.get());
-        settingsValueDisplayBase = new JCheckBoxMenuItem(settingsValueDisplayBaseAction);
-        settingsValueDisplayBase.setSelected(Application.getSettings().displayValuesInHex.get());
-        // Tell the corresponding JCheckBox in the Execute Pane about me -- it has already been created.
-        mainPane.getExecutePane().getValueDisplayBaseChooser().setSettingsMenuItem(settingsValueDisplayBase);
-        settingsAddressDisplayBase = new JCheckBoxMenuItem(settingsAddressDisplayBaseAction);
-        settingsAddressDisplayBase.setSelected(Application.getSettings().displayAddressesInHex.get());
-        // Tell the corresponding JCheckBox in the Execute Pane about me -- it has already been created.
-        mainPane.getExecutePane().getAddressDisplayBaseChooser().setSettingsMenuItem(settingsAddressDisplayBase);
-        settingsExtended = new JCheckBoxMenuItem(settingsExtendedAction);
-        settingsExtended.setSelected(Application.getSettings().extendedAssemblerEnabled.get());
-        settingsDelayedBranching = new JCheckBoxMenuItem(settingsDelayedBranchingAction);
-        settingsDelayedBranching.setSelected(Application.getSettings().delayedBranchingEnabled.get());
-        settingsSelfModifyingCode = new JCheckBoxMenuItem(settingsSelfModifyingCodeAction);
-        settingsSelfModifyingCode.setSelected(Application.getSettings().selfModifyingCodeEnabled.get());
-        settingsAssembleOnOpen = new JCheckBoxMenuItem(settingsAssembleOnOpenAction);
-        settingsAssembleOnOpen.setSelected(Application.getSettings().assembleOnOpenEnabled.get());
-        settingsAssembleAll = new JCheckBoxMenuItem(settingsAssembleAllAction);
-        settingsAssembleAll.setSelected(Application.getSettings().assembleAllEnabled.get());
-        settingsWarningsAreErrors = new JCheckBoxMenuItem(settingsWarningsAreErrorsAction);
-        settingsWarningsAreErrors.setSelected(Application.getSettings().warningsAreErrors.get());
-        settingsStartAtMain = new JCheckBoxMenuItem(settingsStartAtMainAction);
-        settingsStartAtMain.setSelected(Application.getSettings().startAtMain.get());
-        settingsProgramArguments = new JCheckBoxMenuItem(settingsProgramArgumentsAction);
-        settingsProgramArguments.setSelected(Application.getSettings().useProgramArguments.get());
-        settingsEditor = new JMenuItem(settingsEditorAction);
-        settingsHighlighting = new JMenuItem(settingsHighlightingAction);
-        settingsExceptionHandler = new JMenuItem(settingsExceptionHandlerAction);
-        settingsMemoryConfiguration = new JMenuItem(settingsMemoryConfigurationAction);
-
-        settings.add(settingsLabel);
-        settings.add(settingsAddressDisplayBase);
-        settings.add(settingsValueDisplayBase);
-        settings.addSeparator();
-        settings.add(settingsAssembleOnOpen);
-        settings.add(settingsAssembleAll);
-        settings.add(settingsWarningsAreErrors);
-        settings.add(settingsStartAtMain);
-        settings.add(settingsExtended);
-        settings.addSeparator();
-        settings.add(settingsProgramArguments);
-        settings.add(settingsPopupInput);
-        settings.add(settingsDelayedBranching);
-        settings.add(settingsSelfModifyingCode);
-        settings.addSeparator();
-        settings.add(settingsEditor);
-        settings.add(settingsHighlighting);
-        settings.add(settingsExceptionHandler);
-        settings.add(settingsMemoryConfiguration);
-
-        helpHelp = new JMenuItem(helpHelpAction);
-        helpAbout = new JMenuItem(helpAboutAction);
-        help.add(helpHelp);
-        help.addSeparator();
-        help.add(helpAbout);
-
-        menuBar.add(file);
-        menuBar.add(edit);
-        menuBar.add(run);
-        menuBar.add(settings);
-        JMenu toolMenu = new ToolLoader().buildToolsMenu();
-        if (toolMenu != null) {
-            menuBar.add(toolMenu);
+        ArrayList<ToolAction> toolActions = ToolLoader.getToolActions();
+        if (!toolActions.isEmpty()) {
+            JMenu toolsMenu = new JMenu("Tools");
+            toolsMenu.setMnemonic(KeyEvent.VK_T);
+            for (ToolAction toolAction : toolActions) {
+                toolsMenu.add(new JMenuItem(toolAction));
+            }
+            menuBar.add(toolsMenu);
         }
-        menuBar.add(help);
+
+        JMenu helpMenu = new JMenu("Help");
+        helpMenu.setMnemonic(KeyEvent.VK_H);
+        helpMenu.add(new JMenuItem(helpHelpAction));
+        helpMenu.add(new JMenuItem(helpAboutAction));
+        menuBar.add(helpMenu);
 
         return menuBar;
+    }
+
+    private JCheckBoxMenuItem createMenuCheckBox(Action action, boolean selected) {
+        JCheckBoxMenuItem checkBox = new JCheckBoxMenuItem(action);
+        checkBox.setSelected(selected);
+        return checkBox;
+    }
+
+    private JCheckBoxMenuItem createMenuBaseChooser(Action action, boolean selected, NumberDisplayBaseChooser chooser) {
+        JCheckBoxMenuItem checkBox = new JCheckBoxMenuItem(action);
+        checkBox.setSelected(selected);
+        chooser.setSettingsMenuItem(checkBox);
+        return checkBox;
     }
 
     /**
@@ -469,72 +429,37 @@ public class VenusUI extends JFrame {
     // TODO: Make the toolbar setup customizable -Sean Clarke
     JToolBar setUpToolBar() {
         JToolBar toolBar = new JToolBar();
+        toolBar.setFloatable(false);
+        toolBar.setRollover(true);
 
-        JButton newButton = new JButton(fileNewAction);
-        newButton.setText("");
-        toolBar.add(newButton);
-        JButton openButton = new JButton(fileOpenAction);
-        openButton.setText("");
-        toolBar.add(openButton);
-        JButton saveButton = new JButton(fileSaveAction);
-        saveButton.setText("");
-        toolBar.add(saveButton);
-        JButton saveAsButton = new JButton(fileSaveAsAction);
-        saveAsButton.setText("");
-        toolBar.add(saveAsButton);
-
-        toolBar.add(new JToolBar.Separator());
-
-        JButton undoButton = new JButton(editUndoAction);
-        undoButton.setText("");
-        toolBar.add(undoButton);
-        JButton redoButton = new JButton(editRedoAction);
-        redoButton.setText("");
-        toolBar.add(redoButton);
-        JButton cutButton = new JButton(editCutAction);
-        cutButton.setText("");
-        toolBar.add(cutButton);
-        JButton copyButton = new JButton(editCopyAction);
-        copyButton.setText("");
-        toolBar.add(copyButton);
-        JButton pasteButton = new JButton(editPasteAction);
-        pasteButton.setText("");
-        toolBar.add(pasteButton);
-        JButton findReplaceButton = new JButton(editFindReplaceAction);
-        findReplaceButton.setText("");
-        toolBar.add(findReplaceButton);
-
-        toolBar.add(new JToolBar.Separator());
-
-        JButton assembleButton = new JButton(runAssembleAction);
-        assembleButton.setText("");
-        toolBar.add(assembleButton);
-        JButton startButton = new JButton(runStartAction);
-        startButton.setText("");
-        toolBar.add(startButton);
-        JButton pauseButton = new JButton(runPauseAction);
-        pauseButton.setText("");
-        toolBar.add(pauseButton);
-        JButton stopButton = new JButton(runStopAction);
-        stopButton.setText("");
-        toolBar.add(stopButton);
-        JButton stepButton = new JButton(runStepAction);
-        stepButton.setText("");
-        toolBar.add(stepButton);
-        JButton backstepButton = new JButton(runBackstepAction);
-        backstepButton.setText("");
-        toolBar.add(backstepButton);
-        JButton resetButton = new JButton(runResetAction);
-        resetButton.setText("");
-        toolBar.add(resetButton);
-
-        toolBar.add(new JToolBar.Separator());
-
-        JButton helpButton = new JButton(helpHelpAction);
-        helpButton.setText("");
-        toolBar.add(helpButton);
+        toolBar.add(createToolBarButton(fileNewAction));
+        toolBar.add(createToolBarButton(fileOpenAction));
+        toolBar.add(createToolBarButton(fileSaveAction));
+        toolBar.addSeparator();
+        toolBar.add(createToolBarButton(editUndoAction));
+        toolBar.add(createToolBarButton(editRedoAction));
+        toolBar.add(createToolBarButton(editCutAction));
+        toolBar.add(createToolBarButton(editCopyAction));
+        toolBar.add(createToolBarButton(editPasteAction));
+        toolBar.add(createToolBarButton(editFindReplaceAction));
+        toolBar.addSeparator();
+        toolBar.add(createToolBarButton(runAssembleAction));
+        toolBar.add(createToolBarButton(runStartAction));
+        toolBar.add(createToolBarButton(runPauseAction));
+        toolBar.add(createToolBarButton(runStopAction));
+        toolBar.add(createToolBarButton(runStepAction));
+        toolBar.add(createToolBarButton(runBackstepAction));
+        toolBar.add(createToolBarButton(runResetAction));
+        toolBar.addSeparator();
+        toolBar.add(createToolBarButton(helpHelpAction));
 
         return toolBar;
+    }
+
+    private JButton createToolBarButton(Action action) {
+        JButton button = new JButton(action);
+        button.setHideActionText(button.getIcon() != null);
+        return button;
     }
 
     /**
@@ -918,24 +843,6 @@ public class VenusUI extends JFrame {
      */
     public RegistersPane getRegistersPane() {
         return registersPane;
-    }
-
-    /**
-     * Get a reference to the settings menu checkbox for the display base of memory/register values.
-     *
-     * @return The checkbox menu item.
-     */
-    public JCheckBoxMenuItem getValueDisplayBaseMenuItem() {
-        return settingsValueDisplayBase;
-    }
-
-    /**
-     * Get a reference to the settings menu checkbox for the display base of memory addresses.
-     *
-     * @return The checkbox menu item.
-     */
-    public JCheckBoxMenuItem getAddressDisplayBaseMenuItem() {
-        return settingsAddressDisplayBase;
     }
 
     /**

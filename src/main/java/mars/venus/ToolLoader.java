@@ -4,8 +4,6 @@ import mars.tools.MarsTool;
 import mars.util.FilenameFinder;
 import mars.venus.actions.ToolAction;
 
-import javax.swing.*;
-import java.awt.event.KeyEvent;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -53,55 +51,36 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 public class ToolLoader {
     private static final String CLASS_PREFIX = "mars.tools.";
     private static final String TOOLS_DIRECTORY_PATH = "mars/tools";
-    private static final String TOOLS_MENU_NAME = "Tools";
     private static final String MARSTOOL_INTERFACE = "MarsTool.class";
     private static final String CLASS_EXTENSION = "class";
 
     /**
-     * Called in VenusUI to build its Tools menu.  If there are no qualifying tools
-     * or any problems accessing those tools, it returns null.  A qualifying tool
-     * must be a class in the Tools package that implements MarsTool, must be compiled
-     * into a .class file, and its .class file must be in the same Tools folder as
-     * MarsTool.class.
+     * Get the list of actions to fill the Tools menu, which may be empty. The loader
+     * searches for all classes in the {@code mars.tools} package that implement {@link MarsTool}.
      *
-     * @return a Tools JMenu if qualifying tool classes are found, otherwise null
+     * @return A list of actions, one for each MarsTool discovered.
      */
-    public JMenu buildToolsMenu() {
-        JMenu menu = null;
-        ArrayList<MarsToolClassAndInstance> marsToolList = loadMarsTools();
-        if (!marsToolList.isEmpty()) {
-            menu = new JMenu(TOOLS_MENU_NAME);
-            menu.setMnemonic(KeyEvent.VK_T);
-            // Traverse list and build menu
-            for (MarsToolClassAndInstance listItem : marsToolList) {
-                menu.add(new ToolAction(listItem.marsToolClass, listItem.marsToolInstance.getName()));
-            }
-        }
-        return menu;
-    }
-
-    /**
-     * Dynamically loads MarsTools into an ArrayList.  This method is adapted from
-     * the loadGameControllers() method in Bret Barker's GameServer class.
-     * Barker (bret@hypefiend.com) is co-author of the book "Developing Games
-     * in Java".  It was demo'ed to me by Otterbein student Chris Dieterle
-     * as part of his Spring 2005 independent study of implementing a networked
-     * multi-player game playing system.  Thanks Bret and Chris!
-     * <p>
+    /*
+     * This method is adapted from the loadGameControllers() method in Bret Barker's
+     * GameServer class.  Barker (bret@hypefiend.com) is co-author of the book
+     * "Developing Games in Java".  It was demo'ed to me by Otterbein student
+     * Chris Dieterle as part of his Spring 2005 independent study of implementing a
+     * networked multi-player game playing system.  Thanks Bret and Chris!
+     *
      * Bug Fix 25 Feb 06, DPS: method did not recognize tools folder if its
      * absolute pathname contained one or more spaces (e.g. C:\Program Files\mars\tools).
      * Problem was, class loader's getResource method returns a URL, in which spaces
      * are replaced with "%20".  So I added a replaceAll() to change them back.
-     * <p>
+     *
      * Enhanced 3 Oct 06, DPS: method did not work if running MARS from a JAR file.
      * The array of files returned is null, but the File object contains the name
      * of the JAR file (using toString, not getName).  Extract that name, open it
      * as a ZipFile, get the ZipEntry enumeration, find the class files in the tools
      * folder, then continue as before.
      */
-    private ArrayList<MarsToolClassAndInstance> loadMarsTools() {
-        ArrayList<MarsToolClassAndInstance> toolList = new ArrayList<>();
-        ArrayList<String> candidates = FilenameFinder.getFilenameList(this.getClass().getClassLoader(), TOOLS_DIRECTORY_PATH, CLASS_EXTENSION);
+    public static ArrayList<ToolAction> getToolActions() {
+        ArrayList<ToolAction> toolActions = new ArrayList<>();
+        ArrayList<String> candidates = FilenameFinder.getFilenameList(ToolLoader.class.getClassLoader(), TOOLS_DIRECTORY_PATH, CLASS_EXTENSION);
         // Add any tools stored externally, as listed in Config.properties file.
         // This needs some work, because mars.Globals.getExternalTools() returns
         // whatever is in the properties file entry.  Since the class file will
@@ -125,23 +104,13 @@ public class ToolLoader {
                     if (!MarsTool.class.isAssignableFrom(toolClass) || Modifier.isAbstract(toolClass.getModifiers()) || Modifier.isInterface(toolClass.getModifiers())) {
                         continue;
                     }
-                    toolList.add(new MarsToolClassAndInstance(toolClass, (MarsTool) toolClass.getDeclaredConstructor().newInstance()));
+                    toolActions.add(new ToolAction((MarsTool) toolClass.getDeclaredConstructor().newInstance()));
                 }
                 catch (Exception e) {
                     System.out.println("Error instantiating MarsTool from file " + filename + ": " + e);
                 }
             }
         }
-        return toolList;
-    }
-
-    private static class MarsToolClassAndInstance {
-        Class<?> marsToolClass;
-        MarsTool marsToolInstance;
-
-        MarsToolClassAndInstance(Class<?> marsToolClass, MarsTool marsToolInstance) {
-            this.marsToolClass = marsToolClass;
-            this.marsToolInstance = marsToolInstance;
-        }
+        return toolActions;
     }
 }

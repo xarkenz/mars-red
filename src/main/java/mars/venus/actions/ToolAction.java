@@ -42,33 +42,30 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @version August 2005
  */
 public class ToolAction extends AbstractAction {
-    private final Class<?> toolClass;
+    private final MarsTool tool;
 
     /**
-     * Simple constructor.
+     * Create a new ToolAction for the specified MarsTool.
      *
-     * @param toolClass Class object for the associated MarsTool subclass
-     * @param toolName  Name of this tool, for the menu.
+     * @param tool The tool this action will open when performed.
      */
-    public ToolAction(Class<?> toolClass, String toolName) {
-        super(toolName, null);
-        this.toolClass = toolClass;
+    public ToolAction(MarsTool tool) {
+        super(tool.getName(), tool.getIcon());
+        this.tool = tool;
     }
 
     /**
-     * Response when tool's item selected from menu.  Invokes tool's {@link MarsTool#action()} method.
+     * Opens this action's corresponding tool by invoking its {@link MarsTool#action()} method.
      *
-     * @param event the ActionEvent that triggered this call
+     * @param event The ActionEvent that triggered this call.
      */
     @Override
     public void actionPerformed(ActionEvent event) {
         try {
-            ((MarsTool) this.toolClass.getDeclaredConstructor().newInstance()).action();
+            this.tool.action();
         }
-        catch (Exception e) {
-            // An exception should not occur here because we got here only after
-            // already successfully creating an instance from the same Class object
-            // in ToolLoader's loadMarsTools() method.
+        catch (Exception exception) {
+            exception.printStackTrace();
         }
     }
 }

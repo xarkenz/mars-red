@@ -8,7 +8,7 @@
    version="1.1"
    id="svg1"
    inkscape:version="1.3.2 (091e20e, 2023-11-25, custom)"
-   sodipodi:docname="new.svg"
+   sodipodi:docname="close_all.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -56,19 +56,32 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1">
+    <circle
+       style="fill:none;stroke:#dddddd;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"
+       id="path1"
+       cx="10"
+       cy="14"
+       r="8" />
     <path
-       style="fill:none;fill-opacity:1;stroke:#dddddd;stroke-width:2;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
-       d="M 5.0000004,21 H 19 l 0,-12.9999996 -5,-5 H 5.0000004 Z"
-       id="path2"
-       sodipodi:nodetypes="cccccc" />
+       style="fill:none;stroke:#dddddd;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"
+       d="M 7.0000004,17 13,11"
+       id="path2" />
     <path
-       style="fill:none;fill-opacity:1;stroke:#dddddd;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
-       d="M 9.0000012,13 H 15"
-       id="path3"
-       sodipodi:nodetypes="cc" />
+       style="fill:none;stroke:#dddddd;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"
+       d="M 7.0000004,11 13,17"
+       id="path3" />
     <path
-       style="fill:none;fill-opacity:1;stroke:#dddddd;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
-       d="m 12,10 v 5.999999"
-       id="path4" />
+       style="fill:none;stroke:#dddddd;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"
+       id="circle3"
+       sodipodi:type="arc"
+       sodipodi:cx="14"
+       sodipodi:cy="10"
+       sodipodi:rx="8"
+       sodipodi:ry="8"
+       sodipodi:start="3.5953783"
+       sodipodi:end="1.1274827"
+       sodipodi:arc-type="arc"
+       d="M 6.8096478,6.4930305 A 8,8 0 0 1 15.233085,2.0956024 8,8 0 0 1 21.916877,8.8497562 8,8 0 0 1 17.431481,17.226682"
+       sodipodi:open="true" />
   </g>
 </svg>

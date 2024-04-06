@@ -8,7 +8,7 @@
    version="1.1"
    id="svg1"
    inkscape:version="1.3.2 (091e20e, 2023-11-25, custom)"
-   sodipodi:docname="new.svg"
+   sodipodi:docname="save.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -25,7 +25,7 @@
      inkscape:document-units="px"
      inkscape:zoom="35.820236"
      inkscape:cx="13.930673"
-     inkscape:cy="15.675497"
+     inkscape:cy="15.64758"
      inkscape:window-width="3840"
      inkscape:window-height="2054"
      inkscape:window-x="2549"
@@ -57,18 +57,18 @@
      inkscape:groupmode="layer"
      id="layer1">
     <path
-       style="fill:none;fill-opacity:1;stroke:#dddddd;stroke-width:2;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
-       d="M 5.0000004,21 H 19 l 0,-12.9999996 -5,-5 H 5.0000004 Z"
-       id="path2"
+       style="fill:none;fill-opacity:1;stroke:#dddddd;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       d="M 4.0000004,20 H 20 V 7.0000004 l -3,-3 H 4.0000004 Z"
+       id="path4"
        sodipodi:nodetypes="cccccc" />
     <path
        style="fill:none;fill-opacity:1;stroke:#dddddd;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
-       d="M 9.0000012,13 H 15"
-       id="path3"
-       sodipodi:nodetypes="cc" />
+       d="m 7.0000004,19 0,-5 H 17 l 0,5"
+       id="path5"
+       sodipodi:nodetypes="cccc" />
     <path
        style="fill:none;fill-opacity:1;stroke:#dddddd;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
-       d="m 12,10 v 5.999999"
-       id="path4" />
+       d="m 8.0000004,5.0000004 v 3 H 16 v -3"
+       id="path6" />
   </g>
 </svg>

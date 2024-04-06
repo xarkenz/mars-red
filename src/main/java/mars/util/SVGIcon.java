@@ -7,7 +7,9 @@ import org.apache.batik.transcoder.image.ImageTranscoder;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.net.URL;
 
 /**
  * An icon whose image is in the Scalable Vector Graphics format.
@@ -15,24 +17,30 @@ import java.awt.image.BufferedImage;
  * interface being defined to represent a "small <i>fixed size</i> picture."
  */
 public class SVGIcon implements Icon {
+    // This is a trick to account for SVG elements seemingly aligning to integer boundaries.
+    // When set to 1, elements can appear out of alignment with each other for this reason.
+    // The higher the number, the larger the internal image the transcoder generates, which is then
+    // sampled with antialiasing when painted.
+    private static final int SAMPLES_PER_PIXEL = 2;
+
     private final SVGToBufferedImageTranscoder transcoder;
     private final TranscoderInput transcoderInput;
     // I considered storing the dimensions solely in the transcoder hints, but their hints are stored
-    // as floats, and this is more convenient for the getter methods anyway
+    // as floats, and this is more convenient for the getter methods anyway.
     private int width;
     private int height;
+    private boolean needsTranscode;
 
     /**
      * Create a new {@code SVGIcon} from a URI and initial dimensions.
      *
-     * @param uri    The URI for the icon image.
+     * @param url    The URL for the icon image.
      * @param width  The initial width of the icon.
      * @param height The initial height of the icon.
-     * @throws TranscoderException Thrown if an error occurred while loading the image.
      */
-    public SVGIcon(String uri, int width, int height) throws TranscoderException {
+    public SVGIcon(URL url, int width, int height) {
         this.transcoder = new SVGToBufferedImageTranscoder();
-        this.transcoderInput = new TranscoderInput(uri);
+        this.transcoderInput = new TranscoderInput(url.toString());
         // This method call will generate the initial image for the icon
         this.setIconDimensions(width, height);
     }
@@ -47,7 +55,28 @@ public class SVGIcon implements Icon {
      */
     @Override
     public void paintIcon(Component component, Graphics gfx, int leftX, int topY) {
-        gfx.drawImage(this.transcoder.getOutput(), leftX, topY, null);
+        AffineTransform transform = ((Graphics2D) gfx).getTransform();
+        // Regenerate the image
+        if (this.needsTranscode) {
+            // Set the target width and height for the transcoder, converting from user space to device space
+            // so the image still appears sharp on high-DPI screens
+            this.transcoder.addTranscodingHint(ImageTranscoder.KEY_WIDTH, (float) (this.width * transform.getScaleX() * SAMPLES_PER_PIXEL));
+            this.transcoder.addTranscodingHint(ImageTranscoder.KEY_HEIGHT, (float) (this.height * transform.getScaleY() * SAMPLES_PER_PIXEL));
+            // Perform the transcode operation
+            try {
+                this.transcoder.transcode(transcoderInput);
+                this.needsTranscode = false;
+            }
+            catch (TranscoderException exception) {
+                // TODO: Probably should handle this case differently
+                // For now, the needsTranscode flag will remain true in case the transcode works next time
+                exception.printStackTrace();
+            }
+        }
+        // Simply setting the transform to the identity matrix seems to work for preventing scaling here
+        // (The scaling is instead done by changing the target dimensions for the transcoder above)
+        transform.setToIdentity();
+        gfx.drawImage(this.transcoder.getOutput(), leftX, topY, this.width, this.height, null);
     }
 
     /**
@@ -75,26 +104,12 @@ public class SVGIcon implements Icon {
      *
      * @param width  The new width of the icon.
      * @param height The new height of the icon.
-     * @throws TranscoderException Thrown if an error occurred while reloading the image.
      */
-    public void setIconDimensions(int width, int height) throws TranscoderException {
+    public void setIconDimensions(int width, int height) {
         this.width = width;
         this.height = height;
-        // Since the width and height may have changed, generate a new image for the icon
-        this.updateImage();
-    }
-
-    /**
-     * Update the icon's image by transcoding the SVG again with the set dimensions.
-     *
-     * @throws TranscoderException Thrown if an error occurred while transcoding.
-     */
-    private void updateImage() throws TranscoderException {
-        // Update the target width and height for the transcoder
-        this.transcoder.addTranscodingHint(ImageTranscoder.KEY_WIDTH, (float) width);
-        this.transcoder.addTranscodingHint(ImageTranscoder.KEY_HEIGHT, (float) height);
-        // Perform the transcode operation
-        this.transcoder.transcode(transcoderInput);
+        // Since the width and height may have changed, regenerate the image upon next paint
+        this.needsTranscode = true;
     }
 
     /**
