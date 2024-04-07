@@ -13,6 +13,7 @@ import mars.venus.SplashScreen;
 import mars.venus.VenusUI;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.*;
 import java.util.*;
 
@@ -52,7 +53,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class MarsLauncher {
     private static final String RANGE_SEPARATOR = "-";
-    private static final int SPLASH_DURATION_MILLIS = 2000; // time in milliseconds to show splash screen
     private static final int MEMORY_WORDS_PER_LINE = 4; // display 4 memory words, tab separated, per line
     private static final int DECIMAL = 0; // memory and register display format
     private static final int HEXADECIMAL = 1; // memory and register display format
@@ -184,6 +184,21 @@ public class MarsLauncher {
     }
 
     /**
+     * There are no command arguments, so run in interactive mode by
+     * launching the GUI-fronted integrated development environment.
+     */
+    private void launchGUI() {
+        SwingUtilities.invokeLater(() -> {
+            // Designate the "themes" folder for theme style overrides
+            FlatLaf.registerCustomDefaultsSource("themes");
+            // Set up the look and feel
+            FlatDarkLaf.setup();
+            // Initialize the GUI
+            new VenusUI(Application.NAME + " " + Application.VERSION);
+        });
+    }
+
+    /**
      * Perform any specified dump operations.  See "dump" option.
      */
     private void dumpSegments() {
@@ -235,22 +250,6 @@ public class MarsLauncher {
                 out.println("Error while attempting to save dump, file " + file + "!  Disk IO failed!");
             }
         }
-    }
-
-    /**
-     * There are no command arguments, so run in interactive mode by
-     * launching the GUI-fronted integrated development environment.
-     */
-    private void launchGUI() {
-        new SplashScreen(SPLASH_DURATION_MILLIS).showSplash();
-        SwingUtilities.invokeLater(() -> {
-            // Designate the "themes" folder for theme style overrides
-            FlatLaf.registerCustomDefaultsSource("themes");
-            // Set up the look and feel
-            FlatDarkLaf.setup();
-            // Initialize the GUI
-            new VenusUI(Application.NAME + " " + Application.VERSION);
-        });
     }
 
     /**

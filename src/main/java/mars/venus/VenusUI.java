@@ -56,8 +56,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * here primarily so both can share the Action objects.
  */
 public class VenusUI extends JFrame {
+    /**
+     * Width and height in user pixels of icons in the tool bar and menus
+     */
     // TODO: Make this configurable
     public static final int ICON_SIZE = 24;
+    /**
+     * Time in milliseconds to show splash screen.
+     */
+    public static final int SPLASH_DURATION_MILLIS = 4000;
 
     private final JMenuBar menu;
     private final MainPane mainPane;
@@ -132,6 +139,11 @@ public class VenusUI extends JFrame {
      */
     public VenusUI(String title) {
         super(title);
+
+        // Launch splash screen
+        SplashScreen splashScreen = new SplashScreen(this, SPLASH_DURATION_MILLIS);
+        splashScreen.showSplash();
+
         this.baseTitle = title;
         this.editor = new Editor(this);
         Application.setGUI(this);
@@ -218,6 +230,7 @@ public class VenusUI extends JFrame {
             public void windowOpened(WindowEvent event) {
                 // Maximize the application window
                 VenusUI.this.setExtendedState(JFrame.MAXIMIZED_BOTH);
+                splashScreen.toFront();
             }
 
             @Override
@@ -240,8 +253,11 @@ public class VenusUI extends JFrame {
         // Restore previous session
         this.getMainPane().getEditTabbedPane().loadWorkspaceState();
 
+        // Show the window
         this.pack();
         this.setVisible(true);
+        // Ensure the splash screen is still visible
+        splashScreen.toFront();
     }
 
     /**
@@ -254,26 +270,26 @@ public class VenusUI extends JFrame {
         Class<?> cs = this.getClass();
 
         try {
-            fileNewAction = new FileNewAction(this, "New", getSVGIcon("new.svg"), "Create a new file for editing", KeyEvent.VK_N, KeyStroke.getKeyStroke(KeyEvent.VK_N, tk.getMenuShortcutKeyMaskEx()));
-            fileOpenAction = new FileOpenAction(this, "Open...", getSVGIcon("open.svg"), "Open a file for editing", KeyEvent.VK_O, KeyStroke.getKeyStroke(KeyEvent.VK_O, tk.getMenuShortcutKeyMaskEx()));
-            fileCloseAction = new FileCloseAction(this, "Close", getSVGIcon("close.svg"), "Close the current file", KeyEvent.VK_C, KeyStroke.getKeyStroke(KeyEvent.VK_W, tk.getMenuShortcutKeyMaskEx()));
-            fileCloseAllAction = new FileCloseAllAction(this, "Close All", getSVGIcon("close_all.svg"), "Close all open files", KeyEvent.VK_L, null);
-            fileSaveAction = new FileSaveAction(this, "Save", getSVGIcon("save.svg"), "Save the current file", KeyEvent.VK_S, KeyStroke.getKeyStroke(KeyEvent.VK_S, tk.getMenuShortcutKeyMaskEx()));
-            fileSaveAsAction = new FileSaveAsAction(this, "Save As...", getSVGIcon("save_as.svg"), "Save current file with different name", KeyEvent.VK_A, null);
-            fileSaveAllAction = new FileSaveAllAction(this, "Save All", getSVGIcon("save_all.svg"), "Save all open files", KeyEvent.VK_V, null);
-            fileDumpMemoryAction = new FileDumpMemoryAction(this, "Dump Memory...", getSVGIcon("dump_memory.svg"), "Dump machine code or data in an available format", KeyEvent.VK_D, KeyStroke.getKeyStroke(KeyEvent.VK_D, tk.getMenuShortcutKeyMaskEx()));
-            filePrintAction = new FilePrintAction(this, "Print...", getSVGIcon("print.svg"), "Print current file", KeyEvent.VK_P, null);
-            fileExitAction = new FileExitAction(this, "Exit", getSVGIcon("exit.svg"), "Exit " + Application.NAME, KeyEvent.VK_X, null);
+            fileNewAction = new FileNewAction(this, "New", getSVGActionIcon("new.svg"), "Create a new file for editing", KeyEvent.VK_N, KeyStroke.getKeyStroke(KeyEvent.VK_N, tk.getMenuShortcutKeyMaskEx()));
+            fileOpenAction = new FileOpenAction(this, "Open...", getSVGActionIcon("open.svg"), "Open a file for editing", KeyEvent.VK_O, KeyStroke.getKeyStroke(KeyEvent.VK_O, tk.getMenuShortcutKeyMaskEx()));
+            fileCloseAction = new FileCloseAction(this, "Close", getSVGActionIcon("close.svg"), "Close the current file", KeyEvent.VK_C, KeyStroke.getKeyStroke(KeyEvent.VK_W, tk.getMenuShortcutKeyMaskEx()));
+            fileCloseAllAction = new FileCloseAllAction(this, "Close All", getSVGActionIcon("close_all.svg"), "Close all open files", KeyEvent.VK_L, null);
+            fileSaveAction = new FileSaveAction(this, "Save", getSVGActionIcon("save.svg"), "Save the current file", KeyEvent.VK_S, KeyStroke.getKeyStroke(KeyEvent.VK_S, tk.getMenuShortcutKeyMaskEx()));
+            fileSaveAsAction = new FileSaveAsAction(this, "Save As...", getSVGActionIcon("save_as.svg"), "Save current file with different name", KeyEvent.VK_A, null);
+            fileSaveAllAction = new FileSaveAllAction(this, "Save All", getSVGActionIcon("save_all.svg"), "Save all open files", KeyEvent.VK_V, null);
+            fileDumpMemoryAction = new FileDumpMemoryAction(this, "Dump Memory...", getSVGActionIcon("dump_memory.svg"), "Dump machine code or data in an available format", KeyEvent.VK_D, KeyStroke.getKeyStroke(KeyEvent.VK_D, tk.getMenuShortcutKeyMaskEx()));
+            filePrintAction = new FilePrintAction(this, "Print...", getSVGActionIcon("print.svg"), "Print current file", KeyEvent.VK_P, null);
+            fileExitAction = new FileExitAction(this, "Exit", getSVGActionIcon("exit.svg"), "Exit " + Application.NAME, KeyEvent.VK_X, null);
 
-            editUndoAction = new EditUndoAction(this, "Undo", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Undo22.png"))), "Undo last edit", KeyEvent.VK_U, KeyStroke.getKeyStroke(KeyEvent.VK_Z, tk.getMenuShortcutKeyMaskEx()));
-            editRedoAction = new EditRedoAction(this, "Redo", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Redo22.png"))), "Redo last edit", KeyEvent.VK_R, KeyStroke.getKeyStroke(KeyEvent.VK_Y, tk.getMenuShortcutKeyMaskEx()));
-            editCutAction = new EditCutAction(this, "Cut", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Cut22.gif"))), "Cut", KeyEvent.VK_C, KeyStroke.getKeyStroke(KeyEvent.VK_X, tk.getMenuShortcutKeyMaskEx()));
-            editCopyAction = new EditCopyAction(this, "Copy", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Copy22.png"))), "Copy", KeyEvent.VK_O, KeyStroke.getKeyStroke(KeyEvent.VK_C, tk.getMenuShortcutKeyMaskEx()));
-            editPasteAction = new EditPasteAction(this, "Paste", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Paste22.png"))), "Paste", KeyEvent.VK_P, KeyStroke.getKeyStroke(KeyEvent.VK_V, tk.getMenuShortcutKeyMaskEx()));
-            editFindReplaceAction = new EditFindReplaceAction(this, "Find/Replace", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Find22.png"))), "Find/Replace", KeyEvent.VK_F, KeyStroke.getKeyStroke(KeyEvent.VK_F, tk.getMenuShortcutKeyMaskEx()));
-            editSelectAllAction = new EditSelectAllAction(this, "Select All", null, "Select All", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_A, tk.getMenuShortcutKeyMaskEx()));
+            editUndoAction = new EditUndoAction(this, "Undo", getSVGActionIcon("undo.svg"), "Undo last edit", KeyEvent.VK_U, KeyStroke.getKeyStroke(KeyEvent.VK_Z, tk.getMenuShortcutKeyMaskEx()));
+            editRedoAction = new EditRedoAction(this, "Redo", getSVGActionIcon("redo.svg"), "Redo last edit", KeyEvent.VK_R, KeyStroke.getKeyStroke(KeyEvent.VK_Y, tk.getMenuShortcutKeyMaskEx()));
+            editCutAction = new EditCutAction(this, "Cut", getSVGActionIcon("cut.svg"), "Cut", KeyEvent.VK_C, KeyStroke.getKeyStroke(KeyEvent.VK_X, tk.getMenuShortcutKeyMaskEx()));
+            editCopyAction = new EditCopyAction(this, "Copy", getSVGActionIcon("copy.svg"), "Copy", KeyEvent.VK_O, KeyStroke.getKeyStroke(KeyEvent.VK_C, tk.getMenuShortcutKeyMaskEx()));
+            editPasteAction = new EditPasteAction(this, "Paste", getSVGActionIcon("paste.svg"), "Paste", KeyEvent.VK_P, KeyStroke.getKeyStroke(KeyEvent.VK_V, tk.getMenuShortcutKeyMaskEx()));
+            editFindReplaceAction = new EditFindReplaceAction(this, "Find / Replace", getSVGActionIcon("find.svg"), "Find and/or replace text in the current file", KeyEvent.VK_F, KeyStroke.getKeyStroke(KeyEvent.VK_F, tk.getMenuShortcutKeyMaskEx()));
+            editSelectAllAction = new EditSelectAllAction(this, "Select All", getSVGActionIcon("select_all.svg"), "Select all text in the current file", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_A, tk.getMenuShortcutKeyMaskEx()));
 
-            runAssembleAction = new RunAssembleAction(this, "Assemble", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Assemble22.png"))), "Assemble the current file and clear breakpoints", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0));
+            runAssembleAction = new RunAssembleAction(this, "Assemble", getSVGActionIcon("assemble.svg"), "Assemble the current file and clear breakpoints", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0));
             runStartAction = new RunStartAction(this, "Start", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Play22.png"))), "Run the current program", KeyEvent.VK_G, KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0));
             runStepAction = new RunStepAction(this, "Step Forward", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "StepForward22.png"))), "Execute the next instruction", KeyEvent.VK_T, KeyStroke.getKeyStroke(KeyEvent.VK_F7, 0));
             runBackstepAction = new RunBackstepAction("Step Backward", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "StepBack22.png"))), "Undo the last step", KeyEvent.VK_B, KeyStroke.getKeyStroke(KeyEvent.VK_F8, 0), this);
@@ -287,11 +303,11 @@ public class VenusUI extends JFrame {
             settingsPopupInputAction = new SettingsPopupInputAction(this, "Use dialog for user input", null, "If set, use popup dialog for input syscalls (5, 6, 7, 8, 12) instead of console input", null, null);
             settingsValueDisplayBaseAction = new SettingsValueDisplayBaseAction(this, "Hexadecimal values", null, "Toggle between hexadecimal and decimal display of memory/register values", null, null);
             settingsAddressDisplayBaseAction = new SettingsAddressDisplayBaseAction(this, "Hexadecimal addresses", null, "Toggle between hexadecimal and decimal display of memory addresses", null, null);
-            settingsExtendedAction = new SettingsExtendedAction(this, "Allow extended (pseudo) instructions", getSVGIcon("extended_instruction.svg"), "If set, MIPS extended (pseudo) instructions are formats are permitted.", null, null);
+            settingsExtendedAction = new SettingsExtendedAction(this, "Allow extended (pseudo) instructions", null, "If set, MIPS extended (pseudo) instructions are formats are permitted.", null, null);
             settingsAssembleOnOpenAction = new SettingsAssembleOnOpenAction(this, "Assemble files when opened", null, "If set, a file will be automatically assembled as soon as it is opened.  File Open dialog will show most recently opened file.", null, null);
             settingsAssembleAllAction = new SettingsAssembleAllAction(this, "Assemble all files in current directory", null, "If set, all files in current directory will be assembled when Assemble operation is selected.", null, null);
             settingsWarningsAreErrorsAction = new SettingsWarningsAreErrorsAction(this, "Promote assembler warnings to errors", null, "If set, assembler warnings will be interpreted as errors and prevent successful assembly.", null, null);
-            settingsStartAtMainAction = new SettingsStartAtMainAction(this, "Use \"main\" as program entry point", getSVGIcon("basic_instruction.svg"), "If set, assembler will initialize Program Counter to text address globally labeled 'main', if defined.", null, null);
+            settingsStartAtMainAction = new SettingsStartAtMainAction(this, "Use \"main\" as program entry point", null, "If set, assembler will initialize Program Counter to text address globally labeled 'main', if defined.", null, null);
             settingsProgramArgumentsAction = new SettingsProgramArgumentsAction(this, "Allow program arguments", null, "If set, program arguments for MIPS program can be entered in border of Text Segment window.", null, null);
             settingsDelayedBranchingAction = new SettingsDelayedBranchingAction(this, "Delayed branching", null, "If set, delayed branching will occur during MIPS execution.", null, null);
             settingsSelfModifyingCodeAction = new SettingsSelfModifyingCodeAction(this, "Self-modifying code", null, "If set, the MIPS program can write and branch to both text and data segments.", null, null);
@@ -300,8 +316,8 @@ public class VenusUI extends JFrame {
             settingsExceptionHandlerAction = new SettingsExceptionHandlerAction(this, "Exception Handler...", null, "If set, the specified exception handler file will be included in all Assemble operations.", null, null);
             settingsMemoryConfigurationAction = new SettingsMemoryConfigurationAction(this, "Memory Configuration...", null, "View and modify memory segment base addresses for simulated MIPS.", null, null);
 
-            helpHelpAction = new HelpHelpAction(this, "Help...", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Help22.png"))), "Help", KeyEvent.VK_H, KeyStroke.getKeyStroke(KeyEvent.VK_H, tk.getMenuShortcutKeyMaskEx()));
-            helpAboutAction = new HelpAboutAction(this, "About...", null, "Information about " + Application.NAME, null, null);
+            helpHelpAction = new HelpHelpAction(this, "Help...", getSVGActionIcon("help.svg"), "Help", KeyEvent.VK_H, KeyStroke.getKeyStroke(KeyEvent.VK_H, tk.getMenuShortcutKeyMaskEx()));
+            helpAboutAction = new HelpAboutAction(this, "About...", getSVGActionIcon("about.svg"), "Information about " + Application.NAME, null, null);
         }
         catch (Exception e) {
             System.out.println("Internal Error: images folder not found, or other null pointer exception while creating Action objects");
@@ -310,7 +326,7 @@ public class VenusUI extends JFrame {
         }
     }
 
-    private Icon getSVGIcon(String filename) {
+    private Icon getSVGActionIcon(String filename) {
         URL url = this.getClass().getResource(Application.ACTION_ICONS_PATH + filename);
         return url == null ? null : new SVGIcon(url, ICON_SIZE, ICON_SIZE);
     }
@@ -324,47 +340,47 @@ public class VenusUI extends JFrame {
 
         JMenu fileMenu = new JMenu("File");
         fileMenu.setMnemonic(KeyEvent.VK_F);
-        fileMenu.add(new JMenuItem(fileNewAction));
-        fileMenu.add(new JMenuItem(fileOpenAction));
-        fileMenu.add(new JMenuItem(fileCloseAction));
-        fileMenu.add(new JMenuItem(fileCloseAllAction));
+        fileMenu.add(createMenuItem(fileNewAction));
+        fileMenu.add(createMenuItem(fileOpenAction));
+        fileMenu.add(createMenuItem(fileCloseAction));
+        fileMenu.add(createMenuItem(fileCloseAllAction));
         fileMenu.addSeparator();
-        fileMenu.add(new JMenuItem(fileSaveAction));
-        fileMenu.add(new JMenuItem(fileSaveAsAction));
-        fileMenu.add(new JMenuItem(fileSaveAllAction));
+        fileMenu.add(createMenuItem(fileSaveAction));
+        fileMenu.add(createMenuItem(fileSaveAsAction));
+        fileMenu.add(createMenuItem(fileSaveAllAction));
         fileMenu.addSeparator();
-        fileMenu.add(new JMenuItem(fileDumpMemoryAction));
-        fileMenu.add(new JMenuItem(filePrintAction));
+        fileMenu.add(createMenuItem(fileDumpMemoryAction));
+        fileMenu.add(createMenuItem(filePrintAction));
         fileMenu.addSeparator();
-        fileMenu.add(new JMenuItem(fileExitAction));
+        fileMenu.add(createMenuItem(fileExitAction));
         menuBar.add(fileMenu);
 
         JMenu editMenu = new JMenu("Edit");
         editMenu.setMnemonic(KeyEvent.VK_E);
-        editMenu.add(new JMenuItem(editUndoAction));
-        editMenu.add(new JMenuItem(editRedoAction));
+        editMenu.add(createMenuItem(editUndoAction));
+        editMenu.add(createMenuItem(editRedoAction));
         editMenu.addSeparator();
-        editMenu.add(new JMenuItem(editCutAction));
-        editMenu.add(new JMenuItem(editCopyAction));
-        editMenu.add(new JMenuItem(editPasteAction));
+        editMenu.add(createMenuItem(editCutAction));
+        editMenu.add(createMenuItem(editCopyAction));
+        editMenu.add(createMenuItem(editPasteAction));
         editMenu.addSeparator();
-        editMenu.add(new JMenuItem(editFindReplaceAction));
+        editMenu.add(createMenuItem(editFindReplaceAction));
         editMenu.addSeparator();
-        editMenu.add(new JMenuItem(editSelectAllAction));
+        editMenu.add(createMenuItem(editSelectAllAction));
         menuBar.add(editMenu);
 
         JMenu runMenu = new JMenu("Run");
         runMenu.setMnemonic(KeyEvent.VK_R);
-        runMenu.add(new JMenuItem(runAssembleAction));
-        runMenu.add(new JMenuItem(runStartAction));
-        runMenu.add(new JMenuItem(runStepAction));
-        runMenu.add(new JMenuItem(runBackstepAction));
-        runMenu.add(new JMenuItem(runPauseAction));
-        runMenu.add(new JMenuItem(runStopAction));
-        runMenu.add(new JMenuItem(runResetAction));
+        runMenu.add(createMenuItem(runAssembleAction));
+        runMenu.add(createMenuItem(runStartAction));
+        runMenu.add(createMenuItem(runStepAction));
+        runMenu.add(createMenuItem(runBackstepAction));
+        runMenu.add(createMenuItem(runPauseAction));
+        runMenu.add(createMenuItem(runStopAction));
+        runMenu.add(createMenuItem(runResetAction));
         runMenu.addSeparator();
-        runMenu.add(new JMenuItem(runClearBreakpointsAction));
-        runMenu.add(new JMenuItem(runToggleBreakpointsAction));
+        runMenu.add(createMenuItem(runClearBreakpointsAction));
+        runMenu.add(createMenuItem(runToggleBreakpointsAction));
         menuBar.add(runMenu);
 
         JMenu settingsMenu = new JMenu("Settings");
@@ -384,10 +400,10 @@ public class VenusUI extends JFrame {
         settingsMenu.add(createMenuCheckBox(settingsDelayedBranchingAction, Application.getSettings().delayedBranchingEnabled.get()));
         settingsMenu.add(createMenuCheckBox(settingsSelfModifyingCodeAction, Application.getSettings().selfModifyingCodeEnabled.get()));
         settingsMenu.addSeparator();
-        settingsMenu.add(new JMenuItem(settingsEditorAction));
-        settingsMenu.add(new JMenuItem(settingsHighlightingAction));
-        settingsMenu.add(new JMenuItem(settingsExceptionHandlerAction));
-        settingsMenu.add(new JMenuItem(settingsMemoryConfigurationAction));
+        settingsMenu.add(createMenuItem(settingsEditorAction));
+        settingsMenu.add(createMenuItem(settingsHighlightingAction));
+        settingsMenu.add(createMenuItem(settingsExceptionHandlerAction));
+        settingsMenu.add(createMenuItem(settingsMemoryConfigurationAction));
         menuBar.add(settingsMenu);
 
         ArrayList<ToolAction> toolActions = ToolLoader.getToolActions();
@@ -395,18 +411,24 @@ public class VenusUI extends JFrame {
             JMenu toolsMenu = new JMenu("Tools");
             toolsMenu.setMnemonic(KeyEvent.VK_T);
             for (ToolAction toolAction : toolActions) {
-                toolsMenu.add(new JMenuItem(toolAction));
+                toolsMenu.add(createMenuItem(toolAction));
             }
             menuBar.add(toolsMenu);
         }
 
         JMenu helpMenu = new JMenu("Help");
         helpMenu.setMnemonic(KeyEvent.VK_H);
-        helpMenu.add(new JMenuItem(helpHelpAction));
-        helpMenu.add(new JMenuItem(helpAboutAction));
+        helpMenu.add(createMenuItem(helpHelpAction));
+        helpMenu.add(createMenuItem(helpAboutAction));
         menuBar.add(helpMenu);
 
         return menuBar;
+    }
+
+    private JMenuItem createMenuItem(Action action) {
+        JMenuItem menuItem = new JMenuItem(action);
+        menuItem.setDisabledIcon(menuItem.getIcon());
+        return menuItem;
     }
 
     private JCheckBoxMenuItem createMenuCheckBox(Action action, boolean selected) {

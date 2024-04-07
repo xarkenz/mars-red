@@ -24,13 +24,13 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="px"
      inkscape:zoom="35.820236"
-     inkscape:cx="13.930673"
-     inkscape:cy="15.675497"
-     inkscape:window-width="3840"
-     inkscape:window-height="2054"
-     inkscape:window-x="2549"
-     inkscape:window-y="-11"
-     inkscape:window-maximized="1"
+     inkscape:cx="13.916715"
+     inkscape:cy="15.689456"
+     inkscape:window-width="1649"
+     inkscape:window-height="513"
+     inkscape:window-x="3088"
+     inkscape:window-y="104"
+     inkscape:window-maximized="0"
      inkscape:current-layer="layer1"
      showgrid="true">
     <inkscape:grid
@@ -57,33 +57,33 @@
      inkscape:groupmode="layer"
      id="layer1">
     <path
-       style="fill:none;stroke:#dddddd;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"
+       style="fill:none;stroke:#bbbbbb;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1"
        d="m 3.0000004,3.0000004 v 4"
        id="path3" />
     <path
-       style="fill:none;stroke:#dddddd;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"
+       style="fill:none;stroke:#bbbbbb;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1"
        d="m 7.0000008,3.0000004 v 4 H 10 v -4 z"
        id="path4" />
     <path
-       style="fill:none;stroke:#dddddd;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"
+       style="fill:none;stroke:#bbbbbb;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1"
        d="m 13.999999,3.0000004 v 4"
        id="path5" />
     <path
-       style="fill:none;stroke:#dddddd;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"
+       style="fill:none;stroke:#bbbbbb;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1"
        d="m 18,3.0000004 v 4 h 2.999999 v -4 z"
        id="path6" />
     <path
-       style="fill:none;stroke:#dddddd;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"
+       style="fill:none;stroke:#bbbbbb;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1"
        d="m 12,11 0,7"
        id="path7"
        sodipodi:nodetypes="cc" />
     <path
-       style="fill:none;stroke:#dddddd;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"
+       style="fill:none;stroke:#bbbbbb;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1"
        d="M 9.0000004,16 12,19 15,16"
        id="path8"
        sodipodi:nodetypes="ccc" />
     <path
-       style="fill:none;stroke:#dddddd;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"
+       style="fill:none;stroke:#bbbbbb;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1"
        d="M 6.0000004,21 H 18"
        id="path9" />
   </g>

@@ -4,6 +4,8 @@ import mars.Application;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 /*
 Copyright (c) 2003-2010,  Pete Sanderson and Kenneth Vollmar
@@ -40,6 +42,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * </a>.
  */
 public class SplashScreen extends JWindow {
+    private final VenusUI gui;
     /**
      * The duration to display the splash screen when {@link #showSplash()}
      * is called, in milliseconds.
@@ -52,7 +55,8 @@ public class SplashScreen extends JWindow {
      * @param duration The duration to display the splash screen when {@link #showSplash()}
      *                 is called, in milliseconds.
      */
-    public SplashScreen(int duration) {
+    public SplashScreen(VenusUI gui, int duration) {
+        this.gui = gui;
         this.duration = duration;
     }
 
@@ -97,12 +101,9 @@ public class SplashScreen extends JWindow {
         // Display it
         setVisible(true);
         // Wait a little while, maybe while loading resources
-        try {
-            Thread.sleep(duration);
-        }
-        catch (Exception ignored) {
-        }
-        setVisible(false);
+        Timer splashTimer = new Timer(duration, event -> setVisible(false));
+        splashTimer.setRepeats(false);
+        splashTimer.start();
     }
 
     private static class ImageBackgroundPanel extends JPanel {

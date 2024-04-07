@@ -22,6 +22,7 @@ public class SVGIcon implements Icon {
     // The higher the number, the larger the internal image the transcoder generates, which is then
     // sampled with antialiasing when painted.
     private static final int SAMPLES_PER_PIXEL = 2;
+    private static final float DISABLED_OPACITY = 0.3f;
 
     private final SVGToBufferedImageTranscoder transcoder;
     private final TranscoderInput transcoderInput;
@@ -49,14 +50,23 @@ public class SVGIcon implements Icon {
      * Draw the icon at the specified location.
      *
      * @param component A {@code Component} to get properties useful for painting (not used).
-     * @param gfx       The graphics context.
+     * @param graphics  The graphics context.
      * @param leftX     The X coordinate of the icon's top-left corner.
      * @param topY      The Y coordinate of the icon's top-left corner.
      */
     @Override
-    public void paintIcon(Component component, Graphics gfx, int leftX, int topY) {
-        AffineTransform transform = ((Graphics2D) gfx).getTransform();
-        // Regenerate the image
+    public void paintIcon(Component component, Graphics graphics, int leftX, int topY) {
+        Graphics2D graphics2D = (Graphics2D) graphics;
+
+        // Save the original composite so it can be restored later
+        Composite composite = graphics2D.getComposite();
+        if (!component.isEnabled()) {
+            // Change the opacity of the icon to give it a "disabled" appearance
+            graphics2D.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, DISABLED_OPACITY));
+        }
+
+        AffineTransform transform = graphics2D.getTransform();
+        // Regenerate the image if the size has changed since it was last generated
         if (this.needsTranscode) {
             // Set the target width and height for the transcoder, converting from user space to device space
             // so the image still appears sharp on high-DPI screens
@@ -76,7 +86,13 @@ public class SVGIcon implements Icon {
         // Simply setting the transform to the identity matrix seems to work for preventing scaling here
         // (The scaling is instead done by changing the target dimensions for the transcoder above)
         transform.setToIdentity();
-        gfx.drawImage(this.transcoder.getOutput(), leftX, topY, this.width, this.height, null);
+
+        // Draw the image in the proper location
+        graphics2D.drawImage(this.transcoder.getOutput(), leftX, topY, this.width, this.height, null);
+
+        // Restore the original transform and composite of the graphics context
+        // (otherwise, the composite seems to mess with the menu item text in menus)
+        graphics2D.setComposite(composite);
     }
 
     /**
