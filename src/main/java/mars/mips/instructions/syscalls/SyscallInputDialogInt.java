@@ -50,6 +50,7 @@ public class SyscallInputDialogInt extends AbstractSyscall {
     /**
      * System call to input data.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         // Input arguments: $a0 = address of null-terminated string that is the message to user
         // Outputs:
@@ -65,8 +66,8 @@ public class SyscallInputDialogInt extends AbstractSyscall {
             // Read a null-terminated string from memory
             message = Application.memory.getNullTerminatedString(RegisterFile.getValue(4));
         }
-        catch (AddressErrorException e) {
-            throw new ProcessingException(statement, e);
+        catch (AddressErrorException exception) {
+            throw new ProcessingException(statement, exception);
         }
 
         // Values returned by Java's InputDialog:

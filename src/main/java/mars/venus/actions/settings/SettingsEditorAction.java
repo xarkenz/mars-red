@@ -329,18 +329,19 @@ public class SettingsEditorAction extends VenusAction {
         private JPanel buildSyntaxStylePanel() {
             JPanel syntaxStylePanel = new JPanel();
             defaultStyles = SyntaxUtilities.getDefaultSyntaxStyles();
-            initialStyles = SyntaxUtilities.getCurrentSyntaxStyles();
-            String[] labels = MIPSTokenMarker.getMIPSTokenLabels();
-            String[] sampleText = MIPSTokenMarker.getMIPSTokenExamples();
+            initialStyles = SyntaxUtilities.getCurrentSyntaxStyles(Application.getSettings());
+            String[] descriptions = MIPSTokenMarker.getTokenDescriptions();
+            String[] sampleText = MIPSTokenMarker.getTokenExamples();
             syntaxStylesHaveChanged = false;
             int count = 0;
             // Count the number of actual styles specified
-            for (String label : labels) {
+            for (String label : descriptions) {
                 if (label != null) {
                     count++;
                 }
             }
-            // create new arrays (no gaps) for grid display, refer to original index
+            // Create new arrays (no gaps) for grid display, refer to original index
+            // TODO: No more parallel arrays please... -Sean Clarke
             syntaxStyleIndex = new int[count];
             currentStyles = new SyntaxStyle[count];
             String[] label = new String[count];
@@ -355,8 +356,8 @@ public class SettingsEditorAction extends VenusAction {
             Font italicFont = new Font(Font.SERIF, Font.ITALIC, genericFont.getSize());
             count = 0;
             // Set all the fixed features.  Changeable features set/reset in initializeSyntaxStyleChangeables
-            for (int index = 0; index < labels.length; index++) {
-                if (labels[index] != null) {
+            for (int index = 0; index < descriptions.length; index++) {
+                if (descriptions[index] != null) {
                     syntaxStyleIndex[count] = index;
                     syntaxSamples[count] = new JLabel();
                     syntaxSamples[count].setOpaque(true);
@@ -376,7 +377,7 @@ public class SettingsEditorAction extends VenusAction {
                     useItalic[count].setFont(italicFont);
                     useItalic[count].addActionListener(boldItalicChanger);
                     useItalic[count].setToolTipText(ITALIC_TOOL_TIP_TEXT);
-                    label[count] = labels[index];
+                    label[count] = descriptions[index];
                     useDefault[count] = new JCheckBox();
                     useDefault[count].addItemListener(new DefaultChanger(count));
                     useDefault[count].setToolTipText(DEFAULT_TOOL_TIP_TEXT);

@@ -3,8 +3,8 @@ package mars.mips.instructions.syscalls;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.Coprocessor1;
+import mars.simulator.Simulator;
 import mars.util.Binary;
-import mars.simulator.SystemIO;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -50,9 +50,11 @@ public class SyscallPrintDouble extends AbstractSyscall {
     /**
      * Performs syscall function to print double whose bits are stored in $f12 & $f13.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         // Note: Higher numbered reg contains high order word so concat 13-12.
         double doubleValue = Double.longBitsToDouble(Binary.twoIntsToLong(Coprocessor1.getValue(13), Coprocessor1.getValue(12)));
-        SystemIO.printString(Double.toString(doubleValue));
+
+        Simulator.getInstance().getSystemIO().printString(Double.toString(doubleValue));
     }
 }

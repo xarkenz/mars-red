@@ -1,5 +1,7 @@
 package mars.venus.editors;
 
+import mars.settings.Settings;
+
 import javax.swing.text.Document;
 import javax.swing.undo.UndoManager;
 import java.awt.*;
@@ -118,7 +120,7 @@ public interface MARSTextEditingArea {
 
     void setTabSize(int chars);
 
-    void updateSyntaxStyles();
+    void updateSyntaxStyles(Settings settings);
 
     Component getOuterComponent();
 }

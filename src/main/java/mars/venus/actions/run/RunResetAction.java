@@ -6,8 +6,7 @@ import mars.mips.hardware.Coprocessor0;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
-import mars.simulator.SystemIO;
-import mars.venus.ExecutePane;
+import mars.venus.execute.ExecutePane;
 import mars.venus.FileStatus;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
@@ -94,9 +93,6 @@ public class RunResetAction extends VenusAction {
         FileStatus.set(FileStatus.RUNNABLE);
         VenusUI.setReset(true);
         VenusUI.setStarted(false);
-
-        // Aug. 24, 2005 Ken Vollmar
-        SystemIO.resetFiles(); // Ensure that I/O "file descriptors" are initialized for a new program run
 
         gui.getMessagesPane().writeToConsole(getName() + ": reset completed.\n\n");
     }

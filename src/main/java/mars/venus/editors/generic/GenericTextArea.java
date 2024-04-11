@@ -1,6 +1,7 @@
 package mars.venus.editors.generic;
 
 import mars.Application;
+import mars.settings.Settings;
 import mars.venus.EditPane;
 import mars.venus.editors.MARSTextEditingArea;
 
@@ -95,7 +96,7 @@ public class GenericTextArea extends JTextArea implements MARSTextEditingArea {
      * syntax styling (colors, bold/italic).
      */
     @Override
-    public void updateSyntaxStyles() {
+    public void updateSyntaxStyles(Settings settings) {
     }
 
     /**
@@ -230,19 +231,21 @@ public class GenericTextArea extends JTextArea implements MARSTextEditingArea {
      * at the current cursor location, and wraps around when the end of the string
      * is reached.
      *
-     * @param find          the text to locate in the string
-     * @param caseSensitive true if search is to be case-sensitive, false otherwise
+     * @param text          The text to locate in the string.
+     * @param caseSensitive true if search is to be case-sensitive, false otherwise.
      * @return TEXT_FOUND or TEXT_NOT_FOUND, depending on the result.
      */
     @Override
-    public int doFindText(String find, boolean caseSensitive) {
-        int findIndex = sourceCode.getCaretPosition();
-        int nextIndex = this.nextIndex(sourceCode.getText(), find, findIndex, caseSensitive);
-        if (nextIndex >= 0) {
-            sourceCode.requestFocus(); // guarantees visibility of the blue highlight 
-            sourceCode.setSelectionStart(nextIndex); // position cursor at word start
-            sourceCode.setSelectionEnd(nextIndex + find.length());
-            sourceCode.setSelectionStart(nextIndex); // position cursor at word start
+    public int doFindText(String text, boolean caseSensitive) {
+        int foundIndex = this.nextIndex(sourceCode.getText(), text, sourceCode.getCaretPosition(), caseSensitive);
+        if (foundIndex >= 0) {
+            // Ensure the found text will appear highlighted once selected
+            sourceCode.requestFocusInWindow();
+            // Select the found text
+            sourceCode.setSelectionStart(foundIndex);
+            sourceCode.setSelectionEnd(foundIndex + text.length());
+            // Need to repeat start due to quirk in JEditTextArea implementation of setSelectionStart
+            sourceCode.setSelectionStart(foundIndex);
             return TEXT_FOUND;
         }
         else {
@@ -306,10 +309,15 @@ public class GenericTextArea extends JTextArea implements MARSTextEditingArea {
             return doFindText(find, caseSensitive);
         }
         // We are positioned at end of selected "find".  Replace and find next.
-        int nextPosition = sourceCode.getSelectionStart();
-        sourceCode.grabFocus();
-        sourceCode.setSelectionStart(nextPosition); // Position cursor at word start
-        sourceCode.setSelectionEnd(nextPosition + find.length()); // Select found text
+        int foundIndex = sourceCode.getSelectionStart();
+        // Ensure the found text will appear highlighted once selected
+        sourceCode.requestFocusInWindow();
+        // Select the found text
+        sourceCode.setSelectionStart(foundIndex);
+        sourceCode.setSelectionEnd(foundIndex + find.length());
+        // Need to repeat start due to quirk in JEditTextArea implementation of setSelectionStart
+        sourceCode.setSelectionStart(foundIndex);
+
         isCompoundEdit = true;
         compoundEdit = new CompoundEdit();
         sourceCode.replaceSelection(replace);
@@ -317,7 +325,8 @@ public class GenericTextArea extends JTextArea implements MARSTextEditingArea {
         undoManager.addEdit(compoundEdit);
         editPane.updateUndoRedoActions();
         isCompoundEdit = false;
-        sourceCode.setCaretPosition(nextPosition + replace.length());
+        sourceCode.setCaretPosition(foundIndex + replace.length());
+
         if (this.doFindText(find, caseSensitive) == TEXT_NOT_FOUND) {
             return TEXT_REPLACED_NOT_FOUND_NEXT;
         }

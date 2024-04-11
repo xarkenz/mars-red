@@ -50,6 +50,7 @@ public class SyscallExit2 extends AbstractSyscall {
      * If running in command mode, MARS will exit with that value.  If running under GUI,
      * return value is ignored.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         if (Application.getGUI() == null) {
             Application.exitCode = RegisterFile.getValue(4);

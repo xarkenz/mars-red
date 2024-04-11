@@ -6,9 +6,9 @@ import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
 import mars.util.FilenameFinder;
-import mars.simulator.SystemIO;
 import mars.venus.*;
 import mars.venus.actions.VenusAction;
+import mars.venus.execute.ExecutePane;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -62,7 +62,6 @@ public class RunAssembleAction extends VenusAction {
 
     @Override
     public void actionPerformed(ActionEvent event) {
-        String name = this.getValue(Action.NAME).toString();
         ExecutePane executePane = gui.getMainPane().getExecutePane();
         RegistersPane registersPane = gui.getRegistersPane();
         if (FileStatus.getFile() != null) {
@@ -85,13 +84,16 @@ public class RunAssembleAction extends VenusAction {
                     exceptionHandler = Application.getSettings().exceptionHandlerPath.get();
                 }
                 programsToAssemble = Application.program.prepareFilesForAssembly(filesToAssemble, FileStatus.getFile().getPath(), exceptionHandler);
-                gui.getMessagesPane().writeToMessages(buildFileNameList(name + ": assembling ", programsToAssemble));
-                // added logic to receive any warnings and output them.... DPS 11/28/06
+                gui.getMessagesPane().writeToMessages(buildFileNameList(getName() + ": assembling ", programsToAssemble));
+
+                // Added logic to receive any warnings and output them.... DPS 11/28/06
                 ErrorList warnings = Application.program.assemble(programsToAssemble, Application.getSettings().extendedAssemblerEnabled.get(), Application.getSettings().warningsAreErrors.get());
+
                 if (warnings.warningsOccurred()) {
                     gui.getMessagesPane().writeToMessages(warnings.generateWarningReport());
                 }
-                gui.getMessagesPane().writeToMessages(name + ": operation completed successfully.\n\n");
+                gui.getMessagesPane().writeToMessages(getName() + ": operation completed successfully.\n\n");
+
                 FileStatus.setAssembled(true);
                 FileStatus.set(FileStatus.RUNNABLE);
                 RegisterFile.resetRegisters();
@@ -110,30 +112,27 @@ public class RunAssembleAction extends VenusAction {
                 VenusUI.setReset(true);
                 VenusUI.setStarted(false);
                 gui.getMainPane().setSelectedComponent(executePane);
-
-                // Aug. 24, 2005 Ken Vollmar
-                SystemIO.resetFiles();  // Ensure that I/O "file descriptors" are initialized for a new program run
             }
-            catch (ProcessingException pe) {
-                String errorReport = pe.errors().generateErrorAndWarningReport();
+            catch (ProcessingException exception) {
+                String errorReport = exception.errors().generateErrorAndWarningReport();
                 gui.getMessagesPane().writeToMessages(errorReport);
-                gui.getMessagesPane().writeToMessages(name + ": operation completed with errors.\n\n");
+                gui.getMessagesPane().writeToMessages(getName() + ": operation completed with errors.\n\n");
                 // Select editor line containing first error, and corresponding error message.
-                ArrayList<ErrorMessage> errorMessages = pe.errors().getErrorMessages();
+                ArrayList<ErrorMessage> errorMessages = exception.errors().getErrorMessages();
                 for (ErrorMessage message : errorMessages) {
                     // No line or position may mean File Not Found (e.g. exception file). Don't try to open. DPS 3-Oct-2010
                     if (message.getLine() == 0 && message.getPosition() == 0) {
                         continue;
                     }
                     if (!message.isWarning() || Application.getSettings().warningsAreErrors.get()) {
-                        Application.getGUI().getMessagesPane().selectErrorMessage(message.getFilename(), message.getLine(), message.getPosition());
+                        gui.getMessagesPane().selectErrorMessage(message.getFilename(), message.getLine(), message.getPosition());
                         // Bug workaround: Line selection does not work correctly for the JEditTextArea editor
                         // when the file is opened then automatically assembled (assemble-on-open setting).
                         // Automatic assemble happens in EditTabbedPane's openFile() method, by invoking
                         // this method (actionPerformed) explicitly with null argument.  Thus e!=null test.
                         // DPS 9-Aug-2010
                         if (event != null) {
-                            Application.getGUI().getMessagesPane().selectEditorTextLine(message.getFilename(), message.getLine(), message.getPosition());
+                            gui.getMessagesPane().selectEditorTextLine(message.getFilename(), message.getLine(), message.getPosition());
                         }
                         break;
                     }

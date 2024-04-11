@@ -24,7 +24,7 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
- */
+*/
 
 package mars.venus.editors.jeditsyntax;
 
@@ -48,9 +48,9 @@ public class PopupHelpItem {
      * Create popup help item.  This is created as result of either an exact-match or
      * prefix-match search.  Note that prefix-match search includes exact as well as partial matches.
      *
-     * @param tokenText   The document text that matched
-     * @param example     An example instruction
-     * @param description A textual description of the instruction
+     * @param tokenText   The document text that matched.
+     * @param example     An example instruction.
+     * @param description A textual description of the instruction.
      * @param isExact     True if match occurred as result of exact-match search, false otherwise.
      */
     public PopupHelpItem(String tokenText, String example, String description, boolean isExact) {

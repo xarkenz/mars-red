@@ -51,6 +51,7 @@ public class SyscallRandFloat extends AbstractSyscall {
      * Return in $f0 the next pseudorandom, uniformly distributed float value between 0.0 and 1.0
      * from this random number generator's sequence.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         // Input arguments: $a0 = index of pseudorandom number generator
         // Return: $f0 = the next pseudorandom, uniformly distributed float value between 0.0 and 1.0

@@ -3,7 +3,7 @@ package mars.mips.instructions.syscalls;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.Coprocessor1;
-import mars.simulator.SystemIO;
+import mars.simulator.Simulator;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -46,10 +46,12 @@ public class SyscallPrintFloat extends AbstractSyscall {
     }
 
     /**
-     * Performs syscall function to display float whose bits are stored in $f12
+     * Performs syscall function to display float whose bits are stored in $f12.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         float floatValue = Float.intBitsToFloat(Coprocessor1.getValue(12));
-        SystemIO.printString(Float.toString(floatValue));
+
+        Simulator.getInstance().getSystemIO().printString(Float.toString(floatValue));
     }
 }

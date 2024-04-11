@@ -3,8 +3,8 @@ package mars.mips.instructions.syscalls;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.RegisterFile;
+import mars.simulator.Simulator;
 import mars.util.Binary;
-import mars.simulator.SystemIO;
 
 /*
 Copyright (c) 2003-2009,  Pete Sanderson and Kenneth Vollmar
@@ -40,7 +40,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 public class SyscallPrintIntBinary extends AbstractSyscall {
     /**
      * Build an instance of the Print Integer syscall.  Default service number
-     * is 1 and name is "PrintInt".
+     * is 35 and name is "PrintIntBinary".
      */
     public SyscallPrintIntBinary() {
         super(35, "PrintIntBinary");
@@ -49,8 +49,10 @@ public class SyscallPrintIntBinary extends AbstractSyscall {
     /**
      * Performs syscall function to print on the console the integer stored in $a0, in binary format.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         int intValue = RegisterFile.getValue(4);
-        SystemIO.printString(Binary.intToBinaryString(intValue));
+
+        Simulator.getInstance().getSystemIO().printString(Binary.intToBinaryString(intValue));
     }
 }

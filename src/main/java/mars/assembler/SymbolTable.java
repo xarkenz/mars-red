@@ -122,7 +122,7 @@ public class SymbolTable {
      */
     public int getAddressLocalOrGlobal(String s) {
         int address = this.getAddress(s);
-        return (address == NOT_FOUND) ? Application.symbolTable.getAddress(s) : address;
+        return (address == NOT_FOUND) ? Application.globalSymbolTable.getAddress(s) : address;
     }
 
     /**
@@ -158,7 +158,7 @@ public class SymbolTable {
      */
     public Symbol getSymbolGivenAddressLocalOrGlobal(int address) {
         Symbol symbol = this.getSymbolGivenAddress(address);
-        return (symbol == null) ? Application.symbolTable.getSymbolGivenAddress(address) : symbol;
+        return (symbol == null) ? Application.globalSymbolTable.getSymbolGivenAddress(address) : symbol;
     }
 
     /**

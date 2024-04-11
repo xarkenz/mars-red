@@ -51,6 +51,7 @@ public class SyscallMessageDialogFloat extends AbstractSyscall {
     /**
      * System call to display a message to user.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         // Input arguments:
         //   $a0 = address of null-terminated string that is an information-type message to user
@@ -62,8 +63,8 @@ public class SyscallMessageDialogFloat extends AbstractSyscall {
             // Read a null-terminated string from memory
             message = Application.memory.getNullTerminatedString(RegisterFile.getValue(4));
         }
-        catch (AddressErrorException e) {
-            throw new ProcessingException(statement, e);
+        catch (AddressErrorException exception) {
+            throw new ProcessingException(statement, exception);
         }
 
         // Display the dialog

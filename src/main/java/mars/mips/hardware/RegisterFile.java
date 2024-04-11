@@ -203,7 +203,7 @@ public class RegisterFile {
      *                    will set program counter to default reset value.
      */
     public static void initializeProgramCounter(boolean startAtMain) {
-        int mainAddr = Application.symbolTable.getAddress(SymbolTable.getStartLabel());
+        int mainAddr = Application.globalSymbolTable.getAddress(SymbolTable.getStartLabel());
         if (startAtMain && mainAddr != SymbolTable.NOT_FOUND && (Memory.inTextSegment(mainAddr) || Memory.inKernelTextSegment(mainAddr))) {
             initializeProgramCounter(mainAddr);
         }

@@ -10,6 +10,7 @@
 package mars.venus.editors.jeditsyntax;
 
 import mars.Application;
+import mars.settings.Settings;
 import mars.venus.editors.jeditsyntax.tokenmarker.Token;
 import mars.venus.editors.jeditsyntax.tokenmarker.TokenMarker;
 
@@ -76,8 +77,8 @@ public class JEditTextArea extends JComponent {
     /**
      * Creates a new JEditTextArea with the default settings.
      */
-    public JEditTextArea(JComponent lineNumbers) {
-        this(new TextAreaDefaults(), lineNumbers);
+    public JEditTextArea(Settings settings, JComponent lineNumbers) {
+        this(new TextAreaDefaults(settings), lineNumbers);
     }
 
     /**

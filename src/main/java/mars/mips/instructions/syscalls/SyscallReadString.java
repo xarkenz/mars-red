@@ -5,7 +5,7 @@ import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.RegisterFile;
-import mars.simulator.SystemIO;
+import mars.simulator.Simulator;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -53,6 +53,7 @@ public class SyscallReadString extends AbstractSyscall {
      * string can be no longer than n-1. If less than that, add
      * newline to end.  In either case, then pad with null byte.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         int buf = RegisterFile.getValue(4); // buf addr in $a0
         int maxLength = RegisterFile.getValue(5) - 1; // $a1
@@ -62,7 +63,7 @@ public class SyscallReadString extends AbstractSyscall {
             maxLength = 0;
             addNullByte = false;
         }
-        String inputString = SystemIO.readString(this.getNumber(), maxLength);
+        String inputString = Simulator.getInstance().getSystemIO().readString(maxLength);
         int stringLength = Math.min(maxLength, inputString.length());
         try {
             for (int index = 0; index < stringLength; index++) {
@@ -76,8 +77,8 @@ public class SyscallReadString extends AbstractSyscall {
                 Application.memory.setByte(buf + stringLength, 0);
             }
         }
-        catch (AddressErrorException e) {
-            throw new ProcessingException(statement, e);
+        catch (AddressErrorException exception) {
+            throw new ProcessingException(statement, exception);
         }
     }
 }

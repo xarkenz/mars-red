@@ -11,8 +11,9 @@ import mars.venus.*;
 import mars.venus.actions.VenusAction;
 import mars.venus.actions.run.RunStartAction;
 import mars.venus.actions.run.RunPauseAction;
-import mars.venus.actions.run.RunStepAction;
+import mars.venus.actions.run.RunStepForwardAction;
 import mars.venus.actions.run.RunStopAction;
+import mars.venus.execute.ExecutePane;
 
 import javax.swing.*;
 import java.util.ArrayList;
@@ -58,14 +59,15 @@ public class Simulator extends Observable {
 
     private static Simulator instance = null;
     private static Runnable interactiveGUIUpdater = null;
-    private SimulatorThread simulatorThread;
-
     // Others can set this true to indicate external interrupt.  Initially used
     // to simulate keyboard and display interrupts.  The device is identified
     // by the address of its MMIO control register.  keyboard 0xFFFF0000 and
     // display 0xFFFF0008.  DPS 23 July 2008.
     public static final int NO_DEVICE = 0;
     public static volatile int externalInterruptingDevice = NO_DEVICE;
+
+    private SimulatorThread simulatorThread;
+    private SystemIO systemIO;
 
     /**
      * Enumeration of reasons for the simulation to stop. "Stop" in this context
@@ -119,9 +121,14 @@ public class Simulator extends Observable {
 
     private Simulator() {
         simulatorThread = null;
+        systemIO = new SystemIO();
         if (Application.getGUI() != null) {
             interactiveGUIUpdater = new UpdateGUI();
         }
+    }
+
+    public SystemIO getSystemIO() {
+        return systemIO;
     }
 
     /**
@@ -311,7 +318,7 @@ public class Simulator extends Observable {
         VenusUI.setReset(false);
 
         // Close any unclosed file descriptors opened in execution of program
-        SystemIO.resetFiles();
+        systemIO.resetFiles();
 
         for (SimulatorListener listener : listeners) {
             listener.finished(maxSteps, programCounter, reason, exception);
@@ -600,7 +607,7 @@ public class Simulator extends Observable {
                 return;
             }
 
-            if (starter instanceof RunStepAction) {
+            if (starter instanceof RunStepForwardAction) {
                 simulator.dispatchPausedUpdate(maxSteps, programCounter, stopReason);
             }
             else if (starter instanceof RunStartAction) {

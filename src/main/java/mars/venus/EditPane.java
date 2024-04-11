@@ -76,7 +76,7 @@ public class EditPane extends JPanel implements Observer {
             this.textEditingArea = new GenericTextArea(this, lineNumbers);
         }
         else {
-            this.textEditingArea = new JEditBasedTextArea(this, lineNumbers);
+            this.textEditingArea = new JEditBasedTextArea(this, Application.getSettings(), lineNumbers);
         }
         // sourceCode is responsible for its own scrolling
         this.add(this.textEditingArea.getOuterComponent(), BorderLayout.CENTER);
@@ -312,7 +312,7 @@ public class EditPane extends JPanel implements Observer {
     /**
      * Delegates to text area's requestFocusInWindow method.
      */
-    public void tellEditingComponentToRequestFocusInWindow() {
+    public void requestTextAreaFocus() {
         this.textEditingArea.requestFocusInWindow();
     }
 
@@ -580,7 +580,7 @@ public class EditPane extends JPanel implements Observer {
         textEditingArea.setLineHighlightEnabled(Application.getSettings().highlightCurrentEditorLine.get());
         textEditingArea.setCaretBlinkRate(Application.getSettings().caretBlinkRate.get());
         textEditingArea.setTabSize(Application.getSettings().editorTabSize.get());
-        textEditingArea.updateSyntaxStyles();
+        textEditingArea.updateSyntaxStyles(Application.getSettings());
         textEditingArea.revalidate();
         // We want line numbers to be displayed same size but always PLAIN style.
         // Easiest way to get same pixel height as source code is to set to same

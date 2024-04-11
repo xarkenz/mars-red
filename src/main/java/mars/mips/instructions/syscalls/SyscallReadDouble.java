@@ -4,8 +4,8 @@ import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.Coprocessor1;
 import mars.simulator.Exceptions;
+import mars.simulator.Simulator;
 import mars.util.Binary;
-import mars.simulator.SystemIO;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -51,15 +51,16 @@ public class SyscallReadDouble extends AbstractSyscall {
     /**
      * Performs syscall function to read the bits of input double into $f0 and $f1.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         try {
-            double doubleValue = SystemIO.readDouble(this.getNumber());
+            double doubleValue = Simulator.getInstance().getSystemIO().readDouble();
             long longValue = Double.doubleToRawLongBits(doubleValue);
             // Higher numbered register contains high order word, so order is $f1 - $f0.
             Coprocessor1.updateRegister(1, Binary.highOrderLongToInt(longValue));
             Coprocessor1.updateRegister(0, Binary.lowOrderLongToInt(longValue));
         }
-        catch (NumberFormatException e) {
+        catch (NumberFormatException exception) {
             throw new ProcessingException(statement, "invalid double input (syscall " + this.getNumber() + ")", Exceptions.SYSCALL_EXCEPTION);
         }
     }

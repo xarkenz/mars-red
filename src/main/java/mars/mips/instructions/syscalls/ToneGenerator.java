@@ -1,10 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import javax.sound.midi.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /*
 Copyright (c) 2003-2007,  Pete Sanderson and Kenneth Vollmar
@@ -71,7 +68,7 @@ public class ToneGenerator {
      */
     public final static byte DEFAULT_VOLUME = 100;
 
-    private static final Executor threadPool = Executors.newCachedThreadPool();
+    private static final Executor THREAD_POOL = Executors.newCachedThreadPool();
 
     /**
      * Produces a Tone with the specified pitch, duration, and instrument,
@@ -90,7 +87,7 @@ public class ToneGenerator {
      */
     public void generateTone(byte pitch, int duration, byte instrument, byte volume) {
         Runnable tone = new Tone(pitch, duration, instrument, volume);
-        threadPool.execute(tone);
+        THREAD_POOL.execute(tone);
     }
 
     /**

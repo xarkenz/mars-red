@@ -9,7 +9,7 @@
 
 package mars.venus.editors.jeditsyntax;
 
-import mars.Application;
+import mars.settings.Settings;
 
 import javax.swing.*;
 import java.awt.*;
@@ -52,27 +52,27 @@ public class TextAreaDefaults {
     /**
      * Constructs a new TextAreaDefaults object with the default values filled in.
      */
-    public TextAreaDefaults() {
+    public TextAreaDefaults(Settings settings) {
         inputHandler = new DefaultInputHandler();
         inputHandler.addDefaultKeyBindings();
         editable = true;
 
         blockCaret = false;
         caretVisible = true;
-        caretBlinks = (Application.getSettings().caretBlinkRate.get() != 0);
-        caretBlinkRate = Application.getSettings().caretBlinkRate.get();
-        tabSize = Application.getSettings().editorTabSize.get();
-        electricScroll = 0; // was 3.  Will begin scrolling when cursor is this many lines from the edge.
+        caretBlinkRate = settings.caretBlinkRate.get();
+        caretBlinks = caretBlinkRate > 0;
+        tabSize = settings.editorTabSize.get();
+        electricScroll = 0; // Was 3.  Will begin scrolling when cursor is this many lines from the edge.
 
         cols = 80;
         rows = 25;
-        styles = SyntaxUtilities.getCurrentSyntaxStyles();
+        styles = SyntaxUtilities.getCurrentSyntaxStyles(settings);
         backgroundColor = UIManager.getColor("Venus.Editor.background");
         foregroundColor = UIManager.getColor("Venus.Editor.foreground");
         caretColor = UIManager.getColor("Venus.Editor.caret");
         selectionColor = UIManager.getColor("Venus.Editor.selectionBackground");
         lineHighlightColor = UIManager.getColor("Venus.Editor.highlightedLine");
-        lineHighlightVisible = Application.getSettings().highlightCurrentEditorLine.get();
+        lineHighlightVisible = settings.highlightCurrentEditorLine.get();
         bracketHighlightColor = caretColor;
         bracketHighlightVisible = false; // assembly language doesn't need this.
         eolMarkerColor = new Color(0x009999);

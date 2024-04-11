@@ -59,8 +59,8 @@ import mars.mips.hardware.MemoryAccessNotice;
 import mars.mips.instructions.BasicInstruction;
 import mars.mips.instructions.BasicInstructionFormat;
 import mars.venus.actions.run.RunAssembleAction;
-import mars.venus.actions.run.RunBackstepAction;
-import mars.venus.actions.run.RunStepAction;
+import mars.venus.actions.run.RunStepBackwardAction;
+import mars.venus.actions.run.RunStepForwardAction;
 import mars.venus.VenusUI;
 
 public class MipsXray extends AbstractMarsToolAndApplication{
@@ -295,15 +295,14 @@ public class MipsXray extends AbstractMarsToolAndApplication{
    							  "Assemble the current file and clear breakpoints", new Integer(KeyEvent.VK_A),
    							  KeyStroke.getKeyStroke( KeyEvent.VK_F3, 0));
 
-               runStepAction = new RunStepAction(mainUI, "Step",
+               runStepAction = new RunStepForwardAction(mainUI, "Step",
                        new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH +"StepForward22.png"))),
    							  "Run one step at a time", new Integer(KeyEvent.VK_T),
    							  KeyStroke.getKeyStroke( KeyEvent.VK_F7, 0));
-               runBackstepAction = new RunBackstepAction("Backstep", 
+               runBackstepAction = new RunStepBackwardAction(mainUI, "Backstep",
                        new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH +"StepBack22.png"))),
    							  "Undo the last step", new Integer(KeyEvent.VK_B),
-   							  KeyStroke.getKeyStroke( KeyEvent.VK_F8, 0), 
-   							  mainUI);		
+   							  KeyStroke.getKeyStroke( KeyEvent.VK_F8, 0));
            }
            catch(Exception e){
                System.out.println("Internal Error: images folder not found, or other null pointer exception while creating Action objects");

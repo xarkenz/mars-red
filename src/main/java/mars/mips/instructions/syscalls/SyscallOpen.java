@@ -5,7 +5,7 @@ import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.RegisterFile;
-import mars.simulator.SystemIO;
+import mars.simulator.Simulator;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -37,8 +37,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /**
  * Service to open file name specified by $a0. File descriptor returned in $v0.
- * (this was changed from $a0 in MARS 3.7 for SPIM compatibility.  The table
- * in COD erroneously shows $a0).
+ * (This was changed from $a0 in MARS 3.7 for SPIM compatibility.  The table
+ * in the Computer Organization and Design book erroneously shows $a0.)
  */
 public class SyscallOpen extends AbstractSyscall {
     /**
@@ -56,6 +56,7 @@ public class SyscallOpen extends AbstractSyscall {
      * write-create.  write-append will start writing at end of existing file.
      * Mode ($a2) is ignored.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         // NOTE: with MARS 3.7, return changed from $a0 to $v0 and the terminology
         // of 'flags' and 'mode' was corrected (they had been reversed).
@@ -69,19 +70,19 @@ public class SyscallOpen extends AbstractSyscall {
         // Write/append  flag = 9
         // This code implements the modes:
         // NO MODES IMPLEMENTED  -- MODE IS IGNORED
-        // Returns in $v0: a "file descriptor" in the range 0 to SystemIO.SYSCALL_MAXFILES-1,
-        // or -1 if error
+        // Returns in $v0: a "file descriptor" if opened, or -1 if error
 
         String filename;
         try {
             // Read a null-terminated string from memory
             filename = Application.memory.getNullTerminatedString(RegisterFile.getValue(4));
         }
-        catch (AddressErrorException e) {
-            throw new ProcessingException(statement, e);
+        catch (AddressErrorException exception) {
+            throw new ProcessingException(statement, exception);
         }
 
-        int retValue = SystemIO.openFile(filename, RegisterFile.getValue(5));
-        RegisterFile.updateRegister(2, retValue); // Set returned fd value in register
+        int descriptor = Simulator.getInstance().getSystemIO().openFile(filename, RegisterFile.getValue(5));
+
+        RegisterFile.updateRegister(2, descriptor); // Set returned descriptor in register
     }
 }

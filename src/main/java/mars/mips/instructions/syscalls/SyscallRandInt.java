@@ -49,6 +49,7 @@ public class SyscallRandInt extends AbstractSyscall {
      * System call to the random number generator.
      * Return in $a0 the next pseudorandom, uniformly distributed int value from this random number generator's sequence.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         // Input arguments: $a0 = index of pseudorandom number generator
         // Return: $a0 = the next pseudorandom, uniformly distributed int value from this random number generator's sequence.

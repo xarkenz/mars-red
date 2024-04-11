@@ -78,7 +78,7 @@ public class HelpHelpAction extends VenusAction {
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.addTab("MIPS", createMipsHelpInfoPanel());
         tabbedPane.addTab("MARS", createMarsHelpInfoPanel());
-        tabbedPane.addTab("License", createCopyrightInfoPanel());
+        tabbedPane.addTab("License", createLicensePanel());
         tabbedPane.addTab("Bugs/Comments", createHTMLHelpPanel("BugReportingHelp.html"));
         tabbedPane.addTab("Acknowledgements", createHTMLHelpPanel("Acknowledgements.html"));
         tabbedPane.addTab("Instruction Set Song", createHTMLHelpPanel("MIPSInstructionSetSong.html"));
@@ -117,7 +117,9 @@ public class HelpHelpAction extends VenusAction {
         dialog.setVisible(true);
     }
 
-    // Create panel containing Help Info read from html document.
+    /**
+     * Create panel containing Help Info read from html document.
+     */
     private JPanel createHTMLHelpPanel(String filename) {
         JPanel helpPanel = new JPanel(new BorderLayout());
         JScrollPane helpScrollPane;
@@ -144,18 +146,20 @@ public class HelpHelpAction extends VenusAction {
         return helpPanel;
     }
 
-    // Set up the copyright notice for display.
-    private JPanel createCopyrightInfoPanel() {
+    /**
+     * Set up the license notice for display.
+     */
+    private JPanel createLicensePanel() {
         JPanel marsCopyrightInfo = new JPanel(new BorderLayout());
         JScrollPane marsCopyrightScrollPane;
         JEditorPane marsCopyrightDisplay;
         try {
-            InputStream is = this.getClass().getResourceAsStream("/LICENSE.txt");
+            InputStream is = this.getClass().getResourceAsStream("/mars_license.txt");
             BufferedReader in = new BufferedReader(new InputStreamReader(is));
             String line;
             StringBuilder text = new StringBuilder("<pre>");
             while ((line = in.readLine()) != null) {
-                text.append(line).append("\n");
+                text.append(line).append('\n');
             }
             in.close();
             text.append("</pre>");
@@ -165,13 +169,15 @@ public class HelpHelpAction extends VenusAction {
             marsCopyrightScrollPane = new JScrollPane(marsCopyrightDisplay, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         }
         catch (Exception ioe) {
-            marsCopyrightScrollPane = new JScrollPane(new JLabel("Error: license contents could not be loaded."));
+            marsCopyrightScrollPane = new JScrollPane(new JLabel("Error: license contents could not be loaded.", JLabel.CENTER));
         }
         marsCopyrightInfo.add(marsCopyrightScrollPane);
         return marsCopyrightInfo;
     }
 
-    // Set up MARS help tab.  Subtabs get their contents from HTML files.
+    /**
+     * Set up MARS help tab.  Subtabs get their contents from HTML files.
+     */
     private JPanel createMarsHelpInfoPanel() {
         JPanel marsHelpInfo = new JPanel(new BorderLayout());
         JTabbedPane tabbedPane = new JTabbedPane();
@@ -187,7 +193,9 @@ public class HelpHelpAction extends VenusAction {
         return marsHelpInfo;
     }
 
-    // Set up MIPS help tab.  Most contents are generated from instruction set info.
+    /**
+     * Set up MIPS help tab.  Most contents are generated from instruction set info.
+     */
     private JPanel createMipsHelpInfoPanel() {
         JPanel mipsHelpInfo = new JPanel(new BorderLayout());
         String helpRemarksColor = "CCFF99";
@@ -234,10 +242,10 @@ public class HelpHelpAction extends VenusAction {
         ArrayList<Instruction> instructionList = Application.instructionSet.getAllInstructions();
         Vector<String> exampleList = new Vector<>(instructionList.size());
         String blanks = "                        "; // 24 blanks
-        for (Instruction instr : Application.instructionSet.getAllInstructions()) {
+        for (Instruction instruction : Application.instructionSet.getAllInstructions()) {
             try {
-                if (Class.forName(instructionClassName).isInstance(instr)) {
-                    exampleList.add(instr.getExampleFormat() + blanks.substring(0, Math.max(0, blanks.length() - instr.getExampleFormat().length())) + instr.getDescription());
+                if (Class.forName(instructionClassName).isInstance(instruction)) {
+                    exampleList.add(instruction.getExampleFormat() + blanks.substring(0, Math.max(0, blanks.length() - instruction.getExampleFormat().length())) + instruction.getDescription());
                 }
             }
             catch (ClassNotFoundException cnfe) {

@@ -3,7 +3,7 @@ package mars.mips.instructions.syscalls;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.RegisterFile;
-import mars.simulator.SystemIO;
+import mars.simulator.Simulator;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -48,8 +48,10 @@ public class SyscallPrintInt extends AbstractSyscall {
     /**
      * Performs syscall function to print on the console the integer stored in $a0.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         int intValue = RegisterFile.getValue(4);
-        SystemIO.printString(Integer.toString(intValue));
+
+        Simulator.getInstance().getSystemIO().printString(Integer.toString(intValue));
     }
 }

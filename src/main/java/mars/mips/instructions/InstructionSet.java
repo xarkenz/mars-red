@@ -1577,12 +1577,11 @@ public class InstructionSet {
         return matchingInstructions;
     }
 
-    /*
+    /**
      * Method to find and invoke a syscall given its service number.  Each syscall
      * function is represented by an object in an array list.  Each object is of
      * a class that implements Syscall or extends AbstractSyscall.
      */
-
     private void findAndSimulateSyscall(int number, ProgramStatement statement) throws ProcessingException {
         Syscall service = syscallLoader.findSyscall(number);
         if (service != null) {
@@ -1592,14 +1591,13 @@ public class InstructionSet {
         throw new ProcessingException(statement, "invalid or unimplemented syscall service: " + number + " ", Exceptions.SYSCALL_EXCEPTION);
     }
 
-    /*
+    /**
      * Method to process a successful branch condition.  DO NOT USE WITH JUMP
      * INSTRUCTIONS!  The branch operand is a relative displacement in words
      * whereas the jump operand is an absolute address in bytes.
-     *
-     * The parameter is displacement operand from instruction.
-     *
      * Handles delayed branching if that setting is enabled.
+     *
+     * @param displacement Displacement operand from instruction.
      */
     // 4 January 2008 DPS:  The subtraction of 4 bytes (instruction length) after
     // the shift has been removed.  It is left in as commented-out code below.
@@ -1607,7 +1605,6 @@ public class InstructionSet {
     // even if it isn't.  This mod must work in conjunction with
     // ProgramStatement.java, buildBasicStatementFromBasicInstruction() method near
     // the bottom (currently line 194, heavily commented).
-
     private void processBranch(int displacement) {
         if (Application.getSettings().delayedBranchingEnabled.get()) {
             // Register the branch target address (absolute byte address).
@@ -1619,16 +1616,14 @@ public class InstructionSet {
         }
     }
 
-    /*
+    /**
      * Method to process a jump.  DO NOT USE WITH BRANCH INSTRUCTIONS!
      * The branch operand is a relative displacement in words
      * whereas the jump operand is an absolute address in bytes.
-     *
-     * The parameter is jump target absolute byte address.
-     *
      * Handles delayed branching if that setting is enabled.
+     *
+     * @param targetAddress Jump target absolute byte address.
      */
-
     private void processJump(int targetAddress) {
         if (Application.getSettings().delayedBranchingEnabled.get()) {
             DelayedBranch.register(targetAddress);
@@ -1638,7 +1633,7 @@ public class InstructionSet {
         }
     }
 
-    /*
+    /**
      * Method to process storing of a return address in the given
      * register.  This is used only by the "and link"
      * instructions: jal, jalr, bltzal, bgezal.  If delayed branching
@@ -1647,9 +1642,8 @@ public class InstructionSet {
      * return address is the instruction following that, to skip over
      * the delay slot.
      *
-     * The parameter is register number to receive the return address.
+     * @param register Register number to receive the return address.
      */
-
     private void processReturnAddress(int register) {
         RegisterFile.updateRegister(register, RegisterFile.getProgramCounter()
             + ((Application.getSettings().delayedBranchingEnabled.get()) ? Instruction.INSTRUCTION_LENGTH_BYTES : 0));
@@ -1673,21 +1667,23 @@ public class InstructionSet {
             this.maskLength = k;
         }
 
+        public BasicInstruction find(int instr) {
+            int match = instr & mask;
+            return matchMap.get(match);
+        }
+
+        @Override
         public boolean equals(Object other) {
             return other instanceof MatchMap && mask == ((MatchMap) other).mask;
         }
 
+        @Override
         public int compareTo(MatchMap other) {
             int difference = other.maskLength - this.maskLength;
             if (difference == 0) {
                 difference = this.mask - other.mask;
             }
             return difference;
-        }
-
-        public BasicInstruction find(int instr) {
-            int match = instr & mask;
-            return matchMap.get(match);
         }
     }
 }

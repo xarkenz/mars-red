@@ -42,7 +42,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * Service to input data.
  */
-
 public class SyscallInputDialogDouble extends AbstractSyscall {
     /**
      * Build an instance of the syscall with its default service number and name.
@@ -54,6 +53,7 @@ public class SyscallInputDialogDouble extends AbstractSyscall {
     /**
      * System call to input data.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         // Input arguments: $a0 = address of null-terminated string that is the message to user
         // Outputs:
@@ -69,8 +69,8 @@ public class SyscallInputDialogDouble extends AbstractSyscall {
             // Read a null-terminated string from memory
             message = Application.memory.getNullTerminatedString(RegisterFile.getValue(4));
         }
-        catch (AddressErrorException e) {
-            throw new ProcessingException(statement, e);
+        catch (AddressErrorException exception) {
+            throw new ProcessingException(statement, exception);
         }
 
         // Values returned by Java's InputDialog:
@@ -97,11 +97,11 @@ public class SyscallInputDialogDouble extends AbstractSyscall {
                 RegisterFile.updateRegister(5, 0);  // set $a1 to valid flag
             }
         }
-        catch (InvalidRegisterAccessException e) {
+        catch (InvalidRegisterAccessException exception) {
             RegisterFile.updateRegister(5, -1);  // set $a1 to -1 flag
-            throw new ProcessingException(statement, "invalid int reg. access during double input (syscall " + this.getNumber() + ")", Exceptions.SYSCALL_EXCEPTION);
+            throw new ProcessingException(statement, "invalid register access during double input (syscall " + this.getNumber() + ")", Exceptions.SYSCALL_EXCEPTION);
         }
-        catch (NumberFormatException e) {
+        catch (NumberFormatException exception) {
             // Unsuccessful parse of input data
             RegisterFile.updateRegister(5, -1);  // set $a1 to -1 flag
         }

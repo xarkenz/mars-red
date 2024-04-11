@@ -41,8 +41,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * Action for the Run -> Step menu item
  */
-public class RunStepAction extends VenusAction {
-    public RunStepAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
+public class RunStepForwardAction extends VenusAction {
+    public RunStepForwardAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 

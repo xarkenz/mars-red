@@ -51,6 +51,7 @@ public class SyscallRandIntRange extends AbstractSyscall {
      * Return in $a0 the next pseudorandom, uniformly distributed int value between 0 (inclusive)
      * and the specified value (exclusive), drawn from this random number generator's sequence.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         // Input arguments:
         //    $a0 = index of pseudorandom number generator
@@ -64,7 +65,7 @@ public class SyscallRandIntRange extends AbstractSyscall {
         try {
             RegisterFile.updateRegister(4, stream.nextInt(RegisterFile.getValue(5)));
         }
-        catch (IllegalArgumentException iae) {
+        catch (IllegalArgumentException exception) {
             throw new ProcessingException(statement, "Upper bound of range cannot be negative (syscall " + this.getNumber() + ")", Exceptions.SYSCALL_EXCEPTION);
         }
     }

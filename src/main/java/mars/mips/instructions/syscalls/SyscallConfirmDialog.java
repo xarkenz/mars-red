@@ -50,6 +50,7 @@ public class SyscallConfirmDialog extends AbstractSyscall {
     /**
      * System call to display a message to user.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         // Input arguments: $a0 = address of null-terminated string that is the message to user
         // Output: $a0 contains value of user-chosen option
@@ -62,15 +63,11 @@ public class SyscallConfirmDialog extends AbstractSyscall {
             // Read a null-terminated string from memory
             message = Application.memory.getNullTerminatedString(RegisterFile.getValue(4));
         }
-        catch (AddressErrorException e) {
-            throw new ProcessingException(statement, e);
+        catch (AddressErrorException exception) {
+            throw new ProcessingException(statement, exception);
         }
 
-        // update register $a0 with the value from showConfirmDialog.
-        // showConfirmDialog returns an int with one of three possible values:
-        //    0 ---> meaning Yes
-        //    1 ---> meaning No
-        //    2 ---> meaning Cancel
+        // Update register $a0 with the value from showConfirmDialog
         RegisterFile.updateRegister(4, JOptionPane.showConfirmDialog(null, message));
     }
 }

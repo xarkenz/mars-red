@@ -48,14 +48,15 @@ public class SyscallSleep extends AbstractSyscall {
      * System call to cause the MARS Java thread to sleep for (at least) the specified number of milliseconds.
      * This timing will not be precise as the Java implementation will add some overhead.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         int duration = RegisterFile.getValue(4); // $a0: length of time to sleep in milliseconds
 
         try {
             Thread.sleep(duration);
         }
-        catch (InterruptedException e) {
-            // no exception handling
+        catch (InterruptedException exception) {
+            // No exception handling
         }
     }
 }

@@ -104,8 +104,8 @@ public class VenusUI extends JFrame {
     private RunAssembleAction runAssembleAction;
 
     private RunStartAction runStartAction;
-    private RunStepAction runStepAction;
-    private RunBackstepAction runBackstepAction;
+    private RunStepForwardAction runStepForwardAction;
+    private RunStepBackwardAction runStepBackwardAction;
     private RunPauseAction runPauseAction;
     private RunStopAction runStopAction;
     private RunResetAction runResetAction;
@@ -267,7 +267,6 @@ public class VenusUI extends JFrame {
      */
     private void createActionObjects() {
         Toolkit tk = this.getToolkit();
-        Class<?> cs = this.getClass();
 
         try {
             fileNewAction = new FileNewAction(this, "New", getSVGActionIcon("new.svg"), "Create a new file for editing", KeyEvent.VK_N, KeyStroke.getKeyStroke(KeyEvent.VK_N, tk.getMenuShortcutKeyMaskEx()));
@@ -290,12 +289,12 @@ public class VenusUI extends JFrame {
             editSelectAllAction = new EditSelectAllAction(this, "Select All", getSVGActionIcon("select_all.svg"), "Select all text in the current file", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_A, tk.getMenuShortcutKeyMaskEx()));
 
             runAssembleAction = new RunAssembleAction(this, "Assemble", getSVGActionIcon("assemble.svg"), "Assemble the current file and clear breakpoints", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0));
-            runStartAction = new RunStartAction(this, "Start", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Play22.png"))), "Run the current program", KeyEvent.VK_G, KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0));
-            runStepAction = new RunStepAction(this, "Step Forward", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "StepForward22.png"))), "Execute the next instruction", KeyEvent.VK_T, KeyStroke.getKeyStroke(KeyEvent.VK_F7, 0));
-            runBackstepAction = new RunBackstepAction("Step Backward", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "StepBack22.png"))), "Undo the last step", KeyEvent.VK_B, KeyStroke.getKeyStroke(KeyEvent.VK_F8, 0), this);
-            runPauseAction = new RunPauseAction(this, "Pause", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Pause22.png"))), "Pause the currently running program", KeyEvent.VK_P, KeyStroke.getKeyStroke(KeyEvent.VK_F9, 0));
-            runStopAction = new RunStopAction(this, "Stop", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Stop22.png"))), "Stop the currently running program", KeyEvent.VK_S, KeyStroke.getKeyStroke(KeyEvent.VK_F11, 0));
-            runResetAction = new RunResetAction(this, "Reset", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Reset22.png"))), "Reset MIPS memory and registers", KeyEvent.VK_R, KeyStroke.getKeyStroke(KeyEvent.VK_F12, 0));
+            runStartAction = new RunStartAction(this, "Start", getSVGActionIcon("start.svg"), "Run the current program", KeyEvent.VK_G, KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0));
+            runStopAction = new RunStopAction(this, "Stop", getSVGActionIcon("stop.svg"), "Stop the currently running program", KeyEvent.VK_S, KeyStroke.getKeyStroke(KeyEvent.VK_F11, 0));
+            runPauseAction = new RunPauseAction(this, "Pause", getSVGActionIcon("pause.svg"), "Pause the currently running program", KeyEvent.VK_P, KeyStroke.getKeyStroke(KeyEvent.VK_F9, 0));
+            runStepForwardAction = new RunStepForwardAction(this, "Step Forward", getSVGActionIcon("step_forward.svg"), "Execute the next instruction", KeyEvent.VK_T, KeyStroke.getKeyStroke(KeyEvent.VK_F7, 0));
+            runStepBackwardAction = new RunStepBackwardAction(this, "Step Backward", getSVGActionIcon("step_backward.svg"), "Undo the last step", KeyEvent.VK_B, KeyStroke.getKeyStroke(KeyEvent.VK_F8, 0));
+            runResetAction = new RunResetAction(this, "Reset", getSVGActionIcon("reset.svg"), "Reset MIPS memory and registers", KeyEvent.VK_R, KeyStroke.getKeyStroke(KeyEvent.VK_F12, 0));
             runClearBreakpointsAction = new RunClearBreakpointsAction(this, "Clear All Breakpoints", null, "Clears all execution breakpoints set since the last assemble.", KeyEvent.VK_K, KeyStroke.getKeyStroke(KeyEvent.VK_K, tk.getMenuShortcutKeyMaskEx()));
             runToggleBreakpointsAction = new RunToggleBreakpointsAction(this, "Toggle All Breakpoints", null, "Disable/enable all breakpoints without clearing (can also click Bkpt column header)", KeyEvent.VK_T, KeyStroke.getKeyStroke(KeyEvent.VK_T, tk.getMenuShortcutKeyMaskEx()));
 
@@ -373,10 +372,10 @@ public class VenusUI extends JFrame {
         runMenu.setMnemonic(KeyEvent.VK_R);
         runMenu.add(createMenuItem(runAssembleAction));
         runMenu.add(createMenuItem(runStartAction));
-        runMenu.add(createMenuItem(runStepAction));
-        runMenu.add(createMenuItem(runBackstepAction));
-        runMenu.add(createMenuItem(runPauseAction));
         runMenu.add(createMenuItem(runStopAction));
+        runMenu.add(createMenuItem(runPauseAction));
+        runMenu.add(createMenuItem(runStepForwardAction));
+        runMenu.add(createMenuItem(runStepBackwardAction));
         runMenu.add(createMenuItem(runResetAction));
         runMenu.addSeparator();
         runMenu.add(createMenuItem(runClearBreakpointsAction));
@@ -457,6 +456,7 @@ public class VenusUI extends JFrame {
         toolBar.add(createToolBarButton(fileNewAction));
         toolBar.add(createToolBarButton(fileOpenAction));
         toolBar.add(createToolBarButton(fileSaveAction));
+        toolBar.add(createToolBarButton(fileSaveAllAction));
         toolBar.addSeparator();
         toolBar.add(createToolBarButton(editUndoAction));
         toolBar.add(createToolBarButton(editRedoAction));
@@ -467,10 +467,10 @@ public class VenusUI extends JFrame {
         toolBar.addSeparator();
         toolBar.add(createToolBarButton(runAssembleAction));
         toolBar.add(createToolBarButton(runStartAction));
-        toolBar.add(createToolBarButton(runPauseAction));
         toolBar.add(createToolBarButton(runStopAction));
-        toolBar.add(createToolBarButton(runStepAction));
-        toolBar.add(createToolBarButton(runBackstepAction));
+        toolBar.add(createToolBarButton(runPauseAction));
+        toolBar.add(createToolBarButton(runStepForwardAction));
+        toolBar.add(createToolBarButton(runStepBackwardAction));
         toolBar.add(createToolBarButton(runResetAction));
         toolBar.addSeparator();
         toolBar.add(createToolBarButton(helpHelpAction));
@@ -535,8 +535,8 @@ public class VenusUI extends JFrame {
         settingsMemoryConfigurationAction.setEnabled(true); // added 21 July 2009
         runAssembleAction.setEnabled(false);
         runStartAction.setEnabled(false);
-        runStepAction.setEnabled(false);
-        runBackstepAction.setEnabled(false);
+        runStepForwardAction.setEnabled(false);
+        runStepBackwardAction.setEnabled(false);
         runResetAction.setEnabled(false);
         runStopAction.setEnabled(false);
         runPauseAction.setEnabled(false);
@@ -577,8 +577,8 @@ public class VenusUI extends JFrame {
         // Otherwise, clear them out.  DPS 9-Aug-2011
         if (!Application.getSettings().assembleAllEnabled.get()) {
             runStartAction.setEnabled(false);
-            runStepAction.setEnabled(false);
-            runBackstepAction.setEnabled(false);
+            runStepForwardAction.setEnabled(false);
+            runStepBackwardAction.setEnabled(false);
             runResetAction.setEnabled(false);
             runStopAction.setEnabled(false);
             runPauseAction.setEnabled(false);
@@ -611,8 +611,8 @@ public class VenusUI extends JFrame {
         settingsMemoryConfigurationAction.setEnabled(true); // added 21 July 2009
         runAssembleAction.setEnabled(true);
         runStartAction.setEnabled(false);
-        runStepAction.setEnabled(false);
-        runBackstepAction.setEnabled(false);
+        runStepForwardAction.setEnabled(false);
+        runStepBackwardAction.setEnabled(false);
         runResetAction.setEnabled(false);
         runStopAction.setEnabled(false);
         runPauseAction.setEnabled(false);
@@ -647,8 +647,8 @@ public class VenusUI extends JFrame {
         settingsMemoryConfigurationAction.setEnabled(true); // added 21 July 2009
         runAssembleAction.setEnabled(false);
         runStartAction.setEnabled(false);
-        runStepAction.setEnabled(false);
-        runBackstepAction.setEnabled(false);
+        runStepForwardAction.setEnabled(false);
+        runStepBackwardAction.setEnabled(false);
         runResetAction.setEnabled(false);
         runStopAction.setEnabled(false);
         runPauseAction.setEnabled(false);
@@ -683,8 +683,8 @@ public class VenusUI extends JFrame {
         settingsMemoryConfigurationAction.setEnabled(true); // added 21 July 2009
         runAssembleAction.setEnabled(true);
         runStartAction.setEnabled(true);
-        runStepAction.setEnabled(true);
-        runBackstepAction.setEnabled(Application.getSettings().getBackSteppingEnabled() && !Application.program.getBackStepper().isEmpty());
+        runStepForwardAction.setEnabled(true);
+        runStepBackwardAction.setEnabled(Application.getSettings().getBackSteppingEnabled() && !Application.program.getBackStepper().isEmpty());
         runResetAction.setEnabled(true);
         runStopAction.setEnabled(false);
         runPauseAction.setEnabled(false);
@@ -718,8 +718,8 @@ public class VenusUI extends JFrame {
         settingsMemoryConfigurationAction.setEnabled(false); // added 21 July 2009
         runAssembleAction.setEnabled(false);
         runStartAction.setEnabled(false);
-        runStepAction.setEnabled(false);
-        runBackstepAction.setEnabled(false);
+        runStepForwardAction.setEnabled(false);
+        runStepBackwardAction.setEnabled(false);
         runResetAction.setEnabled(false);
         runStopAction.setEnabled(true);
         runPauseAction.setEnabled(true);
@@ -753,8 +753,8 @@ public class VenusUI extends JFrame {
         settingsMemoryConfigurationAction.setEnabled(true); // added 21 July 2009
         runAssembleAction.setEnabled(true);
         runStartAction.setEnabled(false);
-        runStepAction.setEnabled(false);
-        runBackstepAction.setEnabled(Application.getSettings().getBackSteppingEnabled() && !Application.program.getBackStepper().isEmpty());
+        runStepForwardAction.setEnabled(false);
+        runStepBackwardAction.setEnabled(Application.getSettings().getBackSteppingEnabled() && !Application.program.getBackStepper().isEmpty());
         runResetAction.setEnabled(true);
         runStopAction.setEnabled(false);
         runPauseAction.setEnabled(false);

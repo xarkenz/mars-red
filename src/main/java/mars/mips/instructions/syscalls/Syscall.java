@@ -57,9 +57,9 @@ public interface Syscall {
      * Set the service number.  This is provided to allow MARS implementer or user
      * to override the default service number.
      *
-     * @param num specified service number to override the default.
+     * @param number specified service number to override the default.
      */
-    void setNumber(int num);
+    void setNumber(int number);
 
     /**
      * Return the assigned service number.  This is the number the MIPS programmer

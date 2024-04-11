@@ -3,7 +3,7 @@ package mars.mips.instructions.syscalls;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.RegisterFile;
-import mars.simulator.SystemIO;
+import mars.simulator.Simulator;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -48,10 +48,12 @@ public class SyscallPrintChar extends AbstractSyscall {
     /**
      * Performs syscall function to print on the console the character stored in $a0.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
-        // mask off the lower byte of register $a0.
+        // Mask off the lower byte of register $a0.
         // Convert to a one-character string and use the string technique.
         char charValue = (char) (RegisterFile.getValue(4) & 0x000000FF);
-        SystemIO.printString(Character.toString(charValue));
+
+        Simulator.getInstance().getSystemIO().printString(Character.toString(charValue));
     }
 }

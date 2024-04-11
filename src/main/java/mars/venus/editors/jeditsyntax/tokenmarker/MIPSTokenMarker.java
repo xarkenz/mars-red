@@ -32,38 +32,35 @@ import java.util.Map;
  * @author Pete Sanderson (2010) and Slava Pestov (1999)
  */
 public class MIPSTokenMarker extends TokenMarker {
-    // private members
-    private static KeywordMap cKeywords;
-    private static String[] tokenLabels, tokenExamples;
-    private final KeywordMap keywords;
+    private static KeywordMap keywords = null;
+    private static String[] tokenDescriptions = null;
+    private static String[] tokenExamples = null;
+
     private int lastOffset;
     private int lastKeyword;
 
     public MIPSTokenMarker() {
-        this(getKeywords());
+        this.lastOffset = 0;
+        this.lastKeyword = 0;
     }
 
-    public MIPSTokenMarker(KeywordMap keywords) {
-        this.keywords = keywords;
-    }
-
-    public static String[] getMIPSTokenLabels() {
-        if (tokenLabels == null) {
-            tokenLabels = new String[Token.ID_COUNT];
-            tokenLabels[Token.COMMENT1] = "Comment";
-            tokenLabels[Token.LITERAL1] = "String literal";
-            tokenLabels[Token.LITERAL2] = "Character literal";
-            tokenLabels[Token.LABEL] = "Label";
-            tokenLabels[Token.KEYWORD1] = "Instruction mnemonic";
-            tokenLabels[Token.KEYWORD2] = "Assembler directive";
-            tokenLabels[Token.KEYWORD3] = "Register";
-            tokenLabels[Token.INVALID] = "Invalid";
-            tokenLabels[Token.MACRO_ARG] = "Macro parameter";
+    public static String[] getTokenDescriptions() {
+        if (tokenDescriptions == null) {
+            tokenDescriptions = new String[Token.ID_COUNT];
+            tokenDescriptions[Token.COMMENT1] = "Comment";
+            tokenDescriptions[Token.LITERAL1] = "String literal";
+            tokenDescriptions[Token.LITERAL2] = "Character literal";
+            tokenDescriptions[Token.LABEL] = "Label";
+            tokenDescriptions[Token.KEYWORD1] = "Instruction mnemonic";
+            tokenDescriptions[Token.KEYWORD2] = "Assembler directive";
+            tokenDescriptions[Token.KEYWORD3] = "Register";
+            tokenDescriptions[Token.INVALID] = "Invalid";
+            tokenDescriptions[Token.MACRO_ARG] = "Macro parameter";
         }
-        return tokenLabels;
+        return tokenDescriptions;
     }
 
-    public static String[] getMIPSTokenExamples() {
+    public static String[] getTokenExamples() {
         if (tokenExamples == null) {
             tokenExamples = new String[Token.ID_COUNT];
             tokenExamples[Token.COMMENT1] = "# comment";
@@ -79,20 +76,18 @@ public class MIPSTokenMarker extends TokenMarker {
         return tokenExamples;
     }
 
+    @Override
     public byte markTokensImpl(byte token, Segment line, int lineIndex) {
-        char[] array = line.array;
-        int offset = line.offset;
-        lastOffset = offset;
-        lastKeyword = offset;
-        int length = line.count + offset;
+        int startOffset = line.offset;
+        lastOffset = startOffset;
+        lastKeyword = startOffset;
+        int endOffset = startOffset + line.count;
         boolean backslash = false;
         boolean validLabelPosition = true;
 
         loop:
-        for (int i = offset; i < length; i++) {
-            int i1 = (i + 1);
-
-            char c = array[i];
+        for (int offset = startOffset; offset < endOffset; offset++) {
+            char c = line.array[offset];
             if (validLabelPosition && !Character.isWhitespace(c)) {
                 validLabelPosition = false;
             }
@@ -105,25 +100,25 @@ public class MIPSTokenMarker extends TokenMarker {
                 case Token.NULL -> {
                     switch (c) {
                         case '"' -> {
-                            doKeyword(line, i);
+                            doKeyword(line, offset);
                             if (backslash) {
                                 backslash = false;
                             }
                             else {
-                                addToken(i - lastOffset, token);
+                                addToken(offset - lastOffset, token);
                                 token = Token.LITERAL1;
-                                lastOffset = lastKeyword = i;
+                                lastOffset = lastKeyword = offset;
                             }
                         }
                         case '\'' -> {
-                            doKeyword(line, i);
+                            doKeyword(line, offset);
                             if (backslash) {
                                 backslash = false;
                             }
                             else {
-                                addToken(i - lastOffset, token);
+                                addToken(offset - lastOffset, token);
                                 token = Token.LITERAL2;
-                                lastOffset = lastKeyword = i;
+                                lastOffset = lastKeyword = offset;
                             }
                         }
                         case ':' -> {
@@ -137,23 +132,23 @@ public class MIPSTokenMarker extends TokenMarker {
                             backslash = false;
                             boolean validIdentifier;
                             try {
-                                validIdentifier = TokenType.isValidIdentifier(new String(array, lastOffset, i1 - lastOffset - 1).trim());
+                                validIdentifier = TokenType.isValidIdentifier(new String(line.array, lastOffset, offset - lastOffset).trim());
                             }
                             catch (StringIndexOutOfBoundsException e) {
                                 validIdentifier = false;
                             }
                             if (validIdentifier && lastToken == null) {
-                                addToken(i1 - lastOffset, Token.LABEL);
-                                lastOffset = lastKeyword = i1;
+                                addToken(offset - lastOffset + 1, Token.LABEL);
+                                lastOffset = lastKeyword = offset + 1;
                             }
                         }
                         case '#' -> {
                             backslash = false;
-                            doKeyword(line, i);
-                            if (length - i >= 1) {
-                                addToken(i - lastOffset, token);
-                                addToken(length - i, Token.COMMENT1);
-                                lastOffset = lastKeyword = length;
+                            doKeyword(line, offset);
+                            if (endOffset - offset >= 1) {
+                                addToken(offset - lastOffset, token);
+                                addToken(endOffset - offset, Token.COMMENT1);
+                                lastOffset = lastKeyword = endOffset;
                                 break loop;
                             }
                         }
@@ -161,7 +156,7 @@ public class MIPSTokenMarker extends TokenMarker {
                             backslash = false;
                             // . and $ added 4/6/10 DPS; % added 12/12 M.Sekhavat
                             if (!Character.isLetterOrDigit(c) && c != '_' && c != '.' && c != '$' && c != '%') {
-                                doKeyword(line, i);
+                                doKeyword(line, offset);
                             }
                         }
                     }
@@ -171,9 +166,9 @@ public class MIPSTokenMarker extends TokenMarker {
                         backslash = false;
                     }
                     else if (c == '"') {
-                        addToken(i1 - lastOffset, token);
+                        addToken(offset - lastOffset + 1, token);
                         token = Token.NULL;
-                        lastOffset = lastKeyword = i1;
+                        lastOffset = lastKeyword = offset + 1;
                     }
                 }
                 case Token.LITERAL2 -> {
@@ -181,9 +176,9 @@ public class MIPSTokenMarker extends TokenMarker {
                         backslash = false;
                     }
                     else if (c == '\'') {
-                        addToken(i1 - lastOffset, Token.LITERAL1);
+                        addToken(offset - lastOffset + 1, Token.LITERAL1);
                         token = Token.NULL;
-                        lastOffset = lastKeyword = i1;
+                        lastOffset = lastKeyword = offset + 1;
                     }
                 }
                 default -> {
@@ -193,22 +188,22 @@ public class MIPSTokenMarker extends TokenMarker {
         }
 
         if (token == Token.NULL) {
-            doKeyword(line, length);
+            doKeyword(line, endOffset);
         }
 
         switch (token) {
             case Token.LITERAL1, Token.LITERAL2 -> {
-                addToken(length - lastOffset, Token.INVALID);
+                addToken(endOffset - lastOffset, Token.INVALID);
                 token = Token.NULL;
             }
             case Token.KEYWORD2 -> {
-                addToken(length - lastOffset, token);
+                addToken(endOffset - lastOffset, token);
                 if (!backslash) {
                     token = Token.NULL;
                 }
             }
             default -> {
-                addToken(length - lastOffset, token);
+                addToken(endOffset - lastOffset, token);
             }
         }
 
@@ -223,6 +218,7 @@ public class MIPSTokenMarker extends TokenMarker {
      * @param tokenText the source String that matched to the token
      * @return ArrayList of PopupHelpItem objects, one per match.
      */
+    @Override
     public ArrayList<PopupHelpItem> getTokenExactMatchHelp(Token token, String tokenText) {
         ArrayList<PopupHelpItem> helpItems = null;
         if (token != null && token.id == Token.KEYWORD1) {
@@ -261,7 +257,7 @@ public class MIPSTokenMarker extends TokenMarker {
      * @param tokenText the source String that matched to the token in previous parameter
      * @return ArrayList of PopupHelpItem objects, one per match.
      */
-
+    @Override
     public ArrayList<PopupHelpItem> getTokenPrefixMatchHelp(String line, Token tokenList, Token token, String tokenText) {
         // CASE:  Unlikely boundary case...
         if (tokenList == null || tokenList.id == Token.END) {
@@ -449,35 +445,36 @@ public class MIPSTokenMarker extends TokenMarker {
      * @return KeywordMap where key is the keyword and associated value is the token type (e.g. Token.KEYWORD1).
      */
     public static KeywordMap getKeywords() {
-        if (cKeywords == null) {
-            cKeywords = new KeywordMap(false);
+        if (keywords == null) {
+            keywords = new KeywordMap(false);
             // Add instruction mnemonics
             for (Instruction instruction : Application.instructionSet.getAllInstructions()) {
-                cKeywords.add(instruction.getMnemonic(), Token.KEYWORD1);
+                keywords.add(instruction.getMnemonic(), Token.KEYWORD1);
             }
-            // add assembler directives
+            // Add assembler directives
             for (Directive directive : Directive.values()) {
-                cKeywords.add(directive.getName(), Token.KEYWORD2);
+                keywords.add(directive.getName(), Token.KEYWORD2);
             }
-            // add integer register file
+            // Add integer register file
             for (Register register : RegisterFile.getRegisters()) {
-                cKeywords.add(register.getName(), Token.KEYWORD3);
-                cKeywords.add("$" + register.getNumber(), Token.KEYWORD3);  // also recognize $0, $1, $2, etc
+                keywords.add(register.getName(), Token.KEYWORD3);
+                // Also recognize $0, $1, $2, etc.
+                keywords.add("$" + register.getNumber(), Token.KEYWORD3);
             }
-            // add Coprocessor 1 (floating point) register file
+            // Add Coprocessor 1 (floating point) register file
             for (Register register : Coprocessor1.getRegisters()) {
-                cKeywords.add(register.getName(), Token.KEYWORD3);
+                keywords.add(register.getName(), Token.KEYWORD3);
             }
             // Note: Coprocessor 0 registers referenced only by number: $8, $12, $13, $14. These are already in the map
         }
-        return cKeywords;
+        return keywords;
     }
 
     private void doKeyword(Segment line, int i) {
         int i1 = i + 1;
 
         int len = i - lastKeyword;
-        byte id = keywords.lookup(line, lastKeyword, len);
+        byte id = getKeywords().lookup(line, lastKeyword, len);
         if (id != Token.NULL) {
             if (lastKeyword != lastOffset) {
                 addToken(lastKeyword - lastOffset, Token.NULL);

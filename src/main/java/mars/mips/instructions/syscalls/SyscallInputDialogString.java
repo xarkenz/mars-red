@@ -50,6 +50,7 @@ public class SyscallInputDialogString extends AbstractSyscall {
     /**
      * System call to input data.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         // Input arguments:
         //    $a0 = address of null-terminated string that is the message to user
@@ -67,8 +68,8 @@ public class SyscallInputDialogString extends AbstractSyscall {
             // Read a null-terminated string from memory
             message = Application.memory.getNullTerminatedString(RegisterFile.getValue(4));
         }
-        catch (AddressErrorException e) {
-            throw new ProcessingException(statement, e);
+        catch (AddressErrorException exception) {
+            throw new ProcessingException(statement, exception);
         }
 
         // Values returned by Java's InputDialog:
@@ -91,8 +92,8 @@ public class SyscallInputDialogString extends AbstractSyscall {
 
                 // The buffer will contain characters, a '\n' character, and the null character
                 // Copy the input data to buffer as space permits
-                for (int index = 0; index < inputString.length() && index < maxLength - 1; index++) {
-                    Application.memory.setByte(byteAddress + index, inputString.charAt(index));
+                for (int offset = 0; offset < inputString.length() && offset < maxLength - 1; offset++) {
+                    Application.memory.setByte(byteAddress + offset, inputString.charAt(offset));
                 }
                 if (inputString.length() < maxLength - 1) {
                     // newline at string end

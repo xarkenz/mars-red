@@ -53,6 +53,7 @@ public class SyscallRandDouble extends AbstractSyscall {
      * Return in $f0 the next pseudorandom, uniformly distributed double value between 0.0 and 1.0
      * from this random number generator's sequence.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         // Input arguments: $a0 = index of pseudorandom number generator
         // Return: $f0 = the next pseudorandom, uniformly distributed double value between 0.0 and 1.0
@@ -64,7 +65,7 @@ public class SyscallRandDouble extends AbstractSyscall {
         try {
             Coprocessor1.setRegisterPairToDouble(0, stream.nextDouble());
         }
-        catch (InvalidRegisterAccessException e) {
+        catch (InvalidRegisterAccessException exception) {
             // This should not occur because $f0 is always a valid double target
             throw new ProcessingException(statement, "Internal error storing double to register (syscall " + this.getNumber() + ")", Exceptions.SYSCALL_EXCEPTION);
         }

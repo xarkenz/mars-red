@@ -1,8 +1,6 @@
 package mars.mips.instructions.syscalls;
 
 import javax.sound.midi.*;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -117,18 +115,18 @@ public class Tone implements Runnable {
      * cause other, less severe, problems), so that case should be
      * double covered.
      */
-    private static final Lock openLock = new ReentrantLock();
+    private static final Lock MIDI_PLAYER_LOCK = new ReentrantLock();
 
     private void playTone() {
         try {
             Sequencer player;
-            openLock.lock();
+            MIDI_PLAYER_LOCK.lock();
             try {
                 player = MidiSystem.getSequencer();
                 player.open();
             }
             finally {
-                openLock.unlock();
+                MIDI_PLAYER_LOCK.unlock();
             }
 
             Sequence sequence = new Sequence(Sequence.PPQ, 1);
@@ -153,13 +151,6 @@ public class Tone implements Runnable {
 
             player.setSequence(sequence);
 
-            /* The EndOfTrackListener was added 2009-10-19 by Max
-             * Hailperin <max@gustavus.edu> so that its
-             * awaitEndOfTrack method could be used as a more reliable
-             * replacement for Thread.sleep.  (Given that the tone
-             * might not start playing right away, the sleep could end
-             * before the tone, clipping off the end of the tone.)
-             */
             EndOfTrackListener listener = new EndOfTrackListener();
             player.addMetaEventListener(listener);
 
@@ -168,14 +159,42 @@ public class Tone implements Runnable {
             try {
                 listener.awaitEndOfTrack();
             }
-            catch (InterruptedException ignored) {
+            catch (InterruptedException exception) {
+                // Ignored
             }
             finally {
                 player.close();
             }
         }
-        catch (MidiUnavailableException | InvalidMidiDataException e) {
-            e.printStackTrace();
+        catch (MidiUnavailableException | InvalidMidiDataException exception) {
+            exception.printStackTrace();
+        }
+    }
+
+    /*
+     * The EndOfTrackListener was added 2009-10-19 by Max
+     * Hailperin <max@gustavus.edu> so that its
+     * awaitEndOfTrack method could be used as a more reliable
+     * replacement for Thread.sleep.  (Given that the tone
+     * might not start playing right away, the sleep could end
+     * before the tone, clipping off the end of the tone.)
+     */
+    private static class EndOfTrackListener implements MetaEventListener {
+        private boolean endedYet = false;
+
+        @Override
+        public synchronized void meta(MetaMessage message) {
+            if (message.getType() == 0x2F) {
+                // Meta message type 0x2F indicates "end_of_track"
+                endedYet = true;
+                notifyAll();
+            }
+        }
+
+        public synchronized void awaitEndOfTrack() throws InterruptedException {
+            while (!endedYet) {
+                wait();
+            }
         }
     }
 }

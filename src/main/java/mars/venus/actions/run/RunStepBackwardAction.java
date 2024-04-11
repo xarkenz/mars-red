@@ -5,7 +5,7 @@ import mars.mips.hardware.Coprocessor0;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
-import mars.venus.ExecutePane;
+import mars.venus.execute.ExecutePane;
 import mars.venus.FileStatus;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
@@ -44,8 +44,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * Action for the Run -> Backstep menu item
  */
-public class RunBackstepAction extends VenusAction {
-    public RunBackstepAction(String name, Icon icon, String description, Integer mnemonic, KeyStroke accel, VenusUI gui) {
+public class RunStepBackwardAction extends VenusAction {
+    public RunStepBackwardAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 

@@ -7,7 +7,6 @@ import mars.mips.instructions.BasicInstruction;
 import mars.mips.instructions.ExtendedInstruction;
 import mars.mips.instructions.Instruction;
 import mars.util.Binary;
-import mars.simulator.SystemIO;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -163,7 +162,7 @@ public class Assembler {
         externAddress = Memory.externBaseAddress;
         currentFileDataSegmentForwardReferences = new DataSegmentForwardReferences();
         accumulatedDataSegmentForwardReferences = new DataSegmentForwardReferences();
-        Application.symbolTable.clear();
+        Application.globalSymbolTable.clear();
         Application.memory.clear();
         this.machineList = new ArrayList<>();
         this.errors = new ErrorList();
@@ -235,7 +234,7 @@ public class Assembler {
         // Have processed all source files. Attempt to resolve any remaining forward label
         // references from global symbol table. Those that remain unresolved are undefined
         // and require error message.
-        accumulatedDataSegmentForwardReferences.resolve(Application.symbolTable);
+        accumulatedDataSegmentForwardReferences.resolve(Application.globalSymbolTable);
         accumulatedDataSegmentForwardReferences.generateErrorMessages(errors);
 
         // Throw collection of errors accumulated through the first pass.
@@ -353,9 +352,6 @@ public class Assembler {
                 errors.add(new ErrorMessage(t.getSourceMIPSprogram(), t.getSourceLine(), t.getStartPos(), "Invalid address for text segment: " + e.getAddress()));
             }
         }
-        // Aug. 24, 2005 Ken Vollmar
-        // Ensure that I/O "file descriptors" are initialized for a new program run
-        SystemIO.resetFiles();
         // DPS 6 Dec 2006:
         // We will now sort the ArrayList of ProgramStatements by getAddress() value.
         // This is for display purposes, since they have already been stored to Memory.
@@ -368,11 +364,11 @@ public class Assembler {
         // but in case of duplicate I like having both statements handy for error message.
         this.machineList.sort(new ProgramStatementComparator());
         catchDuplicateAddresses(this.machineList, errors);
-        if (errors.errorsOccurred() || errors.warningsOccurred() && warningsAreErrors) {
+        if (errors.errorsOccurred() || (errors.warningsOccurred() && warningsAreErrors)) {
             throw new ProcessingException(errors);
         }
         return this.machineList;
-    } // assemble()
+    }
 
     // //////////////////////////////////////////////////////////////////////
     // Will check for duplicate text addresses, which can happen inadvertently when using
@@ -742,8 +738,8 @@ public class Assembler {
             }
             int size = Binary.stringToInt(tokens.get(2).getValue());
             // If label already in global symtab, do nothing. If not, add it right now.
-            if (Application.symbolTable.getAddress(tokens.get(1).getValue()) == SymbolTable.NOT_FOUND) {
-                Application.symbolTable.addSymbol(tokens.get(1), this.externAddress, Symbol.DATA_SYMBOL, errors);
+            if (Application.globalSymbolTable.getAddress(tokens.get(1).getValue()) == SymbolTable.NOT_FOUND) {
+                Application.globalSymbolTable.addSymbol(tokens.get(1), this.externAddress, Symbol.DATA_SYMBOL, errors);
                 this.externAddress += size;
             }
         }
@@ -785,12 +781,12 @@ public class Assembler {
                 errors.add(new ErrorMessage(fileCurrentlyBeingAssembled, label.getSourceLine(), label.getStartPos(), "\"" + label.getValue() + "\" declared global label but not defined."));
             }
             else {
-                if (Application.symbolTable.getAddress(label.getValue()) != SymbolTable.NOT_FOUND) {
+                if (Application.globalSymbolTable.getAddress(label.getValue()) != SymbolTable.NOT_FOUND) {
                     errors.add(new ErrorMessage(fileCurrentlyBeingAssembled, label.getSourceLine(), label.getStartPos(), "\"" + label.getValue() + "\" already defined as global in a different file."));
                 }
                 else {
                     fileCurrentlyBeingAssembled.getLocalSymbolTable().removeSymbol(label.getValue());
-                    Application.symbolTable.addSymbol(label, symtabEntry.getAddress(), symtabEntry.isData(), errors);
+                    Application.globalSymbolTable.addSymbol(label, symtabEntry.getAddress(), symtabEntry.isData(), errors);
                 }
             }
         }

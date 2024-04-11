@@ -149,7 +149,7 @@ public class Application {
     /**
      * Symbol table for file currently being assembled.
      */
-    public static SymbolTable symbolTable;
+    public static SymbolTable globalSymbolTable;
     /**
      * Simulated MIPS memory component.
      */
@@ -175,7 +175,7 @@ public class Application {
             memory = Memory.getInstance();  // clients can use Memory.getInstance instead of Globals.memory
             instructionSet = new InstructionSet();
             instructionSet.populate();
-            symbolTable = new SymbolTable("<global>");
+            globalSymbolTable = new SymbolTable("<global>");
             settings = new Settings();
             initialized = true;
             debug = false;

@@ -4,7 +4,7 @@ import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.RegisterFile;
 import mars.simulator.Exceptions;
-import mars.simulator.SystemIO;
+import mars.simulator.Simulator;
 
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
@@ -47,16 +47,16 @@ public class SyscallReadChar extends AbstractSyscall {
     }
 
     /**
-     * Performs syscall function to read a character from input console into $v0
+     * Performs syscall function to read a character from input console into $v0.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         try {
-            int value = SystemIO.readChar(this.getNumber());
+            int charValue = Simulator.getInstance().getSystemIO().readChar();
             // DPS 20 June 2008: changed from 4 ($a0) to 2 ($v0)
-            RegisterFile.updateRegister(2, value);
+            RegisterFile.updateRegister(2, charValue);
         }
-        catch (IndexOutOfBoundsException e) // means null input
-        {
+        catch (IndexOutOfBoundsException exception) {
             throw new ProcessingException(statement, "invalid char input (syscall " + this.getNumber() + ")", Exceptions.SYSCALL_EXCEPTION);
         }
     }

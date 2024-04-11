@@ -4,6 +4,7 @@ import mars.Application;
 import mars.settings.Settings;
 import mars.venus.*;
 import mars.venus.actions.VenusAction;
+import mars.venus.execute.ExecutePane;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;

@@ -9,6 +9,8 @@
 
 package mars.venus.editors.jeditsyntax;
 
+import mars.util.Binary;
+
 import java.awt.*;
 
 /**
@@ -47,8 +49,8 @@ public class SyntaxStyle {
     }
 
     /**
-     * Returns the color coded as Stringified 32-bit hex with
-     * Red in bits 16-23, Green in bits 8-15, Blue in bits 0-7
+     * Returns the color coded as stringified 32-bit hex with
+     * red in bits 16-23, green in bits 8-15, blue in bits 0-7
      * e.g. "0x00FF3366" where Red is FF, Green is 33, Blue is 66.
      * This is used by Settings initialization to avoid direct
      * use of Color class.  Long story. DPS 13-May-2010
@@ -56,7 +58,7 @@ public class SyntaxStyle {
      * @return String containing hex-coded color value.
      */
     public String getColorAsHexString() {
-        return mars.util.Binary.intToHexString(color.getRed() << 16 | color.getGreen() << 8 | color.getBlue());
+        return Binary.intToHexString(color.getRed() << 16 | color.getGreen() << 8 | color.getBlue());
     }
 
     /**
@@ -86,7 +88,7 @@ public class SyntaxStyle {
      */
     public Font getStyledFont(Font font) {
         if (font == null) {
-            throw new NullPointerException("font param must not" + " be null");
+            throw new NullPointerException("font param must not be null");
         }
         if (font.equals(lastFont)) {
             return lastStyledFont;
@@ -101,7 +103,7 @@ public class SyntaxStyle {
      */
     public FontMetrics getFontMetrics(Font font) {
         if (font == null) {
-            throw new NullPointerException("font param must not" + " be null");
+            throw new NullPointerException("font param must not be null");
         }
         if (font.equals(lastFont) && fontMetrics != null) {
             return fontMetrics;

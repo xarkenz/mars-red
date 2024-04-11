@@ -48,6 +48,7 @@ public class SyscallRandSeed extends AbstractSyscall {
     /**
      * Set the seed of the underlying Java pseudorandom number generator.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         // Arguments:
         //   $a0 = index of pseudorandom number generator

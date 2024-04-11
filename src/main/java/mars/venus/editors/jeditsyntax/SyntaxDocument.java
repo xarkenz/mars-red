@@ -40,11 +40,11 @@ public class SyntaxDocument extends PlainDocument {
      * this document up into tokens. May throw an exception if
      * this is not supported for this type of document.
      *
-     * @param tm The new token marker
+     * @param marker The new token marker
      */
-    public void setTokenMarker(TokenMarker tm) {
-        tokenMarker = tm;
-		if (tm == null) {
+    public void setTokenMarker(TokenMarker marker) {
+        tokenMarker = marker;
+		if (marker == null) {
 			return;
 		}
         tokenMarker.insertLines(0, getDefaultRootElement().getElementCount());
@@ -52,7 +52,7 @@ public class SyntaxDocument extends PlainDocument {
     }
 
     /**
-     * Reparses the document, by passing all lines to the token
+     * Parses the document by passing all lines to the token
      * marker. This should be called after the document is first
      * loaded.
      */
@@ -61,14 +61,14 @@ public class SyntaxDocument extends PlainDocument {
     }
 
     /**
-     * Reparses the document, by passing the specified lines to the
+     * Parses the document by passing the specified lines to the
      * token marker. This should be called after a large quantity of
      * text is first inserted.
      *
      * @param start The first line to parse
-     * @param len   The number of lines, after the first one to parse
+     * @param count The number of lines, after the first one to parse
      */
-    public void tokenizeLines(int start, int len) {
+    public void tokenizeLines(int start, int count) {
 		if (tokenMarker == null || !tokenMarker.supportsMultilineTokens()) {
 			return;
 		}
@@ -76,14 +76,14 @@ public class SyntaxDocument extends PlainDocument {
         Segment lineSegment = new Segment();
         Element map = getDefaultRootElement();
 
-        len += start;
+        count += start;
 
         try {
-            for (int i = start; i < len; i++) {
-                Element lineElement = map.getElement(i);
+            for (int index = start; index < count; index++) {
+                Element lineElement = map.getElement(index);
                 int lineStart = lineElement.getStartOffset();
                 getText(lineStart, lineElement.getEndOffset() - lineStart - 1, lineSegment);
-                tokenMarker.markTokens(lineSegment, i);
+                tokenMarker.markTokens(lineSegment, index);
             }
         }
         catch (BadLocationException bl) {

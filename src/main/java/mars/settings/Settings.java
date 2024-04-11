@@ -291,7 +291,7 @@ public class Settings extends Observable {
     /**
      * State for sorting label window display.
      */
-    public final IntegerSetting labelSortState = new IntegerSetting(
+    public final IntegerSetting symbolTableSortState = new IntegerSetting(
         this,
         "LabelSortState",
         0,
@@ -325,8 +325,7 @@ public class Settings extends Observable {
         false
     );
 
-    public final IntegerSetting[] integerSettings = {
-        labelSortState,
+    public final IntegerSetting[] integerSettings = {symbolTableSortState,
         caretBlinkRate,
         editorTabSize,
         editorPopupPrefixLength,

@@ -39,7 +39,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Mars will detect a qualifying syscall upon startup, create an instance
  * using its no-argument constructor and add it to its syscall list.
  * When its service is invoked at runtime ("syscall" instruction
- * with its service number stored in register $v0), its simulate()
+ * with its service number stored in register $v0), its {@link #simulate(ProgramStatement)}
  * method will be invoked.
  */
 public abstract class AbstractSyscall implements Syscall {
@@ -64,6 +64,7 @@ public abstract class AbstractSyscall implements Syscall {
      *
      * @return service name as a string
      */
+    @Override
     public String getName() {
         return serviceName;
     }
@@ -72,10 +73,11 @@ public abstract class AbstractSyscall implements Syscall {
      * Set the service number.  This is provided to allow MARS implementer or user
      * to override the default service number.
      *
-     * @param num specified service number to override the default.
+     * @param number specified service number to override the default.
      */
-    public void setNumber(int num) {
-        serviceNumber = num;
+    @Override
+    public void setNumber(int number) {
+        serviceNumber = number;
     }
 
     /**
@@ -84,6 +86,7 @@ public abstract class AbstractSyscall implements Syscall {
      *
      * @return assigned service number
      */
+    @Override
     public int getNumber() {
         return serviceNumber;
     }
@@ -94,5 +97,6 @@ public abstract class AbstractSyscall implements Syscall {
      *
      * @param statement ProgramStatement object for this syscall instruction.
      */
+    @Override
     public abstract void simulate(ProgramStatement statement) throws ProcessingException;
 }

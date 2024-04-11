@@ -17,7 +17,7 @@ import java.util.ArrayList;
 /**
  * A token marker that splits lines of text into tokens. Each token carries
  * a length field and an identification tag that can be mapped to a color
- * for painting that token.<p>
+ * for painting that token.
  * <p>
  * For performance reasons, the linked list of tokens is reused after each
  * line is tokenized. Therefore, the return value of <code>markTokens</code>
@@ -30,11 +30,11 @@ import java.util.ArrayList;
  */
 public abstract class TokenMarker {
     /**
-     * A wrapper for the lower-level <code>markTokensImpl</code> method
+     * A wrapper for the lower-level {@link #markTokensImpl(byte, Segment, int)} method
      * that is called to split a line up into tokens.
      *
      * @param line      The line
-     * @param lineIndex The line number
+     * @param lineIndex The index of the line
      */
     public Token markTokens(Segment line, int lineIndex) {
         if (lineIndex >= length) {
@@ -77,7 +77,7 @@ public abstract class TokenMarker {
          * area's painter cached token list). What scrollTo() does next is
          * irrelevant.
          *
-         * After scrollTo() has done it's job, repaint() is called, and
+         * After scrollTo() has done its job, repaint() is called, and
          * eventually we end up in paintLine(), whose job is to paint the
          * changed line. It, too, calls markTokens().
          *
@@ -104,11 +104,11 @@ public abstract class TokenMarker {
 
     /**
      * An abstract method that splits a line up into tokens. It
-     * should parse the line, and call <code>addToken()</code> to
+     * should parse the line, and call {@link #addToken(int, byte)} to
      * add syntax tokens to the token list. Then, it should return
-     * the initial token type for the next line.<p>
+     * the initial token type for the next line.
      * <p>
-     * For example if the current line contains the start of a
+     * For example, if the current line contains the start of a
      * multiline comment that doesn't end on that line, this method
      * should return the comment token type so that it continues on
      * the next line.
@@ -124,7 +124,7 @@ public abstract class TokenMarker {
      * Returns if the token marker supports tokens that span multiple
      * lines. If this is true, the object using this token marker is
      * required to pass all lines in the document to the
-     * <code>markTokens()</code> method (in turn).<p>
+     * {@link #markTokens(Segment, int)} method (in turn).
      * <p>
      * The default implementation returns true; it should be overridden
      * to return false on simpler token markers for increased speed.
@@ -135,7 +135,7 @@ public abstract class TokenMarker {
 
     /**
      * Informs the token marker that lines have been inserted into
-     * the document. This inserts a gap in the <code>lineInfo</code>
+     * the document. This inserts a gap in the {@link #lineInfo}
      * array.
      *
      * @param index The first line number
@@ -158,7 +158,7 @@ public abstract class TokenMarker {
     /**
      * Informs the token marker that line have been deleted from
      * the document. This removes the lines in question from the
-     * <code>lineInfo</code> array.
+     * {@link #lineInfo} array.
      *
      * @param index The first line number
      * @param lines The number of lines
@@ -217,11 +217,9 @@ public abstract class TokenMarker {
         return null;
     }
 
-    // protected members
-
     /**
      * The first token in the list. This should be used as the return
-     * value from <code>markTokens()</code>.
+     * value from {@link #markTokens(Segment, int)}.
      */
     protected Token firstToken;
 
@@ -233,14 +231,14 @@ public abstract class TokenMarker {
 
     /**
      * An array for storing information about lines. It is enlarged and
-     * shrunk automatically by the <code>insertLines()</code> and
-     * <code>deleteLines()</code> methods.
+     * shrunk automatically by the {@link #insertLines(int, int)} and
+     * {@link #deleteLines(int, int)} methods.
      */
     protected LineInfo[] lineInfo;
 
     /**
      * The number of lines in the model being tokenized. This can be
-     * less than the length of the <code>lineInfo</code> array.
+     * less than the length of the {@link #lineInfo} array.
      */
     protected int length;
 
@@ -255,8 +253,8 @@ public abstract class TokenMarker {
     protected boolean nextLineRequested;
 
     /**
-     * Creates a new <code>TokenMarker</code>. This DOES NOT create
-     * a lineInfo array; an initial call to <code>insertLines()</code>
+     * Creates a new {@code TokenMarker}. This DOES NOT create
+     * a {@link #lineInfo} array; an initial call to {@link #insertLines(int, int)}
      * does that.
      */
     protected TokenMarker() {
@@ -264,12 +262,12 @@ public abstract class TokenMarker {
     }
 
     /**
-     * Ensures that the <code>lineInfo</code> array can contain the
+     * Ensures that the {@link #lineInfo} array can contain the
      * specified index. This enlarges it if necessary. No action is
-     * taken if the array is large enough already.<p>
+     * taken if the array is large enough already.
      * <p>
      * It should be unnecessary to call this under normal
-     * circumstances; <code>insertLine()</code> should take care of
+     * circumstances; {@link #insertLines(int, int)} should take care of
      * enlarging the line info array automatically.
      *
      * @param index The array index
@@ -325,7 +323,7 @@ public abstract class TokenMarker {
      */
     public static class LineInfo {
         /**
-         * Creates a new LineInfo object with token = Token.NULL
+         * Creates a new LineInfo object with token = {@link Token#NULL}
          * and obj = null.
          */
         public LineInfo() {

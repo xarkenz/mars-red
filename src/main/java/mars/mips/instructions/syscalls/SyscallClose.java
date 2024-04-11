@@ -3,6 +3,7 @@ package mars.mips.instructions.syscalls;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.RegisterFile;
+import mars.simulator.Simulator;
 import mars.simulator.SystemIO;
 
 /*
@@ -48,9 +49,10 @@ public class SyscallClose extends AbstractSyscall {
     /**
      * Performs syscall function to close file descriptor given in $a0.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
-        int fd = RegisterFile.getValue(4); // $a0: file descriptor
+        int descriptor = RegisterFile.getValue(4); // $a0: file descriptor
 
-        SystemIO.closeFile(fd);
+        Simulator.getInstance().getSystemIO().closeFile(descriptor);
     }
 }

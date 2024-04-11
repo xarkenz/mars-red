@@ -1,6 +1,7 @@
-package mars.venus;
+package mars.venus.execute;
 
 import mars.Application;
+import mars.venus.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -44,7 +45,7 @@ public class ExecutePane extends JDesktopPane {
     private final Coprocessor0Window coprocessor0Values;
     private final DataSegmentWindow dataSegment;
     private final TextSegmentWindow textSegment;
-    private final LabelsWindow labelValues;
+    private final SymbolTableWindow labelValues;
     private final VenusUI mainUI;
     private final NumberDisplayBaseChooser valueDisplayBase;
     private final NumberDisplayBaseChooser addressDisplayBase;
@@ -72,7 +73,7 @@ public class ExecutePane extends JDesktopPane {
         coprocessor0Values = cop0Regs;
         textSegment = new TextSegmentWindow();
         dataSegment = new DataSegmentWindow(choosers);
-        labelValues = new LabelsWindow();
+        labelValues = new SymbolTableWindow();
         labelWindowVisible = Application.getSettings().labelWindowVisible.get();
         this.add(textSegment);  // these 3 LOC moved up.  DPS 3-Sept-2014
         this.add(dataSegment);
@@ -123,7 +124,7 @@ public class ExecutePane extends JDesktopPane {
      *
      * @param visibility set to true or false
      */
-    public void setLabelWindowVisibility(boolean visibility) {
+    public void setSymbolTableWindowVisibility(boolean visibility) {
         if (!visibility && labelWindowVisible) {
             labelWindowVisible = false;
             textSegment.setVisible(false);
@@ -197,7 +198,7 @@ public class ExecutePane extends JDesktopPane {
     /**
      * Access the label values window.
      */
-    public LabelsWindow getLabelsWindow() {
+    public SymbolTableWindow getLabelsWindow() {
         return labelValues;
     }
 

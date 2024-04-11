@@ -5,6 +5,8 @@ import mars.ProgramStatement;
 import mars.mips.hardware.RegisterFile;
 import mars.util.Binary;
 
+import java.util.Date;
+
 /*
 Copyright (c) 2003-2007,  Pete Sanderson and Kenneth Vollmar
 
@@ -49,8 +51,9 @@ public class SyscallTime extends AbstractSyscall {
      * Performs syscall function to place current system time into $a0 (low order 32 bits)
      * and $a1 (high order 32 bits).
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
-        long value = new java.util.Date().getTime();
+        long value = new Date().getTime();
         RegisterFile.updateRegister(4, Binary.lowOrderLongToInt(value)); // $a0
         RegisterFile.updateRegister(5, Binary.highOrderLongToInt(value)); // $a1
     }

@@ -104,16 +104,16 @@ public class Editor {
      * Set name of current directory for Open operation.  The contents of this directory will
      * be displayed when Open dialog is launched.
      *
-     * @param currentOpenDirectory String containing pathname for current Open directory. If
-     *                             it does not exist or is not a directory, the default (MARS launch directory) will be used.
+     * @param directory String containing pathname for current Open directory. If
+     *                  it does not exist or is not a directory, the default (MARS launch directory) will be used.
      */
-    void setCurrentOpenDirectory(String currentOpenDirectory) {
-        File file = new File(currentOpenDirectory);
+    public void setCurrentOpenDirectory(String directory) {
+        File file = new File(directory);
         if (!file.exists() || !file.isDirectory()) {
             this.currentOpenDirectory = defaultOpenDirectory;
         }
         else {
-            this.currentOpenDirectory = currentOpenDirectory;
+            this.currentOpenDirectory = directory;
         }
     }
 

@@ -49,6 +49,7 @@ public class SyscallSbrk extends AbstractSyscall {
     /**
      * Performs syscall function to allocate amount of heap memory specified in $a0, putting address into $v0.
      */
+    @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         int numBytes = RegisterFile.getValue(4); // $a0: number of bytes to allocate
 
@@ -56,8 +57,8 @@ public class SyscallSbrk extends AbstractSyscall {
             int address = Application.memory.allocateBytesFromHeap(numBytes);
             RegisterFile.updateRegister(2, address); // Put address into $v0
         }
-        catch (IllegalArgumentException e) {
-            throw new ProcessingException(statement, e.getMessage() + " (syscall " + this.getNumber() + ")", Exceptions.SYSCALL_EXCEPTION);
+        catch (IllegalArgumentException exception) {
+            throw new ProcessingException(statement, exception.getMessage() + " (syscall " + this.getNumber() + ")", Exceptions.SYSCALL_EXCEPTION);
         }
     }
 }

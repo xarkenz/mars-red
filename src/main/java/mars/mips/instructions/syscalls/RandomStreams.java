@@ -34,27 +34,27 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * This small class serves only to hold a static HashMap for storing
  * random number generators for use by all the random number generator
- * syscalls.
+ * services.
  */
 public class RandomStreams {
     /**
      * Collection of pseudorandom number streams available for use in the random syscalls.
      * The streams are by default not seeded.
      */
-    public static final HashMap<Integer, Random> randomStreams = new HashMap<>();
+    public static final HashMap<Integer, Random> RANDOM_STREAMS = new HashMap<>();
 
     /**
      * Get the pseudorandom number stream corresponding to the given index.
      * A new stream is created and returned if no stream currently exists for the index.
      *
-     * @param index The index used to access the {@link #randomStreams} map.
+     * @param index The index used to access the {@link #RANDOM_STREAMS} map.
      * @return Random stream for the index.
      */
     public static Random getStream(int index) {
-        Random stream = randomStreams.get(index);
+        Random stream = RANDOM_STREAMS.get(index);
         if (stream == null) {
             stream = new Random(); // create a non-seeded stream
-            randomStreams.put(index, stream);
+            RANDOM_STREAMS.put(index, stream);
         }
         return stream;
     }
@@ -63,13 +63,13 @@ public class RandomStreams {
      * Set the seed of the pseudorandom number stream corresponding to the given index.
      * A new stream is created with the seed if no stream currently exists for the index.
      *
-     * @param index The index used to access the {@link #randomStreams} map.
+     * @param index The index used to access the {@link #RANDOM_STREAMS} map.
      * @param seed The value to seed the random stream with.
      */
     public static void setStreamSeed(int index, long seed) {
-        Random stream = randomStreams.get(index);
+        Random stream = RANDOM_STREAMS.get(index);
         if (stream == null) {
-            randomStreams.put(index, new Random(seed));
+            RANDOM_STREAMS.put(index, new Random(seed));
         }
         else {
             stream.setSeed(seed);

@@ -15,7 +15,7 @@ import mars.venus.editors.jeditsyntax.tokenmarker.Token;
 import javax.swing.text.Segment;
 
 /**
- * A <code>KeywordMap</code> is similar to a hashtable in that it maps keys
+ * A {@code KeywordMap} is similar to a hashtable in that it maps keys
  * to values. However, the `keys' are Swing {@link Segment}s. This allows lookups of
  * text substrings without the overhead of creating a new string object.
  * <p>
@@ -26,7 +26,7 @@ import javax.swing.text.Segment;
  * @version $Id: KeywordMap.java,v 1.16 1999/12/13 03:40:30 sp Exp $
  */
 public class KeywordMap {
-    private final KeywordNode[] map;
+    private final KeywordNode[] buckets;
     private boolean ignoreCase;
 
     /**
@@ -36,20 +36,18 @@ public class KeywordMap {
      */
     public KeywordMap(boolean ignoreCase) {
         this(ignoreCase, 52);
-        this.ignoreCase = ignoreCase;
     }
 
     /**
-     * Creates a new <code>KeywordMap</code>.
+     * Creates a new {@code KeywordMap}.
      *
      * @param ignoreCase True if the keys are case insensitive
-     * @param mapLength  The number of `buckets' to create.
+     * @param capacity   The number of `buckets' to create.
      *                   A value of 52 will give good performance for most maps.
      */
-    public KeywordMap(boolean ignoreCase, int mapLength) {
-        this.mapLength = mapLength;
+    public KeywordMap(boolean ignoreCase, int capacity) {
         this.ignoreCase = ignoreCase;
-        map = new KeywordNode[mapLength];
+        buckets = new KeywordNode[capacity];
     }
 
     /**
@@ -61,13 +59,13 @@ public class KeywordMap {
      * @return The token type for the keyword
      */
     public byte lookup(Segment text, int offset, int length) {
-        if (length == 0) {
+        if (length <= 0) {
             return Token.NULL;
         }
         if (text.array[offset] == '%') {
-            return Token.MACRO_ARG;  // added 12/12 M. Sekhavat
+            return Token.MACRO_ARG; // added 12/12 M. Sekhavat
         }
-        KeywordNode node = map[getSegmentMapKey(text, offset, length)];
+        KeywordNode node = buckets[getSegmentMapKey(text, offset, length)];
         while (node != null) {
             if (length != node.keyword.length) {
                 node = node.next();
@@ -89,7 +87,7 @@ public class KeywordMap {
      */
     public void add(String keyword, byte id) {
         int key = getStringMapKey(keyword);
-        map[key] = new KeywordNode(keyword.toCharArray(), id, map[key]);
+        buckets[key] = new KeywordNode(keyword.toCharArray(), id, buckets[key]);
     }
 
     /**
@@ -110,17 +108,13 @@ public class KeywordMap {
         this.ignoreCase = ignoreCase;
     }
 
-    // protected members
-    protected int mapLength;
-
-    protected int getStringMapKey(String s) {
-        return (Character.toUpperCase(s.charAt(0)) + Character.toUpperCase(s.charAt(s.length() - 1))) % mapLength;
+    protected int getStringMapKey(String string) {
+        return (Character.toUpperCase(string.charAt(0)) + Character.toUpperCase(string.charAt(string.length() - 1))) % buckets.length;
     }
 
-    protected int getSegmentMapKey(Segment s, int off, int len) {
-        return (Character.toUpperCase(s.array[off]) + Character.toUpperCase(s.array[off + len - 1])) % mapLength;
+    protected int getSegmentMapKey(Segment segment, int offset, int length) {
+        return (Character.toUpperCase(segment.array[offset]) + Character.toUpperCase(segment.array[offset + length - 1])) % buckets.length;
     }
 
-    private record KeywordNode(char[] keyword, byte id, KeywordNode next) {
-    }
+    private record KeywordNode(char[] keyword, byte id, KeywordNode next) {}
 }

@@ -78,7 +78,7 @@ public class EditTabbedPane extends JTabbedPane {
                     this.updateTitlesAndMenuState(editPane);
                     this.mainPane.getExecutePane().clearPane();
                 }
-                editPane.tellEditingComponentToRequestFocusInWindow();
+                editPane.requestTextAreaFocus();
             }
         });
     }
@@ -185,7 +185,7 @@ public class EditTabbedPane extends JTabbedPane {
         editPane.displayCaretPosition(new Point(1, 1));
         this.setSelectedComponent(editPane);
         updateTitlesAndMenuState(editPane);
-        editPane.tellEditingComponentToRequestFocusInWindow();
+        editPane.requestTextAreaFocus();
     }
 
     /**
@@ -268,7 +268,7 @@ public class EditTabbedPane extends JTabbedPane {
 
             if (unsavedChanges) {
                 switch (showUnsavedEditsDialog("one or more files")) {
-                    case JOptionPane.YES_OPTION:
+                    case JOptionPane.YES_OPTION -> {
                         for (EditPane tab : tabs) {
                             if (tab.hasUnsavedEdits()) {
                                 setSelectedComponent(tab);
@@ -284,16 +284,15 @@ public class EditTabbedPane extends JTabbedPane {
                                 this.remove(tab);
                             }
                         }
-                        break;
-                    case JOptionPane.NO_OPTION:
+                    }
+                    case JOptionPane.NO_OPTION -> {
                         for (EditPane tab : tabs) {
                             this.remove(tab);
                         }
-                        break;
-                    case JOptionPane.CANCEL_OPTION:
-                    default:
+                    }
+                    default -> {
                         closedAll = false;
-                        break;
+                    }
                 }
             }
             else {
@@ -512,7 +511,7 @@ public class EditTabbedPane extends JTabbedPane {
      * and also to update the MARS menu state (controls which actions are enabled).
      */
     private void updateTitlesAndMenuState(EditPane editPane) {
-        editPane.updateStaticFileStatus(); //  for legacy code that depends on the static FileStatus (pre 4.0)
+        editPane.updateStaticFileStatus(); // For legacy code that depends on the static FileStatus (pre 4.0)
         Application.getGUI().setMenuState(editPane.getFileStatus());
         updateTitles(editPane);
     }
@@ -601,10 +600,19 @@ public class EditTabbedPane extends JTabbedPane {
          */
         public ArrayList<File> openFiles() {
             // The fileChooser's list may be rebuilt from the master ArrayList if a new filter
-            // has been added by the user.
+            // has been added by the user
             setChoosableFileFilters();
-            // Get name of file to be opened and load contents into text editing area.
-            fileChooser.setCurrentDirectory(new File(editor.getCurrentOpenDirectory()));
+            // Set the current directory to the parent directory of the current file being edited,
+            // or the working directory for MARS if that fails
+            EditPane currentTab = getCurrentEditTab();
+            File currentDirectory = null;
+            if (currentTab != null) {
+                currentDirectory = new File(currentTab.getPathname()).getParentFile();
+            }
+            if (currentDirectory == null) {
+                currentDirectory = new File(System.getProperty("user.dir"));
+            }
+            fileChooser.setCurrentDirectory(currentDirectory);
             // Set default to previous file opened, if any.  This is useful in conjunction
             // with option to assemble file automatically upon opening.  File likely to have
             // been edited externally.
@@ -613,15 +621,13 @@ public class EditTabbedPane extends JTabbedPane {
             }
 
             if (fileChooser.showOpenDialog(gui) == JFileChooser.APPROVE_OPTION) {
-                editor.setCurrentOpenDirectory(fileChooser.getSelectedFile().getParent());
                 ArrayList<File> unopenedFiles = openFiles(fileChooser.getSelectedFiles());
                 if (!unopenedFiles.isEmpty()) {
                     return unopenedFiles;
                 }
 
-                // Possibly send this file right through to the assembler by firing Run->Assemble's
-                // actionPerformed() method.
                 if (Application.getSettings().assembleOnOpenEnabled.get()) {
+                    // Send this file right through to the assembler by firing Run->Assemble
                     gui.getRunAssembleAction().actionPerformed(null);
                 }
             }
@@ -709,7 +715,7 @@ public class EditTabbedPane extends JTabbedPane {
                     updateTitlesAndMenuState(firstTabOpened);
                     mainPane.getExecutePane().clearPane();
                 }
-                firstTabOpened.tellEditingComponentToRequestFocusInWindow();
+                firstTabOpened.requestTextAreaFocus();
                 mostRecentlyOpenedFile = new File(firstTabOpened.getPathname());
             }
 
@@ -742,7 +748,7 @@ public class EditTabbedPane extends JTabbedPane {
                 boolean activeListener = false;
                 if (fileChooser.getPropertyChangeListeners().length > 0) {
                     fileChooser.removePropertyChangeListener(listenForUserAddedFileFilter);
-                    activeListener = true;  // we'll note this, for re-activation later
+                    activeListener = true; // we'll note this, for re-activation later
                 }
                 // clear out the list and populate from our own ArrayList.
                 // Last one added becomes the default.
