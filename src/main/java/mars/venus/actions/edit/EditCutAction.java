@@ -44,6 +44,6 @@ public class EditCutAction extends VenusAction {
 
     @Override
     public void actionPerformed(ActionEvent event) {
-        gui.getMainPane().getEditPane().cutText();
+        gui.getMainPane().getCurrentEditorTab().cutText();
     }
 }

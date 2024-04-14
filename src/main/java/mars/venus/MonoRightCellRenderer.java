@@ -43,9 +43,11 @@ public class MonoRightCellRenderer extends DefaultTableCellRenderer {
 
     @Override
     public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-        JLabel cell = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-        cell.setFont(MONOSPACED_PLAIN_12POINT);
-        cell.setHorizontalAlignment(SwingConstants.RIGHT);
-        return cell;
+        super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+        this.setFont(MONOSPACED_PLAIN_12POINT);
+        this.setHorizontalAlignment(SwingConstants.RIGHT);
+
+        return this;
     }
 }

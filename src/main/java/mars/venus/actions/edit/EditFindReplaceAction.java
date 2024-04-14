@@ -1,10 +1,10 @@
 package mars.venus.actions.edit;
 
 import mars.Application;
-import mars.venus.EditPane;
+import mars.venus.editor.FileEditorTab;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
-import mars.venus.editors.MARSTextEditingArea;
+import mars.venus.editor.MARSTextEditingArea;
 
 import javax.swing.*;
 import java.awt.*;
@@ -188,11 +188,11 @@ public class EditFindReplaceAction extends VenusAction {
         private void performFind() {
             resultsLabel.setText("");
             if (!findInputField.getText().isEmpty()) {
-                EditPane editPane = gui.getMainPane().getEditPane();
+                FileEditorTab fileEditorTab = gui.getMainPane().getCurrentEditorTab();
                 // Being cautious. Should not be null because find/replace tool button disabled if no file open
-                if (editPane != null) {
+                if (fileEditorTab != null) {
                     searchString = findInputField.getText();
-                    int posn = editPane.doFindText(searchString, caseSensitiveCheckBox.isSelected());
+                    int posn = fileEditorTab.doFindText(searchString, caseSensitiveCheckBox.isSelected());
                     if (posn == MARSTextEditingArea.TEXT_NOT_FOUND) {
                         resultsLabel.setText(findButton.getText() + ": " + RESULTS_TEXT_NOT_FOUND);
                     }
@@ -216,11 +216,11 @@ public class EditFindReplaceAction extends VenusAction {
         private void performReplace() {
             resultsLabel.setText("");
             if (!findInputField.getText().isEmpty()) {
-                EditPane editPane = gui.getMainPane().getEditPane();
+                FileEditorTab fileEditorTab = gui.getMainPane().getCurrentEditorTab();
                 // Being cautious. Should not be null b/c find/replace tool button disabled if no file open
-                if (editPane != null) {
+                if (fileEditorTab != null) {
                     searchString = findInputField.getText();
-                    int result = editPane.doReplace(searchString, replaceInputField.getText(), caseSensitiveCheckBox.isSelected());
+                    int result = fileEditorTab.doReplace(searchString, replaceInputField.getText(), caseSensitiveCheckBox.isSelected());
                     String resultText = replaceButton.getText() + ": " + switch (result) {
                         case MARSTextEditingArea.TEXT_NOT_FOUND -> RESULTS_TEXT_NOT_FOUND;
                         case MARSTextEditingArea.TEXT_FOUND -> RESULTS_TEXT_FOUND;
@@ -243,11 +243,11 @@ public class EditFindReplaceAction extends VenusAction {
         private void performReplaceAll() {
             resultsLabel.setText("");
             if (!findInputField.getText().isEmpty()) {
-                EditPane editPane = gui.getMainPane().getEditPane();
+                FileEditorTab fileEditorTab = gui.getMainPane().getCurrentEditorTab();
                 // Being cautious. Should not be null b/c find/replace tool button disabled if no file open
-                if (editPane != null) {
+                if (fileEditorTab != null) {
                     searchString = findInputField.getText();
-                    int replaceCount = editPane.doReplaceAll(searchString, replaceInputField.getText(), caseSensitiveCheckBox.isSelected());
+                    int replaceCount = fileEditorTab.doReplaceAll(searchString, replaceInputField.getText(), caseSensitiveCheckBox.isSelected());
                     if (replaceCount == 0) {
                         resultsLabel.setText(replaceAllButton.getText() + ": " + RESULTS_TEXT_NOT_FOUND);
                     }

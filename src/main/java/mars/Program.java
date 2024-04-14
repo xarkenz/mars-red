@@ -239,26 +239,26 @@ public class Program {
      * Prepares the given list of files for assembly.  This involves
      * reading and tokenizing all the source files.  There may be only one.
      *
-     * @param filenames        ArrayList containing the source file name(s) in no particular order
-     * @param leadFilename     String containing name of source file that needs to go first and
+     * @param pathnames        ArrayList containing the source file path(s) in no particular order
+     * @param leadPathname     String containing path of source file that needs to go first and
      *                         will be represented by "this" MIPSprogram object.
-     * @param exceptionHandler String containing name of source file containing exception
-     *                         handler.  This will be assembled first, even ahead of leadFilename, to allow it to
+     * @param exceptionHandler String containing path of source file containing exception
+     *                         handler.  This will be assembled first, even ahead of leadPathname, to allow it to
      *                         include "startup" instructions loaded beginning at 0x00400000.  Specify null or
      *                         empty String to indicate there is no such designated exception handler.
      * @return ArrayList containing one MIPSprogram object for each file to assemble.
      *     objects for any additional files (send ArrayList to assembler)
      * @throws ProcessingException Will throw exception if errors occurred while reading or tokenizing.
      */
-    public ArrayList<Program> prepareFilesForAssembly(ArrayList<String> filenames, String leadFilename, String exceptionHandler) throws ProcessingException {
+    public ArrayList<Program> prepareFilesForAssembly(List<String> pathnames, String leadPathname, String exceptionHandler) throws ProcessingException {
         ArrayList<Program> programsToAssemble = new ArrayList<>();
         int leadFilePosition = 0;
         if (exceptionHandler != null && !exceptionHandler.isEmpty()) {
-            filenames.add(0, exceptionHandler);
+            pathnames.add(0, exceptionHandler);
             leadFilePosition = 1;
         }
-        for (String filename : filenames) {
-            Program program = (filename.equals(leadFilename)) ? this : new Program();
+        for (String filename : pathnames) {
+            Program program = (filename.equals(leadPathname)) ? this : new Program();
             program.readSource(filename);
             program.tokenize();
             if (program == this && !programsToAssemble.isEmpty()) {

@@ -6,6 +6,8 @@ import mars.ProcessingException;
 import mars.simulator.Simulator;
 import mars.simulator.SimulatorListener;
 import mars.simulator.SystemIO;
+import mars.venus.editor.EditTab;
+import mars.venus.editor.FileEditorTab;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -233,25 +235,25 @@ public class MessagesPane extends JTabbedPane {
      * @param column   Column number for error message
      */
     public void selectEditorTextLine(String fileName, int line, int column) {
-        EditTabbedPane editTabbedPane = Application.getGUI().getMainPane().getEditTabbedPane();
-        EditPane editPane, currentPane = null;
-        editPane = editTabbedPane.getEditPaneForFile(new File(fileName).getPath());
-        if (editPane != null) {
-            if (editPane != editTabbedPane.getCurrentEditTab()) {
-                editTabbedPane.setCurrentEditTab(editPane);
+        EditTab editTab = Application.getGUI().getMainPane().getEditTab();
+        FileEditorTab fileEditorTab, currentPane = null;
+        fileEditorTab = editTab.getEditorTab(new File(fileName).getPath());
+        if (fileEditorTab != null) {
+            if (fileEditorTab != editTab.getCurrentEditorTab()) {
+                editTab.setCurrentEditorTab(fileEditorTab);
             }
-            currentPane = editPane;
+            currentPane = fileEditorTab;
         }
         else {
             // File is not open.  Try to open it.
-            if (editTabbedPane.openFile(new File(fileName))) {
-                currentPane = editTabbedPane.getCurrentEditTab();
+            if (editTab.openFile(new File(fileName))) {
+                currentPane = editTab.getCurrentEditorTab();
             }
         }
         // If editPane == null, it means the desired file was not open.  Line selection
         // does not properly with the JEditTextArea editor in this situation (it works
         // fine for the original generic editor).  So we just won't do it. DPS 9-Aug-2010
-        if (editPane != null) {
+        if (fileEditorTab != null) {
             currentPane.selectLine(line, column);
         }
     }

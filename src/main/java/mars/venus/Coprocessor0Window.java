@@ -49,7 +49,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Sanderson, Bumgarner
  */
-public class Coprocessor0Window extends JPanel implements Observer {
+public class Coprocessor0Window extends JPanel implements RegistersDisplayTab, Observer {
     private static final int NAME_COLUMN = 0;
     private static final int NUMBER_COLUMN = 1;
     private static final int VALUE_COLUMN = 2;
@@ -110,7 +110,7 @@ public class Coprocessor0Window extends JPanel implements Observer {
     public void clearWindow() {
         clearHighlighting();
         Coprocessor0.resetRegisters();
-        updateRegisters(Application.getGUI().getMainPane().getExecutePane().getValueDisplayBase());
+        updateRegisters(Application.getGUI().getMainPane().getExecuteTab().getValueDisplayBase());
     }
 
     /**
@@ -134,17 +134,11 @@ public class Coprocessor0Window extends JPanel implements Observer {
     }
 
     /**
-     * Update register display using current display base (10 or 16)
-     */
-    public void updateRegisters() {
-        updateRegisters(Application.getGUI().getMainPane().getExecutePane().getValueDisplayBase());
-    }
-
-    /**
-     * Update register display using specified display base
+     * Update register display using specified number base (10 or 16).
      *
-     * @param base number base for display (10 or 16)
+     * @param base Desired number base.
      */
+    @Override
     public void updateRegisters(int base) {
         for (Register register : Coprocessor0.getRegisters()) {
             updateRegisterValue(register.getNumber(), register.getValue(), base);
@@ -287,7 +281,7 @@ public class Coprocessor0Window extends JPanel implements Observer {
             synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
                 Coprocessor0.updateRegister(Coprocessor0.getRegisters()[row].getNumber(), intValue);
             }
-            int valueBase = Application.getGUI().getMainPane().getExecutePane().getValueDisplayBase();
+            int valueBase = Application.getGUI().getMainPane().getExecuteTab().getValueDisplayBase();
             data[row][col] = NumberDisplayBaseChooser.formatNumber(intValue, valueBase);
             fireTableCellUpdated(row, col);
         }

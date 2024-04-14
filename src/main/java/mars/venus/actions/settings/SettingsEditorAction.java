@@ -3,9 +3,10 @@ package mars.venus.actions.settings;
 import mars.Application;
 import mars.venus.*;
 import mars.venus.actions.VenusAction;
-import mars.venus.editors.jeditsyntax.SyntaxStyle;
-import mars.venus.editors.jeditsyntax.SyntaxUtilities;
-import mars.venus.editors.jeditsyntax.tokenmarker.MIPSTokenMarker;
+import mars.venus.editor.Editor;
+import mars.venus.editor.jeditsyntax.SyntaxStyle;
+import mars.venus.editor.jeditsyntax.SyntaxUtilities;
+import mars.venus.editor.jeditsyntax.tokenmarker.MIPSTokenMarker;
 
 import javax.swing.*;
 import javax.swing.border.Border;

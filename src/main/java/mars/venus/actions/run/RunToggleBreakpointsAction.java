@@ -56,6 +56,6 @@ public class RunToggleBreakpointsAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        Application.getGUI().getMainPane().getExecutePane().getTextSegmentWindow().toggleBreakpoints();
+        Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().toggleBreakpoints();
     }
 }

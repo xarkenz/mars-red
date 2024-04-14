@@ -35,50 +35,52 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Container for the execution-related windows.  Currently displayed as a tabbed pane.
+ * The "Execute" tab in the main tabbed pane, which contains execution-related windows.
  *
  * @author Pete Sanderson and Team JSpim
  */
-public class ExecutePane extends JDesktopPane {
+public class ExecuteTab extends JDesktopPane {
+    private final VenusUI gui;
     private final RegistersWindow registerValues;
     private final Coprocessor1Window coprocessor1Values;
     private final Coprocessor0Window coprocessor0Values;
     private final DataSegmentWindow dataSegment;
     private final TextSegmentWindow textSegment;
     private final SymbolTableWindow labelValues;
-    private final VenusUI mainUI;
     private final NumberDisplayBaseChooser valueDisplayBase;
     private final NumberDisplayBaseChooser addressDisplayBase;
+    private ProgramStatus programStatus;
     private boolean labelWindowVisible;
 
     /**
-     * initialize the Execute pane with major components
+     * Initialize the Execute pane.
      *
-     * @param mainUI   the parent GUI
-     * @param regs     window containing integer register set
-     * @param cop1Regs window containing Coprocessor 1 register set
-     * @param cop0Regs window containing Coprocessor 0 register set
+     * @param gui      The parent GUI instance.
+     * @param regs     The Window containing integer register set
+     * @param cop1Regs The Window containing Coprocessor 1 register set
+     * @param cop0Regs The Window containing Coprocessor 0 register set
      */
-    public ExecutePane(VenusUI mainUI, RegistersWindow regs, Coprocessor1Window cop1Regs, Coprocessor0Window cop0Regs) {
-        this.mainUI = mainUI;
+    public ExecuteTab(VenusUI gui, RegistersWindow regs, Coprocessor1Window cop1Regs, Coprocessor0Window cop0Regs) {
+        this.gui = gui;
         // Although these are displayed in Data Segment, they apply to all three internal
         // windows within the Execute pane.  So they will be housed here.
         addressDisplayBase = new NumberDisplayBaseChooser("Hexadecimal Addresses", Application.getSettings().displayAddressesInHex.get());
         valueDisplayBase = new NumberDisplayBaseChooser("Hexadecimal Values", Application.getSettings().displayValuesInHex.get());
         addressDisplayBase.setToolTipText("If checked, displays all memory addresses in hexadecimal.  Otherwise, decimal.");
         valueDisplayBase.setToolTipText("If checked, displays all memory and register contents in hexadecimal.  Otherwise, decimal.");
-        NumberDisplayBaseChooser[] choosers = {addressDisplayBase, valueDisplayBase};
         registerValues = regs;
         coprocessor1Values = cop1Regs;
         coprocessor0Values = cop0Regs;
         textSegment = new TextSegmentWindow();
-        dataSegment = new DataSegmentWindow(choosers);
         labelValues = new SymbolTableWindow();
+        dataSegment = new DataSegmentWindow(new NumberDisplayBaseChooser[] { addressDisplayBase, valueDisplayBase });
         labelWindowVisible = Application.getSettings().labelWindowVisible.get();
-        this.add(textSegment);  // these 3 LOC moved up.  DPS 3-Sept-2014
+        programStatus = ProgramStatus.NOT_ASSEMBLED;
+
+        this.add(textSegment); // these 3 LOC moved up.  DPS 3-Sept-2014
         this.add(dataSegment);
         this.add(labelValues);
-        textSegment.pack();   // these 3 LOC added.  DPS 3-Sept-2014
+        textSegment.pack(); // these 3 LOC added.  DPS 3-Sept-2014
         dataSegment.pack();
         labelValues.pack();
         textSegment.setVisible(true);
@@ -129,13 +131,13 @@ public class ExecutePane extends JDesktopPane {
             labelWindowVisible = false;
             textSegment.setVisible(false);
             labelValues.setVisible(false);
-            setWindowBounds();
+            this.setWindowBounds();
             textSegment.setVisible(true);
         }
         else if (visibility && !labelWindowVisible) {
             labelWindowVisible = true;
             textSegment.setVisible(false);
-            setWindowBounds();
+            this.setWindowBounds();
             textSegment.setVisible(true);
             labelValues.setVisible(true);
         }
@@ -146,18 +148,37 @@ public class ExecutePane extends JDesktopPane {
      * display, data segment display, label display and register display.
      * This will typically be done upon File->Close, Open, New.
      */
-    public void clearPane() {
+    public void clear() {
         this.getTextSegmentWindow().clearWindow();
         this.getDataSegmentWindow().clearWindow();
-        this.getRegistersWindow().clearWindow();
-        this.getCoprocessor1Window().clearWindow();
-        this.getCoprocessor0Window().clearWindow();
         this.getLabelsWindow().clearWindow();
-        // seems to be required, to display cleared Execute tab contents...
-        if (mainUI.getMainPane().getSelectedComponent() == this) {
-            mainUI.getMainPane().setSelectedComponent(mainUI.getMainPane().getEditTabbedPane());
-            mainUI.getMainPane().setSelectedComponent(this);
+        gui.getRegistersPane().getRegistersWindow().clearWindow();
+        gui.getRegistersPane().getCoprocessor1Window().clearWindow();
+        gui.getRegistersPane().getCoprocessor0Window().clearWindow();
+        // Seems to be required in order to display cleared Execute tab contents...
+        if (gui.getMainPane().getSelectedComponent() == this) {
+            gui.getMainPane().setSelectedComponent(gui.getMainPane().getEditTab());
+            gui.getMainPane().setSelectedComponent(this);
         }
+    }
+
+    /**
+     * Get the current status of the overall program.
+     *
+     * @return The current program status.
+     */
+    public ProgramStatus getProgramStatus() {
+        return this.programStatus;
+    }
+
+    /**
+     * Set the status of the overall program, and update the main GUI menu state.
+     *
+     * @param status The new program status.
+     */
+    public void setProgramStatus(ProgramStatus status) {
+        this.programStatus = status;
+        this.gui.setMenuState(status);
     }
 
     /**
@@ -172,27 +193,6 @@ public class ExecutePane extends JDesktopPane {
      */
     public DataSegmentWindow getDataSegmentWindow() {
         return dataSegment;
-    }
-
-    /**
-     * Access the register values window.
-     */
-    public RegistersWindow getRegistersWindow() {
-        return registerValues;
-    }
-
-    /**
-     * Access the coprocessor1 values window.
-     */
-    public Coprocessor1Window getCoprocessor1Window() {
-        return coprocessor1Values;
-    }
-
-    /**
-     * Access the coprocessor0 values window.
-     */
-    public Coprocessor0Window getCoprocessor0Window() {
-        return coprocessor0Values;
     }
 
     /**
@@ -243,13 +243,13 @@ public class ExecutePane extends JDesktopPane {
     public void numberDisplayBaseChanged(NumberDisplayBaseChooser chooser) {
         if (chooser == valueDisplayBase) {
             // Have all internal windows update their value columns
-            registerValues.updateRegisters();
-            coprocessor1Values.updateRegisters();
-            coprocessor0Values.updateRegisters();
+            gui.getRegistersPane().getRegistersWindow().updateRegisters();
+            gui.getRegistersPane().getCoprocessor0Window().updateRegisters();
+            gui.getRegistersPane().getCoprocessor1Window().updateRegisters();
             dataSegment.updateValues();
             textSegment.updateBasicStatements();
         }
-        else { // addressDisplayBase
+        else { // chooser == addressDisplayBase
             // Have all internal windows update their address columns
             dataSegment.updateDataAddresses();
             labelValues.updateLabelAddresses();

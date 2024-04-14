@@ -8,8 +8,12 @@ import mars.venus.actions.file.*;
 import mars.venus.actions.help.*;
 import mars.venus.actions.run.*;
 import mars.venus.actions.settings.*;
+import mars.venus.editor.Editor;
+import mars.venus.editor.FileStatus;
+import mars.venus.execute.ProgramStatus;
 
 import javax.swing.*;
+import javax.swing.undo.UndoManager;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
@@ -64,7 +68,7 @@ public class VenusUI extends JFrame {
     /**
      * Time in milliseconds to show splash screen.
      */
-    public static final int SPLASH_DURATION_MILLIS = 4000;
+    public static final int SPLASH_DURATION_MILLIS = 5000;
 
     private final JMenuBar menu;
     private final MainPane mainPane;
@@ -140,7 +144,7 @@ public class VenusUI extends JFrame {
     public VenusUI(String title) {
         super(title);
 
-        // Launch splash screen
+        // Launch splash screen, which will show this window after it finishes
         SplashScreen splashScreen = new SplashScreen(this, SPLASH_DURATION_MILLIS);
         splashScreen.showSplash();
 
@@ -148,7 +152,6 @@ public class VenusUI extends JFrame {
         this.editor = new Editor(this);
         Application.setGUI(this);
 
-        // TODO: Use this logic whenever window is resized. -Sean Clarke
         double screenWidth = Toolkit.getDefaultToolkit().getScreenSize().getWidth();
         double screenHeight = Toolkit.getDefaultToolkit().getScreenSize().getHeight();
         // basically give up some screen space if running at 800 x 600
@@ -221,10 +224,6 @@ public class VenusUI extends JFrame {
 
         this.getContentPane().add(center);
 
-        FileStatus.reset();
-        // The following has side effect of establishing menu state
-        FileStatus.set(FileStatus.NO_FILE);
-
         this.addWindowListener(new WindowAdapter() {
             @Override
             public void windowOpened(WindowEvent event) {
@@ -235,13 +234,16 @@ public class VenusUI extends JFrame {
 
             @Override
             public void windowClosing(WindowEvent event) {
-                // Check for unsaved changes before closing the application
                 // Don't save the workspace state after closing all files, unless the exit fails
-                editor.getEditTabbedPane().setWorkspaceStateSavingEnabled(false);
+                mainPane.getEditTab().setWorkspaceStateSavingEnabled(false);
+
+                // Check for unsaved changes before closing the application
                 if (editor.closeAll()) {
                     System.exit(0);
                 }
-                editor.getEditTabbedPane().setWorkspaceStateSavingEnabled(true);
+                else {
+                    mainPane.getEditTab().setWorkspaceStateSavingEnabled(true);
+                }
             }
         });
 
@@ -250,14 +252,19 @@ public class VenusUI extends JFrame {
         // the GUI frame will be hidden but I want it to do nothing.
         this.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 
+        // Initialize menu state
+        this.setMenuState(FileStatus.NO_FILE);
         // Restore previous session
-        this.getMainPane().getEditTabbedPane().loadWorkspaceState();
+        this.getMainPane().getEditTab().loadWorkspaceState();
+    }
 
-        // Show the window
+    /**
+     * Called by {@link SplashScreen} once it has displayed for the required duration,
+     * making this window visible.
+     */
+    public void showWindow() {
         this.pack();
         this.setVisible(true);
-        // Ensure the splash screen is still visible
-        splashScreen.toFront();
     }
 
     /**
@@ -318,9 +325,9 @@ public class VenusUI extends JFrame {
             helpHelpAction = new HelpHelpAction(this, "Help...", getSVGActionIcon("help.svg"), "Help", KeyEvent.VK_H, KeyStroke.getKeyStroke(KeyEvent.VK_H, tk.getMenuShortcutKeyMaskEx()));
             helpAboutAction = new HelpAboutAction(this, "About...", getSVGActionIcon("about.svg"), "Information about " + Application.NAME, null, null);
         }
-        catch (Exception e) {
+        catch (Exception exception) {
             System.out.println("Internal Error: images folder not found, or other null pointer exception while creating Action objects");
-            e.printStackTrace();
+            exception.printStackTrace();
             System.exit(0);
         }
     }
@@ -385,8 +392,8 @@ public class VenusUI extends JFrame {
         JMenu settingsMenu = new JMenu("Settings");
         settingsMenu.setMnemonic(KeyEvent.VK_S);
         settingsMenu.add(createMenuCheckBox(settingsLabelAction, Application.getSettings().labelWindowVisible.get()));
-        settingsMenu.add(createMenuBaseChooser(settingsAddressDisplayBaseAction, Application.getSettings().displayAddressesInHex.get(), mainPane.getExecutePane().getAddressDisplayBaseChooser()));
-        settingsMenu.add(createMenuBaseChooser(settingsValueDisplayBaseAction, Application.getSettings().displayValuesInHex.get(), mainPane.getExecutePane().getValueDisplayBaseChooser()));
+        settingsMenu.add(createMenuBaseChooser(settingsAddressDisplayBaseAction, Application.getSettings().displayAddressesInHex.get(), mainPane.getExecuteTab().getAddressDisplayBaseChooser()));
+        settingsMenu.add(createMenuBaseChooser(settingsValueDisplayBaseAction, Application.getSettings().displayValuesInHex.get(), mainPane.getExecuteTab().getValueDisplayBaseChooser()));
         settingsMenu.addSeparator();
         settingsMenu.add(createMenuCheckBox(settingsAssembleOnOpenAction, Application.getSettings().assembleOnOpenEnabled.get()));
         settingsMenu.add(createMenuCheckBox(settingsAssembleAllAction, Application.getSettings().assembleAllEnabled.get()));
@@ -499,16 +506,30 @@ public class VenusUI extends JFrame {
     public void setMenuState(int status) {
         menuState = status;
         switch (status) {
-            case FileStatus.NO_FILE -> setMenuStateInitial();
-            case FileStatus.NEW_NOT_EDITED -> setMenuStateEditingNew();
-            case FileStatus.NEW_EDITED -> setMenuStateEditingNew();
-            case FileStatus.NOT_EDITED -> setMenuStateNotEdited(); // was MenuStateEditing. DPS 9-Aug-2011
-            case FileStatus.EDITED -> setMenuStateEditing();
-            case FileStatus.RUNNABLE -> setMenuStateRunnable();
-            case FileStatus.RUNNING -> setMenuStateRunning();
-            case FileStatus.TERMINATED -> setMenuStateTerminated();
+            case FileStatus.NO_FILE -> this.setMenuStateInitial();
+            case FileStatus.NEW_NOT_EDITED -> this.setMenuStateEditingNew();
+            case FileStatus.NEW_EDITED -> this.setMenuStateEditingNew();
+            case FileStatus.NOT_EDITED -> this.setMenuStateNotEdited(); // was MenuStateEditing. DPS 9-Aug-2011
+            case FileStatus.EDITED -> this.setMenuStateEditing();
+            case FileStatus.RUNNABLE -> this.setMenuStateRunnable();
+            case FileStatus.RUNNING -> this.setMenuStateRunning();
+            case FileStatus.TERMINATED -> this.setMenuStateTerminated();
             case FileStatus.OPENING -> {} // This is a temporary state. DPS 9-Aug-2011
             default -> System.out.println("Invalid File Status: " + status);
+        }
+    }
+
+    /**
+     * Enable/disable menu actions corresponding to the given program status.
+     *
+     * @param status The program status used to determine menu state.
+     */
+    public void setMenuState(ProgramStatus status) {
+        switch (status) {
+            case NOT_ASSEMBLED -> this.setMenuState(this.getMainPane().getEditTab().getCurrentEditorTab().getFileStatus());
+            case NOT_STARTED, PAUSED -> this.setMenuStateRunnable();
+            case RUNNING -> this.setMenuStateRunning();
+            case TERMINATED -> this.setMenuStateTerminated();
         }
     }
 
@@ -765,7 +786,7 @@ public class VenusUI extends JFrame {
 
     /**
      * Automatically update whether the Undo and Redo actions are enabled or disabled
-     * based on the status of the {@link javax.swing.undo.UndoManager}.
+     * based on the status of the {@link UndoManager}.
      */
     public void updateUndoRedoActions() {
         editUndoAction.updateEnabledStatus();
@@ -887,9 +908,23 @@ public class VenusUI extends JFrame {
     /**
      * Send keyboard event to menu for possible processing.  DPS 5-4-10
      *
-     * @param e KeyEvent for menu component to consider for processing.
+     * @param event KeyEvent for menu component to consider for processing.
      */
-    public void dispatchEventToMenu(KeyEvent e) {
-        this.menu.dispatchEvent(e);
+    public void dispatchEventToMenu(KeyEvent event) {
+        this.menu.dispatchEvent(event);
+    }
+
+    /**
+     * @see mars.venus.execute.ExecuteTab#getProgramStatus()
+     */
+    public ProgramStatus getProgramStatus() {
+        return this.mainPane.getExecuteTab().getProgramStatus();
+    }
+
+    /**
+     * @see mars.venus.execute.ExecuteTab#setProgramStatus(ProgramStatus)
+     */
+    public void setProgramStatus(ProgramStatus status) {
+        this.mainPane.getExecuteTab().setProgramStatus(status);
     }
 }

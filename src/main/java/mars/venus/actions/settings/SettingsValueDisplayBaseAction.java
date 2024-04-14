@@ -46,7 +46,7 @@ public class SettingsValueDisplayBaseAction extends VenusAction {
     @Override
     public void actionPerformed(ActionEvent event) {
         boolean isHex = ((JCheckBoxMenuItem) event.getSource()).isSelected();
-        Application.getGUI().getMainPane().getExecutePane().getValueDisplayBaseChooser().setSelected(isHex);
+        Application.getGUI().getMainPane().getExecuteTab().getValueDisplayBaseChooser().setSelected(isHex);
         Application.getSettings().displayValuesInHex.set(isHex);
     }
 }

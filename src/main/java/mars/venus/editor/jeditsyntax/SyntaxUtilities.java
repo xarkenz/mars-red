@@ -7,10 +7,10 @@
  * remains intact in all source distributions of this package.
  */
 
-package mars.venus.editors.jeditsyntax;
+package mars.venus.editor.jeditsyntax;
 
 import mars.settings.Settings;
-import mars.venus.editors.jeditsyntax.tokenmarker.Token;
+import mars.venus.editor.jeditsyntax.tokenmarker.Token;
 
 import javax.swing.*;
 import javax.swing.text.Segment;

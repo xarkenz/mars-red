@@ -44,6 +44,6 @@ public class EditSelectAllAction extends VenusAction {
 
     @Override
     public void actionPerformed(ActionEvent event) {
-        gui.getMainPane().getEditPane().selectAllText();
+        gui.getMainPane().getCurrentEditorTab().selectAllText();
     }
 }

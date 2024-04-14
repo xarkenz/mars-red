@@ -24,11 +24,11 @@ import mars.mips.hardware.MemoryAccessNotice;
 public class DigitalLabSim extends AbstractMarsToolAndApplication {
 	private static String heading =  "Digital Lab Sim";
 	private static String version = " Version 1.0 (Didier Teifreto)";
-	private static final int IN_ADRESS_DISPLAY_1=Memory.memoryMapBaseAddress+0x10;
-	private static final int IN_ADRESS_DISPLAY_2=Memory.memoryMapBaseAddress+0x11;
-	private static final int IN_ADRESS_HEXA_KEYBOARD=Memory.memoryMapBaseAddress+0x12;
-	private static final int IN_ADRESS_COUNTER=Memory.memoryMapBaseAddress+0x13;
-	private static final int OUT_ADRESS_HEXA_KEYBOARD=Memory.memoryMapBaseAddress+0x14;
+	private static final int IN_ADRESS_DISPLAY_1=Memory.mmioBaseAddress +0x10;
+	private static final int IN_ADRESS_DISPLAY_2=Memory.mmioBaseAddress +0x11;
+	private static final int IN_ADRESS_HEXA_KEYBOARD=Memory.mmioBaseAddress +0x12;
+	private static final int IN_ADRESS_COUNTER=Memory.mmioBaseAddress +0x13;
+	private static final int OUT_ADRESS_HEXA_KEYBOARD=Memory.mmioBaseAddress +0x14;
 
   public static final int EXTERNAL_INTERRUPT_TIMER = 0x00000100; //Add for digital Lab Sim
   public static final int EXTERNAL_INTERRUPT_HEXA_KEYBOARD = 0x00000200;// Add for digital Lab Sim
@@ -114,8 +114,8 @@ public class DigitalLabSim extends AbstractMarsToolAndApplication {
                     System.exit(0);
                  }
            }
-           if (Application.getGUI() != null && Application.getGUI().getMainPane().getExecutePane().getTextSegmentWindow().getCodeHighlighting() ) {
-              Application.getGUI().getMainPane().getExecutePane().getDataSegmentWindow().updateValues();
+           if (Application.getGUI() != null && Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().getCodeHighlighting() ) {
+              Application.getGUI().getMainPane().getExecuteTab().getDataSegmentWindow().updateValues();
            }
         }
      }

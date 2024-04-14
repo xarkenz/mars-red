@@ -10,7 +10,6 @@ import mars.simulator.SimulatorNotice;
 import mars.util.Binary;
 
 import javax.swing.*;
-import javax.swing.event.TableModelEvent;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.util.Observable;
@@ -49,7 +48,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Sanderson, Bumgarner
  */
-public class RegistersWindow extends JPanel implements Observer {
+public class RegistersWindow extends JPanel implements RegistersDisplayTab, Observer {
     private static final int NAME_COLUMN = 0;
     private static final int NUMBER_COLUMN = 1;
     private static final int VALUE_COLUMN = 2;
@@ -98,15 +97,12 @@ public class RegistersWindow extends JPanel implements Observer {
     };
 
     private final RegistersTable table;
-    private boolean highlighting;
-    private int highlightRow;
 
     /**
      * Constructor which sets up a fresh window with a table that contains the register values.
      */
     public RegistersWindow() {
         Simulator.getInstance().addObserver(this);
-        highlighting = false;
         table = new RegistersTable(new RegisterTableModel(setupWindow()), HEADER_TIPS, REGISTER_TIPS);
         table.setupColumn(NAME_COLUMN, 25, SwingConstants.LEFT);
         table.setupColumn(NUMBER_COLUMN, 25, SwingConstants.LEFT);
@@ -129,17 +125,17 @@ public class RegistersWindow extends JPanel implements Observer {
             tableData[register.getNumber()][1] = "$" + register.getNumber();
             tableData[register.getNumber()][2] = NumberDisplayBaseChooser.formatNumber(register.getValue(), valueBase);
         }
-        tableData[32][0] = "pc";
-        tableData[32][1] = "";
-        tableData[32][2] = NumberDisplayBaseChooser.formatUnsignedInteger(RegisterFile.getProgramCounter(), valueBase);
+        tableData[RegisterFile.PROGRAM_COUNTER][0] = "pc";
+        tableData[RegisterFile.PROGRAM_COUNTER][1] = "";
+        tableData[RegisterFile.PROGRAM_COUNTER][2] = NumberDisplayBaseChooser.formatUnsignedInteger(RegisterFile.getProgramCounter(), valueBase);
 
-        tableData[33][0] = "hi";
-        tableData[33][1] = "";
-        tableData[33][2] = NumberDisplayBaseChooser.formatNumber(RegisterFile.getValue(33), valueBase);
+        tableData[RegisterFile.HIGH_ORDER][0] = "hi";
+        tableData[RegisterFile.HIGH_ORDER][1] = "";
+        tableData[RegisterFile.HIGH_ORDER][2] = NumberDisplayBaseChooser.formatNumber(RegisterFile.getValue(RegisterFile.HIGH_ORDER), valueBase);
 
-        tableData[34][0] = "lo";
-        tableData[34][1] = "";
-        tableData[34][2] = NumberDisplayBaseChooser.formatNumber(RegisterFile.getValue(34), valueBase);
+        tableData[RegisterFile.LOW_ORDER][0] = "lo";
+        tableData[RegisterFile.LOW_ORDER][1] = "";
+        tableData[RegisterFile.LOW_ORDER][2] = NumberDisplayBaseChooser.formatNumber(RegisterFile.getValue(RegisterFile.LOW_ORDER), valueBase);
 
         return tableData;
     }
@@ -150,18 +146,16 @@ public class RegistersWindow extends JPanel implements Observer {
     public void clearWindow() {
         clearHighlighting();
         RegisterFile.resetRegisters();
-        updateRegisters(Application.getGUI().getMainPane().getExecutePane().getValueDisplayBase());
+        updateRegisters(Application.getGUI().getMainPane().getExecuteTab().getValueDisplayBase());
     }
 
     /**
      * Clear highlight background color from any cell currently highlighted.
      */
     public void clearHighlighting() {
-        highlighting = false;
         if (table != null) {
-            table.tableChanged(new TableModelEvent(table.getModel()));
+            table.clearHighlighting();
         }
-        highlightRow = -1; // Assure highlight will not occur upon re-assemble
     }
 
     /**
@@ -169,15 +163,8 @@ public class RegistersWindow extends JPanel implements Observer {
      */
     public void refresh() {
         if (table != null) {
-            table.tableChanged(new TableModelEvent(table.getModel()));
+            table.refresh();
         }
-    }
-
-    /**
-     * Update register display using current number base (10 or 16).
-     */
-    public void updateRegisters() {
-        updateRegisters(Application.getGUI().getMainPane().getExecutePane().getValueDisplayBase());
     }
 
     /**
@@ -185,6 +172,7 @@ public class RegistersWindow extends JPanel implements Observer {
      *
      * @param base Desired number base.
      */
+    @Override
     public void updateRegisters(int base) {
         for (Register register : RegisterFile.getRegisters()) {
             updateRegisterValue(register.getNumber(), register.getValue(), base);
@@ -234,7 +222,7 @@ public class RegistersWindow extends JPanel implements Observer {
                 // or stepped mode.
                 if (notice.runSpeed() != RunSpeedPanel.UNLIMITED_SPEED || notice.maxSteps() == 1) {
                     RegisterFile.addRegistersObserver(this);
-                    highlighting = true;
+                    table.setUpdating(true);
                 }
             }
             else {
@@ -247,8 +235,8 @@ public class RegistersWindow extends JPanel implements Observer {
             if (access.getAccessType() == AccessNotice.WRITE) {
                 // Uses the same highlighting technique as for Text Segment -- see
                 // AddressCellRenderer class in DataSegmentWindow.java.
-                highlighting = true;
-                highlightCellForRegister((Register) observable);
+                table.setUpdating(true);
+                highlightRegister((Register) observable);
                 Application.getGUI().getRegistersPane().setSelectedComponent(this);
             }
         }
@@ -259,9 +247,8 @@ public class RegistersWindow extends JPanel implements Observer {
      *
      * @param register Register object corresponding to row to be selected.
      */
-    public void highlightCellForRegister(Register register) {
-        highlightRow = register.getNumber();
-        table.tableChanged(new TableModelEvent(table.getModel()));
+    public void highlightRegister(Register register) {
+        table.highlightRow(register.getNumber());
     }
 
     private static class RegisterTableModel extends AbstractTableModel {
@@ -334,7 +321,7 @@ public class RegistersWindow extends JPanel implements Observer {
             synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
                 RegisterFile.updateRegister(row, intValue);
             }
-            int valueBase = Application.getGUI().getMainPane().getExecutePane().getValueDisplayBase();
+            int valueBase = Application.getGUI().getMainPane().getExecuteTab().getValueDisplayBase();
             data[row][col] = NumberDisplayBaseChooser.formatNumber(intValue, valueBase);
             fireTableCellUpdated(row, col);
         }

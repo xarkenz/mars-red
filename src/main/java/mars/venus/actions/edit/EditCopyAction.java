@@ -44,6 +44,6 @@ public class EditCopyAction extends VenusAction {
 
     @Override
     public void actionPerformed(ActionEvent event) {
-        gui.getMainPane().getEditPane().copyText();
+        gui.getMainPane().getCurrentEditorTab().copyText();
     }
 }

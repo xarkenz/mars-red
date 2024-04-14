@@ -1,4 +1,4 @@
-package mars.venus;
+package mars.venus.execute;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -28,6 +28,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
 */
 
+import mars.venus.editor.FileStatus;
+
 /**
  * Enumeration to indicate the status of the current program (which may involve more than one file).
  * These status values were originally part of {@link FileStatus}, but were split off to eliminate
@@ -39,9 +41,9 @@ public enum ProgramStatus {
      */
     NOT_ASSEMBLED,
     /**
-     * The program has been assembled successfully, and is runnable.
+     * The program has just been assembled successfully, and is runnable.
      */
-    ASSEMBLED,
+    NOT_STARTED,
     /**
      * The program is currently being executed by the simulator.
      */

@@ -7,7 +7,7 @@
  * remains intact in all source distributions of this package.
  */
 
-package mars.venus.editors.jeditsyntax.tokenmarker;
+package mars.venus.editor.jeditsyntax.tokenmarker;
 
 /**
  * A linked list of tokens. Each token has three fields - a token

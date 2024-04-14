@@ -96,7 +96,7 @@ Class EditTabbedPane</H2>
       <IMG SRC="../../resources/inherit.gif" ALT="extended by "><A HREF="http://docs.oracle.com/javase/1.5.0/docs/api/java/awt/Container.html?is-external=true" title="class or interface in java.awt">java.awt.Container</A>
           <IMG SRC="../../resources/inherit.gif" ALT="extended by "><A HREF="http://docs.oracle.com/javase/1.5.0/docs/api/javax/swing/JComponent.html?is-external=true" title="class or interface in javax.swing">javax.swing.JComponent</A>
               <IMG SRC="../../resources/inherit.gif" ALT="extended by "><A HREF="http://docs.oracle.com/javase/1.5.0/docs/api/javax/swing/JTabbedPane.html?is-external=true" title="class or interface in javax.swing">javax.swing.JTabbedPane</A>
-                  <IMG SRC="../../resources/inherit.gif" ALT="extended by "><B>mars.venus.EditTabbedPane</B>
+                  <IMG SRC="../../resources/inherit.gif" ALT="extended by "><B>mars.venus.editor.EditTab</B>
 </PRE>
 <DL>
 <DT><B>All Implemented Interfaces:</B> <DD><A HREF="http://docs.oracle.com/javase/1.5.0/docs/api/java/awt/image/ImageObserver.html?is-external=true" title="class or interface in java.awt.image">ImageObserver</A>, <A HREF="http://docs.oracle.com/javase/1.5.0/docs/api/java/awt/MenuContainer.html?is-external=true" title="class or interface in java.awt">MenuContainer</A>, <A HREF="http://docs.oracle.com/javase/1.5.0/docs/api/java/io/Serializable.html?is-external=true" title="class or interface in java.io">Serializable</A>, <A HREF="http://docs.oracle.com/javase/1.5.0/docs/api/javax/accessibility/Accessible.html?is-external=true" title="class or interface in javax.accessibility">Accessible</A>, <A HREF="http://docs.oracle.com/javase/1.5.0/docs/api/javax/swing/SwingConstants.html?is-external=true" title="class or interface in javax.swing">SwingConstants</A></DD>
@@ -329,7 +329,7 @@ Tabbed pane for the editor.  Each of its tabs represents an open file.
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../mars/venus/EditTabbedPane.html#remove(mars.venus.EditPane)">remove</A></B>(<A HREF="../../mars/venus/EditPane.html" title="class in mars.venus">EditPane</A>&nbsp;editPane)</CODE>
+<TD><CODE><B><A HREF="../../mars/venus/EditTabbedPane.html#remove(mars.venus.EditPane)">remove</A></B>(<A HREF="../../mars/venus/EditPane.html" title="class in mars.venus">EditPane</A>&nbsp;fileEditorTab)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Remove the pane and update menu status</TD>
@@ -361,7 +361,7 @@ Tabbed pane for the editor.  Each of its tabs represents an open file.
 <TR BGCOLOR="white" CLASS="TableRowColor">
 <TD ALIGN="right" VALIGN="top" WIDTH="1%"><FONT SIZE="-1">
 <CODE>&nbsp;void</CODE></FONT></TD>
-<TD><CODE><B><A HREF="../../mars/venus/EditTabbedPane.html#setCurrentEditTab(mars.venus.EditPane)">setCurrentEditTab</A></B>(<A HREF="../../mars/venus/EditPane.html" title="class in mars.venus">EditPane</A>&nbsp;editPane)</CODE>
+<TD><CODE><B><A HREF="../../mars/venus/EditTabbedPane.html#setCurrentEditTab(mars.venus.EditPane)">setCurrentEditTab</A></B>(<A HREF="../../mars/venus/EditPane.html" title="class in mars.venus">EditPane</A>&nbsp;fileEditorTab)</CODE>
 
 <BR>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Select the specified EditPane to be the current tab.</TD>
@@ -464,12 +464,12 @@ public <A HREF="../../mars/venus/EditPane.html" title="class in mars.venus">Edit
 <A NAME="setCurrentEditTab(mars.venus.EditPane)"><!-- --></A><H3>
 setCurrentEditTab</H3>
 <PRE>
-public void <B>setCurrentEditTab</B>(<A HREF="../../mars/venus/EditPane.html" title="class in mars.venus">EditPane</A>&nbsp;editPane)</PRE>
+public void <B>setCurrentEditTab</B>(<A HREF="../../mars/venus/EditPane.html" title="class in mars.venus">EditPane</A>&nbsp;fileEditorTab)</PRE>
 <DL>
 <DD>Select the specified EditPane to be the current tab.
 <P>
 <DD><DL>
-<DT><B>Parameters:</B><DD><CODE>editPane</CODE> - The EditPane tab to become current.</DL>
+<DT><B>Parameters:</B><DD><CODE>fileEditorTab</CODE> - The EditPane tab to become current.</DL>
 </DD>
 </DL>
 <HR>
@@ -614,7 +614,7 @@ public boolean <B>saveAllFiles</B>()</PRE>
 <A NAME="remove(mars.venus.EditPane)"><!-- --></A><H3>
 remove</H3>
 <PRE>
-public void <B>remove</B>(<A HREF="../../mars/venus/EditPane.html" title="class in mars.venus">EditPane</A>&nbsp;editPane)</PRE>
+public void <B>remove</B>(<A HREF="../../mars/venus/EditPane.html" title="class in mars.venus">EditPane</A>&nbsp;fileEditorTab)</PRE>
 <DL>
 <DD>Remove the pane and update menu status
 <P>

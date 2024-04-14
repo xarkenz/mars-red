@@ -4,7 +4,7 @@ import mars.Application;
 import mars.settings.Settings;
 import mars.venus.*;
 import mars.venus.actions.VenusAction;
-import mars.venus.execute.ExecutePane;
+import mars.venus.execute.ExecuteTab;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -46,8 +46,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 public class SettingsHighlightingAction extends VenusAction {
     private JDialog highlightDialog;
 
-    // NOTE: These must follow same sequence and buttons must
-    //       follow this sequence too!
+    // NOTE: These must follow same sequence and buttons must follow this sequence too!
     private static final int[] backgroundSettingPositions = {
         Settings.TEXTSEGMENT_HIGHLIGHT_BACKGROUND,
         Settings.TEXTSEGMENT_DELAYSLOT_HIGHLIGHT_BACKGROUND,
@@ -73,17 +72,17 @@ public class SettingsHighlightingAction extends VenusAction {
         Settings.ODD_ROW_FONT,
     };
 
-    JButton[] backgroundButtons;
-    JButton[] foregroundButtons;
-    JButton[] fontButtons;
-    JCheckBox[] defaultCheckBoxes;
-    JLabel[] samples;
-    Color[] currentNondefaultBackground, currentNondefaultForeground;
-    Color[] initialSettingsBackground, initialSettingsForeground;
-    Font[] initialFont, currentFont, currentNondefaultFont;
-    JButton dataHighlightButton, registerHighlightButton;
-    boolean currentDataHighlightSetting, initialDataHighlightSetting;
-    boolean currentRegisterHighlightSetting, initialRegisterHighlightSetting;
+    private JButton[] backgroundButtons;
+    private JButton[] foregroundButtons;
+    private JButton[] fontButtons;
+    private JCheckBox[] defaultCheckBoxes;
+    private JLabel[] samples;
+    private Color[] currentNondefaultBackground, currentNondefaultForeground;
+    private Color[] initialSettingsBackground, initialSettingsForeground;
+    private Font[] initialFont, currentFont, currentNondefaultFont;
+    private JButton dataHighlightButton, registerHighlightButton;
+    private boolean currentDataHighlightSetting, initialDataHighlightSetting;
+    private boolean currentRegisterHighlightSetting, initialRegisterHighlightSetting;
 
     private static final int gridVGap = 2;
     private static final int gridHGap = 2;
@@ -130,11 +129,13 @@ public class SettingsHighlightingAction extends VenusAction {
         highlightDialog.setVisible(true);
     }
 
-    // The dialog box that appears when menu item is selected.
+    /**
+     * Build the dialog box that appears when menu item is selected.
+     */
     private JPanel buildDialogPanel() {
         JPanel contents = new JPanel(new BorderLayout(20, 20));
         contents.setBorder(new EmptyBorder(10, 10, 10, 10));
-        JPanel patches = new JPanel(new GridLayout(backgroundSettingPositions.length, 4, gridVGap, gridHGap));
+        JPanel patchesPanel = new JPanel(new GridLayout(backgroundSettingPositions.length, 4, gridVGap, gridHGap));
         currentNondefaultBackground = new Color[backgroundSettingPositions.length];
         currentNondefaultForeground = new Color[backgroundSettingPositions.length];
         initialSettingsBackground = new Color[backgroundSettingPositions.length];
@@ -168,36 +169,34 @@ public class SettingsHighlightingAction extends VenusAction {
         initializeButtonColors();
 
         for (int i = 0; i < backgroundSettingPositions.length; i++) {
-            patches.add(backgroundButtons[i]);
-            patches.add(foregroundButtons[i]);
-            patches.add(fontButtons[i]);
-            patches.add(defaultCheckBoxes[i]);
+            patchesPanel.add(backgroundButtons[i]);
+            patchesPanel.add(foregroundButtons[i]);
+            patchesPanel.add(fontButtons[i]);
+            patchesPanel.add(defaultCheckBoxes[i]);
         }
 
-        JPanel descriptions = new JPanel(new GridLayout(backgroundSettingPositions.length, 1, gridVGap, gridHGap));
+        JPanel descriptionsPanel = new JPanel(new GridLayout(backgroundSettingPositions.length, 1, gridVGap, gridHGap));
         // Note the labels have to match buttons by position...
-        descriptions.add(new JLabel("Text Segment highlighting", SwingConstants.RIGHT));
-        descriptions.add(new JLabel("Text Segment Delay Slot highlighting", SwingConstants.RIGHT));
-        descriptions.add(new JLabel("Data Segment highlighting *", SwingConstants.RIGHT));
-        descriptions.add(new JLabel("Register highlighting *", SwingConstants.RIGHT));
-        descriptions.add(new JLabel("Even row normal", SwingConstants.RIGHT));
-        descriptions.add(new JLabel("Odd row normal", SwingConstants.RIGHT));
+        descriptionsPanel.add(new JLabel("Text Segment highlighting", SwingConstants.RIGHT));
+        descriptionsPanel.add(new JLabel("Text Segment Delay Slot highlighting", SwingConstants.RIGHT));
+        descriptionsPanel.add(new JLabel("Data Segment highlighting *", SwingConstants.RIGHT));
+        descriptionsPanel.add(new JLabel("Register highlighting *", SwingConstants.RIGHT));
+        descriptionsPanel.add(new JLabel("Even row normal", SwingConstants.RIGHT));
+        descriptionsPanel.add(new JLabel("Odd row normal", SwingConstants.RIGHT));
 
-        JPanel sample = new JPanel(new GridLayout(backgroundSettingPositions.length, 1, gridVGap, gridHGap));
-        for (int i = 0; i < backgroundSettingPositions.length; i++) {
-            sample.add(samples[i]);
+        JPanel samplesPanel = new JPanel(new GridLayout(backgroundSettingPositions.length, 1, gridVGap, gridHGap));
+        for (JLabel sample : samples) {
+            samplesPanel.add(sample);
         }
 
         JPanel instructions = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        // create fake checkbox for illustration purposes
+        // Create fake checkbox for illustration purposes
         JCheckBox illustration = new JCheckBox() {
             @Override
-            protected void processMouseEvent(MouseEvent e) {
-            }
+            protected void processMouseEvent(MouseEvent event) {}
 
             @Override
-            protected void processKeyEvent(KeyEvent e) {
-            }
+            protected void processKeyEvent(KeyEvent event) {}
         };
         illustration.setSelected(true);
         instructions.add(illustration);
@@ -205,15 +204,15 @@ public class SettingsHighlightingAction extends VenusAction {
         int spacer = 10;
         Box mainArea = Box.createHorizontalBox();
         mainArea.add(Box.createHorizontalGlue());
-        mainArea.add(descriptions);
+        mainArea.add(descriptionsPanel);
         mainArea.add(Box.createHorizontalStrut(spacer));
         mainArea.add(Box.createHorizontalGlue());
         mainArea.add(Box.createHorizontalStrut(spacer));
-        mainArea.add(sample);
+        mainArea.add(samplesPanel);
         mainArea.add(Box.createHorizontalStrut(spacer));
         mainArea.add(Box.createHorizontalGlue());
         mainArea.add(Box.createHorizontalStrut(spacer));
-        mainArea.add(patches);
+        mainArea.add(patchesPanel);
 
         contents.add(mainArea, BorderLayout.EAST);
         contents.add(instructions, BorderLayout.NORTH);
@@ -282,7 +281,9 @@ public class SettingsHighlightingAction extends VenusAction {
         return enabled ? "enabled" : "disabled";
     }
 
-    // Called once, upon dialog setup.
+    /**
+     * Called once, upon dialog setup.
+     */
     private void initializeButtonColors() {
         Settings settings = Application.getSettings();
         LineBorder lineBorder = new LineBorder(Color.BLACK);
@@ -319,7 +320,9 @@ public class SettingsHighlightingAction extends VenusAction {
         currentRegisterHighlightSetting = initialRegisterHighlightSetting = settings.highlightRegisters.get();
     }
 
-    // Set the color settings according to current button colors.  Occurs when "Apply" selected.
+    /**
+     * Set the color settings according to current button colors.  Occurs when "Apply" selected.
+     */
     private void setHighlightingSettings() {
         Settings settings = Application.getSettings();
         for (int i = 0; i < backgroundSettingPositions.length; i++) {
@@ -329,22 +332,25 @@ public class SettingsHighlightingAction extends VenusAction {
         }
         settings.highlightDataSegment.set(currentDataHighlightSetting);
         settings.highlightRegisters.set(currentRegisterHighlightSetting);
-        ExecutePane executePane = Application.getGUI().getMainPane().getExecutePane();
-        executePane.getRegistersWindow().refresh();
-        executePane.getCoprocessor0Window().refresh();
-        executePane.getCoprocessor1Window().refresh();
+        RegistersPane registersPane = Application.getGUI().getRegistersPane();
+        ExecuteTab executeTab = Application.getGUI().getMainPane().getExecuteTab();
+        registersPane.getRegistersWindow().refresh();
+        registersPane.getCoprocessor0Window().refresh();
+        registersPane.getCoprocessor1Window().refresh();
         // If a successful assembly has occurred, the various panes will be populated with tables
         // and we want to apply the new settings.  If it has NOT occurred, there are no tables
         // in the Data and Text segment windows so we don't want to disturb them.
         // In the latter case, the component count for the Text segment window is 0 (but is 1
         // for Data segment window).
-        if (executePane.getTextSegmentWindow().getContentPane().getComponentCount() > 0) {
-            executePane.getDataSegmentWindow().updateValues();
-            executePane.getTextSegmentWindow().highlightStepAtPC();
+        if (executeTab.getTextSegmentWindow().getContentPane().getComponentCount() > 0) {
+            executeTab.getDataSegmentWindow().updateValues();
+            executeTab.getTextSegmentWindow().highlightStepAtPC();
         }
     }
 
-    // Called when Reset selected.
+    /**
+     * Called when Reset selected.
+     */
     private void resetButtonColors() {
         Settings settings = Application.getSettings();
         dataHighlightButton.setText(getHighlightControlText(initialDataHighlightSetting));

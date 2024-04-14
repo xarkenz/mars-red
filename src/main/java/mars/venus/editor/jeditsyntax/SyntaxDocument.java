@@ -7,9 +7,9 @@
  * remains intact in all source distributions of this package.
  */
 
-package mars.venus.editors.jeditsyntax;
+package mars.venus.editor.jeditsyntax;
 
-import mars.venus.editors.jeditsyntax.tokenmarker.TokenMarker;
+import mars.venus.editor.jeditsyntax.tokenmarker.TokenMarker;
 
 import javax.swing.event.DocumentEvent;
 import javax.swing.text.BadLocationException;

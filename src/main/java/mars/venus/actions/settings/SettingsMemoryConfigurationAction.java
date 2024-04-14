@@ -5,9 +5,9 @@ import mars.mips.hardware.MemoryConfiguration;
 import mars.mips.hardware.MemoryConfigurations;
 import mars.simulator.Simulator;
 import mars.util.Binary;
-import mars.venus.FileStatus;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
+import mars.venus.execute.ProgramStatus;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -65,18 +65,15 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        JDialog configDialog = new MemoryConfigurationDialog(Application.getGUI(), "MIPS Memory Configuration", true);
+        JDialog configDialog = new MemoryConfigurationDialog(gui, "MIPS Memory Configuration", true);
         configDialog.setVisible(true);
     }
 
-    //////////////////////////////////////////////////////////////////////////////
-    //
-    //   Private class to do all the work!
-    //
     private class MemoryConfigurationDialog extends JDialog implements ActionListener {
         JTextField[] addressDisplay;
         JLabel[] nameDisplay;
-        ConfigurationButton selectedConfigurationButton, initialConfigurationButton;
+        ConfigurationButton selectedConfigurationButton;
+        ConfigurationButton initialConfigurationButton;
 
         public MemoryConfigurationDialog(Frame owner, String title, boolean modality) {
             super(owner, title, modality);
@@ -84,7 +81,7 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
             this.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
             this.addWindowListener(new WindowAdapter() {
                 @Override
-                public void windowClosing(WindowEvent we) {
+                public void windowClosing(WindowEvent event) {
                     performClose();
                 }
             });
@@ -120,7 +117,7 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
                 choices.add(button);
                 chooserPanel.add(button);
             }
-            chooserPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.BLACK), "Configuration"));
+            chooserPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.black), "Configuration"));
             return chooserPanel;
         }
 
@@ -134,17 +131,17 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
             Font monospaced = new Font("Monospaced", Font.PLAIN, 12);
             nameDisplay = new JLabel[numItems];
             addressDisplay = new JTextField[numItems];
-            for (int i = 0; i < numItems; i++) {
-                nameDisplay[i] = new JLabel();
-                addressDisplay[i] = new JTextField();
-                addressDisplay[i].setEditable(false);
-                addressDisplay[i].setFont(monospaced);
+            for (int index = 0; index < numItems; index++) {
+                nameDisplay[index] = new JLabel();
+                addressDisplay[index] = new JTextField();
+                addressDisplay[index].setEditable(false);
+                addressDisplay[index].setFont(monospaced);
             }
             // Display vertically from high to low memory addresses so
             // add the components in reverse order.
-            for (int i = addressDisplay.length - 1; i >= 0; i--) {
-                namesPanel.add(nameDisplay[i]);
-                valuesPanel.add(addressDisplay[i]);
+            for (int index = addressDisplay.length - 1; index >= 0; index--) {
+                namesPanel.add(nameDisplay[index]);
+                valuesPanel.add(addressDisplay[index]);
             }
             setConfigDisplay(config);
             Box columns = Box.createHorizontalBox();
@@ -155,32 +152,41 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
             return displayPanel;
         }
 
-        // Carry out action for the radio buttons.
+        /**
+         * Carry out action for the radio buttons.
+         */
         @Override
-        public void actionPerformed(ActionEvent e) {
-            MemoryConfiguration config = ((ConfigurationButton) e.getSource()).getConfiguration();
+        public void actionPerformed(ActionEvent event) {
+            ConfigurationButton button = (ConfigurationButton) event.getSource();
+            MemoryConfiguration config = button.getConfiguration();
             setConfigDisplay(config);
-            this.selectedConfigurationButton = (ConfigurationButton) e.getSource();
+            this.selectedConfigurationButton = button;
         }
 
         // Row of control buttons to be placed along the button of the dialog
         private Component buildControlPanel() {
             Box controlPanel = Box.createHorizontalBox();
-            JButton okButton = new JButton("Apply and Close");
+            JButton okButton = new JButton("OK");
             okButton.setToolTipText(SettingsHighlightingAction.OK_TOOL_TIP_TEXT);
-            okButton.addActionListener(e -> {
+            okButton.addActionListener(event -> {
                 performApply();
                 performClose();
             });
             JButton applyButton = new JButton("Apply");
             applyButton.setToolTipText(SettingsHighlightingAction.APPLY_TOOL_TIP_TEXT);
-            applyButton.addActionListener(e -> performApply());
+            applyButton.addActionListener(event -> {
+                performApply();
+            });
             JButton cancelButton = new JButton("Cancel");
             cancelButton.setToolTipText(SettingsHighlightingAction.CANCEL_TOOL_TIP_TEXT);
-            cancelButton.addActionListener(e -> performClose());
+            cancelButton.addActionListener(event -> {
+                performClose();
+            });
             JButton resetButton = new JButton("Reset");
             resetButton.setToolTipText(SettingsHighlightingAction.RESET_TOOL_TIP_TEXT);
-            resetButton.addActionListener(e -> performReset());
+            resetButton.addActionListener(event -> {
+                performReset();
+            });
             controlPanel.add(Box.createHorizontalGlue());
             controlPanel.add(okButton);
             controlPanel.add(Box.createHorizontalGlue());
@@ -196,17 +202,17 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
         private void performApply() {
             if (MemoryConfigurations.setCurrentConfiguration(this.selectedConfigurationButton.getConfiguration())) {
                 Application.getSettings().memoryConfiguration.set(this.selectedConfigurationButton.getConfiguration().getConfigurationIdentifier());
-                Application.getGUI().getRegistersPane().getRegistersWindow().clearHighlighting();
-                Application.getGUI().getRegistersPane().getRegistersWindow().updateRegisters();
-                Application.getGUI().getMainPane().getExecutePane().getDataSegmentWindow().updateBaseAddressComboBox();
+                gui.getRegistersPane().getRegistersWindow().clearHighlighting();
+                gui.getRegistersPane().getRegistersWindow().updateRegisters();
+                gui.getMainPane().getExecuteTab().getDataSegmentWindow().updateBaseAddressComboBox();
                 // 21 July 2009 Re-assemble if the situation demands it to maintain consistency.
-                if (FileStatus.get() == FileStatus.RUNNABLE || FileStatus.get() == FileStatus.RUNNING || FileStatus.get() == FileStatus.TERMINATED) {
+                if (gui.getProgramStatus() != ProgramStatus.NOT_ASSEMBLED) {
                     // Stop execution if executing -- should NEVER happen because this
                     // Action's widget is disabled during MIPS execution.
-                    if (FileStatus.get() == FileStatus.RUNNING) {
+                    if (gui.getProgramStatus() == ProgramStatus.RUNNING) {
                         Simulator.getInstance().stop(SettingsMemoryConfigurationAction.this);
                     }
-                    Application.getGUI().getRunAssembleAction().actionPerformed(null);
+                    gui.getRunAssembleAction().actionPerformed(null);
                 }
             }
         }
@@ -232,7 +238,7 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
             // results.  There can be duplicate addresses, so I concatenate the name
             // onto the address to make each key unique.  Then slice off the name upon
             // extraction.
-            TreeMap<String, String> treeSortedByAddress = new TreeMap<>();
+            Map<String, String> treeSortedByAddress = new TreeMap<>();
             for (int i = 0; i < configurationItemValues.length; i++) {
                 treeSortedByAddress.put(Binary.intToHexString(configurationItemValues[i]) + configurationItemNames[i], configurationItemNames[i]);
             }

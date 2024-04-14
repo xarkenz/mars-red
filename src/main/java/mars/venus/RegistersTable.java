@@ -1,8 +1,11 @@
 package mars.venus;
 
 import mars.Application;
+import mars.mips.hardware.Register;
+import mars.settings.Settings;
 
 import javax.swing.*;
+import javax.swing.event.TableModelEvent;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumn;
@@ -40,7 +43,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /**
  * JTable subclass to provide custom tool tips for each of the
- * register table column headers and for each register name in the first column. From
+ * register table column headers and for each register name in the first column. Based on
  * <a href="http://java.sun.com/docs/books/tutorial/uiswing/components/table.html">Sun's JTable tutorial</a>.
  */
 public class RegistersTable extends JTable {
@@ -48,17 +51,51 @@ public class RegistersTable extends JTable {
 
     private final String[] headerTips;
     private final String[] registerTips;
+    private boolean isUpdating;
+    private int highlightedRow;
 
-    RegistersTable(TableModel model, String[] headerTips, String[] registerTips) {
+    public RegistersTable(TableModel model, String[] headerTips, String[] registerTips) {
         super(model);
         this.headerTips = headerTips;
         this.registerTips = registerTips;
+        this.isUpdating = false;
+        this.highlightedRow = -1;
     }
 
     public void setupColumn(int columnIndex, int preferredWidth, int alignment) {
         TableColumn column = this.getColumnModel().getColumn(columnIndex);
         column.setPreferredWidth(preferredWidth);
         column.setCellRenderer(new RegisterCellRenderer(alignment));
+    }
+
+    public void setUpdating(boolean isUpdating) {
+        this.isUpdating = isUpdating;
+    }
+
+    /**
+     * Clear highlight background color from any cell currently highlighted.
+     */
+    public void clearHighlighting() {
+        this.isUpdating = false;
+        this.highlightedRow = -1; // Assure highlight will not occur upon re-assemble
+        this.tableChanged(new TableModelEvent(this.getModel()));
+    }
+
+    /**
+     * Refresh the table, triggering re-rendering.
+     */
+    public void refresh() {
+        this.tableChanged(new TableModelEvent(this.getModel()));
+    }
+
+    /**
+     * Highlight the given row, removing highlighting from all other rows.
+     *
+     * @param row The row to be highlighted.
+     */
+    public void highlightRow(int row) {
+        this.highlightedRow = row;
+        this.refresh();
     }
 
     // Implement table cell tool tips
@@ -91,7 +128,7 @@ public class RegistersTable extends JTable {
     /**
      * Cell renderer for displaying register entries.
      */
-    private static class RegisterCellRenderer extends DefaultTableCellRenderer {
+    private class RegisterCellRenderer extends DefaultTableCellRenderer {
         private final int alignment;
 
         public RegisterCellRenderer(int alignment) {
@@ -101,10 +138,23 @@ public class RegistersTable extends JTable {
 
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            JLabel cell = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            cell.setFont(Application.getSettings().getEditorFont());
-            cell.setHorizontalAlignment(alignment);
-            return cell;
+            Settings settings = Application.getSettings();
+
+            this.setHorizontalAlignment(alignment);
+            if (settings.highlightDataSegment.get() && isUpdating && row == highlightedRow) {
+                this.setBackground(settings.getColorSettingByPosition(Settings.REGISTER_HIGHLIGHT_BACKGROUND));
+                this.setForeground(settings.getColorSettingByPosition(Settings.REGISTER_HIGHLIGHT_FOREGROUND));
+            }
+            else {
+                this.setBackground(null);
+                this.setForeground(null);
+            }
+
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            this.setFont(MonoRightCellRenderer.MONOSPACED_PLAIN_12POINT);
+
+            return this;
         }
     }
 }

@@ -8,12 +8,16 @@ import mars.mips.hardware.RegisterFile;
 import mars.util.FilenameFinder;
 import mars.venus.*;
 import mars.venus.actions.VenusAction;
-import mars.venus.execute.ExecutePane;
+import mars.venus.editor.EditTab;
+import mars.venus.editor.FileEditorTab;
+import mars.venus.execute.ExecuteTab;
+import mars.venus.execute.ProgramStatus;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
  
 /*
 Copyright (c) 2003-2010,  Pete Sanderson and Kenneth Vollmar
@@ -62,84 +66,87 @@ public class RunAssembleAction extends VenusAction {
 
     @Override
     public void actionPerformed(ActionEvent event) {
-        ExecutePane executePane = gui.getMainPane().getExecutePane();
+        EditTab editTab = gui.getMainPane().getEditTab();
+        ExecuteTab executeTab = gui.getMainPane().getExecuteTab();
         RegistersPane registersPane = gui.getRegistersPane();
-        if (FileStatus.getFile() != null) {
-            if (FileStatus.get() == FileStatus.EDITED) {
-                gui.getEditor().save();
+
+        // Only continue if there is at least one file open in the Edit tab
+        if (editTab.getCurrentEditorTab() == null) {
+            return;
+        }
+
+        // Generate the list of files to assemble
+        String leadPathname = editTab.getCurrentEditorTab().getPathname();
+        List<String> pathnames;
+        if (Application.getSettings().assembleAllEnabled.get()) {
+            pathnames = FilenameFinder.getFilenameList(new File(leadPathname).getParent(), Application.FILE_EXTENSIONS);
+        }
+        else {
+            pathnames = List.of(leadPathname);
+        }
+
+        // Get the path of the exception handler, if enabled
+        String exceptionHandler = null;
+        if (Application.getSettings().exceptionHandlerEnabled.get() && Application.getSettings().exceptionHandlerPath.get() != null && !Application.getSettings().exceptionHandlerPath.get().isBlank()) {
+            exceptionHandler = Application.getSettings().exceptionHandlerPath.get();
+        }
+
+        try {
+            Application.program = new Program();
+            programsToAssemble = Application.program.prepareFilesForAssembly(pathnames, leadPathname, exceptionHandler);
+            gui.getMessagesPane().writeToMessages(buildFileNameList(getName() + ": assembling ", programsToAssemble));
+
+            // Added logic to receive any warnings and output them.  DPS 11/28/06
+            ErrorList warnings = Application.program.assemble(programsToAssemble, Application.getSettings().extendedAssemblerEnabled.get(), Application.getSettings().warningsAreErrors.get());
+
+            if (warnings.warningsOccurred()) {
+                gui.getMessagesPane().writeToMessages(warnings.generateWarningReport());
             }
-            try {
-                Application.program = new Program();
-                ArrayList<String> filesToAssemble;
-                if (Application.getSettings().assembleAllEnabled.get()) {
-                    // Setting calls for multiple file assembly
-                    filesToAssemble = FilenameFinder.getFilenameList(new File(FileStatus.getName()).getParent(), Application.FILE_EXTENSIONS);
-                }
-                else {
-                    filesToAssemble = new ArrayList<>();
-                    filesToAssemble.add(FileStatus.getName());
-                }
-                String exceptionHandler = null;
-                if (Application.getSettings().exceptionHandlerEnabled.get() && Application.getSettings().exceptionHandlerPath.get() != null && !Application.getSettings().exceptionHandlerPath.get().isEmpty()) {
-                    exceptionHandler = Application.getSettings().exceptionHandlerPath.get();
-                }
-                programsToAssemble = Application.program.prepareFilesForAssembly(filesToAssemble, FileStatus.getFile().getPath(), exceptionHandler);
-                gui.getMessagesPane().writeToMessages(buildFileNameList(getName() + ": assembling ", programsToAssemble));
+            gui.getMessagesPane().writeToMessages(getName() + ": operation completed successfully.\n\n");
 
-                // Added logic to receive any warnings and output them.... DPS 11/28/06
-                ErrorList warnings = Application.program.assemble(programsToAssemble, Application.getSettings().extendedAssemblerEnabled.get(), Application.getSettings().warningsAreErrors.get());
-
-                if (warnings.warningsOccurred()) {
-                    gui.getMessagesPane().writeToMessages(warnings.generateWarningReport());
+            gui.setProgramStatus(ProgramStatus.NOT_STARTED);
+            RegisterFile.resetRegisters();
+            Coprocessor1.resetRegisters();
+            Coprocessor0.resetRegisters();
+            executeTab.getTextSegmentWindow().setupTable();
+            executeTab.getDataSegmentWindow().setupTable();
+            executeTab.getDataSegmentWindow().highlightCellForAddress(Memory.dataBaseAddress);
+            executeTab.getDataSegmentWindow().clearHighlighting();
+            executeTab.getLabelsWindow().setupTable();
+            executeTab.getTextSegmentWindow().setCodeHighlighting(true);
+            executeTab.getTextSegmentWindow().highlightStepAtPC();
+            registersPane.getRegistersWindow().clearWindow();
+            registersPane.getCoprocessor1Window().clearWindow();
+            registersPane.getCoprocessor0Window().clearWindow();
+            VenusUI.setReset(true);
+            VenusUI.setStarted(false);
+            gui.getMainPane().setSelectedComponent(executeTab);
+        }
+        catch (ProcessingException exception) {
+            String errorReport = exception.errors().generateErrorAndWarningReport();
+            gui.getMessagesPane().writeToMessages(errorReport);
+            gui.getMessagesPane().writeToMessages(getName() + ": operation completed with errors.\n\n");
+            // Select editor line containing first error, and corresponding error message.
+            ArrayList<ErrorMessage> errorMessages = exception.errors().getErrorMessages();
+            for (ErrorMessage message : errorMessages) {
+                // No line or position may mean File Not Found (e.g. exception file). Don't try to open. DPS 3-Oct-2010
+                if (message.getLine() == 0 && message.getPosition() == 0) {
+                    continue;
                 }
-                gui.getMessagesPane().writeToMessages(getName() + ": operation completed successfully.\n\n");
-
-                FileStatus.setAssembled(true);
-                FileStatus.set(FileStatus.RUNNABLE);
-                RegisterFile.resetRegisters();
-                Coprocessor1.resetRegisters();
-                Coprocessor0.resetRegisters();
-                executePane.getTextSegmentWindow().setupTable();
-                executePane.getDataSegmentWindow().setupTable();
-                executePane.getDataSegmentWindow().highlightCellForAddress(Memory.dataBaseAddress);
-                executePane.getDataSegmentWindow().clearHighlighting();
-                executePane.getLabelsWindow().setupTable();
-                executePane.getTextSegmentWindow().setCodeHighlighting(true);
-                executePane.getTextSegmentWindow().highlightStepAtPC();
-                registersPane.getRegistersWindow().clearWindow();
-                registersPane.getCoprocessor1Window().clearWindow();
-                registersPane.getCoprocessor0Window().clearWindow();
-                VenusUI.setReset(true);
-                VenusUI.setStarted(false);
-                gui.getMainPane().setSelectedComponent(executePane);
-            }
-            catch (ProcessingException exception) {
-                String errorReport = exception.errors().generateErrorAndWarningReport();
-                gui.getMessagesPane().writeToMessages(errorReport);
-                gui.getMessagesPane().writeToMessages(getName() + ": operation completed with errors.\n\n");
-                // Select editor line containing first error, and corresponding error message.
-                ArrayList<ErrorMessage> errorMessages = exception.errors().getErrorMessages();
-                for (ErrorMessage message : errorMessages) {
-                    // No line or position may mean File Not Found (e.g. exception file). Don't try to open. DPS 3-Oct-2010
-                    if (message.getLine() == 0 && message.getPosition() == 0) {
-                        continue;
+                if (!message.isWarning() || Application.getSettings().warningsAreErrors.get()) {
+                    gui.getMessagesPane().selectErrorMessage(message.getFilename(), message.getLine(), message.getPosition());
+                    // Bug workaround: Line selection does not work correctly for the JEditTextArea editor
+                    // when the file is opened then automatically assembled (assemble-on-open setting).
+                    // Automatic assemble happens in EditTabbedPane's openFile() method, by invoking
+                    // this method (actionPerformed) explicitly with null argument.  Thus e!=null test.
+                    // DPS 9-Aug-2010
+                    if (event != null) {
+                        gui.getMessagesPane().selectEditorTextLine(message.getFilename(), message.getLine(), message.getPosition());
                     }
-                    if (!message.isWarning() || Application.getSettings().warningsAreErrors.get()) {
-                        gui.getMessagesPane().selectErrorMessage(message.getFilename(), message.getLine(), message.getPosition());
-                        // Bug workaround: Line selection does not work correctly for the JEditTextArea editor
-                        // when the file is opened then automatically assembled (assemble-on-open setting).
-                        // Automatic assemble happens in EditTabbedPane's openFile() method, by invoking
-                        // this method (actionPerformed) explicitly with null argument.  Thus e!=null test.
-                        // DPS 9-Aug-2010
-                        if (event != null) {
-                            gui.getMessagesPane().selectEditorTextLine(message.getFilename(), message.getLine(), message.getPosition());
-                        }
-                        break;
-                    }
+                    break;
                 }
-                FileStatus.setAssembled(false);
-                FileStatus.set(FileStatus.NOT_EDITED);
             }
+            gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
         }
     }
 

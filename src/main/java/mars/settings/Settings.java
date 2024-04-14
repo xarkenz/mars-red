@@ -4,8 +4,8 @@ import mars.Application;
 import mars.util.Binary;
 import mars.util.EditorFont;
 import mars.util.PropertiesFile;
-import mars.venus.editors.jeditsyntax.SyntaxStyle;
-import mars.venus.editors.jeditsyntax.SyntaxUtilities;
+import mars.venus.editor.jeditsyntax.SyntaxStyle;
+import mars.venus.editor.jeditsyntax.SyntaxUtilities;
 
 import java.awt.*;
 import java.util.Observable;

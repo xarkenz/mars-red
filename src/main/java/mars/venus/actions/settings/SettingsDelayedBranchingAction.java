@@ -2,9 +2,9 @@ package mars.venus.actions.settings;
 
 import mars.Application;
 import mars.simulator.Simulator;
-import mars.venus.FileStatus;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
+import mars.venus.execute.ProgramStatus;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -49,21 +49,21 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * The user need only pause or stop execution to re-enable it.
  */
 public class SettingsDelayedBranchingAction extends VenusAction {
-
     public SettingsDelayedBranchingAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 
+    @Override
     public void actionPerformed(ActionEvent event) {
         Application.getSettings().delayedBranchingEnabled.set(((JCheckBoxMenuItem) event.getSource()).isSelected());
         // 25 June 2007 Re-assemble if the situation demands it to maintain consistency.
-        if (Application.getGUI() != null && (FileStatus.get() == FileStatus.RUNNABLE || FileStatus.get() == FileStatus.RUNNING || FileStatus.get() == FileStatus.TERMINATED)) {
+        if (gui.getProgramStatus() != ProgramStatus.NOT_ASSEMBLED) {
             // Stop execution if executing -- should NEVER happen because this
             // Action's widget is disabled during MIPS execution.
-            if (FileStatus.get() == FileStatus.RUNNING) {
+            if (gui.getMainPane().getExecuteTab().getProgramStatus() == ProgramStatus.RUNNING) {
                 Simulator.getInstance().stop(this);
             }
-            Application.getGUI().getRunAssembleAction().actionPerformed(null);
+            gui.getRunAssembleAction().actionPerformed(null);
         }
     }
 }

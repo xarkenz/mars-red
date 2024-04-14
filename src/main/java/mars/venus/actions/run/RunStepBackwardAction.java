@@ -5,10 +5,11 @@ import mars.mips.hardware.Coprocessor0;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
-import mars.venus.execute.ExecutePane;
-import mars.venus.FileStatus;
+import mars.venus.RegistersPane;
+import mars.venus.execute.ExecuteTab;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
+import mars.venus.execute.ProgramStatus;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -54,31 +55,33 @@ public class RunStepBackwardAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        if (!FileStatus.isAssembled()) {
-            // Note: this should never occur since backstepping is only enabled after successful assembly.
-            JOptionPane.showMessageDialog(gui, "The program must be assembled before it can be run.");
-            return;
-        }
         VenusUI.setStarted(true);
         gui.getMessagesPane().selectConsoleTab();
-        ExecutePane executePane = gui.getMainPane().getExecutePane();
-        executePane.getTextSegmentWindow().setCodeHighlighting(true);
+        RegistersPane registersPane = gui.getRegistersPane();
+        ExecuteTab executeTab = gui.getMainPane().getExecuteTab();
+        executeTab.getTextSegmentWindow().setCodeHighlighting(true);
 
         if (Application.getSettings().getBackSteppingEnabled()) {
             boolean inDelaySlot = Application.program.getBackStepper().isInDelaySlot(); // Added 25 June 2007
-            Memory.getInstance().addObserver(executePane.getDataSegmentWindow());
-            RegisterFile.addRegistersObserver(executePane.getRegistersWindow());
-            Coprocessor0.addRegistersObserver(executePane.getCoprocessor0Window());
-            Coprocessor1.addRegistersObserver(executePane.getCoprocessor1Window());
+
+            Memory.getInstance().addObserver(executeTab.getDataSegmentWindow());
+            RegisterFile.addRegistersObserver(registersPane.getRegistersWindow());
+            Coprocessor0.addRegistersObserver(registersPane.getCoprocessor0Window());
+            Coprocessor1.addRegistersObserver(registersPane.getCoprocessor1Window());
+
             Application.program.getBackStepper().backStep();
-            Memory.getInstance().deleteObserver(executePane.getDataSegmentWindow());
-            RegisterFile.deleteRegistersObserver(executePane.getRegistersWindow());
-            executePane.getRegistersWindow().updateRegisters();
-            executePane.getCoprocessor1Window().updateRegisters();
-            executePane.getCoprocessor0Window().updateRegisters();
-            executePane.getDataSegmentWindow().updateValues();
-            executePane.getTextSegmentWindow().highlightStepAtPC(inDelaySlot); // Argument added 25 June 2007
-            FileStatus.set(FileStatus.RUNNABLE);
+
+            Memory.getInstance().deleteObserver(executeTab.getDataSegmentWindow());
+            RegisterFile.deleteRegistersObserver(registersPane.getRegistersWindow());
+            Coprocessor0.deleteRegistersObserver(registersPane.getCoprocessor0Window());
+            Coprocessor1.deleteRegistersObserver(registersPane.getCoprocessor1Window());
+            registersPane.getRegistersWindow().updateRegisters();
+            registersPane.getCoprocessor1Window().updateRegisters();
+            registersPane.getCoprocessor0Window().updateRegisters();
+            executeTab.getDataSegmentWindow().updateValues();
+            executeTab.getTextSegmentWindow().highlightStepAtPC(inDelaySlot); // Argument added 25 June 2007
+
+            executeTab.setProgramStatus(ProgramStatus.PAUSED);
             VenusUI.setReset(false);
         }
     }

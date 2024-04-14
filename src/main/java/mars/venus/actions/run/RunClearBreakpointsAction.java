@@ -51,7 +51,7 @@ public class RunClearBreakpointsAction extends VenusAction implements TableModel
      */
     public RunClearBreakpointsAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
-        Application.getGUI().getMainPane().getExecutePane().getTextSegmentWindow().registerTableModelListener(this);
+        Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().registerTableModelListener(this);
     }
 
     /**
@@ -59,7 +59,7 @@ public class RunClearBreakpointsAction extends VenusAction implements TableModel
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        Application.getGUI().getMainPane().getExecutePane().getTextSegmentWindow().clearAllBreakpoints();
+        Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().clearAllBreakpoints();
     }
 
     /**
@@ -70,6 +70,6 @@ public class RunClearBreakpointsAction extends VenusAction implements TableModel
      */
     @Override
     public void tableChanged(TableModelEvent e) {
-        setEnabled(Application.getGUI().getMainPane().getExecutePane().getTextSegmentWindow().getBreakpointCount() > 0);
+        setEnabled(Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().getBreakpointCount() > 0);
     }
 }

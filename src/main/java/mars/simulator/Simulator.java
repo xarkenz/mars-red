@@ -13,7 +13,9 @@ import mars.venus.actions.run.RunStartAction;
 import mars.venus.actions.run.RunPauseAction;
 import mars.venus.actions.run.RunStepForwardAction;
 import mars.venus.actions.run.RunStopAction;
-import mars.venus.execute.ExecutePane;
+import mars.venus.editor.FileStatus;
+import mars.venus.execute.ExecuteTab;
+import mars.venus.execute.ProgramStatus;
 
 import javax.swing.*;
 import java.util.ArrayList;
@@ -67,7 +69,7 @@ public class Simulator extends Observable {
     public static volatile int externalInterruptingDevice = NO_DEVICE;
 
     private SimulatorThread simulatorThread;
-    private SystemIO systemIO;
+    private final SystemIO systemIO;
 
     /**
      * Enumeration of reasons for the simulation to stop. "Stop" in this context
@@ -123,7 +125,12 @@ public class Simulator extends Observable {
         simulatorThread = null;
         systemIO = new SystemIO();
         if (Application.getGUI() != null) {
-            interactiveGUIUpdater = new UpdateGUI();
+            interactiveGUIUpdater = () -> {
+                ((RegistersDisplayTab) Application.getGUI().getRegistersPane().getSelectedComponent()).updateRegisters();
+                Application.getGUI().getMainPane().getExecuteTab().getDataSegmentWindow().updateValues();
+                Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().setCodeHighlighting(true);
+                Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().highlightStepAtPC();
+            };
         }
     }
 
@@ -243,18 +250,19 @@ public class Simulator extends Observable {
             }
         }
 
-        ExecutePane executePane = Application.getGUI().getMainPane().getExecutePane();
+        RegistersPane registersPane = Application.getGUI().getRegistersPane();
+        ExecuteTab executeTab = Application.getGUI().getMainPane().getExecuteTab();
         // Update register and data segment values
-        executePane.getRegistersWindow().updateRegisters();
-        executePane.getCoprocessor1Window().updateRegisters();
-        executePane.getCoprocessor0Window().updateRegisters();
-        executePane.getDataSegmentWindow().updateValues();
+        registersPane.getRegistersWindow().updateRegisters();
+        registersPane.getCoprocessor1Window().updateRegisters();
+        registersPane.getCoprocessor0Window().updateRegisters();
+        executeTab.getDataSegmentWindow().updateValues();
         // Highlight last executed instruction in text segment
-        executePane.getTextSegmentWindow().setCodeHighlighting(true);
-        executePane.getTextSegmentWindow().unhighlightAllSteps();
-        executePane.getTextSegmentWindow().highlightStepAtPC();
+        executeTab.getTextSegmentWindow().setCodeHighlighting(true);
+        executeTab.getTextSegmentWindow().unhighlightAllSteps();
+        executeTab.getTextSegmentWindow().highlightStepAtPC();
 
-        FileStatus.set(FileStatus.RUNNABLE);
+        executeTab.setProgramStatus(ProgramStatus.PAUSED);
         VenusUI.setReset(false);
 
         for (SimulatorListener listener : listeners) {
@@ -271,20 +279,21 @@ public class Simulator extends Observable {
         this.setChanged();
         this.notifyObservers(new SimulatorNotice(SimulatorNotice.SIMULATOR_STOP, maxSteps, RunSpeedPanel.getInstance().getRunSpeed(), programCounter));
 
-        ExecutePane executePane = Application.getGUI().getMainPane().getExecutePane();
+        RegistersPane registersPane = Application.getGUI().getRegistersPane();
+        ExecuteTab executeTab = Application.getGUI().getMainPane().getExecuteTab();
         // Update register and data segment values
-        executePane.getRegistersWindow().updateRegisters();
-        executePane.getCoprocessor1Window().updateRegisters();
-        executePane.getCoprocessor0Window().updateRegisters();
-        executePane.getDataSegmentWindow().updateValues();
+        registersPane.getRegistersWindow().updateRegisters();
+        registersPane.getCoprocessor1Window().updateRegisters();
+        registersPane.getCoprocessor0Window().updateRegisters();
+        executeTab.getDataSegmentWindow().updateValues();
         // Highlight last executed instruction in text segment
-        executePane.getTextSegmentWindow().setCodeHighlighting(true);
-        executePane.getTextSegmentWindow().unhighlightAllSteps();
-        executePane.getTextSegmentWindow().highlightStepAtAddress(RegisterFile.getProgramCounter() - BasicInstruction.INSTRUCTION_LENGTH_BYTES);
+        executeTab.getTextSegmentWindow().setCodeHighlighting(true);
+        executeTab.getTextSegmentWindow().unhighlightAllSteps();
+        executeTab.getTextSegmentWindow().highlightStepAtAddress(RegisterFile.getProgramCounter() - BasicInstruction.INSTRUCTION_LENGTH_BYTES);
 
         // Bring Coprocessor 0 to the front if terminated due to exception
         if (exception != null) {
-            Application.getGUI().getRegistersPane().setSelectedComponent(executePane.getCoprocessor0Window());
+            registersPane.setSelectedComponent(registersPane.getCoprocessor0Window());
         }
 
         MessagesPane messagesPane = Application.getGUI().getMessagesPane();
@@ -314,7 +323,7 @@ public class Simulator extends Observable {
             }
         }
 
-        FileStatus.set(FileStatus.TERMINATED);
+        Application.getGUI().setProgramStatus(ProgramStatus.TERMINATED);
         VenusUI.setReset(false);
 
         // Close any unclosed file descriptors opened in execution of program
@@ -626,21 +635,6 @@ public class Simulator extends Observable {
                     }
                 }
             }
-        }
-    }
-
-    private static class UpdateGUI implements Runnable {
-        @Override
-        public void run() {
-            if (Application.getGUI().getRegistersPane().getSelectedComponent() == Application.getGUI().getMainPane().getExecutePane().getRegistersWindow()) {
-                Application.getGUI().getMainPane().getExecutePane().getRegistersWindow().updateRegisters();
-            }
-            else {
-                Application.getGUI().getMainPane().getExecutePane().getCoprocessor1Window().updateRegisters();
-            }
-            Application.getGUI().getMainPane().getExecutePane().getDataSegmentWindow().updateValues();
-            Application.getGUI().getMainPane().getExecutePane().getTextSegmentWindow().setCodeHighlighting(true);
-            Application.getGUI().getMainPane().getExecutePane().getTextSegmentWindow().highlightStepAtPC();
         }
     }
 }

@@ -47,18 +47,18 @@ public class PopupListener extends MouseAdapter {
     }
 
     @Override
-    public void mousePressed(MouseEvent e) {
-        maybeShowPopup(e);
+    public void mousePressed(MouseEvent event) {
+        maybeShowPopup(event);
     }
 
     @Override
-    public void mouseReleased(MouseEvent e) {
-        maybeShowPopup(e);
+    public void mouseReleased(MouseEvent event) {
+        maybeShowPopup(event);
     }
 
-    private void maybeShowPopup(MouseEvent e) {
-        if (e.isPopupTrigger()) {
-            popup.show(e.getComponent(), e.getX(), e.getY());
+    private void maybeShowPopup(MouseEvent event) {
+        if (event.isPopupTrigger()) {
+            popup.show(event.getComponent(), event.getX(), event.getY());
         }
     }
 }

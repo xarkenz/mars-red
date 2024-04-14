@@ -4,8 +4,6 @@ import mars.Application;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 /*
 Copyright (c) 2003-2010,  Pete Sanderson and Kenneth Vollmar
@@ -42,6 +40,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * </a>.
  */
 public class SplashScreen extends JWindow {
+    private static final int WINDOW_WIDTH = 500;
+    private static final int WINDOW_HEIGHT = 300;
+    private static final String IMAGE_FILENAME = "MarsAresVallis.jpg";
+    private static final float IMAGE_OPACITY = 0.5f;
+
     private final VenusUI gui;
     /**
      * The duration to display the splash screen when {@link #showSplash()}
@@ -50,7 +53,7 @@ public class SplashScreen extends JWindow {
     private final int duration;
 
     /**
-     * Construct a splash screen for MARS which will display for the given duration when shown.
+     * Construct the splash screen for MARS which will display for the given duration when shown.
      *
      * @param duration The duration to display the splash screen when {@link #showSplash()}
      *                 is called, in milliseconds.
@@ -58,74 +61,93 @@ public class SplashScreen extends JWindow {
     public SplashScreen(VenusUI gui, int duration) {
         this.gui = gui;
         this.duration = duration;
+
+        // Build the splash screen
+        ImageBackgroundPanel contentPane = new ImageBackgroundPanel();
+        this.setContentPane(contentPane);
+
+        JLabel content = new JLabel("<html><center>"
+            + "<h1>" + Application.NAME + "</h1>"
+            + "<h2>MIPS Assembler and Runtime Simulator</h2>"
+            + "<h3>Version " + Application.VERSION + "</h3>"
+            + "<p><b>Copyright © " + Application.COPYRIGHT_YEARS + " " + Application.COPYRIGHT_HOLDERS + "</b></p>"
+            + "<p><b>Modified by Sean Clarke</b></p>"
+            + "</center></html>", JLabel.CENTER);
+        contentPane.add(content, BorderLayout.CENTER);
     }
 
     /**
-     * A simple little method to show a title screen in the center
-     * of the screen for the amount of time given in the constructor
+     * Show the splash screen for the amount of time given in the constructor,
+     * then set the main GUI window to be visible.
      */
     public void showSplash() {
-        ImageBackgroundPanel content = new ImageBackgroundPanel();
-        this.setContentPane(content);
+        // Set up window bounds
+        Dimension screen = this.getToolkit().getScreenSize();
+        int x = (screen.width - WINDOW_WIDTH) / 2;
+        int y = (screen.height - WINDOW_HEIGHT) / 2;
+        this.setBounds(x, y, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-        // Set the window's bounds, centering the window
-        // Wee bit of a hack.  I've hardcoded the image dimensions of
-        // MarsSurfacePathfinder.jpg, because obtaining them via
-        // getHeight() and getWidth() is not trivial -- it is possible
-        // that at the time of the call the image has not completed
-        // loading so the Image object doesn't know how big it is.
-        // So observers are involved -- see the API.
-        int width = 390;
-        int height = 215;
-        Toolkit tk = Toolkit.getDefaultToolkit();
-        Dimension screen = tk.getScreenSize();
-        int x = (screen.width - width) / 2;
-        int y = (screen.height - height) / 2;
-        setBounds(x, y, width, height);
+        // Display the splash screen
+        this.setVisible(true);
 
-        // Build the splash screen
-        JLabel title = new JLabel("MARS: Mips Assembler and Runtime Simulator", JLabel.CENTER);
-        JLabel copyright1 = new JLabel("<html><br><br>Version " + Application.VERSION + " Copyright (c) " + Application.COPYRIGHT_YEARS + "</html>", JLabel.CENTER);
-        JLabel copyright2 = new JLabel("<html><br><br>" + Application.COPYRIGHT_HOLDERS + "</html>", JLabel.CENTER);
-        title.setFont(new Font("Sans-Serif", Font.BOLD, 16));
-        title.setForeground(Color.black);
-        copyright1.setFont(new Font("Sans-Serif", Font.BOLD, 14));
-        copyright2.setFont(new Font("Sans-Serif", Font.BOLD, 14));
-        copyright1.setForeground(Color.white);
-        copyright2.setForeground(Color.white);
-
-        content.add(title, BorderLayout.NORTH);
-        content.add(copyright1, BorderLayout.CENTER);
-        content.add(copyright2, BorderLayout.SOUTH);
-
-        // Display it
-        setVisible(true);
-        // Wait a little while, maybe while loading resources
-        Timer splashTimer = new Timer(duration, event -> setVisible(false));
+        // Set a timer to show the main GUI and hide the splash screen after the specified duration
+        Timer splashTimer = new Timer(this.duration, event -> {
+            this.gui.showWindow();
+            this.setVisible(false);
+            this.dispose();
+        });
         splashTimer.setRepeats(false);
         splashTimer.start();
     }
 
     private static class ImageBackgroundPanel extends JPanel {
-        private static final String IMAGE_FILENAME = "MarsSurfacePathfinder.jpg";
-
         private Image image;
 
-        ImageBackgroundPanel() {
+        public ImageBackgroundPanel() {
+            super(new BorderLayout());
+            this.setOpaque(true);
+            this.setBorder(BorderFactory.createLineBorder(UIManager.getColor("Component.focusColor"), 2));
+
             try {
-                image = new ImageIcon(Toolkit.getDefaultToolkit().getImage(this.getClass().getResource(Application.IMAGES_PATH + IMAGE_FILENAME))).getImage();
+                this.image = this.getToolkit().getImage(this.getClass().getResource(Application.IMAGES_PATH + IMAGE_FILENAME));
             }
-            catch (Exception e) {
-                System.out.println(e); // handled in paintComponent()
+            catch (Exception exception) {
+                System.err.println("Unable to load splash screen background (" + Application.IMAGES_PATH + IMAGE_FILENAME + "):\n" + exception);
+                this.image = null;
             }
         }
 
         @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            if (image != null) {
-                g.drawImage(image, 0, 0, this.getWidth(), this.getHeight(), this);
+        protected void paintComponent(Graphics graphics) {
+            super.paintComponent(graphics);
+            // Don't paint if the image is not loaded
+            if (this.image == null) {
+                return;
             }
+            // Get width and height of the source image
+            int width = this.image.getWidth(this);
+            int height = this.image.getHeight(this);
+            if (width < 0 || height < 0) {
+                return;
+            }
+
+            Graphics2D graphics2D = (Graphics2D) graphics;
+            // Save the original composite so it can be restored later
+            Composite composite = graphics2D.getComposite();
+            // Set the opacity of the graphics context to blend the image with the default background color
+            graphics2D.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, IMAGE_OPACITY));
+
+            // Calculate the area of the source image which should be shown on the window
+            float aspectNeeded = (float) WINDOW_WIDTH / WINDOW_HEIGHT;
+            int cropWidth = Math.min(width, Math.round(height * aspectNeeded));
+            int cropHeight = Math.min(height, Math.round(width / aspectNeeded));
+            int cropX = (width - cropWidth) / 2;
+            int cropY = (height - cropHeight) / 2;
+            // Draw the calculated area of the image to the window
+            graphics2D.drawImage(this.image, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, cropX, cropY, cropX + cropWidth, cropY + cropHeight, this);
+
+            // Restore the original composite of the graphics context so other components are drawn properly
+            graphics2D.setComposite(composite);
         }
     }
 }

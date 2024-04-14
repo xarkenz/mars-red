@@ -5,7 +5,7 @@
    import java.awt.*;
    import java.awt.event.*;
    import java.util.*;
-   import mars.tools.*;
+
    import mars.mips.hardware.*;
 
 /*
@@ -465,7 +465,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       //dataBaseAddress=0x10010000, heapBaseAddress=0x10040000, memoryMapBaseAddress=0xffff0000	
        private void initializeDisplayBaseChoices() {
          int[] displayBaseAddressArray = {Memory.textBaseAddress, Memory.dataSegmentBaseAddress, Memory.globalPointer, Memory.dataBaseAddress,
-                                          Memory.heapBaseAddress, Memory.memoryMapBaseAddress };
+                                          Memory.heapBaseAddress, Memory.mmioBaseAddress};
       	// Must agree with above in number and order...
          String[] descriptions =         { " (text)", " (global data)", " ($gp)", " (static data)", " (heap)", " (memory map)" };
          displayBaseAddresses = displayBaseAddressArray;

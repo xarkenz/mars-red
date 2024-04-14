@@ -99,7 +99,7 @@ public class Memory extends Observable {
     /**
      * starting address for memory mapped I/O: 0xffff0000 (-65536)
      */
-    public static int memoryMapBaseAddress = MemoryConfigurations.getDefaultMemoryMapBaseAddress(); //0xffff0000;
+    public static int mmioBaseAddress = MemoryConfigurations.getDefaultMemoryMapBaseAddress(); //0xffff0000;
     /**
      * highest address acessible in kernel mode.
      */
@@ -216,7 +216,7 @@ public class Memory extends Observable {
     public static int kernelDataSegmentLimitAddress = kernelDataBaseAddress + BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * WORD_LENGTH_BYTES;
     public static int kernelTextLimitAddress = kernelTextBaseAddress + TEXT_BLOCK_LENGTH_WORDS * TEXT_BLOCK_TABLE_LENGTH * WORD_LENGTH_BYTES;
     public static int stackLimitAddress = stackBaseAddress - BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * WORD_LENGTH_BYTES;
-    public static int memoryMapLimitAddress = memoryMapBaseAddress + BLOCK_LENGTH_WORDS * MMIO_TABLE_LENGTH * WORD_LENGTH_BYTES;
+    public static int memoryMapLimitAddress = mmioBaseAddress + BLOCK_LENGTH_WORDS * MMIO_TABLE_LENGTH * WORD_LENGTH_BYTES;
 
     // This will be a Singleton class, only one instance is ever created.  Since I know the 
     // Memory object is always needed, I'll go ahead and create it at the time of class loading.
@@ -267,14 +267,14 @@ public class Memory extends Observable {
         kernelTextBaseAddress = config.getKernelTextBaseAddress(); //0x80000000;
         exceptionHandlerAddress = config.getExceptionHandlerAddress(); //0x80000180;
         kernelDataBaseAddress = config.getKernelDataBaseAddress(); //0x90000000;
-        memoryMapBaseAddress = config.getMemoryMapBaseAddress(); //0xffff0000;
+        mmioBaseAddress = config.getMemoryMapBaseAddress(); //0xffff0000;
         kernelHighAddress = config.getKernelHighAddress(); //0xffffffff;
         dataSegmentLimitAddress = Math.min(config.getDataSegmentLimitAddress(), dataSegmentBaseAddress + BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * WORD_LENGTH_BYTES);
         textLimitAddress = Math.min(config.getTextLimitAddress(), textBaseAddress + TEXT_BLOCK_LENGTH_WORDS * TEXT_BLOCK_TABLE_LENGTH * WORD_LENGTH_BYTES);
         kernelDataSegmentLimitAddress = Math.min(config.getKernelDataSegmentLimitAddress(), kernelDataBaseAddress + BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * WORD_LENGTH_BYTES);
         kernelTextLimitAddress = Math.min(config.getKernelTextLimitAddress(), kernelTextBaseAddress + TEXT_BLOCK_LENGTH_WORDS * TEXT_BLOCK_TABLE_LENGTH * WORD_LENGTH_BYTES);
         stackLimitAddress = Math.max(config.getStackLimitAddress(), stackBaseAddress - BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * WORD_LENGTH_BYTES);
-        memoryMapLimitAddress = Math.min(config.getMemoryMapLimitAddress(), memoryMapBaseAddress + BLOCK_LENGTH_WORDS * MMIO_TABLE_LENGTH * WORD_LENGTH_BYTES);
+        memoryMapLimitAddress = Math.min(config.getMemoryMapLimitAddress(), mmioBaseAddress + BLOCK_LENGTH_WORDS * MMIO_TABLE_LENGTH * WORD_LENGTH_BYTES);
     }
 
     /**
@@ -386,9 +386,9 @@ public class Memory extends Observable {
                 throw new AddressErrorException("Cannot write directly to text segment!", Exceptions.ADDRESS_EXCEPTION_STORE, address);
             }
         }
-        else if (address >= memoryMapBaseAddress && address < memoryMapLimitAddress) {
+        else if (address >= mmioBaseAddress && address < memoryMapLimitAddress) {
             // memory mapped I/O.
-            relativeByteAddress = address - memoryMapBaseAddress;
+            relativeByteAddress = address - mmioBaseAddress;
             oldValue = storeBytesInTable(memoryMapBlockTable, relativeByteAddress, length, value);
         }
         else if (inKernelDataSegment(address)) {
@@ -448,9 +448,9 @@ public class Memory extends Observable {
                 throw new AddressErrorException("Cannot write directly to text segment!", Exceptions.ADDRESS_EXCEPTION_STORE, address);
             }
         }
-        else if (address >= memoryMapBaseAddress && address < memoryMapLimitAddress) {
+        else if (address >= mmioBaseAddress && address < memoryMapLimitAddress) {
             // memory mapped I/O.
-            relative = (address - memoryMapBaseAddress) >> 2; // convert byte address to word
+            relative = (address - mmioBaseAddress) >> 2; // convert byte address to word
             oldValue = storeWordInTable(memoryMapBlockTable, relative, value);
         }
         else if (inKernelDataSegment(address)) {
@@ -600,9 +600,9 @@ public class Memory extends Observable {
             value = fetchBytesFromTable(stackBlockTable, relativeByteAddress, length);
         }
 
-        else if (address >= memoryMapBaseAddress && address < memoryMapLimitAddress) {
+        else if (address >= mmioBaseAddress && address < memoryMapLimitAddress) {
             // memory mapped I/O.
-            relativeByteAddress = address - memoryMapBaseAddress;
+            relativeByteAddress = address - mmioBaseAddress;
             value = fetchBytesFromTable(memoryMapBlockTable, relativeByteAddress, length);
         }
         else if (inTextSegment(address)) {
@@ -665,9 +665,9 @@ public class Memory extends Observable {
             relative = (stackBaseAddress - address) >> 2; // convert byte address to words
             value = fetchWordFromTable(stackBlockTable, relative);
         }
-        else if (address >= memoryMapBaseAddress && address < memoryMapLimitAddress) {
+        else if (address >= mmioBaseAddress && address < memoryMapLimitAddress) {
             // memory mapped I/O.
-            relative = (address - memoryMapBaseAddress) >> 2;
+            relative = (address - mmioBaseAddress) >> 2;
             value = fetchWordFromTable(memoryMapBlockTable, relative);
         }
         else if (inTextSegment(address)) {
@@ -993,7 +993,7 @@ public class Memory extends Observable {
      *     false otherwise.
      */
     public static boolean inMemoryMapSegment(int address) {
-        return address >= memoryMapBaseAddress && address < kernelHighAddress;
+        return address >= mmioBaseAddress && address < kernelHighAddress;
     }
 
     //  ALL THE OBSERVABLE STUFF GOES HERE.  FOR COMPATIBILITY, Memory IS STILL

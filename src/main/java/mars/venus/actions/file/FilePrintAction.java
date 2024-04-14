@@ -1,6 +1,6 @@
 package mars.venus.actions.file;
 
-import mars.venus.EditPane;
+import mars.venus.editor.FileEditorTab;
 import mars.util.HardcopyWriter;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
@@ -57,27 +57,27 @@ public class FilePrintAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        EditPane editPane = gui.getMainPane().getEditPane();
-        if (editPane == null) {
+        FileEditorTab fileEditorTab = gui.getMainPane().getCurrentEditorTab();
+        if (fileEditorTab == null) {
             return;
         }
         int fontSize = 10; // fixed at 10 point
         double margin = 0.5; // all margins (left,right,top,bottom) fixed at 0.5"
         HardcopyWriter output;
         try {
-            output = new HardcopyWriter(gui, editPane.getFilename(), fontSize, margin, margin, margin, margin);
+            output = new HardcopyWriter(gui, fileEditorTab.getFilename(), fontSize, margin, margin, margin, margin);
         }
         catch (HardcopyWriter.PrintCanceledException pce) {
             return;
         }
-        BufferedReader input = new BufferedReader(new StringReader(editPane.getSource()));
-        int lineNumberDigits = Integer.toString(editPane.getSourceLineCount()).length();
+        BufferedReader input = new BufferedReader(new StringReader(fileEditorTab.getSource()));
+        int lineNumberDigits = Integer.toString(fileEditorTab.getSourceLineCount()).length();
         int lineNumber = 0;
         try {
             String line = input.readLine();
             while (line != null) {
                 StringBuilder formattedLine = new StringBuilder();
-                if (editPane.showingLineNumbers()) {
+                if (fileEditorTab.showingLineNumbers()) {
                     lineNumber++;
                     formattedLine.append(lineNumber).append(": ");
                     while (formattedLine.length() < lineNumberDigits) {

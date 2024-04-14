@@ -1,6 +1,6 @@
 package mars.venus.actions.edit;
 
-import mars.venus.EditPane;
+import mars.venus.editor.FileEditorTab;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
 
@@ -50,9 +50,9 @@ public class EditUndoAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        EditPane editPane = gui.getMainPane().getEditPane();
-        if (editPane != null) {
-            editPane.undo();
+        FileEditorTab fileEditorTab = gui.getMainPane().getCurrentEditorTab();
+        if (fileEditorTab != null) {
+            fileEditorTab.undo();
             gui.updateUndoRedoActions();
         }
     }
@@ -62,7 +62,7 @@ public class EditUndoAction extends VenusAction {
      * based on the status of the {@link javax.swing.undo.UndoManager}.
      */
     public void updateEnabledStatus() {
-        EditPane editPane = gui.getMainPane().getEditPane();
-        setEnabled(editPane != null && editPane.getUndoManager().canUndo());
+        FileEditorTab fileEditorTab = gui.getMainPane().getCurrentEditorTab();
+        setEnabled(fileEditorTab != null && fileEditorTab.getUndoManager().canUndo());
     }
 }

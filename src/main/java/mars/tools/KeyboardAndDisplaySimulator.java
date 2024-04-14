@@ -160,10 +160,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
    	// MIPS address space was final as well.  Now we will get MMIO base address
    	// each time to reflect possible change in memory configuration. DPS 6-Aug-09
       protected void initializePreGUI() {
-         RECEIVER_CONTROL    = Memory.memoryMapBaseAddress; //0xffff0000; // keyboard Ready in low-order bit
-         RECEIVER_DATA       = Memory.memoryMapBaseAddress + 4; //0xffff0004; // keyboard character in low-order byte
-         TRANSMITTER_CONTROL = Memory.memoryMapBaseAddress + 8; //0xffff0008; // display Ready in low-order bit
-         TRANSMITTER_DATA    = Memory.memoryMapBaseAddress + 12; //0xffff000c; // display character in low-order byte
+         RECEIVER_CONTROL    = Memory.mmioBaseAddress; //0xffff0000; // keyboard Ready in low-order bit
+         RECEIVER_DATA       = Memory.mmioBaseAddress + 4; //0xffff0004; // keyboard character in low-order byte
+         TRANSMITTER_CONTROL = Memory.mmioBaseAddress + 8; //0xffff0008; // display Ready in low-order bit
+         TRANSMITTER_DATA    = Memory.mmioBaseAddress + 12; //0xffff000c; // display character in low-order byte
          displayPanelTitle = "DISPLAY: Store to Transmitter Data "+Binary.intToHexString(TRANSMITTER_DATA);
          keyboardPanelTitle = "KEYBOARD: Characters typed here are stored to Receiver Data "+Binary.intToHexString(RECEIVER_DATA);
       
@@ -716,8 +716,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          	// but that code was not written for event-driven update (e.g. Observer) --
          	// it was written to poll the memory cells for their values.  So we force it to do so.
          
-            if (Application.getGUI() != null && Application.getGUI().getMainPane().getExecutePane().getTextSegmentWindow().getCodeHighlighting() ) {
-               Application.getGUI().getMainPane().getExecutePane().getDataSegmentWindow().updateValues();
+            if (Application.getGUI() != null && Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().getCodeHighlighting() ) {
+               Application.getGUI().getMainPane().getExecuteTab().getDataSegmentWindow().updateValues();
             }
          }
       }

@@ -6,10 +6,11 @@ import mars.mips.hardware.Coprocessor0;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
-import mars.venus.execute.ExecutePane;
-import mars.venus.FileStatus;
+import mars.venus.RegistersPane;
+import mars.venus.execute.ExecuteTab;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
+import mars.venus.execute.ProgramStatus;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -66,7 +67,7 @@ public class RunResetAction extends VenusAction {
         try {
             Application.program.assemble(RunAssembleAction.getProgramsToAssemble(), Application.getSettings().extendedAssemblerEnabled.get(), Application.getSettings().warningsAreErrors.get());
         }
-        catch (ProcessingException pe) {
+        catch (ProcessingException exception) {
             gui.getMessagesPane().writeToMessages(getName() + ": unable to reset.  Please close file then re-open and re-assemble.\n");
             return;
         }
@@ -75,22 +76,22 @@ public class RunResetAction extends VenusAction {
         Coprocessor1.resetRegisters();
         Coprocessor0.resetRegisters();
 
-        ExecutePane executePane = gui.getMainPane().getExecutePane();
-        executePane.getRegistersWindow().clearHighlighting();
-        executePane.getRegistersWindow().updateRegisters();
-        executePane.getCoprocessor1Window().clearHighlighting();
-        executePane.getCoprocessor1Window().updateRegisters();
-        executePane.getCoprocessor0Window().clearHighlighting();
-        executePane.getCoprocessor0Window().updateRegisters();
-        executePane.getDataSegmentWindow().highlightCellForAddress(Memory.dataBaseAddress);
-        executePane.getDataSegmentWindow().clearHighlighting();
-        executePane.getTextSegmentWindow().resetModifiedSourceCode();
-        executePane.getTextSegmentWindow().setCodeHighlighting(true);
-        executePane.getTextSegmentWindow().highlightStepAtPC();
+        RegistersPane registersPane = gui.getRegistersPane();
+        registersPane.getRegistersWindow().clearHighlighting();
+        registersPane.getRegistersWindow().updateRegisters();
+        registersPane.getCoprocessor1Window().clearHighlighting();
+        registersPane.getCoprocessor1Window().updateRegisters();
+        registersPane.getCoprocessor0Window().clearHighlighting();
+        registersPane.getCoprocessor0Window().updateRegisters();
+        registersPane.setSelectedComponent(registersPane.getRegistersWindow());
 
-        gui.getRegistersPane().setSelectedComponent(executePane.getRegistersWindow());
-
-        FileStatus.set(FileStatus.RUNNABLE);
+        ExecuteTab executeTab = gui.getMainPane().getExecuteTab();
+        executeTab.getDataSegmentWindow().highlightCellForAddress(Memory.dataBaseAddress);
+        executeTab.getDataSegmentWindow().clearHighlighting();
+        executeTab.getTextSegmentWindow().resetModifiedSourceCode();
+        executeTab.getTextSegmentWindow().setCodeHighlighting(true);
+        executeTab.getTextSegmentWindow().highlightStepAtPC();
+        executeTab.setProgramStatus(ProgramStatus.NOT_STARTED);
         VenusUI.setReset(true);
         VenusUI.setStarted(false);
 

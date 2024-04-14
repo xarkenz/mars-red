@@ -14,7 +14,7 @@ import java.awt.event.MouseListener;
 //
 // This is NOT one of the MARS buttons!  It is a subclass of JButton that can
 // be used to create buttons that fire events after being held down for a 
-// specified period of time and at a specified rate. 
+// specified period of time and at a specified rate.
 
 /**
  * <code>RepeatButton</code> is a <code>JButton</code> which contains a timer
@@ -27,7 +27,7 @@ import java.awt.event.MouseListener;
  * changed while the timer is active, it will be stopped.
  * <p>
  * NOTE:  The normal button behavior is that the action event is fired after
- * the button is released.  It may be important to konw then that this is
+ * the button is released.  It may be important to know then that this is
  * still the case.  So in effect, listeners will get 1 more event then what
  * the internal timer fires.  It's not a "bug", per se, just something to be
  * aware of.  There seems to be no way to suppress the final event from
@@ -55,10 +55,10 @@ public class RepeatButton extends JButton implements ActionListener, MouseListen
      */
     private int initialDelay = 300;
     /**
-     * The delay between timer firings for this button once the delay
-     * period is past. In milliseconds.
+     * The interval between timer firings for this button once the delay
+     * period is past.  In milliseconds.
      */
-    private int delay = 60;
+    private int interval = 60;
     /**
      * Holder of the modifiers used when the mouse pressed the button.
      * This is used for subsequently fired action events.  This may change
@@ -121,42 +121,42 @@ public class RepeatButton extends JButton implements ActionListener, MouseListen
      */
     private void init() {
         this.addMouseListener(this);
-        // initialize timers for button holding...
-        this.timer = new Timer(this.delay, this);
+        // Initialize timers for button holding
+        this.timer = new Timer(this.interval, this);
         this.timer.setRepeats(true);
     }
 
     /**
-     * Gets the delay for the timer of this button.
+     * Gets the interval time between repetitions after the initial delay.
      *
-     * @return the delay
+     * @return the interval time in milliseconds
      */
-    public int getDelay() {
-        return this.delay;
+    public int getInterval() {
+        return this.interval;
     }
 
     /**
-     * Set the delay for the timer of this button.
+     * Set the interval time between repetitions after the initial delay.
      *
-     * @param delay the delay
+     * @param interval the interval time in milliseconds
      */
-    public void setDelay(int delay) {
-        this.delay = delay;
+    public void setInterval(int interval) {
+        this.interval = interval;
     }
 
     /**
-     * Gets the initial delay for the timer of this button.
+     * Gets the initial delay time before repetitions begin.
      *
-     * @return the initial delay
+     * @return the initial delay time in milliseconds
      */
     public int getInitialDelay() {
         return this.initialDelay;
     }
 
     /**
-     * Sets the initial delay for the timer of this button.
+     * Sets the initial delay time before repetitions begin.
      *
-     * @param delay the initial delay
+     * @param delay the initial delay time in milliseconds
      */
     public void setInitialDelay(int delay) {
         this.initialDelay = delay;
@@ -211,26 +211,25 @@ public class RepeatButton extends JButton implements ActionListener, MouseListen
     /**
      * Handle action events. OVERRIDE THIS IN SUBCLASS!
      *
-     * @param ae the action event
+     * @param event the action event
      */
     @Override
-    public void actionPerformed(ActionEvent ae) {
-        // process events only from this components
-        if (ae.getSource() == this.timer) {
-            ActionEvent event = new ActionEvent(this, ActionEvent.ACTION_PERFORMED, super.getActionCommand(), this.modifiers);
-            super.fireActionPerformed(event);
+    public void actionPerformed(ActionEvent event) {
+        // Process events from this component only
+        if (event.getSource() == this.timer) {
+            super.fireActionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, super.getActionCommand(), this.modifiers));
         }
     }
 
     /**
      * Handle mouse clicked events.
      *
-     * @param me the mouse event
+     * @param event the mouse event
      */
     @Override
-    public void mouseClicked(MouseEvent me) {
-        // process events only from this components
-        if (me.getSource() == this) {
+    public void mouseClicked(MouseEvent event) {
+        // Process events from this component only
+        if (event.getSource() == this) {
             this.pressed = false;
             if (this.timer.isRunning()) {
                 this.timer.stop();
@@ -241,15 +240,15 @@ public class RepeatButton extends JButton implements ActionListener, MouseListen
     /**
      * Handle mouse pressed events.
      *
-     * @param me the mouse event
+     * @param event the mouse event
      */
     @Override
-    public void mousePressed(MouseEvent me) {
-        // process events only from this components
-        if (me.getSource() == this && this.isEnabled() && this.isRepeatEnabled()) {
+    public void mousePressed(MouseEvent event) {
+        // Process events from this component only
+        if (event.getSource() == this && this.isEnabled() && this.isRepeatEnabled()) {
             this.pressed = true;
             if (!this.timer.isRunning()) {
-                this.modifiers = me.getModifiersEx();
+                this.modifiers = event.getModifiersEx();
                 this.timer.setInitialDelay(this.initialDelay);
                 this.timer.start();
             }
@@ -259,12 +258,12 @@ public class RepeatButton extends JButton implements ActionListener, MouseListen
     /**
      * Handle mouse released events.
      *
-     * @param me the mouse event
+     * @param event the mouse event
      */
     @Override
-    public void mouseReleased(MouseEvent me) {
-        // process events only from this components
-        if (me.getSource() == this) {
+    public void mouseReleased(MouseEvent event) {
+        // Process events from this component only
+        if (event.getSource() == this) {
             this.pressed = false;
             if (this.timer.isRunning()) {
                 this.timer.stop();
@@ -275,15 +274,15 @@ public class RepeatButton extends JButton implements ActionListener, MouseListen
     /**
      * Handle mouse entered events.
      *
-     * @param me the mouse event
+     * @param event the mouse event
      */
     @Override
-    public void mouseEntered(MouseEvent me) {
-        // process events only from this components
-        if (me.getSource() == this && this.isEnabled() && this.isRepeatEnabled()) {
+    public void mouseEntered(MouseEvent event) {
+        // Process events from this component only
+        if (event.getSource() == this && this.isEnabled() && this.isRepeatEnabled()) {
             if (this.pressed && !this.timer.isRunning()) {
-                this.modifiers = me.getModifiersEx();
-                this.timer.setInitialDelay(this.delay);
+                this.modifiers = event.getModifiersEx();
+                this.timer.setInitialDelay(this.interval);
                 this.timer.start();
             }
         }
@@ -292,12 +291,12 @@ public class RepeatButton extends JButton implements ActionListener, MouseListen
     /**
      * Handle mouse exited events.
      *
-     * @param me the mouse event
+     * @param event the mouse event
      */
     @Override
-    public void mouseExited(MouseEvent me) {
-        // process events only from this components
-        if (me.getSource() == this) {
+    public void mouseExited(MouseEvent event) {
+        // Process events from this component only
+        if (event.getSource() == this) {
             if (this.timer.isRunning()) {
                 this.timer.stop();
             }

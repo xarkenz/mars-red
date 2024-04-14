@@ -1,4 +1,6 @@
-package mars.venus;
+package mars.venus.editor;
+
+import mars.venus.VenusUI;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -42,16 +44,13 @@ public class Editor {
     public static final int MAX_BLINK_RATE = 1000; // once per second
 
     private final VenusUI gui;
-    private EditTabbedPane editTabbedPane;
     /**
      * Number of times File->New has been selected.  Used to generate
      * default filename until first Save or Save As.
      */
     private int newUsageCount;
-    // Current Directory for Open operation, same for Save operation
-    // Values will mainly be set by the EditTabbedPane as Open/Save operations occur.
-    private final String defaultOpenDirectory;
-    private String currentOpenDirectory;
+    // Current Directory for Save operation
+    // Values will mainly be set by the EditTab as Save operations occur.
     private final String defaultSaveDirectory;
     private String currentSaveDirectory;
 
@@ -62,66 +61,17 @@ public class Editor {
      */
     public Editor(VenusUI gui) {
         this.gui = gui;
-        FileStatus.reset();
         newUsageCount = 0;
         // Directory from which MARS was launched. Guaranteed to have a value.
-        defaultOpenDirectory = System.getProperty("user.dir");
         defaultSaveDirectory = System.getProperty("user.dir");
-        currentOpenDirectory = defaultOpenDirectory;
         currentSaveDirectory = defaultSaveDirectory;
-    }
-
-    /**
-     * Get the associated EditTabbedPane.  This is the container for any/all open files.
-     *
-     * @return the associated EditTabbedPane
-     */
-    public EditTabbedPane getEditTabbedPane() {
-        return editTabbedPane;
-    }
-
-    /**
-     * Set the associated EditTabbedPane.  This is the container for any/all open files.
-     *
-     * @param editTabbedPane an existing EditTabbedPane object
-     */
-    public void setEditTabbedPane(EditTabbedPane editTabbedPane) {
-        this.editTabbedPane = editTabbedPane;
-    }
-
-    /**
-     * Get name of current directory for Open operation.
-     *
-     * @return String containing directory pathname.  Returns null if there is
-     *     no EditTabbedPane.  Returns default, directory MARS is launched from, if
-     *     no Opens have been performed.
-     */
-    public String getCurrentOpenDirectory() {
-        return currentOpenDirectory;
-    }
-
-    /**
-     * Set name of current directory for Open operation.  The contents of this directory will
-     * be displayed when Open dialog is launched.
-     *
-     * @param directory String containing pathname for current Open directory. If
-     *                  it does not exist or is not a directory, the default (MARS launch directory) will be used.
-     */
-    public void setCurrentOpenDirectory(String directory) {
-        File file = new File(directory);
-        if (!file.exists() || !file.isDirectory()) {
-            this.currentOpenDirectory = defaultOpenDirectory;
-        }
-        else {
-            this.currentOpenDirectory = directory;
-        }
     }
 
     /**
      * Get name of current directory for Save or Save As operation.
      *
      * @return String containing directory pathname.  Returns null if there is
-     *     no EditTabbedPane.  Returns default, directory MARS is launched from, if
+     *     no EditTab.  Returns default (the directory MARS is launched from) if
      *     no Save or Save As operations have been performed.
      */
     public String getCurrentSaveDirectory() {
@@ -135,7 +85,7 @@ public class Editor {
      * @param currentSaveDirectory String containing pathname for current Save directory. If
      *                             it does not exist or is not a directory, the default (MARS launch directory) will be used.
      */
-    void setCurrentSaveDirectory(String currentSaveDirectory) {
+    public void setCurrentSaveDirectory(String currentSaveDirectory) {
         File file = new File(currentSaveDirectory);
         if (!file.exists() || !file.isDirectory()) {
             this.currentSaveDirectory = defaultSaveDirectory;
@@ -156,19 +106,14 @@ public class Editor {
 
     /**
      * Places name of file currently being edited into its edit tab and
-     * the application's title bar.  The edit tab will contain only
-     * the filename, the title bar will contain full pathname.
-     * If file has been modified since created, opened or saved, as
-     * indicated by value of the status parameter, the name and path
-     * will be followed with an '*'.  If newly-created file has not
-     * yet been saved, the title bar will show (temporary) file name
-     * but not path.
+     * the application's title bar.  If file has been modified since created,
+     * opened, or saved, as indicated by value of the status parameter, the name
+     * will be preceded by an asterisk.
      *
-     * @param path   Full pathname for file
      * @param name   Name of file (last component of path)
      * @param status Edit status of file.  See FileStatus static constants.
      */
-    public void setTitle(String path, String name, int status) {
+    public void setTitle(String name, int status) {
         if (status == FileStatus.NO_FILE || name == null || name.isBlank()) {
             gui.setTitleContent(null);
         }
@@ -180,7 +125,7 @@ public class Editor {
             }
             content.append(name);
             gui.setTitleContent(content.toString());
-            editTabbedPane.setTitleAt(editTabbedPane.getSelectedIndex(), content.toString());
+            gui.getMainPane().getEditTab().setTitleAt(gui.getMainPane().getEditTab().getSelectedIndex(), content.toString());
         }
     }
 
@@ -188,7 +133,7 @@ public class Editor {
      * Perform "new" operation to create an empty tab.
      */
     public void newFile() {
-        editTabbedPane.newFile();
+        gui.getMainPane().getEditTab().newFile();
     }
 
     /**
@@ -197,7 +142,7 @@ public class Editor {
      * @return true if succeeded, else false.
      */
     public boolean close() {
-        return editTabbedPane.closeCurrentFile();
+        return gui.getMainPane().getEditTab().closeCurrentFile();
     }
 
     /**
@@ -206,7 +151,7 @@ public class Editor {
      * @return true if succeeded, else false.
      */
     public boolean closeAll() {
-        return editTabbedPane.closeAllFiles();
+        return gui.getMainPane().getEditTab().closeAllFiles();
     }
 
     /**
@@ -215,7 +160,7 @@ public class Editor {
      * @return true if succeeded, else false.
      */
     public boolean save() {
-        return editTabbedPane.saveCurrentFile();
+        return gui.getMainPane().getEditTab().saveCurrentFile();
     }
 
     /**
@@ -224,7 +169,7 @@ public class Editor {
      * @return true if succeeded, else false.
      */
     public boolean saveAs() {
-        return editTabbedPane.saveAsCurrentFile();
+        return gui.getMainPane().getEditTab().saveAsCurrentFile();
     }
 
     /**
@@ -233,7 +178,7 @@ public class Editor {
      * @return true if succeeded, else false.
      */
     public boolean saveAll() {
-        return editTabbedPane.saveAllFiles();
+        return gui.getMainPane().getEditTab().saveAllFiles();
     }
 
     /**
@@ -244,7 +189,7 @@ public class Editor {
      *     (Can be empty.)
      */
     public ArrayList<File> open() {
-        return editTabbedPane.openFiles();
+        return gui.getMainPane().getEditTab().openFiles();
     }
 
     /**
@@ -259,6 +204,6 @@ public class Editor {
      *     Return of true means caller can proceed (edits were saved or discarded).
      */
     public boolean editsSavedOrAbandoned() {
-        return editTabbedPane.editsSavedOrAbandoned();
+        return gui.getMainPane().getEditTab().editsSavedOrAbandoned();
     }
 }

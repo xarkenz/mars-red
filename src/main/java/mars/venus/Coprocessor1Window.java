@@ -49,7 +49,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Pete Sanderson 2005
  */
-public class Coprocessor1Window extends JPanel implements ActionListener, Observer {
+public class Coprocessor1Window extends JPanel implements RegistersDisplayTab, ActionListener, Observer {
     private static final int NAME_COLUMN = 0;
     private static final int FLOAT_COLUMN = 1;
     private static final int DOUBLE_COLUMN = 2;
@@ -184,7 +184,7 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
     public void clearWindow() {
         clearHighlighting();
         Coprocessor1.resetRegisters();
-        updateRegisters(Application.getGUI().getMainPane().getExecutePane().getValueDisplayBase());
+        updateRegisters(Application.getGUI().getMainPane().getExecuteTab().getValueDisplayBase());
         Coprocessor1.clearConditionFlags();
         updateConditionFlagDisplay();
     }
@@ -210,17 +210,11 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
     }
 
     /**
-     * Redisplay registers using current display number base (10 or 16)
-     */
-    public void updateRegisters() {
-        updateRegisters(Application.getGUI().getMainPane().getExecutePane().getValueDisplayBase());
-    }
-
-    /**
-     * Redisplay registers using specified display number base (10 or 16)
+     * Update register display using specified number base (10 or 16).
      *
-     * @param base number base for display (10 or 16)
+     * @param base Desired number base.
      */
+    @Override
     public void updateRegisters(int base) {
         for (Register register : Coprocessor1.getRegisters()) {
             updateFloatRegisterValue(register.getNumber(), register.getValue(), base);
@@ -229,7 +223,7 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
                     long value = Coprocessor1.getLongFromRegisterPair(register.getNumber());
                     updateDoubleRegisterValue(register.getNumber(), value, base);
                 }
-                catch (InvalidRegisterAccessException e) {
+                catch (InvalidRegisterAccessException exception) {
                     // Should not happen because the register number is always even
                 }
             }
@@ -373,7 +367,7 @@ public class Coprocessor1Window extends JPanel implements ActionListener, Observ
          */
         @Override
         public void setValueAt(Object value, int row, int col) {
-            int valueBase = Application.getGUI().getMainPane().getExecutePane().getValueDisplayBase();
+            int valueBase = Application.getGUI().getMainPane().getExecuteTab().getValueDisplayBase();
             String stringValue = value.toString();
             try {
                 if (col == FLOAT_COLUMN) {

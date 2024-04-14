@@ -3,7 +3,6 @@ package mars.venus.actions.run;
 import mars.Application;
 import mars.ProcessingException;
 import mars.simulator.ProgramArgumentList;
-import mars.venus.FileStatus;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
 
@@ -51,31 +50,25 @@ public class RunStepForwardAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        if (FileStatus.isAssembled()) {
-            if (!VenusUI.getStarted()) {
-                // DPS 17-July-2008
-                // Store any program arguments into MIPS memory and registers before
-                // execution begins. Arguments go into the gap between $sp and kernel memory.
-                // Argument pointers and count go into runtime stack and $sp is adjusted accordingly.
-                // $a0 gets argument count (argc), $a1 gets stack address of first arg pointer (argv).
-                String programArguments = gui.getMainPane().getExecutePane().getTextSegmentWindow().getProgramArguments();
-                if (programArguments != null && !programArguments.isEmpty() && Application.getSettings().useProgramArguments.get()) {
-                    new ProgramArgumentList(programArguments).storeProgramArguments();
-                }
-            }
-
-            gui.getMainPane().getExecutePane().getTextSegmentWindow().setCodeHighlighting(true);
-
-            try {
-                Application.program.simulateStepAtPC(this);
-            }
-            catch (ProcessingException e) {
-                // Ignore
+        if (!VenusUI.getStarted()) {
+            // DPS 17-July-2008
+            // Store any program arguments into MIPS memory and registers before
+            // execution begins. Arguments go into the gap between $sp and kernel memory.
+            // Argument pointers and count go into runtime stack and $sp is adjusted accordingly.
+            // $a0 gets argument count (argc), $a1 gets stack address of first arg pointer (argv).
+            String programArguments = gui.getMainPane().getExecuteTab().getTextSegmentWindow().getProgramArguments();
+            if (programArguments != null && !programArguments.isEmpty() && Application.getSettings().useProgramArguments.get()) {
+                new ProgramArgumentList(programArguments).storeProgramArguments();
             }
         }
-        else {
-            // Note: this should never occur since Step is only enabled after successful assembly.
-            JOptionPane.showMessageDialog(gui, "The program must be assembled before it can be run.");
+
+        gui.getMainPane().getExecuteTab().getTextSegmentWindow().setCodeHighlighting(true);
+
+        try {
+            Application.program.simulateStepAtPC(this);
+        }
+        catch (ProcessingException exception) {
+            // Ignore
         }
     }
 }

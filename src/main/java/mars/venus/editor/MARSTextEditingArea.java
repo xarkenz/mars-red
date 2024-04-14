@@ -1,4 +1,4 @@
-package mars.venus.editors;
+package mars.venus.editor;
 
 import mars.settings.Settings;
 
@@ -35,7 +35,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Specifies capabilities that any test editor used in MARS must have.
+ * Specifies capabilities that any text editor used in MARS must have.
  */
 public interface MARSTextEditingArea {
     // Used by Find/Replace

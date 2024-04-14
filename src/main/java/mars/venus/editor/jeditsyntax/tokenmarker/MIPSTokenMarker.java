@@ -7,7 +7,7 @@
  * remains intact in all source distributions of this package.
  */
 
-package mars.venus.editors.jeditsyntax.tokenmarker;
+package mars.venus.editor.jeditsyntax.tokenmarker;
 
 import mars.Application;
 import mars.assembler.Directive;
@@ -17,8 +17,8 @@ import mars.mips.hardware.Register;
 import mars.mips.hardware.RegisterFile;
 import mars.mips.instructions.BasicInstruction;
 import mars.mips.instructions.Instruction;
-import mars.venus.editors.jeditsyntax.KeywordMap;
-import mars.venus.editors.jeditsyntax.PopupHelpItem;
+import mars.venus.editor.jeditsyntax.KeywordMap;
+import mars.venus.editor.jeditsyntax.PopupHelpItem;
 
 import javax.swing.text.Segment;
 import java.util.ArrayList;

@@ -1,11 +1,13 @@
 package mars.venus;
 
-import mars.venus.execute.ExecutePane;
+import mars.venus.editor.EditTab;
+import mars.venus.editor.Editor;
+import mars.venus.editor.FileEditorTab;
+import mars.venus.execute.ExecuteTab;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.*;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -42,27 +44,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @author Sanderson and Bumgarner
  */
 public class MainPane extends JTabbedPane {
-    private final EditTabbedPane editTabbedPane;
-    private final ExecutePane executeTab;
+    private final EditTab editTab;
+    private final ExecuteTab executeTab;
 
     /**
      * Constructor for the MainPane class.
      */
     public MainPane(VenusUI mainUI, Editor editor, RegistersWindow regs, Coprocessor1Window cop1Regs, Coprocessor0Window cop0Regs) {
         super();
-        editTabbedPane = new EditTabbedPane(mainUI, editor, this);
-        executeTab = new ExecutePane(mainUI, regs, cop1Regs, cop0Regs);
+        this.editTab = new EditTab(mainUI, editor);
+        this.executeTab = new ExecuteTab(mainUI, regs, cop1Regs, cop0Regs);
 
-        String editTabTitle = "Edit";
-        String executeTabTitle = "Execute";
         // TODO: Maybe new icons designed for the top tabs could look decent? -Sean Clarke
-        Icon editTabIcon = null; // new ImageIcon(Toolkit.getDefaultToolkit().getImage(this.getClass().getResource(Globals.IMAGES_PATH + "Edit_tab.jpg")));
-        Icon executeTabIcon = null; // new ImageIcon(Toolkit.getDefaultToolkit().getImage(this.getClass().getResource(Globals.IMAGES_PATH + "Execute_tab.jpg")));
-
         this.setTabPlacement(JTabbedPane.TOP);
         this.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
-        this.addTab(editTabTitle, editTabIcon, editTabbedPane, "Text editor for writing MIPS programs.");
-        this.addTab(executeTabTitle, executeTabIcon, executeTab, "View and control assembly language program execution. Enabled upon successful assemble.");
+        this.addTab("Edit", null, editTab, "Text editor for writing MIPS programs.");
+        this.addTab("Execute", null, executeTab, "View and control assembly language program execution. Enabled upon successful assemble.");
 
         // Listener has one specific purpose: when Execute tab is selected for the
         // * first time, set the bounds of its internal frames by invoking the
@@ -72,12 +69,8 @@ public class MainPane extends JTabbedPane {
         this.addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent event) {
-                JTabbedPane tabbedPane = (JTabbedPane) event.getSource();
-                int index = tabbedPane.getSelectedIndex();
-                Component c = tabbedPane.getComponentAt(index);
-                ExecutePane executePane = MainPane.this.getExecutePane();
-                if (c == executePane) {
-                    executePane.setWindowBounds();
+                if (MainPane.this.getSelectedComponent() == executeTab) {
+                    executeTab.setWindowBounds();
                     MainPane.this.removeChangeListener(this);
                 }
             }
@@ -90,35 +83,25 @@ public class MainPane extends JTabbedPane {
      *
      * @return the editor pane
      */
-    public EditPane getEditPane() {
-        return editTabbedPane.getCurrentEditTab();
+    public FileEditorTab getCurrentEditorTab() {
+        return editTab.getCurrentEditorTab();
     }
 
     /**
-     * Returns component containing editor display
+     * Returns component containing editor display.
      *
-     * @return the editor tabbed pane
+     * @return The component for the "Edit" tab.
      */
-    public EditTabbedPane getEditTabbedPane() {
-        return editTabbedPane;
+    public EditTab getEditTab() {
+        return editTab;
     }
 
     /**
-     * returns component containing execution-time display
+     * Returns component containing execution-time display.
      *
-     * @return the execute pane
+     * @return The component for the "Execute" tab.
      */
-    public ExecutePane getExecutePane() {
-        return executeTab;
-    }
-
-    /**
-     * returns component containing execution-time display.
-     * Same as getExecutePane().
-     *
-     * @return the execute pane
-     */
-    public ExecutePane getExecuteTab() {
+    public ExecuteTab getExecuteTab() {
         return executeTab;
     }
 }

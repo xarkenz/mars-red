@@ -1,4 +1,4 @@
-package mars.venus;
+package mars.venus.execute;
 
 import mars.Application;
 import mars.Program;
@@ -6,6 +6,8 @@ import mars.assembler.Symbol;
 import mars.assembler.SymbolTable;
 import mars.mips.hardware.Memory;
 import mars.util.Binary;
+import mars.venus.MonoRightCellRenderer;
+import mars.venus.NumberDisplayBaseChooser;
 import mars.venus.actions.run.RunAssembleAction;
 
 import javax.swing.*;
@@ -271,8 +273,8 @@ public class SymbolTableWindow extends JInternalFrame {
             Application.getSettings().symbolTableSortState.set(sortState);
             // Refresh the window
             setupTable();
-            Application.getGUI().getMainPane().getExecutePane().setSymbolTableWindowVisibility(false);
-            Application.getGUI().getMainPane().getExecutePane().setSymbolTableWindowVisibility(true);
+            Application.getGUI().getMainPane().getExecuteTab().setSymbolTableWindowVisibility(false);
+            Application.getGUI().getMainPane().getExecuteTab().setSymbolTableWindowVisibility(true);
         }
     }
 
@@ -303,10 +305,10 @@ public class SymbolTableWindow extends JInternalFrame {
             }
             // Scroll to this address, either in Text Segment display or Data Segment display
             if (Memory.inTextSegment(address) || Memory.inKernelTextSegment(address)) {
-                Application.getGUI().getMainPane().getExecutePane().getTextSegmentWindow().selectStepAtAddress(address);
+                Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().selectStepAtAddress(address);
             }
             else {
-                Application.getGUI().getMainPane().getExecutePane().getDataSegmentWindow().selectCellForAddress(address);
+                Application.getGUI().getMainPane().getExecuteTab().getDataSegmentWindow().selectCellForAddress(address);
             }
         }
     }
@@ -349,7 +351,7 @@ public class SymbolTableWindow extends JInternalFrame {
          */
         private JTable generateLabelTable() {
             SymbolTable symbolTable = (program == null) ? Application.globalSymbolTable : program.getLocalSymbolTable();
-            int addressBase = Application.getGUI().getMainPane().getExecutePane().getAddressDisplayBase();
+            int addressBase = Application.getGUI().getMainPane().getExecuteTab().getAddressDisplayBase();
             if (textLabels.isSelected() && dataLabels.isSelected()) {
                 symbols = symbolTable.getAllSymbols();
             }
@@ -386,7 +388,7 @@ public class SymbolTableWindow extends JInternalFrame {
             if (labelPanel.getComponentCount() == 0) {
                 return; // ignore if no content to change
             }
-            int addressBase = Application.getGUI().getMainPane().getExecutePane().getAddressDisplayBase();
+            int addressBase = Application.getGUI().getMainPane().getExecuteTab().getAddressDisplayBase();
             int address;
             String formattedAddress;
             int numSymbols = (labelData == null) ? 0 : labelData.length;
@@ -507,8 +509,8 @@ public class SymbolTableWindow extends JInternalFrame {
                     sortState = SORT_STATE_TRANSITIONS[sortState][realIndex];
                     Application.getSettings().symbolTableSortState.set(sortState);
                     setupTable();
-                    Application.getGUI().getMainPane().getExecutePane().setSymbolTableWindowVisibility(false);
-                    Application.getGUI().getMainPane().getExecutePane().setSymbolTableWindowVisibility(true);
+                    Application.getGUI().getMainPane().getExecuteTab().setSymbolTableWindowVisibility(false);
+                    Application.getGUI().getMainPane().getExecuteTab().setSymbolTableWindowVisibility(true);
                 }
 
                 @Override

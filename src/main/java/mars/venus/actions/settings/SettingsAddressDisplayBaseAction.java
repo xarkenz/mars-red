@@ -46,7 +46,7 @@ public class SettingsAddressDisplayBaseAction extends VenusAction {
     @Override
     public void actionPerformed(ActionEvent event) {
         boolean isHex = ((JCheckBoxMenuItem) event.getSource()).isSelected();
-        Application.getGUI().getMainPane().getExecutePane().getAddressDisplayBaseChooser().setSelected(isHex);
+        Application.getGUI().getMainPane().getExecuteTab().getAddressDisplayBaseChooser().setSelected(isHex);
         Application.getSettings().displayAddressesInHex.set(isHex);
     }
 }

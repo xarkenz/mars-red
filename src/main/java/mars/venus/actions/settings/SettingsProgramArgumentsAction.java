@@ -50,10 +50,10 @@ public class SettingsProgramArgumentsAction extends VenusAction {
         boolean selected = ((JCheckBoxMenuItem) event.getSource()).isSelected();
         Application.getSettings().useProgramArguments.set(selected);
         if (selected) {
-            Application.getGUI().getMainPane().getExecutePane().getTextSegmentWindow().addProgramArgumentsPanel();
+            Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().addProgramArgumentsPanel();
         }
         else {
-            Application.getGUI().getMainPane().getExecutePane().getTextSegmentWindow().removeProgramArgumentsPanel();
+            Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().removeProgramArgumentsPanel();
         }
     }
 }

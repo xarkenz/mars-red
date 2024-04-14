@@ -26,7 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
 */
 
-package mars.venus.editors.jeditsyntax;
+package mars.venus.editor.jeditsyntax;
 
 import mars.venus.actions.help.HelpHelpAction;
 
@@ -60,7 +60,7 @@ public class PopupHelpItem {
             this.description = description;
         }
         else {
-            int detailPosition = description.indexOf(HelpHelpAction.descriptionDetailSeparator);
+            int detailPosition = description.indexOf(HelpHelpAction.DESCRIPTION_DETAIL_SEPARATOR);
             this.description = (detailPosition == -1) ? description : description.substring(0, detailPosition);
         }
         this.exampleLength = this.example.length();

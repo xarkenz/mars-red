@@ -7,7 +7,7 @@
  * remains intact in all source distributions of this package.
  */
 
-package mars.venus.editors.jeditsyntax;
+package mars.venus.editor.jeditsyntax;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;

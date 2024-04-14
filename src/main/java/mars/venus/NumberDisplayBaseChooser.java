@@ -78,7 +78,7 @@ public class NumberDisplayBaseChooser extends JCheckBox {
                 }
             }
             // Better to use notify, but I am tired...
-            Application.getGUI().getMainPane().getExecutePane().numberDisplayBaseChanged(choose);
+            Application.getGUI().getMainPane().getExecuteTab().numberDisplayBaseChanged(choose);
         });
     }
 

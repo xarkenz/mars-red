@@ -1,9 +1,9 @@
-package mars.venus.editors.generic;
+package mars.venus.editor.generic;
 
 import mars.Application;
 import mars.settings.Settings;
-import mars.venus.EditPane;
-import mars.venus.editors.MARSTextEditingArea;
+import mars.venus.editor.FileEditorTab;
+import mars.venus.editor.MARSTextEditingArea;
 
 import javax.swing.*;
 import javax.swing.event.UndoableEditListener;
@@ -42,7 +42,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 public class GenericTextArea extends JTextArea implements MARSTextEditingArea {
-    private final EditPane editPane;
+    private final FileEditorTab fileEditorTab;
     private final UndoManager undoManager;
     private final UndoableEditListener undoableEditListener;
     private final JTextArea sourceCode;
@@ -51,8 +51,8 @@ public class GenericTextArea extends JTextArea implements MARSTextEditingArea {
     private boolean isCompoundEdit = false;
     private CompoundEdit compoundEdit;
 
-    public GenericTextArea(EditPane editPane, JComponent lineNumbers) {
-        this.editPane = editPane;
+    public GenericTextArea(FileEditorTab fileEditorTab, JComponent lineNumbers) {
+        this.fileEditorTab = fileEditorTab;
         this.sourceCode = this;
         this.setFont(Application.getSettings().getEditorFont());
         this.setTabSize(Application.getSettings().editorTabSize.get());
@@ -67,7 +67,7 @@ public class GenericTextArea extends JTextArea implements MARSTextEditingArea {
 
         this.undoManager = new UndoManager();
 
-        this.getCaret().addChangeListener(event -> this.editPane.displayCaretPosition(getCaretPosition()));
+        this.getCaret().addChangeListener(event -> this.fileEditorTab.displayCaretPosition(getCaretPosition()));
 
         // Needed to support unlimited undo/redo capability
         undoableEditListener = event -> {
@@ -77,7 +77,7 @@ public class GenericTextArea extends JTextArea implements MARSTextEditingArea {
             }
             else {
                 undoManager.addEdit(event.getEdit());
-                this.editPane.updateUndoRedoActions();
+                this.fileEditorTab.updateUndoRedoActions();
             }
         };
         this.getDocument().addUndoableEditListener(undoableEditListener);
@@ -323,7 +323,7 @@ public class GenericTextArea extends JTextArea implements MARSTextEditingArea {
         sourceCode.replaceSelection(replace);
         compoundEdit.end();
         undoManager.addEdit(compoundEdit);
-        editPane.updateUndoRedoActions();
+        fileEditorTab.updateUndoRedoActions();
         isCompoundEdit = false;
         sourceCode.setCaretPosition(foundIndex + replace.length());
 
@@ -377,7 +377,7 @@ public class GenericTextArea extends JTextArea implements MARSTextEditingArea {
         if (compoundEdit != null) {
             compoundEdit.end();
             undoManager.addEdit(compoundEdit);
-            editPane.updateUndoRedoActions();
+            fileEditorTab.updateUndoRedoActions();
         }
         return replaceCount;
     }

@@ -1,9 +1,10 @@
-package mars.venus;
+package mars.venus.editor;
 
 import mars.Application;
-import mars.venus.editors.MARSTextEditingArea;
-import mars.venus.editors.generic.GenericTextArea;
-import mars.venus.editors.jeditsyntax.JEditBasedTextArea;
+import mars.venus.VenusUI;
+import mars.venus.editor.generic.GenericTextArea;
+import mars.venus.editor.jeditsyntax.JEditBasedTextArea;
+import mars.venus.execute.ProgramStatus;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -53,9 +54,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Sanderson and Bumgarner
  */
-public class EditPane extends JPanel implements Observer {
-    private final MARSTextEditingArea textEditingArea;
+public class FileEditorTab extends JPanel implements Observer {
     private final VenusUI gui;
+    private final EditTab editTab;
+    private final MARSTextEditingArea textEditingArea;
     private final JLabel caretPositionLabel;
     private final JCheckBox showLineNumbers;
     private final JLabel lineNumbers;
@@ -64,9 +66,10 @@ public class EditPane extends JPanel implements Observer {
     /**
      * Constructor for the EditPane class.
      */
-    public EditPane(VenusUI gui) {
+    public FileEditorTab(VenusUI gui, EditTab editTab) {
         super(new BorderLayout());
         this.gui = gui;
+        this.editTab = editTab;
         // We want to be notified of editor font changes! See update() below.
         Application.getSettings().addObserver(this);
         this.fileStatus = new FileStatus();
@@ -78,10 +81,10 @@ public class EditPane extends JPanel implements Observer {
         else {
             this.textEditingArea = new JEditBasedTextArea(this, Application.getSettings(), lineNumbers);
         }
-        // sourceCode is responsible for its own scrolling
+        // Text editing area is responsible for its own scrolling
         this.add(this.textEditingArea.getOuterComponent(), BorderLayout.CENTER);
 
-        // If source code is modified, will set flag to trigger/request file save.
+        // If source code is modified, will set flag to trigger/request file save
         textEditingArea.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent event) {
@@ -89,9 +92,8 @@ public class EditPane extends JPanel implements Observer {
                 // This method is triggered when file contents added to document
                 // upon opening, even though not edited by user.  The IF
                 // statement will sense this situation and immediately return.
-                if (FileStatus.get() == FileStatus.OPENING) {
+                if (FileEditorTab.this.editTab.isOpeningFiles()) {
                     setFileStatus(FileStatus.NOT_EDITED);
-                    FileStatus.set(FileStatus.NOT_EDITED);
                 }
                 else {
                     // End of 9-Aug-2011 modification.
@@ -102,20 +104,15 @@ public class EditPane extends JPanel implements Observer {
                         setFileStatus(FileStatus.EDITED);
                     }
                     if (getFileStatus() == FileStatus.NEW_EDITED) {
-                        EditPane.this.gui.getEditor().setTitle("", getFilename(), getFileStatus());
+                        FileEditorTab.this.gui.getEditor().setTitle(getFilename(), getFileStatus());
                     }
                     else {
-                        EditPane.this.gui.getEditor().setTitle(getPathname(), getFilename(), getFileStatus());
+                        FileEditorTab.this.gui.getEditor().setTitle(getFilename(), getFileStatus());
                     }
 
-                    if (FileStatus.get() == FileStatus.NEW_NOT_EDITED) {
-                        FileStatus.set(FileStatus.NEW_EDITED);
-                    }
-                    else if (FileStatus.get() != FileStatus.NEW_EDITED) {
-                        FileStatus.set(FileStatus.EDITED);
-                    }
-
-                    Application.getGUI().getMainPane().getExecutePane().clearPane(); // DPS 9-Aug-2011
+                    // Clear the Execute tab since the file has been edited
+                    FileEditorTab.this.gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
+                    FileEditorTab.this.gui.getMainPane().getExecuteTab().clear(); // DPS 9-Aug-2011
                 }
 
                 if (showingLineNumbers()) {
@@ -207,10 +204,11 @@ public class EditPane extends JPanel implements Observer {
      * multiline label (it ignores '\n').  The line number list is a JLabel with
      * one line number per line.
      */
-    public String getLineNumbersList(Document doc) {
-        StringBuilder lineNumberList = new StringBuilder("<html>");
-        int lineCount = doc.getDefaultRootElement().getElementCount();
+    public String getLineNumbersList(Document document) {
+        int lineCount = document.getDefaultRootElement().getElementCount();
         int digits = Integer.toString(lineCount).length();
+
+        StringBuilder lineNumberList = new StringBuilder("<html>");
         for (int lineNumber = 1; lineNumber <= lineCount; lineNumber++) {
             String lineNumberStr = Integer.toString(lineNumber);
             int leadingSpaces = digits - lineNumberStr.length() + 1;
@@ -219,6 +217,7 @@ public class EditPane extends JPanel implements Observer {
                 .append("&nbsp;<br>");
         }
         lineNumberList.append("<br></html>");
+
         return lineNumberList.toString();
     }
 
@@ -234,14 +233,14 @@ public class EditPane extends JPanel implements Observer {
      * BufferedReader on StringReader seems to work better.
      */
     public int getSourceLineCount() {
-        BufferedReader bufStringReader = new BufferedReader(new StringReader(textEditingArea.getText()));
+        BufferedReader reader = new BufferedReader(new StringReader(textEditingArea.getText()));
         int lineNums = 0;
         try {
-            while (bufStringReader.readLine() != null) {
+            while (reader.readLine() != null) {
                 lineNums++;
             }
         }
-        catch (IOException e) {
+        catch (IOException exception) {
             // No action
         }
         return lineNums;
@@ -314,13 +313,6 @@ public class EditPane extends JPanel implements Observer {
      */
     public void requestTextAreaFocus() {
         this.textEditingArea.requestFocusInWindow();
-    }
-
-    /**
-     * @see FileStatus#updateStaticFileStatus()
-     */
-    public void updateStaticFileStatus() {
-        fileStatus.updateStaticFileStatus();
     }
 
     /**
@@ -490,37 +482,42 @@ public class EditPane extends JPanel implements Observer {
      * Select the specified editor text line.  Lines are numbered starting with 1, consistent
      * with line numbers displayed by the editor.
      *
-     * @param line The desired line number of this TextPane's text.  Numbering starts at 1, and
+     * @param line The line number to select.  Numbering starts at 1, and
      *             nothing will happen if the parameter value is less than 1
      */
     public void selectLine(int line) {
-        if (line > 0) {
-            int lineStartPosition = convertLineColumnToStreamPosition(line, 1);
-            int lineEndPosition = convertLineColumnToStreamPosition(line + 1, 1) - 1;
-            if (lineEndPosition < 0) { // DPS 19 Sept 2012.  Happens if "line" is last line of file.
-
-                lineEndPosition = textEditingArea.getText().length() - 1;
-            }
-            if (lineStartPosition >= 0) {
-                textEditingArea.select(lineStartPosition, lineEndPosition);
-                textEditingArea.setSelectionVisible(true);
-            }
-        }
+        this.selectLine(line, -1);
     }
 
     /**
      * Select the specified editor text line.  Lines are numbered starting with 1, consistent
      * with line numbers displayed by the editor.
      *
-     * @param line   The desired line number of this TextPane's text.  Numbering starts at 1, and
+     * @param line   The line number to select.  Numbering starts at 1, and
      *               nothing will happen if the parameter value is less than 1
      * @param column Desired column at which to place the cursor.
      */
     public void selectLine(int line, int column) {
-        selectLine(line);
-        // Made one attempt at setting cursor; didn't work but here's the attempt
-        // (imagine using it in the one-parameter overloaded method above)
-        //sourceCode.setCaretPosition(lineStartPosition+column-1);
+        if (line <= 0) {
+            return;
+        }
+
+        int lineStartPosition = convertLineColumnToStreamPosition(line, 1);
+        int lineEndPosition = convertLineColumnToStreamPosition(line + 1, 1) - 1;
+
+        if (lineEndPosition < 0) { // DPS 19 Sept 2012.  Happens if "line" is last line of file.
+            lineEndPosition = textEditingArea.getText().length() - 1;
+        }
+        if (lineStartPosition >= 0) {
+            textEditingArea.select(lineStartPosition, lineEndPosition);
+            textEditingArea.setSelectionVisible(true);
+
+            if (column > 0) {
+                // Made one attempt at setting cursor; didn't work but here's the attempt
+                // (imagine using it in the one-parameter overloaded method above)
+                textEditingArea.setCaretPosition(lineStartPosition + column - 1);
+            }
+        }
     }
 
     /**
@@ -600,6 +597,11 @@ public class EditPane extends JPanel implements Observer {
      * font for source code.
      */
     private Font getLineNumberFont(Font sourceFont) {
-        return (textEditingArea.getFont().getStyle() == Font.PLAIN) ? sourceFont : new Font(sourceFont.getFamily(), Font.PLAIN, sourceFont.getSize());
+        if (textEditingArea.getFont().getStyle() == Font.PLAIN) {
+            return sourceFont;
+        }
+        else {
+            return new Font(sourceFont.getFamily(), Font.PLAIN, sourceFont.getSize());
+        }
     }
 }

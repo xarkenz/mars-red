@@ -1,9 +1,9 @@
-package mars.venus.editors.jeditsyntax;
+package mars.venus.editor.jeditsyntax;
 
 import mars.settings.Settings;
-import mars.venus.EditPane;
-import mars.venus.editors.MARSTextEditingArea;
-import mars.venus.editors.jeditsyntax.tokenmarker.MIPSTokenMarker;
+import mars.venus.editor.FileEditorTab;
+import mars.venus.editor.MARSTextEditingArea;
+import mars.venus.editor.jeditsyntax.tokenmarker.MIPSTokenMarker;
 
 import javax.swing.*;
 import javax.swing.undo.CannotRedoException;
@@ -13,25 +13,25 @@ import javax.swing.undo.UndoManager;
 import java.awt.*;
 
 /**
- * Adaptor subclass for JEditTextArea.
+ * Adaptor subclass for {@link JEditTextArea}.
  * <p>
  * Provides those methods required by the MARSTextEditingArea interface
  * that are not defined by JEditTextArea.  This permits JEditTextArea
- * to be used within MARS largely without modification.  DPS 4-20-2010
+ * to be used within MARS largely without modification.
  *
- * @author Pete Sanderson
- * @since 4.0
+ * @author Pete Sanderson 4-20-2010
+ * @since MARS 4.0
  */
 public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditingArea {
-    private final EditPane editPane;
+    private final FileEditorTab fileEditorTab;
     private final UndoManager undoManager;
     private boolean isCompoundEdit = false;
     private CompoundEdit compoundEdit;
     private final JEditBasedTextArea sourceCode;
 
-    public JEditBasedTextArea(EditPane editPane, Settings settings, JComponent lineNumbers) {
+    public JEditBasedTextArea(FileEditorTab fileEditorTab, Settings settings, JComponent lineNumbers) {
         super(settings, lineNumbers);
-        this.editPane = editPane;
+        this.fileEditorTab = fileEditorTab;
         this.undoManager = new UndoManager();
         this.compoundEdit = new CompoundEdit();
         this.sourceCode = this;
@@ -44,7 +44,7 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
             }
             else {
                 this.undoManager.addEdit(event.getEdit());
-                this.editPane.updateUndoRedoActions();
+                this.fileEditorTab.updateUndoRedoActions();
             }
         });
 
@@ -53,7 +53,7 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
 
         this.addCaretListener(event -> {
             // Display caret position on the edit pane
-            this.editPane.displayCaretPosition(event.getDot());
+            this.fileEditorTab.displayCaretPosition(event.getDot());
         });
     }
 
@@ -310,7 +310,7 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
         sourceCode.replaceSelection(replace);
         compoundEdit.end();
         undoManager.addEdit(compoundEdit);
-        editPane.updateUndoRedoActions();
+        fileEditorTab.updateUndoRedoActions();
         isCompoundEdit = false;
         sourceCode.setCaretPosition(foundIndex + replace.length());
 
@@ -365,7 +365,7 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
         if (compoundEdit != null) {
             compoundEdit.end();
             undoManager.addEdit(compoundEdit);
-            editPane.updateUndoRedoActions();
+            fileEditorTab.updateUndoRedoActions();
         }
         return replaceCount;
     }

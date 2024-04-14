@@ -1,4 +1,4 @@
-package mars.venus;
+package mars.venus.execute;
 
 import mars.Application;
 import mars.ProgramStatement;
@@ -8,6 +8,8 @@ import mars.simulator.Simulator;
 import mars.simulator.SimulatorNotice;
 import mars.util.Binary;
 import mars.util.EditorFont;
+import mars.venus.MonoRightCellRenderer;
+import mars.venus.NumberDisplayBaseChooser;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -111,7 +113,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
      * Should convert the lines of code over to the table rows and columns.
      */
     public void setupTable() {
-        int addressBase = Application.getGUI().getMainPane().getExecutePane().getAddressDisplayBase();
+        int addressBase = Application.getGUI().getMainPane().getExecuteTab().getAddressDisplayBase();
         codeHighlighting = true;
         breakpointsEnabled = true;
         List<ProgramStatement> statements = Application.program.getMachineStatements();
@@ -170,17 +172,17 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
         table.getColumnModel().getColumn(BREAK_COLUMN).setPreferredWidth(40);
         table.getColumnModel().getColumn(BREAK_COLUMN).setCellRenderer(new CheckBoxTableCellRenderer());
 
+        CodeCellRenderer codeCellRenderer = new CodeCellRenderer();
+
         table.getColumnModel().getColumn(ADDRESS_COLUMN).setMinWidth(80);
         table.getColumnModel().getColumn(ADDRESS_COLUMN).setMaxWidth(100);
         table.getColumnModel().getColumn(ADDRESS_COLUMN).setPreferredWidth(90);
-        table.getColumnModel().getColumn(ADDRESS_COLUMN).setCellRenderer(new MonoRightCellRenderer());
+        table.getColumnModel().getColumn(ADDRESS_COLUMN).setCellRenderer(codeCellRenderer);
 
         table.getColumnModel().getColumn(CODE_COLUMN).setMinWidth(80);
         table.getColumnModel().getColumn(CODE_COLUMN).setMaxWidth(100);
         table.getColumnModel().getColumn(CODE_COLUMN).setPreferredWidth(90);
-        table.getColumnModel().getColumn(CODE_COLUMN).setCellRenderer(new MachineCodeCellRenderer());
-
-        CodeCellRenderer codeCellRenderer = new CodeCellRenderer();
+        table.getColumnModel().getColumn(CODE_COLUMN).setCellRenderer(codeCellRenderer);
 
         table.getColumnModel().getColumn(BASIC_COLUMN).setMinWidth(120);
         table.getColumnModel().getColumn(BASIC_COLUMN).setPreferredWidth(120);
@@ -258,7 +260,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
             // No content to change
             return;
         }
-        int addressBase = Application.getGUI().getMainPane().getExecutePane().getAddressDisplayBase();
+        int addressBase = Application.getGUI().getMainPane().getExecuteTab().getAddressDisplayBase();
         String formattedAddress;
         for (int i = 0; i < intAddresses.length; i++) {
             formattedAddress = NumberDisplayBaseChooser.formatUnsignedInteger(intAddresses[i], addressBase);
@@ -389,7 +391,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
                 // the MIPS program is running, and even then only in timed or step mode.  There are good reasons
                 // for that.  So we'll pretend to be Memory observable and send it a fake memory write update.
                 try {
-                    Application.getGUI().getMainPane().getExecutePane().getDataSegmentWindow().update(Memory.getInstance(), new MemoryAccessNotice(AccessNotice.WRITE, address, value));
+                    Application.getGUI().getMainPane().getExecuteTab().getDataSegmentWindow().update(Memory.getInstance(), new MemoryAccessNotice(AccessNotice.WRITE, address, value));
                 }
                 catch (Exception e) {
                     // Not sure if anything bad can happen in this sequence, but if anything does we can let it go.
@@ -582,7 +584,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
      *
      * @param address text segment address of source code step.
      */
-    void selectStepAtAddress(int address) {
+    public void selectStepAtAddress(int address) {
         int addressRow;
         try {
             addressRow = findRowForAddress(address);
@@ -785,59 +787,33 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
      * A custom table cell renderer that we'll use to highlight the current line of
      * source code when executing using Step or breakpoint.
      */
-    class CodeCellRenderer extends DefaultTableCellRenderer {
+    private class CodeCellRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            Component cell = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            TextSegmentWindow textSegment = Application.getGUI().getMainPane().getExecutePane().getTextSegmentWindow();
+            TextSegmentWindow textSegment = Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow();
             Settings settings = Application.getSettings();
-            boolean highlighting = textSegment.getCodeHighlighting();
 
-            if (highlighting && textSegment.getIntCodeAddressAtRow(row) == highlightAddress) {
-                if (mars.simulator.Simulator.isInDelaySlot() || textSegment.inDelaySlot) {
-//                    cell.setBackground(settings.getColorSettingByPosition(Settings.TEXTSEGMENT_DELAYSLOT_HIGHLIGHT_BACKGROUND));
-//                    cell.setForeground(settings.getColorSettingByPosition(Settings.TEXTSEGMENT_DELAYSLOT_HIGHLIGHT_FOREGROUND));
-                    cell.setFont(settings.getFontByPosition(Settings.TEXTSEGMENT_DELAYSLOT_HIGHLIGHT_FONT));
+            this.setHorizontalAlignment(SwingConstants.LEFT);
+            if (textSegment.getCodeHighlighting() && textSegment.getIntCodeAddressAtRow(row) == highlightAddress) {
+                if (Simulator.isInDelaySlot() || textSegment.inDelaySlot) {
+                    this.setBackground(settings.getColorSettingByPosition(Settings.TEXTSEGMENT_DELAYSLOT_HIGHLIGHT_BACKGROUND));
+                    this.setForeground(settings.getColorSettingByPosition(Settings.TEXTSEGMENT_DELAYSLOT_HIGHLIGHT_FOREGROUND));
                 }
                 else {
-//                    cell.setBackground(settings.getColorSettingByPosition(Settings.TEXTSEGMENT_HIGHLIGHT_BACKGROUND));
-//                    cell.setForeground(settings.getColorSettingByPosition(Settings.TEXTSEGMENT_HIGHLIGHT_FOREGROUND));
-                    cell.setFont(settings.getFontByPosition(Settings.TEXTSEGMENT_HIGHLIGHT_FONT));
+                    this.setBackground(settings.getColorSettingByPosition(Settings.TEXTSEGMENT_HIGHLIGHT_BACKGROUND));
+                    this.setForeground(settings.getColorSettingByPosition(Settings.TEXTSEGMENT_HIGHLIGHT_FOREGROUND));
                 }
             }
-            else if (row % 2 == 0) {
-//                cell.setBackground(settings.getColorSettingByPosition(Settings.EVEN_ROW_BACKGROUND));
-//                cell.setForeground(settings.getColorSettingByPosition(Settings.EVEN_ROW_FOREGROUND));
-                cell.setFont(settings.getFontByPosition(Settings.EVEN_ROW_FONT));
-            }
             else {
-//                cell.setBackground(settings.getColorSettingByPosition(Settings.ODD_ROW_BACKGROUND));
-//                cell.setForeground(settings.getColorSettingByPosition(Settings.ODD_ROW_FOREGROUND));
-                cell.setFont(settings.getFontByPosition(Settings.ODD_ROW_FONT));
+                this.setBackground(null);
+                this.setForeground(null);
             }
-            return cell;
-        }
-    }
 
-    /**
-     * Cell renderer for Machine Code column.  Alternates background color by row but otherwise is
-     * same as MonoRightCellRenderer.
-     */
-    private static class MachineCodeCellRenderer extends DefaultTableCellRenderer {
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            JLabel cell = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            cell.setFont(MonoRightCellRenderer.MONOSPACED_PLAIN_12POINT);
-            cell.setHorizontalAlignment(SwingConstants.RIGHT);
-            if (row % 2 == 0) {
-//                cell.setBackground(Globals.getSettings().getColorSettingByPosition(Settings.EVEN_ROW_BACKGROUND));
-//                cell.setForeground(Globals.getSettings().getColorSettingByPosition(Settings.EVEN_ROW_FOREGROUND));
-            }
-            else {
-//                cell.setBackground(Globals.getSettings().getColorSettingByPosition(Settings.ODD_ROW_BACKGROUND));
-//                cell.setForeground(Globals.getSettings().getColorSettingByPosition(Settings.ODD_ROW_FOREGROUND));
-            }
-            return cell;
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            this.setFont(MonoRightCellRenderer.MONOSPACED_PLAIN_12POINT);
+
+            return this;
         }
     }
 

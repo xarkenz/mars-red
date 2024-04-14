@@ -208,20 +208,20 @@ public class MarsLauncher {
 
         for (String[] triple : dumpTriples) {
             File file = new File(triple[2]);
-            Integer[] segInfo = MemoryDump.getSegmentBounds(triple[0]);
+            Integer[] segmentInfo = MemoryDump.getSegmentBounds(triple[0]);
             // If not segment name, see if it is address range instead.  DPS 14-July-2008
-            if (segInfo == null) {
+            if (segmentInfo == null) {
                 try {
                     String[] memoryRange = checkMemoryAddressRange(triple[0]);
-                    segInfo = new Integer[2];
-                    segInfo[0] = Binary.stringToInt(memoryRange[0]); // low end of range
-                    segInfo[1] = Binary.stringToInt(memoryRange[1]); // high end of range
+                    segmentInfo = new Integer[2];
+                    segmentInfo[0] = Binary.stringToInt(memoryRange[0]); // Low end of range
+                    segmentInfo[1] = Binary.stringToInt(memoryRange[1]); // High end of range
                 }
-                catch (NumberFormatException | NullPointerException ignored) {
-                    segInfo = null;
+                catch (NumberFormatException | NullPointerException exception) {
+                    segmentInfo = null;
                 }
             }
-            if (segInfo == null) {
+            if (segmentInfo == null) {
                 out.println("Error while attempting to save dump, segment/address-range " + triple[0] + " is invalid!");
                 continue;
             }
@@ -233,12 +233,12 @@ public class MarsLauncher {
                 continue;
             }
             try {
-                int highAddress = Application.memory.getAddressOfFirstNull(segInfo[0], segInfo[1]) - Memory.WORD_LENGTH_BYTES;
-                if (highAddress < segInfo[0]) {
+                int highAddress = Application.memory.getAddressOfFirstNull(segmentInfo[0], segmentInfo[1]) - Memory.WORD_LENGTH_BYTES;
+                if (highAddress < segmentInfo[0]) {
                     out.println("This segment has not been written to, there is nothing to dump.");
                     continue;
                 }
-                format.dumpMemoryRange(file, segInfo[0], highAddress);
+                format.dumpMemoryRange(file, segmentInfo[0], highAddress);
             }
             catch (FileNotFoundException e) {
                 out.println("Error while attempting to save dump, file " + file + " was not found!");

@@ -8,9 +8,9 @@
  * remains intact in all source distributions of this package.
  */
 
-package mars.venus.editors.jeditsyntax;
+package mars.venus.editor.jeditsyntax;
 
-import mars.venus.editors.jeditsyntax.tokenmarker.Token;
+import mars.venus.editor.jeditsyntax.tokenmarker.Token;
 
 import javax.swing.text.Segment;
 
@@ -19,7 +19,7 @@ import javax.swing.text.Segment;
  * to values. However, the `keys' are Swing {@link Segment}s. This allows lookups of
  * text substrings without the overhead of creating a new string object.
  * <p>
- * This class is used by {@link mars.venus.editors.jeditsyntax.tokenmarker.MIPSTokenMarker}
+ * This class is used by {@link mars.venus.editor.jeditsyntax.tokenmarker.MIPSTokenMarker}
  * to map keywords to ids.
  *
  * @author Slava Pestov, Mike Dillon

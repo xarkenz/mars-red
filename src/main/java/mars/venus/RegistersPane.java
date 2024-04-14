@@ -37,6 +37,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @version August 2005
  */
 public class RegistersPane extends JTabbedPane {
+    private final VenusUI gui;
     private final RegistersWindow registersTab;
     private final Coprocessor1Window coprocessor1Tab;
     private final Coprocessor0Window coprocessor0Tab;
@@ -46,15 +47,16 @@ public class RegistersPane extends JTabbedPane {
      */
     public RegistersPane(VenusUI gui, RegistersWindow registersTab, Coprocessor1Window coprocessor1Tab, Coprocessor0Window coprocessor0Tab) {
         super();
+        this.gui = gui;
         this.registersTab = registersTab;
         this.coprocessor1Tab = coprocessor1Tab;
         this.coprocessor0Tab = coprocessor0Tab;
         registersTab.setVisible(true);
         coprocessor1Tab.setVisible(true);
         coprocessor0Tab.setVisible(true);
-        this.addTab("Registers", null, registersTab, "CPU registers");
-        this.addTab("Coprocessor 1", null, coprocessor1Tab, "Coprocessor 1 (floating point unit) registers");
-        this.addTab("Coprocessor 0", null, coprocessor0Tab, "Coprocessor 0 (exceptions and interrupts) registers");
+        this.addTab("Registers", null, registersTab, "General-purpose registers");
+        this.addTab("Coprocessor 1", null, coprocessor1Tab, "CP1: floating-point unit (FPU)");
+        this.addTab("Coprocessor 0", null, coprocessor0Tab, "CP0: System Control Coprocessor (used for exceptions and interrupts)");
     }
 
     /**

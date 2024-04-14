@@ -44,6 +44,6 @@ public class EditPasteAction extends VenusAction {
 
     @Override
     public void actionPerformed(ActionEvent event) {
-        gui.getMainPane().getEditPane().pasteText();
+        gui.getMainPane().getCurrentEditorTab().pasteText();
     }
 }

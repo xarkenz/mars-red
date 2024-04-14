@@ -7,12 +7,12 @@
  * remains intact in all source distributions of this package.
  */
 
-package mars.venus.editors.jeditsyntax;
+package mars.venus.editor.jeditsyntax;
 
 import mars.Application;
 import mars.settings.Settings;
-import mars.venus.editors.jeditsyntax.tokenmarker.Token;
-import mars.venus.editors.jeditsyntax.tokenmarker.TokenMarker;
+import mars.venus.editor.jeditsyntax.tokenmarker.Token;
+import mars.venus.editor.jeditsyntax.tokenmarker.TokenMarker;
 
 import javax.swing.*;
 import javax.swing.event.*;
