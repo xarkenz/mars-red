@@ -1,7 +1,14 @@
-package mars.simulator;
+package mars.venus.actions.settings;
+
+import mars.Application;
+import mars.venus.VenusUI;
+import mars.venus.actions.VenusAction;
+
+import javax.swing.*;
+import java.awt.event.ActionEvent;
 
 /*
-Copyright (c) 2003-2009,  Pete Sanderson and Kenneth Vollmar
+Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
 and Kenneth Vollmar (kenvollmar@missouristate.edu)
@@ -28,25 +35,25 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
 */
 
-import mars.venus.execute.RunSpeedPanel;
-
 /**
- * Object provided to Observers of the Simulator.
- * They are notified at important phases of the runtime simulator,
- * such as start and stop of simulation.
- *
- * @author Pete Sanderson
- * @version January 2009
+ * Action class for the Settings menu item to control whether to use
+ * the light theme or dark theme. Temporary until a new settings menu
+ * is implemented.
  */
-public record SimulatorNotice(int action, int maxSteps, double runSpeed, int programCounter) {
-    public static final int SIMULATOR_START = 0;
-    public static final int SIMULATOR_STOP = 1;
+public class SettingsDarkThemeAction extends VenusAction {
+    public SettingsDarkThemeAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
+        super(gui, name, icon, description, mnemonic, accel);
+    }
 
     @Override
-    public String toString() {
-        return ((this.action() == SIMULATOR_START) ? "START" : "STOP ")
-            + " Max Steps " + this.maxSteps
-            + " Speed " + ((this.runSpeed == RunSpeedPanel.UNLIMITED_SPEED) ? "unlimited" : this.runSpeed + " inst/sec")
-            + " Prog Ctr " + this.programCounter;
+    public void actionPerformed(ActionEvent event) {
+        if (((JCheckBoxMenuItem) event.getSource()).isSelected()) {
+            Application.getSettings().lookAndFeelName.set("FlatDarkLaf");
+        }
+        else {
+            Application.getSettings().lookAndFeelName.set("FlatLightLaf");
+        }
+
+        JOptionPane.showMessageDialog(gui, "You must restart " + Application.NAME + " in order for this change to take effect.", "Restart Required", JOptionPane.INFORMATION_MESSAGE);
     }
 }

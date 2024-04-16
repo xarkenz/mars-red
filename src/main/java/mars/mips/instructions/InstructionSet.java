@@ -57,7 +57,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 public class InstructionSet {
     private final ArrayList<Instruction> instructionList;
     private ArrayList<MatchMap> opcodeMatchMaps;
-    private SyscallLoader syscallLoader;
+    private SyscallManager syscallManager;
 
     /**
      * Creates a new InstructionSet object.
@@ -1442,8 +1442,8 @@ public class InstructionSet {
         addPseudoInstructions();
 
         ////////////// GET AND CREATE LIST OF SYSCALL FUNCTION OBJECTS ////////////////////
-        syscallLoader = new SyscallLoader();
-        syscallLoader.loadSyscalls();
+        syscallManager = new SyscallManager();
+        syscallManager.loadSyscalls();
 
         // Initialization step.  Create token list for each instruction example.  This is
         // used by parser to determine user program correct syntax.
@@ -1583,7 +1583,7 @@ public class InstructionSet {
      * a class that implements Syscall or extends AbstractSyscall.
      */
     private void findAndSimulateSyscall(int number, ProgramStatement statement) throws ProcessingException {
-        Syscall service = syscallLoader.findSyscall(number);
+        Syscall service = syscallManager.findSyscall(number);
         if (service != null) {
             service.simulate(statement);
             return;

@@ -51,7 +51,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Creates the Text Segment window in the Execute tab of the UI
+ * Creates the Text Segment window in the Execute tab of the UI.
  *
  * @author Team JSpim
  */
@@ -70,9 +70,9 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
      * to 16); the latter is used for highlighting.  Both structures will remain
      * consistent once set up, since address column is not editable.
      */
-    private int[] intAddresses; // index is table model row, value is text address
-    private Hashtable<Integer, Integer> addressRows; // key is text address, value is table model row
-    private Hashtable<Integer, ModifiedCode> executeMods; // key is table model row, value is original code, basic, source.
+    private int[] intAddresses; // Index is table model row, value is text address
+    private Hashtable<Integer, Integer> addressRows; // Key is text address, value is table model row
+    private Hashtable<Integer, ModifiedCode> executeMods; // Key is table model row, value is original code, basic, source.
     private final Container contentPane;
     private TextTableModel tableModel;
     private boolean codeHighlighting;
@@ -81,21 +81,32 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
     private TableModelListener tableModelListener;
     private boolean inDelaySlot; // Added 25 June 2007
 
-    private static final String[] columnNames = {"Bkpt", "Address", "Code", "Basic", "Source"};
-    private static final int BREAK_COLUMN = 0;
+    private static final int BREAKPOINT_COLUMN = 0;
     private static final int ADDRESS_COLUMN = 1;
     private static final int CODE_COLUMN = 2;
     private static final int BASIC_COLUMN = 3;
     private static final int SOURCE_COLUMN = 4;
+    private static final String[] COLUMN_NAMES = {
+        "Bkpt",
+        "Address",
+        "Code",
+        "Basic",
+        "Source",
+    };
 
-    // The following is displayed in the Basic and Source columns if existing code is overwritten using self-modifying code feature
-    private static final String modifiedCodeMarker = " ------ ";
+    /**
+     * Displayed in the Basic and Source columns if existing code is overwritten
+     * using the self-modifying code feature.
+     */
+    private static final String MODIFIED_CODE_MARKER = " ------ ";
 
     /**
      * Constructor, sets up a new JInternalFrame.
      */
     public TextSegmentWindow() {
-        super("Text Segment", true, false, true, true);
+        super("Text Segment", true, false, true, false);
+        this.setFrameIcon(null);
+
         Simulator.getInstance().addObserver(this);
         Application.getSettings().addObserver(this);
         contentPane = this.getContentPane();
@@ -117,7 +128,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
         codeHighlighting = true;
         breakpointsEnabled = true;
         List<ProgramStatement> statements = Application.program.getMachineStatements();
-        data = new Object[statements.size()][columnNames.length];
+        data = new Object[statements.size()][COLUMN_NAMES.length];
         intAddresses = new int[data.length];
         addressRows = new Hashtable<>(data.length);
         executeMods = new Hashtable<>(data.length);
@@ -125,8 +136,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
         // In multi-file situation, this will not necessarily be the last line b/c statements contains
         // source lines from all files.  DPS 3-Oct-10
         int maxSourceLineNumber = 0;
-        for (int i = statements.size() - 1; i >= 0; i--) {
-            ProgramStatement statement = statements.get(i);
+        for (ProgramStatement statement : statements) {
             if (statement.getSourceLine() > maxSourceLineNumber) {
                 maxSourceLineNumber = statement.getSourceLine();
             }
@@ -134,14 +144,14 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
         int maxSourceLineDigits = Integer.toUnsignedString(maxSourceLineNumber).length();
         int leadingSpaces;
         int lastLine = -1;
-        for (int i = 0; i < statements.size(); i++) {
-            ProgramStatement statement = statements.get(i);
-            intAddresses[i] = statement.getAddress();
-            addressRows.put(intAddresses[i], i);
-            data[i][BREAK_COLUMN] = Boolean.FALSE;
-            data[i][ADDRESS_COLUMN] = NumberDisplayBaseChooser.formatUnsignedInteger(statement.getAddress(), addressBase);
-            data[i][CODE_COLUMN] = NumberDisplayBaseChooser.formatNumber(statement.getBinaryStatement(), 16);
-            data[i][BASIC_COLUMN] = statement.getPrintableBasicAssemblyStatement();
+        for (int row = 0; row < statements.size(); row++) {
+            ProgramStatement statement = statements.get(row);
+            intAddresses[row] = statement.getAddress();
+            addressRows.put(intAddresses[row], row);
+            data[row][BREAKPOINT_COLUMN] = Boolean.FALSE;
+            data[row][ADDRESS_COLUMN] = NumberDisplayBaseChooser.formatUnsignedInteger(statement.getAddress(), addressBase);
+            data[row][CODE_COLUMN] = NumberDisplayBaseChooser.formatNumber(statement.getBinaryStatement(), 16);
+            data[row][BASIC_COLUMN] = statement.getPrintableBasicAssemblyStatement();
             String sourceString = "";
             if (!statement.getSource().isEmpty()) {
                 String sourceLineString = Integer.toUnsignedString(statement.getSourceLine());
@@ -152,7 +162,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
                 }
                 sourceString = lineNumber + EditorFont.substituteSpacesForTabs(statement.getSource());
             }
-            data[i][SOURCE_COLUMN] = sourceString;
+            data[row][SOURCE_COLUMN] = sourceString;
             lastLine = statement.getSourceLine();
         }
         contentPane.removeAll();
@@ -162,15 +172,15 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
             // Initialize listener
             tableModel.fireTableDataChanged();
         }
-        table = new MyTippedJTable(tableModel);
+        table = new TextSegmentTable(tableModel);
 
         // Prevents cells in row from being highlighted when user clicks on breakpoint checkbox
         table.setRowSelectionAllowed(false);
 
-        table.getColumnModel().getColumn(BREAK_COLUMN).setMinWidth(40);
-        table.getColumnModel().getColumn(BREAK_COLUMN).setMaxWidth(50);
-        table.getColumnModel().getColumn(BREAK_COLUMN).setPreferredWidth(40);
-        table.getColumnModel().getColumn(BREAK_COLUMN).setCellRenderer(new CheckBoxTableCellRenderer());
+        table.getColumnModel().getColumn(BREAKPOINT_COLUMN).setMinWidth(40);
+        table.getColumnModel().getColumn(BREAKPOINT_COLUMN).setMaxWidth(50);
+        table.getColumnModel().getColumn(BREAKPOINT_COLUMN).setPreferredWidth(40);
+        table.getColumnModel().getColumn(BREAKPOINT_COLUMN).setCellRenderer(new CheckBoxTableCellRenderer());
 
         CodeCellRenderer codeCellRenderer = new CodeCellRenderer();
 
@@ -278,23 +288,23 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
             return;
         }
         List<ProgramStatement> statements = Application.program.getMachineStatements();
-        for (int i = 0; i < statements.size(); i++) {
+        for (int row = 0; row < statements.size(); row++) {
             // Loop has been extended to cover self-modifying code.  If code at this memory location has been
             // modified at runtime, construct a ProgramStatement from the current address and binary code
             // then display its basic code.  DPS 11-July-2013
-            if (executeMods.get(i) == null) {
+            if (executeMods.get(row) == null) {
                 // Not modified, so use original logic
-                ProgramStatement statement = statements.get(i);
-                table.getModel().setValueAt(statement.getPrintableBasicAssemblyStatement(), i, BASIC_COLUMN);
+                ProgramStatement statement = statements.get(row);
+                table.getModel().setValueAt(statement.getPrintableBasicAssemblyStatement(), row, BASIC_COLUMN);
             }
             else {
                 try {
-                    ProgramStatement statement = new ProgramStatement(Binary.stringToInt((String) table.getModel().getValueAt(i, CODE_COLUMN)), Binary.stringToInt((String) table.getModel().getValueAt(i, ADDRESS_COLUMN)));
-                    table.getModel().setValueAt(statement.getPrintableBasicAssemblyStatement(), i, BASIC_COLUMN);
+                    ProgramStatement statement = new ProgramStatement(Binary.stringToInt((String) table.getModel().getValueAt(row, CODE_COLUMN)), Binary.stringToInt((String) table.getModel().getValueAt(row, ADDRESS_COLUMN)));
+                    table.getModel().setValueAt(statement.getPrintableBasicAssemblyStatement(), row, BASIC_COLUMN);
                 }
-                catch (NumberFormatException e) {
+                catch (NumberFormatException exception) {
                     // Should never happen, but just in case...
-                    table.getModel().setValueAt("", i, BASIC_COLUMN);
+                    table.getModel().setValueAt("", row, BASIC_COLUMN);
                 }
             }
         }
@@ -311,7 +321,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
      */
     @Override
     public void update(Observable observable, Object obj) {
-        if (observable == mars.simulator.Simulator.getInstance()) {
+        if (observable == Simulator.getInstance()) {
             SimulatorNotice notice = (SimulatorNotice) obj;
             if (notice.action() == SimulatorNotice.SIMULATOR_START) {
                 // Simulated MIPS execution starts.  Respond to text segment changes only if self-modifying code
@@ -336,35 +346,35 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
             if (access.getAccessType() == AccessNotice.WRITE) {
                 int address = access.getAddress();
                 int value = access.getValue();
-                String strValue = mars.util.Binary.intToHexString(access.getValue());
-                String strBasic = modifiedCodeMarker;
-                String strSource = modifiedCodeMarker;
+                String strValue = Binary.intToHexString(access.getValue());
+                String strBasic = MODIFIED_CODE_MARKER;
+                String strSource = MODIFIED_CODE_MARKER;
                 // Translate the address into table model row and modify the values in that row accordingly.
                 int row;
                 try {
                     row = findRowForAddress(address);
                 }
-                catch (IllegalArgumentException e) {
+                catch (IllegalArgumentException exception) {
                     // Address modified is outside the range of original program, ignore
                     return;
                 }
-                ModifiedCode mc = executeMods.get(row);
-                if (mc == null) {
+                ModifiedCode modification = executeMods.get(row);
+                if (modification == null) {
                     // Not already modified and new code is same as original, so do nothing
                     if (tableModel.getValueAt(row, CODE_COLUMN).equals(strValue)) {
                         return;
                     }
-                    mc = new ModifiedCode(row, tableModel.getValueAt(row, CODE_COLUMN), tableModel.getValueAt(row, BASIC_COLUMN), tableModel.getValueAt(row, SOURCE_COLUMN));
-                    executeMods.put(row, mc);
+                    modification = new ModifiedCode(row, tableModel.getValueAt(row, CODE_COLUMN), tableModel.getValueAt(row, BASIC_COLUMN), tableModel.getValueAt(row, SOURCE_COLUMN));
+                    executeMods.put(row, modification);
                     // Make a ProgramStatement and get basic code to display in BASIC_COLUMN
                     strBasic = new ProgramStatement(value, address).getPrintableBasicAssemblyStatement();
                 }
                 else {
                     // If restored to original value, restore the basic and source
                     // This will be the case upon backstepping.
-                    if (mc.code().equals(strValue)) {
-                        strBasic = (String) mc.basic();
-                        strSource = (String) mc.source();
+                    if (modification.code().equals(strValue)) {
+                        strBasic = (String) modification.basic();
+                        strSource = (String) modification.source();
                         // Remove from executeMods since we are back to original
                         executeMods.remove(row);
                     }
@@ -432,7 +442,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
     public int getBreakpointCount() {
         int breakpointCount = 0;
         for (Object[] datum : data) {
-            if ((Boolean) datum[BREAK_COLUMN]) {
+            if ((Boolean) datum[BREAKPOINT_COLUMN]) {
                 breakpointCount++;
             }
         }
@@ -453,7 +463,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
         int[] breakpoints = new int[breakpointCount];
         breakpointCount = 0;
         for (int i = 0; i < data.length; i++) {
-            if ((Boolean) data[i][BREAK_COLUMN]) {
+            if ((Boolean) data[i][BREAKPOINT_COLUMN]) {
                 breakpoints[breakpointCount++] = intAddresses[i];
             }
         }
@@ -467,9 +477,9 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
      */
     public void clearAllBreakpoints() {
         for (int i = 0; i < tableModel.getRowCount(); i++) {
-            if ((Boolean) data[i][BREAK_COLUMN]) {
+            if ((Boolean) data[i][BREAKPOINT_COLUMN]) {
                 // must use this method to assure display updated and listener notified
-                tableModel.setValueAt(Boolean.FALSE, i, BREAK_COLUMN);
+                tableModel.setValueAt(Boolean.FALSE, i, BREAKPOINT_COLUMN);
             }
         }
         // Handles an obscure situation: if you click to set some breakpoints then "immediately" clear them
@@ -480,7 +490,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
         // the last checked breakpoint check box still has the "focus".  There is but one renderer and editor
         // per column.  Getting the renderer and setting it "setSelected(false)" will not work.  You have
         // to get the editor instead.  (PS, 7 Aug 2006)
-        ((JCheckBox) ((DefaultCellEditor) table.getCellEditor(0, BREAK_COLUMN)).getComponent()).setSelected(false);
+        ((JCheckBox) ((DefaultCellEditor) table.getCellEditor(0, BREAKPOINT_COLUMN)).getComponent()).setSelected(false);
     }
 
     /**
@@ -531,7 +541,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
         try {
             row = findRowForAddress(address);
         }
-        catch (IllegalArgumentException e) {
+        catch (IllegalArgumentException exception) {
             return;
         }
         table.scrollRectToVisible(table.getCellRect(row, 0, true));
@@ -571,6 +581,8 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
     public void unhighlightAllSteps() {
         boolean saved = this.getCodeHighlighting();
         this.setCodeHighlighting(false);
+        table.tableChanged(new TableModelEvent(tableModel, 0, data.length - 1, ADDRESS_COLUMN));
+        table.tableChanged(new TableModelEvent(tableModel, 0, data.length - 1, CODE_COLUMN));
         table.tableChanged(new TableModelEvent(tableModel, 0, data.length - 1, BASIC_COLUMN));
         table.tableChanged(new TableModelEvent(tableModel, 0, data.length - 1, SOURCE_COLUMN));
         this.setCodeHighlighting(saved);
@@ -616,9 +628,9 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
         // Already programmed to toggle by clicking on column header, so we'll create
         // a fake mouse event with coordinates on that header then generate the fake
         // event on its mouse listener.
-        Rectangle rect = ((MyTippedJTable) table).getRectForColumnIndex(BREAK_COLUMN);
+        Rectangle rect = ((TextSegmentTable) table).getRectForColumnIndex(BREAKPOINT_COLUMN);
         MouseEvent fakeMouseEvent = new MouseEvent(table, MouseEvent.MOUSE_CLICKED, new Date().getTime(), MouseEvent.BUTTON1_DOWN_MASK, (int) rect.getX(), (int) rect.getY(), 1, false);
-        MouseListener[] mouseListeners = ((MyTippedJTable) table).tableHeader.getMouseListeners();
+        MouseListener[] mouseListeners = ((TextSegmentTable) table).tableHeader.getMouseListeners();
         for (MouseListener mouseListener : mouseListeners) {
             mouseListener.mouseClicked(fakeMouseEvent);
         }
@@ -661,18 +673,18 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
 
     private Integer[] getSavedColumnOrder() {
         String columnOrder = Application.getSettings().textSegmentColumnOrder.get();
-        // TODO: error handling
         return Arrays.stream(columnOrder.split("\\s+"))
             .map(Integer::valueOf)
             .toArray(Integer[]::new);
     }
 
     /**
-     *  Helper method to find the table row corresponding to the given
-     *  text segment address.  This method is called by
-     *  a couple different public methods.
+     * Helper method to find the table row corresponding to the given
+     * text segment address.  This method is called by
+     * a couple different public methods.
      *
-     *  @return The table row corresponding to this address.
+     * @param address The address to find the row for.
+     * @return The table row corresponding to this address.
      */
     private int findRowForAddress(int address) throws IllegalArgumentException {
         try {
@@ -695,7 +707,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
 
         @Override
         public int getColumnCount() {
-            return columnNames.length;
+            return COLUMN_NAMES.length;
         }
 
         @Override
@@ -705,7 +717,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
 
         @Override
         public String getColumnName(int col) {
-            return columnNames[col];
+            return COLUMN_NAMES[col];
         }
 
         @Override
@@ -730,7 +742,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
         @Override
         public boolean isCellEditable(int row, int col) {
             // Note that the data/cell address is constant, no matter where the cell appears onscreen.
-            return col == BREAK_COLUMN || (col == CODE_COLUMN && Application.getSettings().selfModifyingCodeEnabled.get());
+            return col == BREAKPOINT_COLUMN || (col == CODE_COLUMN && Application.getSettings().selfModifyingCodeEnabled.get());
         }
 
         /**
@@ -744,7 +756,7 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
                 fireTableCellUpdated(row, col);
                 return;
             }
-            // Handle changes in the Code column.
+            // Handle changes in the Code column
             int address = 0;
             if (value.equals(data[row][col])) {
                 return;
@@ -753,26 +765,26 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
             try {
                 intValue = Binary.stringToInt((String) value);
             }
-            catch (NumberFormatException nfe) {
+            catch (NumberFormatException exception) {
                 data[row][col] = "INVALID";
                 fireTableCellUpdated(row, col);
                 return;
             }
-            // calculate address from row and column
+            // Calculate address from row and column
             try {
                 address = Binary.stringToInt((String) data[row][ADDRESS_COLUMN]);
             }
-            catch (NumberFormatException nfe) {
+            catch (NumberFormatException exception) {
                 // Can't really happen since memory addresses are completely under
                 // the control of the software.
             }
-            //  Assures that if changed during MIPS program execution, the update will
-            //  occur only between MIPS instructions.
+            // Assures that if changed during MIPS program execution, the update will
+            // occur only between MIPS instructions.
             synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
                 try {
                     Application.memory.setRawWord(address, intValue);
                 }
-                catch (AddressErrorException aee) {
+                catch (AddressErrorException exception) {
                     // Somehow, user was able to display out-of-range address.  Most likely to occur between
                     // stack base and kernel.
                 }
@@ -818,13 +830,14 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
     }
 
 
-    /*
+    /**
      * Cell renderer for Breakpoint column.  We can use this to enable/disable breakpoint checkboxes with
      * a single action.  This class blatantly copied/pasted from
-     * http://www.javakb.com/Uwe/Forum.aspx/java-gui/1451/Java-TableCellRenderer-for-a-boolean-checkbox-field
-     * Slightly customized.  DPS 31-Dec-2009
+     * http://www.javakb.com/Uwe/Forum.aspx/java-gui/1451/Java-TableCellRenderer-for-a-boolean-checkbox-field.
+     * Slightly customized.
+     *
+     * @author DPS 31-Dec-2009
      */
-
     class CheckBoxTableCellRenderer extends JCheckBox implements TableCellRenderer {
         Border noFocusBorder;
         Border focusBorder;
@@ -910,10 +923,10 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
     // text table column headers. From Sun's JTable tutorial.
     // http://java.sun.com/docs/books/tutorial/uiswing/components/table.html
     //
-    private class MyTippedJTable extends JTable {
+    private class TextSegmentTable extends JTable {
         private JTableHeader tableHeader;
 
-        MyTippedJTable(TextTableModel model) {
+        public TextSegmentTable(TextTableModel model) {
             super(model);
         }
 
@@ -973,11 +986,11 @@ public class TextSegmentWindow extends JInternalFrame implements Observer {
                     Point p = e.getPoint();
                     int index = columnModel.getColumnIndexAtX(p.x);
                     int realIndex = columnModel.getColumn(index).getModelIndex();
-                    if (realIndex == BREAK_COLUMN) {
+                    if (realIndex == BREAKPOINT_COLUMN) {
                         JCheckBox check = ((JCheckBox) ((DefaultCellEditor) table.getCellEditor(0, index)).getComponent());
                         breakpointsEnabled = !breakpointsEnabled;
                         check.setEnabled(breakpointsEnabled);
-                        table.tableChanged(new TableModelEvent(tableModel, 0, data.length - 1, BREAK_COLUMN));
+                        table.tableChanged(new TableModelEvent(tableModel, 0, data.length - 1, BREAKPOINT_COLUMN));
                     }
                 }
 

@@ -5,6 +5,7 @@ import mars.mips.hardware.*;
 import mars.simulator.Simulator;
 import mars.simulator.SimulatorNotice;
 import mars.util.Binary;
+import mars.venus.execute.RunSpeedPanel;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;

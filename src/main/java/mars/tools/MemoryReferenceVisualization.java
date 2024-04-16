@@ -280,7 +280,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          help.addActionListener(
                 new ActionListener() {
                    public void actionPerformed(ActionEvent e) {
-                     JOptionPane.showMessageDialog(theWindow, helpContent);
+                     JOptionPane.showMessageDialog(window, helpContent);
                   }
                });		
          return help;  
@@ -638,7 +638,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                                              ((counterValue==highEnd) 
                            					    ? "value "+counterValue 
                            						 : "range "+counterValue+"-"+highEnd);
-                        Color newColor = JColorChooser.showDialog(theWindow, dialogLabel, counterColorScale.getColor(counterValue));
+                        Color newColor = JColorChooser.showDialog(window, dialogLabel, counterColorScale.getColor(counterValue));
                         if (newColor != null && !newColor.equals(counterColorScale.getColor(counterValue))) {
                            counterColorScale.insertOrReplace(new CounterColor(counterValue,newColor));
                            currentColorButton.setBackground(newColor);

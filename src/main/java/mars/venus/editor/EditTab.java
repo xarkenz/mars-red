@@ -168,9 +168,9 @@ public class EditTab extends JTabbedPane {
     }
 
     /**
-     * Determine whether
+     * Determine whether files are currently being opened in new tabs.
      *
-     * @return
+     * @return true if files are currently being opened, false otherwise.
      */
     public boolean isOpeningFiles() {
         return this.isOpeningFiles;
@@ -212,7 +212,6 @@ public class EditTab extends JTabbedPane {
         for (FileEditorTab tab : this.getEditorTabs()) {
             filesString.append(tab.getPathname()).append(';');
         }
-        System.out.println("SAVE: " + filesString);
         Application.getSettings().previouslyOpenFiles.set(filesString.toString());
     }
 
@@ -223,7 +222,6 @@ public class EditTab extends JTabbedPane {
     public void loadWorkspaceState() {
         // Restore previous session
         String filesString = Application.getSettings().previouslyOpenFiles.get();
-        System.out.println("LOAD: " + filesString);
         File[] files = Arrays.stream(filesString.split(";"))
             .map(String::trim)
             .map(File::new)

@@ -3,16 +3,12 @@ package mars;
 import mars.assembler.SymbolTable;
 import mars.mips.hardware.Memory;
 import mars.mips.instructions.InstructionSet;
-import mars.mips.instructions.syscalls.SyscallNumberOverride;
 import mars.settings.Settings;
 import mars.util.PropertiesFile;
 import mars.venus.VenusUI;
 
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.Properties;
-import java.util.StringTokenizer;
-	
+import java.util.*;
+
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
 
@@ -50,25 +46,23 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 public class Application {
     // List these first because they are referenced by methods called at initialization.
     private static final String CONFIG_PATH = "Config";
-    private static final String SYSCALLS_PATH = "Syscalls";
 
     /**
      * Lock variable used at head of synchronized block to guard MIPS memory and registers
      */
     public static final Object MEMORY_AND_REGISTERS_LOCK = new Object();
     /**
-     * String to GUI's RunI/O text area when echoing user input from pop-up dialog.
+     * Prefix to print to console when echoing user input from pop-up dialog.
      */
     public static final String USER_INPUT_PREFIX = "**** user input : ";
     /**
      * Path to folder that contains images
      */
-    // The leading "/" in filepath prevents package name from being prepended.
     public static final String IMAGES_PATH = "/images/";
     /**
      * Path to folder that contains action icons
      */
-    public static final String ACTION_ICONS_PATH = "/images/actions/";
+    public static final String ACTION_ICONS_PATH = "/icons/actions/";
     /**
      * Path to folder that contains help text
      */
@@ -82,27 +76,27 @@ public class Application {
      */
     public static final ArrayList<String> FILE_EXTENSIONS = getFileExtensions();
     /**
-     * Maximum length of scrolled message window (MARS Messages and Run I/O)
+     * Maximum length of scrolled message window (Messages and Console).
      */
     public static final int MAXIMUM_MESSAGE_CHARACTERS = getMessageLimit();
     /**
-     * Maximum number of assembler errors produced by one assemble operation
+     * Maximum number of assembler errors produced by one assemble operation.
      */
     public static final int MAXIMUM_ERROR_MESSAGES = getErrorLimit();
     /**
-     * Maximum number of back-step operations to buffer
+     * Maximum number of back-step operations to buffer.
      */
     public static final int MAXIMUM_BACKSTEPS = getBackstepLimit();
     /**
-     * The name of the application
+     * The name of the application.
      */
     public static final String NAME = "MARS Red";
     /**
-     * MARS copyright years
+     * MARS copyright years.
      */
     public static final String COPYRIGHT_YEARS = "2003-2014";
     /**
-     * MARS copyright holders
+     * MARS copyright holders.
      */
     public static final String COPYRIGHT_HOLDERS = "Pete Sanderson and Kenneth Vollmar";
     /**
@@ -115,7 +109,7 @@ public class Application {
     public static final String[] ASCII_TABLE = getAsciiStrings();
 
     /**
-     * MARS exit code -- useful with SYSCALL 17 when running from command line (not GUI)
+     * MARS exit code -- useful with SYSCALL 17 when running from command line (not GUI).
      */
     public static int exitCode = 0;
     /**
@@ -172,14 +166,14 @@ public class Application {
      */
     public static void initialize() {
         if (!initialized) {
-            memory = Memory.getInstance();  // clients can use Memory.getInstance instead of Globals.memory
+            memory = Memory.getInstance(); // Clients can still use Memory.getInstance instead of Globals.memory
             instructionSet = new InstructionSet();
             instructionSet.populate();
-            globalSymbolTable = new SymbolTable("<global>");
+            globalSymbolTable = new SymbolTable("(global)");
             settings = new Settings();
             initialized = true;
             debug = false;
-            memory.clear(); // will establish memory configuration from setting
+            memory.clear(); // Will establish memory configuration from setting
         }
     }
 
@@ -187,29 +181,29 @@ public class Application {
      * Read byte limit of Run I/O or MARS Messages text to buffer.
      */
     private static int getMessageLimit() {
-        return getIntegerProperty(CONFIG_PATH, "MessageLimit", 1000000);
+        return getIntegerProperty("MessageLimit", 1000000);
     }
 
     /**
      * Read limit on number of error messages produced by one assemble operation.
      */
     private static int getErrorLimit() {
-        return getIntegerProperty(CONFIG_PATH, "ErrorLimit", 200);
+        return getIntegerProperty("ErrorLimit", 200);
     }
 
     /**
      * Read backstep limit (number of operations to buffer) from properties file.
      */
     private static int getBackstepLimit() {
-        return getIntegerProperty(CONFIG_PATH, "BackstepLimit", 1000);
+        return getIntegerProperty("BackstepLimit", 1000);
     }
 
     /**
      * Read ASCII default display character for non-printing characters, from properties file.
      */
     public static String getAsciiNonPrint() {
-        String anp = getPropertyEntry(CONFIG_PATH, "AsciiNonPrint");
-        return (anp == null) ? "." : ((anp.equals("space")) ? " " : anp);
+        String asciiNonPrint = getPropertyEntry(CONFIG_PATH, "AsciiNonPrint");
+        return (asciiNonPrint == null) ? "." : (asciiNonPrint.equals("space")) ? " " : asciiNonPrint;
     }
 
     /**
@@ -218,36 +212,37 @@ public class Application {
      * "space", substitute string containing one space character.
      */
     private static String[] getAsciiStrings() {
-        String let = getPropertyEntry(CONFIG_PATH, "AsciiTable");
+        String asciiTable = getPropertyEntry(CONFIG_PATH, "AsciiTable");
         String placeHolder = getAsciiNonPrint();
-        String[] lets = let.split(" +");
+        String[] asciiStrings = asciiTable.split("\\s+");
         int maxLength = 0;
-        for (int i = 0; i < lets.length; i++) {
-            if (lets[i].equals("null")) lets[i] = placeHolder;
-            if (lets[i].equals("space")) lets[i] = " ";
-            if (lets[i].length() > maxLength) maxLength = lets[i].length();
+        for (int index = 0; index < asciiStrings.length; index++) {
+            if (asciiStrings[index].equals("null")) {
+                asciiStrings[index] = placeHolder;
+            }
+            else if (asciiStrings[index].equals("space")) {
+                asciiStrings[index] = " ";
+            }
+            maxLength = Math.max(maxLength, asciiStrings[index].length());
         }
-        String padding = "        ";
-        maxLength++;
-        for (int i = 0; i < lets.length; i++) {
-            lets[i] = padding.substring(0, maxLength - lets[i].length()) + lets[i];
+        for (int index = 0; index < asciiStrings.length; index++) {
+            asciiStrings[index] = " ".repeat(maxLength - asciiStrings[index].length() + 1) + asciiStrings[index];
         }
-        return lets;
+        return asciiStrings;
     }
 
     /**
      * Read and return integer property value for given file and property name.
      * Default value is returned if property file or name not found.
      */
-    private static int getIntegerProperty(String propertiesFile, String propertyName, int defaultValue) {
-        int limit = defaultValue;  // just in case no entry is found
-        Properties properties = PropertiesFile.loadPropertiesFromFile(propertiesFile);
+    private static int getIntegerProperty(String propertyName, int defaultValue) {
+        Properties properties = PropertiesFile.loadPropertiesFromFile(Application.CONFIG_PATH);
         try {
-            limit = Integer.parseInt(properties.getProperty(propertyName, Integer.toString(defaultValue)));
-        } catch (NumberFormatException nfe) {
-            // do nothing, keep limit at the default value
+            return Integer.parseInt(properties.getProperty(propertyName, Integer.toString(defaultValue)));
         }
-        return limit;
+        catch (NumberFormatException exception) {
+            return defaultValue;
+        }
     }
 
     /**
@@ -269,7 +264,7 @@ public class Application {
     /**
      * Get list of MarsTools that reside outside the MARS distribution.
      * Currently this is done by adding the tool's path name to the list
-     * of values for the external_tools property. Use ";" as delimiter!
+     * of values for the ExternalTools property. Use ";" as delimiter!
      *
      * @return ArrayList.  Each item is file path to .class file
      * of a class that implements MarsTool.  If none, returns empty list.
@@ -296,21 +291,5 @@ public class Application {
      */
     public static String getPropertyEntry(String propertiesFile, String propertyName) {
         return PropertiesFile.loadPropertiesFromFile(propertiesFile).getProperty(propertyName);
-    }
-
-    /**
-     * Read any syscall number assignment overrides from config file.
-     *
-     * @return ArrayList of SyscallNumberOverride objects
-     */
-    public ArrayList<SyscallNumberOverride> getSyscallOverrides() {
-        ArrayList<SyscallNumberOverride> overrides = new ArrayList<>();
-        Properties properties = PropertiesFile.loadPropertiesFromFile(SYSCALLS_PATH);
-        Enumeration<Object> keys = properties.keys();
-        while (keys.hasMoreElements()) {
-            String key = (String) keys.nextElement();
-            overrides.add(new SyscallNumberOverride(key, properties.getProperty(key)));
-        }
-        return overrides;
     }
 }

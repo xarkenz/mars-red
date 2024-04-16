@@ -562,8 +562,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                      final String title =  "Simulating the Keyboard and Display";  
                   // The following is necessary because there are different JDialog constructors for Dialog and 
                   // Frame and theWindow is declared a Window, superclass for both.
-                     d = (theWindow instanceof Dialog) ? new JDialog((Dialog) theWindow, title, false)
-                                                    : new JDialog((Frame) theWindow, title, false);
+                     d = (window instanceof Dialog) ? new JDialog((Dialog) window, title, false)
+                                                    : new JDialog((Frame) window, title, false);
                      d.setSize(ja.getPreferredSize());
                      d.getContentPane( ).setLayout(new BorderLayout( ));
                      d.getContentPane( ).add(new JScrollPane(ja),BorderLayout.CENTER);
@@ -578,7 +578,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                      JPanel p = new JPanel( ); // Flow layout will center button.
                      p.add(b);
                      d.getContentPane( ).add(p, BorderLayout.SOUTH);
-                     d.setLocationRelativeTo(theWindow);
+                     d.setLocationRelativeTo(window);
                      d.setVisible(true);							
                      // This alternative technique is simpler than the above but requires java 1.6!  DPS 16-July-2014
                      //       JOptionPane theStuff = new JOptionPane(new JScrollPane(ja),JOptionPane.INFORMATION_MESSAGE,

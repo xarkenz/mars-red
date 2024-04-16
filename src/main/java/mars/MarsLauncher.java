@@ -2,6 +2,7 @@ package mars;
 
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLaf;
+import com.formdev.flatlaf.FlatLightLaf;
 import mars.mips.dump.DumpFormat;
 import mars.mips.dump.DumpFormatLoader;
 import mars.mips.hardware.*;
@@ -192,7 +193,11 @@ public class MarsLauncher {
             // Designate the "themes" folder for theme style overrides
             FlatLaf.registerCustomDefaultsSource("themes");
             // Set up the look and feel
-            FlatDarkLaf.setup();
+            FlatLaf.setup(switch (Application.getSettings().lookAndFeelName.get()) {
+                case "FlatDarkLaf" -> new FlatDarkLaf();
+                case "FlatLightLaf" -> new FlatLightLaf();
+                default -> new FlatDarkLaf();
+            });
             // Initialize the GUI
             new VenusUI(Application.NAME + " " + Application.VERSION);
         });

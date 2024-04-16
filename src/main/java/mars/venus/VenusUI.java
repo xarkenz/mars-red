@@ -11,6 +11,7 @@ import mars.venus.actions.settings.*;
 import mars.venus.editor.Editor;
 import mars.venus.editor.FileStatus;
 import mars.venus.execute.ProgramStatus;
+import mars.venus.execute.RunSpeedPanel;
 
 import javax.swing.*;
 import javax.swing.undo.UndoManager;
@@ -128,6 +129,7 @@ public class VenusUI extends JFrame {
     private SettingsProgramArgumentsAction settingsProgramArgumentsAction;
     private SettingsDelayedBranchingAction settingsDelayedBranchingAction;
     private SettingsExceptionHandlerAction settingsExceptionHandlerAction;
+    private SettingsDarkThemeAction settingsDarkThemeAction;
     private SettingsEditorAction settingsEditorAction;
     private SettingsHighlightingAction settingsHighlightingAction;
     private SettingsMemoryConfigurationAction settingsMemoryConfigurationAction;
@@ -317,6 +319,7 @@ public class VenusUI extends JFrame {
             settingsProgramArgumentsAction = new SettingsProgramArgumentsAction(this, "Allow program arguments", null, "If set, program arguments for MIPS program can be entered in border of Text Segment window.", null, null);
             settingsDelayedBranchingAction = new SettingsDelayedBranchingAction(this, "Delayed branching", null, "If set, delayed branching will occur during MIPS execution.", null, null);
             settingsSelfModifyingCodeAction = new SettingsSelfModifyingCodeAction(this, "Self-modifying code", null, "If set, the MIPS program can write and branch to both text and data segments.", null, null);
+            settingsDarkThemeAction = new SettingsDarkThemeAction(this, "Enable dark theme", null, "If set, the application will launch with a dark theme.", null, null);
             settingsEditorAction = new SettingsEditorAction(this, "Editor Settings...", null, "View and modify text editor settings.", null, null);
             settingsHighlightingAction = new SettingsHighlightingAction(this, "Highlighting...", null, "View and modify Execute tab highlighting colors", null, null);
             settingsExceptionHandlerAction = new SettingsExceptionHandlerAction(this, "Exception Handler...", null, "If set, the specified exception handler file will be included in all Assemble operations.", null, null);
@@ -405,6 +408,8 @@ public class VenusUI extends JFrame {
         settingsMenu.add(createMenuCheckBox(settingsPopupInputAction, Application.getSettings().popupSyscallInput.get()));
         settingsMenu.add(createMenuCheckBox(settingsDelayedBranchingAction, Application.getSettings().delayedBranchingEnabled.get()));
         settingsMenu.add(createMenuCheckBox(settingsSelfModifyingCodeAction, Application.getSettings().selfModifyingCodeEnabled.get()));
+        settingsMenu.addSeparator();
+        settingsMenu.add(createMenuCheckBox(settingsDarkThemeAction, Application.getSettings().lookAndFeelName.get().equals("FlatDarkLaf")));
         settingsMenu.addSeparator();
         settingsMenu.add(createMenuItem(settingsEditorAction));
         settingsMenu.add(createMenuItem(settingsHighlightingAction));

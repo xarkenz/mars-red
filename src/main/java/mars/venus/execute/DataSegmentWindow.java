@@ -9,7 +9,6 @@ import mars.util.Binary;
 import mars.venus.MonoRightCellRenderer;
 import mars.venus.NumberDisplayBaseChooser;
 import mars.venus.RepeatButton;
-import mars.venus.RunSpeedPanel;
 
 import javax.swing.*;
 import javax.swing.event.TableModelEvent;
@@ -57,9 +56,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @author Sanderson and Bumgarner
  */
 public class DataSegmentWindow extends JInternalFrame implements Observer {
-    private static Object[][] tableData;
-
-    private static JTable table;
+    private Object[][] tableData;
+    private JTable table;
     private JScrollPane tableScrollPane;
     private final Container contentPane;
     private final JPanel tablePanel;
@@ -138,7 +136,8 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
      * @param choosers an array of objects used by user to select number display base (10 or 16)
      */
     public DataSegmentWindow(NumberDisplayBaseChooser[] choosers) {
-        super("Data Segment", true, false, true, true);
+        super("Memory Viewer", true, false, true, false);
+        this.setFrameIcon(null);
 
         Simulator.getInstance().addObserver(this);
         settings = Application.getSettings();
@@ -153,11 +152,9 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
         contentPane = this.getContentPane();
         tablePanel = new JPanel(new GridLayout(1, 2, 10, 0));
         JPanel navigationBar = new JPanel();
-        Toolkit tk = Toolkit.getDefaultToolkit();
-        Class<?> cs = this.getClass();
         try {
-            prevButton = new PrevButton(new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Previous22.png"))));
-            nextButton = new NextButton(new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Next22.png"))));
+            prevButton = new PrevButton(new ImageIcon(getToolkit().getImage(getClass().getResource(Application.IMAGES_PATH + "Previous22.png"))));
+            nextButton = new NextButton(new ImageIcon(getToolkit().getImage(getClass().getResource(Application.IMAGES_PATH + "Next22.png"))));
             // This group of buttons was replaced by a combo box.  Keep the JButton objects for their action listeners.
             for (int index = 0; index < baseAddressButtons.length; index++) {
                 baseAddressButtons[index] = new JButton();

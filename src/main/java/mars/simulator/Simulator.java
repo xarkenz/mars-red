@@ -16,6 +16,7 @@ import mars.venus.actions.run.RunStopAction;
 import mars.venus.editor.FileStatus;
 import mars.venus.execute.ExecuteTab;
 import mars.venus.execute.ProgramStatus;
+import mars.venus.execute.RunSpeedPanel;
 
 import javax.swing.*;
 import java.util.ArrayList;

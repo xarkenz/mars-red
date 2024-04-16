@@ -44,7 +44,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * Contains various IDE settings.  Persistent settings are maintained for the
  * current user and on the current machine using Java's Preference objects.
- * Failing that, default setting values come from Settings.properties file.
+ * Failing that, default setting values come from DefaultSettings.properties file.
  * If both of those fail, default values are defined in this class.
  * <p>
  * NOTE: If the Preference objects fail due to security exceptions, changes to
@@ -58,7 +58,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class Settings extends Observable {
     /* Properties file used to hold default settings. */
-    private static final String SETTINGS_FILENAME = "Settings";
+    private static final String SETTINGS_FILENAME = "DefaultSettings";
 
     // BOOLEAN SETTINGS
 
@@ -353,6 +353,7 @@ public class Settings extends Observable {
     );
     /**
      * Order of text segment table columns.
+     * Stored as the ordered column indices separated by spaces.
      */
     public final StringSetting textSegmentColumnOrder = new StringSetting(
         this,
@@ -360,10 +361,23 @@ public class Settings extends Observable {
         "0 1 2 3 4",
         false
     );
+    /**
+     * The list of files which were open in tabs in the previous session.
+     * Stored as the full file paths separated by semicolons.
+     */
     public final StringSetting previouslyOpenFiles = new StringSetting(
         this,
         "PreviouslyOpenFiles",
         "",
+        false
+    );
+    /**
+     * The name of the look and feel to use for the GUI.
+     */
+    public final StringSetting lookAndFeelName = new StringSetting(
+        this,
+        "LookAndFeel",
+        "FlatDarkLaf",
         false
     );
 
@@ -372,9 +386,11 @@ public class Settings extends Observable {
         memoryConfiguration,
         textSegmentColumnOrder,
         previouslyOpenFiles,
+        lookAndFeelName,
     };
 
     // FONT SETTINGS.  Each array position has associated name.
+
     /**
      * Font for the text editor
      */
@@ -495,7 +511,7 @@ public class Settings extends Observable {
 
     /**
      * Create Settings object and set to saved values.  If saved values not found, will set
-     * based on defaults stored in Settings.properties file.  If file problems, will set based
+     * based on defaults stored in DefaultSettings.properties file.  If file problems, will set based
      * on defaults stored in this class.
      */
     public Settings() {
@@ -786,7 +802,7 @@ public class Settings extends Observable {
     private void initialize() {
         applyDefaultSettings();
         if (!readSettingsFromPropertiesFile()) {
-            System.out.println("MARS System error: unable to read Settings.properties defaults. Using built-in defaults.");
+            System.out.println("MARS System error: unable to read DefaultSettings.properties defaults. Using built-in defaults.");
         }
         getSettingsFromPreferences();
     }
@@ -944,66 +960,66 @@ public class Settings extends Observable {
      */
     private boolean readSettingsFromPropertiesFile() {
         try {
-            Properties properties = PropertiesFile.loadPropertiesFromFile(SETTINGS_FILENAME);
+            Properties defaults = PropertiesFile.loadPropertiesFromFile(SETTINGS_FILENAME);
             // TODO: put all settings in one array using an interface?
+
             // Load boolean settings
             for (BooleanSetting setting : booleanSettings) {
-                String property = properties.getProperty(setting.getKey());
+                String property = defaults.getProperty(setting.getKey());
                 if (property != null) {
-                    setting.set(Boolean.parseBoolean(property));
+                    setting.setDefault(Boolean.parseBoolean(property));
+                    setting.setNonPersistent(setting.getDefault());
                 }
             }
             // Load integer settings
             for (IntegerSetting setting : integerSettings) {
-                String property = properties.getProperty(setting.getKey());
+                String property = defaults.getProperty(setting.getKey());
                 if (property != null) {
                     try {
-                        setting.set(Integer.parseInt(property));
+                        setting.setDefault(Integer.parseInt(property));
+                        setting.setNonPersistent(setting.getDefault());
                     }
-                    catch (NumberFormatException e) {
+                    catch (NumberFormatException exception) {
                         // Keep the default value
                     }
                 }
             }
             // Load string settings
             for (StringSetting setting : stringSettings) {
-                String property = properties.getProperty(setting.getKey());
+                String property = defaults.getProperty(setting.getKey());
                 if (property != null) {
-                    try {
-                        setting.set(property);
-                    }
-                    catch (NumberFormatException e) {
-                        // Keep the default value
-                    }
+                    setting.setDefault(property);
+                    setting.setNonPersistent(setting.getDefault());
                 }
             }
             // Load font settings
             for (int i = 0; i < fontFamilySettingsValues.length; i++) {
-                String settingValue = properties.getProperty(fontFamilySettingsKeys[i]);
+                String settingValue = defaults.getProperty(fontFamilySettingsKeys[i]);
                 if (settingValue != null) {
                     fontFamilySettingsValues[i] = defaultFontFamilySettingsValues[i] = settingValue;
                 }
-                settingValue = properties.getProperty(fontStyleSettingsKeys[i]);
+                settingValue = defaults.getProperty(fontStyleSettingsKeys[i]);
                 if (settingValue != null) {
                     fontStyleSettingsValues[i] = defaultFontStyleSettingsValues[i] = settingValue;
                 }
-                settingValue = properties.getProperty(fontSizeSettingsKeys[i]);
+                settingValue = defaults.getProperty(fontSizeSettingsKeys[i]);
                 if (settingValue != null) {
                     fontSizeSettingsValues[i] = defaultFontSizeSettingsValues[i] = settingValue;
                 }
             }
             // Load color settings
             for (int i = 0; i < colorSettingsKeys.length; i++) {
-                String settingValue = properties.getProperty(colorSettingsKeys[i]);
+                String settingValue = defaults.getProperty(colorSettingsKeys[i]);
                 if (settingValue != null) {
                     colorSettingsValues[i] = defaultColorSettingsValues[i] = settingValue;
                 }
             }
+
+            return true;
         }
-        catch (Exception e) {
+        catch (Exception exception) {
             return false;
         }
-        return true;
     }
 
     /**
@@ -1012,7 +1028,7 @@ public class Settings extends Observable {
      * will be returned here.
      * <p>
      * PRECONDITION: Values arrays have already been initialized to default values from
-     * Settings.properties file or default value arrays above!
+     * DefaultSettings.properties file or default value arrays above!
      */
     private void getSettingsFromPreferences() {
         for (BooleanSetting setting : booleanSettings) {

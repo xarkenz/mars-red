@@ -252,7 +252,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
          help.addActionListener(
                 new ActionListener() {
                    public void actionPerformed(ActionEvent e) {
-                     JOptionPane.showMessageDialog(theWindow, helpContent);
+                     JOptionPane.showMessageDialog(window, helpContent);
                   }
                });		
          return help;  

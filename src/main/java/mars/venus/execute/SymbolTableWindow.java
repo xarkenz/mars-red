@@ -139,6 +139,8 @@ public class SymbolTableWindow extends JInternalFrame {
      */
     public SymbolTableWindow() {
         super("Symbol Table", true, false, true, false);
+        this.setFrameIcon(null);
+
         globalSymbolTableHeader = null;
         sortState = Application.getSettings().symbolTableSortState.get();
         if (sortState < 0 || SORT_STATE_TRANSITIONS.length <= sortState) {

@@ -149,7 +149,7 @@ public class DigitalLabSim extends AbstractMarsToolAndApplication {
         				ja.setColumns(60);
         				ja.setLineWrap(true);
         				ja.setWrapStyleWord(true);
-        				JOptionPane.showMessageDialog(theWindow, new JScrollPane(ja),
+        				JOptionPane.showMessageDialog(window, new JScrollPane(ja),
                         "Simulating the Hexa Keyboard and Seven segment display", JOptionPane.INFORMATION_MESSAGE);
         			}
         		});		
