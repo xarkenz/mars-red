@@ -45,7 +45,7 @@ public class ToolAction extends AbstractAction {
     private final MarsTool tool;
 
     /**
-     * Create a new ToolAction for the specified MarsTool.
+     * Create a new {@code ToolAction} for the specified {@link MarsTool}.
      *
      * @param tool The tool this action will open when performed.
      */
@@ -55,9 +55,18 @@ public class ToolAction extends AbstractAction {
     }
 
     /**
+     * Get the {@link MarsTool} this action corresponds to.
+     *
+     * @return The tool this action will open when performed.
+     */
+    public MarsTool getTool() {
+        return this.tool;
+    }
+
+    /**
      * Opens this action's corresponding tool by invoking its {@link MarsTool#action()} method.
      *
-     * @param event The ActionEvent that triggered this call.
+     * @param event The event that triggered this call.
      */
     @Override
     public void actionPerformed(ActionEvent event) {

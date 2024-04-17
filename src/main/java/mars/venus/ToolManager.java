@@ -5,8 +5,7 @@ import mars.util.FilenameFinder;
 import mars.venus.actions.ToolAction;
 
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -37,28 +36,30 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * This class provides functionality to bring external Mars tools into the Mars
+ * This class provides functionality to bring external MARS tools into the MARS
  * system by adding them to its Tools menu.  This permits anyone with knowledge
- * of the Mars public interfaces, in particular of the Memory and Register
+ * of the MARS public interfaces, in particular of the Memory and Register
  * classes, to write applications which can interact with a MIPS program
- * executing under Mars.  The execution is of course simulated.  The
+ * executing under MARS.  The execution is of course simulated.  The
  * private method for loading tool classes is adapted from Bret Barker's
  * GameServer class from the book "Developing Games In Java".
  *
  * @author Pete Sanderson with help from Bret Barker
  * @version August 2005
  */
-public class ToolLoader {
-    private static final String CLASS_PREFIX = "mars.tools.";
+public class ToolManager {
+    private static final String TOOLS_PACKAGE_PREFIX = "mars.tools.";
     private static final String TOOLS_DIRECTORY_PATH = "mars/tools";
-    private static final String MARSTOOL_INTERFACE = "MarsTool.class";
-    private static final String CLASS_EXTENSION = "class";
+    private static final String CLASS_EXTENSION = ".class";
+
+    private List<ToolAction> toolActions = null;
 
     /**
      * Get the list of actions to fill the Tools menu, which may be empty. The loader
      * searches for all classes in the {@code mars.tools} package that implement {@link MarsTool}.
      *
-     * @return A list of actions, one for each MarsTool discovered.
+     * @return A list of actions, one for each {@code MarsTool} discovered.
+     *         This can also be retrieved later via {@link #getToolActions()}.
      */
     /*
      * This method is adapted from the loadGameControllers() method in Bret Barker's
@@ -78,39 +79,52 @@ public class ToolLoader {
      * as a ZipFile, get the ZipEntry enumeration, find the class files in the tools
      * folder, then continue as before.
      */
-    public static ArrayList<ToolAction> getToolActions() {
-        ArrayList<ToolAction> toolActions = new ArrayList<>();
-        ArrayList<String> candidates = FilenameFinder.getFilenameList(ToolLoader.class.getClassLoader(), TOOLS_DIRECTORY_PATH, CLASS_EXTENSION);
+    public List<ToolAction> loadTools() {
+        this.toolActions = new ArrayList<>();
+
         // Add any tools stored externally, as listed in Config.properties file.
         // This needs some work, because mars.Globals.getExternalTools() returns
         // whatever is in the properties file entry.  Since the class file will
         // not be located in the mars.tools folder, the loop below will not process
         // it correctly.  Not sure how to create a Class object given an absolute
         // pathname.
-        HashMap<String, String> tools = new HashMap<>();
-        for (String filename : candidates) {
-            // Do not add class if already encountered (happens if run in MARS development directory)
-            if (tools.containsKey(filename)) {
+
+        // Grab all class files in the same directory as MarsTool
+        List<String> filenames = FilenameFinder.getFilenameList(this.getClass().getClassLoader(), TOOLS_DIRECTORY_PATH, CLASS_EXTENSION);
+        Set<String> knownFilenames = new HashSet<>();
+
+        for (String filename : filenames) {
+            if (!knownFilenames.add(filename)) {
+                // We've already encountered this file (happens if run in MARS development directory)
                 continue;
             }
-            else {
-                tools.put(filename, filename);
+            try {
+                // Obtain the class corresponding to the filename
+                String className = TOOLS_PACKAGE_PREFIX + filename.substring(0, filename.length() - CLASS_EXTENSION.length());
+                Class<?> loadedClass = Class.forName(className);
+                // Ensure it is a concrete class implementing the MarsTool interface
+                if (Modifier.isAbstract(loadedClass.getModifiers()) || Modifier.isInterface(loadedClass.getModifiers()) || !MarsTool.class.isAssignableFrom(loadedClass)) {
+                    continue;
+                }
+                // Obtain an instance of the class
+                MarsTool tool = (MarsTool) loadedClass.getDeclaredConstructor().newInstance();
+                // Create an action for the tool and add it to the list
+                this.toolActions.add(new ToolAction(tool));
             }
-            if (!filename.equals(MARSTOOL_INTERFACE)) {
-                try {
-                    // grab the class, make sure it implements MarsTool, instantiate, add to menu
-                    String toolClassName = CLASS_PREFIX + filename.substring(0, filename.indexOf(CLASS_EXTENSION) - 1);
-                    Class<?> toolClass = Class.forName(toolClassName);
-                    if (!MarsTool.class.isAssignableFrom(toolClass) || Modifier.isAbstract(toolClass.getModifiers()) || Modifier.isInterface(toolClass.getModifiers())) {
-                        continue;
-                    }
-                    toolActions.add(new ToolAction((MarsTool) toolClass.getDeclaredConstructor().newInstance()));
-                }
-                catch (Exception e) {
-                    System.out.println("Error instantiating MarsTool from file " + filename + ": " + e);
-                }
+            catch (Exception exception) {
+                System.err.println(this.getClass().getSimpleName() + ": " + exception);
             }
         }
-        return toolActions;
+
+        return this.toolActions;
+    }
+
+    /**
+     * Get the list of actions for the loaded tools.
+     *
+     * @return The list of tool actions.
+     */
+    public List<ToolAction> getToolActions() {
+        return this.toolActions;
     }
 }

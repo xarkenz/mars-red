@@ -57,8 +57,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @author Pete Sanderson
  */
 public class Settings extends Observable {
-    /* Properties file used to hold default settings. */
-    private static final String SETTINGS_FILENAME = "DefaultSettings";
+    /**
+     * Name of properties file used to hold default settings.
+     */
+    private static final String DEFAULT_SETTINGS_PROPERTIES = "DefaultSettings";
 
     // BOOLEAN SETTINGS
 
@@ -234,15 +236,6 @@ public class Settings extends Observable {
         true
     );
     /**
-     * Flag to control whether or not to use generic text editor instead of language-aware styled editor
-     */
-    public final BooleanSetting useGenericTextEditor = new BooleanSetting(
-        this,
-        "GenericTextEditor",
-        false,
-        true
-    );
-    /**
      * Flag to control whether or not language-aware editor will use auto-indent feature
      */
     public final BooleanSetting autoIndentEnabled = new BooleanSetting(
@@ -281,7 +274,6 @@ public class Settings extends Observable {
         highlightCurrentEditorLine,
         popupInstructionGuidance,
         popupSyscallInput,
-        useGenericTextEditor,
         autoIndentEnabled,
         selfModifyingCodeEnabled,
     };
@@ -960,7 +952,7 @@ public class Settings extends Observable {
      */
     private boolean readSettingsFromPropertiesFile() {
         try {
-            Properties defaults = PropertiesFile.loadPropertiesFromFile(SETTINGS_FILENAME);
+            Properties defaults = PropertiesFile.loadPropertiesFromFile(DEFAULT_SETTINGS_PROPERTIES);
             // TODO: put all settings in one array using an interface?
 
             // Load boolean settings

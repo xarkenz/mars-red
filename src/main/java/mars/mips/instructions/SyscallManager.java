@@ -3,7 +3,9 @@ package mars.mips.instructions;
 import mars.mips.instructions.syscalls.Syscall;
 import mars.util.FilenameFinder;
 import mars.util.PropertiesFile;
+import mars.venus.ToolManager;
 
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 /*
@@ -36,18 +38,19 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /**
  * This class provides functionality to bring external Syscall definitions
- * into MARS.  This permits anyone with knowledge of the Mars public interfaces,
+ * into MARS.  This permits anyone with knowledge of the MARS public interfaces,
  * in particular of the Memory and Register classes, to write custom MIPS syscall
- * functions. This is adapted from the {@link mars.venus.ToolLoader} class, which is in turn adapted
+ * functions. This is adapted from the {@link ToolManager} class, which is in turn adapted
  * from Bret Barker's GameServer class from the book "Developing Games In Java".
  */
 public class SyscallManager {
-    private static final String SYSCALL_OVERRIDES_PATH = "Syscalls";
-    private static final String CLASS_PREFIX = "mars.mips.instructions.syscalls.";
+    /**
+     * Name of properties file used to hold syscall service number overrides.
+     */
+    private static final String SYSCALL_OVERRIDES_PROPERTIES = "Syscalls";
+    private static final String SYSCALLS_PACKAGE_PREFIX = "mars.mips.instructions.syscalls.";
     private static final String SYSCALLS_DIRECTORY_PATH = "mars/mips/instructions/syscalls";
-    private static final String SYSCALL_INTERFACE = "Syscall.class";
-    private static final String SYSCALL_ABSTRACT = "AbstractSyscall.class";
-    private static final String CLASS_EXTENSION = "class";
+    private static final String CLASS_EXTENSION = ".class";
 
     private Map<Integer, Syscall> syscallTable = null;
 
@@ -58,46 +61,49 @@ public class SyscallManager {
      */
     public void loadSyscalls() {
         this.syscallTable = new HashMap<>();
+
+        Map<String, Integer> overrides = this.getSyscallOverrides();
         // Grab all class files in the same directory as Syscall
         List<String> filenames = FilenameFinder.getFilenameList(this.getClass().getClassLoader(), SYSCALLS_DIRECTORY_PATH, CLASS_EXTENSION);
         Set<String> knownFilenames = new HashSet<>();
-        Map<String, Integer> overrides = getSyscallOverrides();
 
         for (String filename : filenames) {
-            // Do not process class if already encountered (happens if run in MARS development directory)
-            if (knownFilenames.add(filename) && !filename.equals(SYSCALL_INTERFACE) && !filename.equals(SYSCALL_ABSTRACT)) {
-                try {
-                    // Obtain the class, ensuring it implements the Syscall interface
-                    String className = CLASS_PREFIX + filename.substring(0, filename.lastIndexOf(CLASS_EXTENSION) - 1);
-                    Class<?> loadedClass = Class.forName(className);
-                    if (!Syscall.class.isAssignableFrom(loadedClass)) {
-                        continue;
-                    }
-                    // Obtain an instance of the class
-                    Syscall syscall = (Syscall) loadedClass.getDeclaredConstructor().newInstance();
-
-                    // Check for a service number override, consuming the override if it exists
-                    Integer overrideNumber = overrides.remove(syscall.getName());
-                    if (overrideNumber != null) {
-                        // The service number has been overridden by syscall configuration
-                        syscall.setNumber(overrideNumber);
-                    }
-
-                    // Add the syscall to the table
-                    Syscall existingSyscall = this.syscallTable.put(syscall.getNumber(), syscall);
-                    if (existingSyscall != null) {
-                        throw new Exception("syscall service number " + syscall.getNumber() + " is assigned to both '" + existingSyscall.getName() + "' and '" + syscall.getName() + "'");
-                    }
+            if (!knownFilenames.add(filename)) {
+                // We've already encountered this file (happens if run in MARS development directory)
+                continue;
+            }
+            try {
+                // Obtain the class corresponding to the filename
+                String className = SYSCALLS_PACKAGE_PREFIX + filename.substring(0, filename.length() - CLASS_EXTENSION.length());
+                Class<?> loadedClass = Class.forName(className);
+                // Ensure it is a concrete class implementing the Syscall interface
+                if (Modifier.isAbstract(loadedClass.getModifiers()) || Modifier.isInterface(loadedClass.getModifiers()) || !Syscall.class.isAssignableFrom(loadedClass)) {
+                    continue;
                 }
-                catch (Exception exception) {
-                    System.err.println(this.getClass().getSimpleName() + ": " + exception);
+                // Obtain an instance of the class
+                Syscall syscall = (Syscall) loadedClass.getDeclaredConstructor().newInstance();
+
+                // Check for a service number override, consuming the override if it exists
+                Integer overrideNumber = overrides.remove(syscall.getName());
+                if (overrideNumber != null) {
+                    // The service number has been overridden by syscall configuration
+                    syscall.setNumber(overrideNumber);
                 }
+
+                // Add the syscall to the table
+                Syscall existingSyscall = this.syscallTable.put(syscall.getNumber(), syscall);
+                if (existingSyscall != null) {
+                    throw new Exception("syscall service number " + syscall.getNumber() + " is assigned to both '" + existingSyscall.getName() + "' and '" + syscall.getName() + "'");
+                }
+            }
+            catch (Exception exception) {
+                System.err.println(this.getClass().getSimpleName() + ": " + exception);
             }
         }
 
         // If there are any entries left in the overrides map, they did not correspond to any syscall
         for (String unknownName : overrides.keySet()) {
-            System.err.println(SYSCALL_OVERRIDES_PATH + ".properties: unrecognized syscall '" + unknownName + "'");
+            System.err.println(SYSCALL_OVERRIDES_PROPERTIES + ".properties: unrecognized syscall '" + unknownName + "'");
         }
     }
 
@@ -120,8 +126,8 @@ public class SyscallManager {
      *
      * @return Mapping from syscall names to service numbers.
      */
-    private static Map<String, Integer> getSyscallOverrides() {
-        Properties properties = PropertiesFile.loadPropertiesFromFile(SYSCALL_OVERRIDES_PATH);
+    private Map<String, Integer> getSyscallOverrides() {
+        Properties properties = PropertiesFile.loadPropertiesFromFile(SYSCALL_OVERRIDES_PROPERTIES);
 
         Map<String, Integer> overrides = new HashMap<>();
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
@@ -129,11 +135,11 @@ public class SyscallManager {
             try {
                 Integer number = Integer.decode(entry.getValue().toString());
                 if (overrides.put(name, number) != null) {
-                    System.err.println(SYSCALL_OVERRIDES_PATH + ".properties: duplicate entries for syscall '" + name + "'");
+                    System.err.println(SYSCALL_OVERRIDES_PROPERTIES + ".properties: duplicate entries for syscall '" + name + "'");
                 }
             }
             catch (NumberFormatException exception) {
-                System.err.println(SYSCALL_OVERRIDES_PATH + ".properties: invalid service number for syscall '" + name + "': " + entry.getValue());
+                System.err.println(SYSCALL_OVERRIDES_PROPERTIES + ".properties: invalid service number for syscall '" + name + "': " + entry.getValue());
             }
         }
 

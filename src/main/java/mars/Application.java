@@ -44,8 +44,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @version August 2003
  */
 public class Application {
-    // List these first because they are referenced by methods called at initialization.
-    private static final String CONFIG_PATH = "Config";
+    /**
+     * Name of properties file used to hold internal configurations.
+     */
+    private static final String CONFIG_PROPERTIES = "Config";
 
     /**
      * Lock variable used at head of synchronized block to guard MIPS memory and registers
@@ -70,7 +72,7 @@ public class Application {
     /**
      * The current MARS Red version number. Can't wait for {@link #initialize()} call to get it.
      */
-    public static final String VERSION = "5.0-beta0";
+    public static final String VERSION = "5.0-beta1";
     /**
      * List of accepted file extensions for MIPS assembly source files.
      */
@@ -202,7 +204,7 @@ public class Application {
      * Read ASCII default display character for non-printing characters, from properties file.
      */
     public static String getAsciiNonPrint() {
-        String asciiNonPrint = getPropertyEntry(CONFIG_PATH, "AsciiNonPrint");
+        String asciiNonPrint = getPropertyEntry(CONFIG_PROPERTIES, "AsciiNonPrint");
         return (asciiNonPrint == null) ? "." : (asciiNonPrint.equals("space")) ? " " : asciiNonPrint;
     }
 
@@ -212,7 +214,7 @@ public class Application {
      * "space", substitute string containing one space character.
      */
     private static String[] getAsciiStrings() {
-        String asciiTable = getPropertyEntry(CONFIG_PATH, "AsciiTable");
+        String asciiTable = getPropertyEntry(CONFIG_PROPERTIES, "AsciiTable");
         String placeHolder = getAsciiNonPrint();
         String[] asciiStrings = asciiTable.split("\\s+");
         int maxLength = 0;
@@ -236,7 +238,7 @@ public class Application {
      * Default value is returned if property file or name not found.
      */
     private static int getIntegerProperty(String propertyName, int defaultValue) {
-        Properties properties = PropertiesFile.loadPropertiesFromFile(Application.CONFIG_PATH);
+        Properties properties = PropertiesFile.loadPropertiesFromFile(Application.CONFIG_PROPERTIES);
         try {
             return Integer.parseInt(properties.getProperty(propertyName, Integer.toString(defaultValue)));
         }
@@ -251,7 +253,7 @@ public class Application {
      */
     private static ArrayList<String> getFileExtensions() {
         ArrayList<String> extensionsList = new ArrayList<>();
-        String extensions = getPropertyEntry(CONFIG_PATH, "Extensions");
+        String extensions = getPropertyEntry(CONFIG_PROPERTIES, "Extensions");
         if (extensions != null) {
             StringTokenizer st = new StringTokenizer(extensions);
             while (st.hasMoreTokens()) {
@@ -271,7 +273,7 @@ public class Application {
      */
     public static ArrayList<String> getExternalTools() {
         ArrayList<String> toolsList = new ArrayList<>();
-        String tools = getPropertyEntry(CONFIG_PATH, "ExternalTools");
+        String tools = getPropertyEntry(CONFIG_PROPERTIES, "ExternalTools");
         if (tools != null) {
             StringTokenizer st = new StringTokenizer(tools, ";");
             while (st.hasMoreTokens()) {

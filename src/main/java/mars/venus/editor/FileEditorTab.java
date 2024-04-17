@@ -2,7 +2,6 @@ package mars.venus.editor;
 
 import mars.Application;
 import mars.venus.VenusUI;
-import mars.venus.editor.generic.GenericTextArea;
 import mars.venus.editor.jeditsyntax.JEditBasedTextArea;
 import mars.venus.execute.ProgramStatus;
 
@@ -49,8 +48,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * Represents one file opened for editing.  Maintains required internal structures.
  * Before Mars 4.0, there was only one editor pane, a tab, and only one file could
- * be open at a time.  With 4.0 came the multi-file (pane, tab) editor, and existing
- * duties were split between EditPane and the new EditTabbedPane class.
+ * be open at a time.  With 4.0 came the multi-file editor, and existing duties were
+ * split between EditPane (now FileEditorTab) and the new EditTabbedPane (now EditTab) class.
  *
  * @author Sanderson and Bumgarner
  */
@@ -64,7 +63,7 @@ public class FileEditorTab extends JPanel implements Observer {
     private final FileStatus fileStatus;
 
     /**
-     * Constructor for the EditPane class.
+     * Create a new tab within the "Edit" tab for editing a file.
      */
     public FileEditorTab(VenusUI gui, EditTab editTab) {
         super(new BorderLayout());
@@ -73,19 +72,14 @@ public class FileEditorTab extends JPanel implements Observer {
         // We want to be notified of editor font changes! See update() below.
         Application.getSettings().addObserver(this);
         this.fileStatus = new FileStatus();
-        lineNumbers = new JLabel();
+        this.lineNumbers = new JLabel();
 
-        if (Application.getSettings().useGenericTextEditor.get()) {
-            this.textEditingArea = new GenericTextArea(this, lineNumbers);
-        }
-        else {
-            this.textEditingArea = new JEditBasedTextArea(this, Application.getSettings(), lineNumbers);
-        }
+        this.textEditingArea = new JEditBasedTextArea(this, Application.getSettings(), lineNumbers);
         // Text editing area is responsible for its own scrolling
         this.add(this.textEditingArea.getOuterComponent(), BorderLayout.CENTER);
 
         // If source code is modified, will set flag to trigger/request file save
-        textEditingArea.getDocument().addDocumentListener(new DocumentListener() {
+        this.textEditingArea.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent event) {
                 // IF statement added DPS 9-Aug-2011
@@ -103,12 +97,7 @@ public class FileEditorTab extends JPanel implements Observer {
                     if (getFileStatus() == FileStatus.NOT_EDITED) {
                         setFileStatus(FileStatus.EDITED);
                     }
-                    if (getFileStatus() == FileStatus.NEW_EDITED) {
-                        FileEditorTab.this.gui.getEditor().setTitle(getFilename(), getFileStatus());
-                    }
-                    else {
-                        FileEditorTab.this.gui.getEditor().setTitle(getFilename(), getFileStatus());
-                    }
+                    FileEditorTab.this.gui.getEditor().setTitle(getFilename(), getFileStatus());
 
                     // Clear the Execute tab since the file has been edited
                     FileEditorTab.this.gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
@@ -139,7 +128,7 @@ public class FileEditorTab extends JPanel implements Observer {
 
         this.setSourceCode("", false);
 
-        lineNumbers.setFont(getLineNumberFont(textEditingArea.getFont()));
+        lineNumbers.setFont(textEditingArea.getFont().deriveFont(Font.PLAIN));
         lineNumbers.setForeground(UIManager.getColor("Venus.Editor.lineNumbers.foreground"));
         lineNumbers.setBackground(UIManager.getColor("Venus.Editor.lineNumbers.background"));
         lineNumbers.setVerticalAlignment(JLabel.TOP);
@@ -568,8 +557,7 @@ public class FileEditorTab extends JPanel implements Observer {
     }
 
     /**
-     * Update, if source code is visible, when Font setting changes.
-     * This method is specified by the Observer interface.
+     * Update, if source code is visible, when font setting changes.
      */
     @Override
     public void update(Observable fontChanger, Object arg) {
@@ -587,21 +575,7 @@ public class FileEditorTab extends JPanel implements Observer {
         // in the editor form a separate column from the source code and if the
         // pixel height is not the same then the numbers will not line up with
         // the source lines.
-        lineNumbers.setFont(getLineNumberFont(textEditingArea.getFont()));
+        lineNumbers.setFont(textEditingArea.getFont().deriveFont(Font.PLAIN));
         lineNumbers.revalidate();
-    }
-
-    /**
-     * Private helper method.
-     * Determine font to use for editor line number display, given current
-     * font for source code.
-     */
-    private Font getLineNumberFont(Font sourceFont) {
-        if (textEditingArea.getFont().getStyle() == Font.PLAIN) {
-            return sourceFont;
-        }
-        else {
-            return new Font(sourceFont.getFamily(), Font.PLAIN, sourceFont.getSize());
-        }
     }
 }

@@ -77,18 +77,18 @@ public class EditTab extends JTabbedPane {
         this.workspaceStateSavingEnabled = true;
 
         this.addChangeListener(event -> {
-            FileEditorTab fileEditorTab = (FileEditorTab) this.getSelectedComponent();
-            if (fileEditorTab != null) {
+            FileEditorTab currentTab = this.getCurrentEditorTab();
+            if (currentTab != null) {
                 // New IF statement to permit free traversal of edit panes w/o invalidating
                 // assembly if assemble-all is selected.  DPS 9-Aug-2011
                 if (Application.getSettings().assembleAllEnabled.get()) {
-                    this.updateTitle(fileEditorTab);
+                    this.updateTitle(currentTab);
                 }
                 else {
-                    this.updateTitleAndMenuState(fileEditorTab);
+                    this.updateTitleAndMenuState(currentTab);
                     this.gui.getMainPane().getExecuteTab().clear();
                 }
-                fileEditorTab.requestTextAreaFocus();
+                currentTab.requestTextAreaFocus();
             }
         });
     }
@@ -220,7 +220,6 @@ public class EditTab extends JTabbedPane {
      * the paths of the files that were open.
      */
     public void loadWorkspaceState() {
-        // Restore previous session
         String filesString = Application.getSettings().previouslyOpenFiles.get();
         File[] files = Arrays.stream(filesString.split(";"))
             .map(String::trim)
@@ -234,24 +233,24 @@ public class EditTab extends JTabbedPane {
      * the New operation from the File menu.
      */
     public void newFile() {
-        FileEditorTab fileEditorTab = new FileEditorTab(gui, this);
-        fileEditorTab.setSourceCode("", true);
-        fileEditorTab.setShowLineNumbersEnabled(true);
-        fileEditorTab.setFileStatus(FileStatus.NEW_NOT_EDITED);
-        String name = editor.getNextDefaultFilename();
-        fileEditorTab.setPathname(name);
-        this.addTab(name, fileEditorTab);
+        FileEditorTab newTab = new FileEditorTab(gui, this);
+        newTab.setSourceCode("", true);
+        newTab.setShowLineNumbersEnabled(true);
+        newTab.setFileStatus(FileStatus.NEW_NOT_EDITED);
+        String name = this.editor.getNextDefaultFilename();
+        newTab.setPathname(name);
+        this.addTab(name, newTab);
 
         RegisterFile.resetRegisters();
         VenusUI.setReset(true);
-        gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
-        gui.getMainPane().getExecuteTab().clear();
+        this.gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
+        this.gui.getMainPane().getExecuteTab().clear();
 
-        gui.getMainPane().setSelectedComponent(this);
-        fileEditorTab.displayCaretPosition(new Point(1, 1));
-        this.setSelectedComponent(fileEditorTab);
-        updateTitleAndMenuState(fileEditorTab);
-        fileEditorTab.requestTextAreaFocus();
+        this.gui.getMainPane().setSelectedComponent(this);
+        newTab.displayCaretPosition(new Point(1, 1));
+        this.setSelectedComponent(newTab);
+        this.updateTitleAndMenuState(newTab);
+        newTab.requestTextAreaFocus();
     }
 
     /**
@@ -293,14 +292,14 @@ public class EditTab extends JTabbedPane {
      * @return true if file was closed, false otherwise.
      */
     public boolean closeCurrentFile() {
-        FileEditorTab fileEditorTab = getCurrentEditorTab();
-        if (fileEditorTab == null) {
+        FileEditorTab currentTab = getCurrentEditorTab();
+        if (currentTab == null) {
             return true;
         }
-        else if (editsSavedOrAbandoned()) {
-            this.remove(fileEditorTab);
-            gui.getMainPane().getExecuteTab().clear();
-            gui.getMainPane().setSelectedComponent(this);
+        else if (this.resolveUnsavedChanges()) {
+            this.remove(currentTab);
+            this.gui.getMainPane().getExecuteTab().clear();
+            this.gui.getMainPane().setSelectedComponent(this);
             return true;
         }
         else {
@@ -370,10 +369,10 @@ public class EditTab extends JTabbedPane {
      * @return true if the file was actually saved.
      */
     public boolean saveCurrentFile() {
-        FileEditorTab fileEditorTab = getCurrentEditorTab();
-        if (this.saveFile(fileEditorTab)) {
-            fileEditorTab.setFileStatus(FileStatus.NOT_EDITED);
-            updateTitleAndMenuState(fileEditorTab);
+        FileEditorTab currentTab = getCurrentEditorTab();
+        if (this.saveFile(currentTab)) {
+            currentTab.setFileStatus(FileStatus.NOT_EDITED);
+            updateTitleAndMenuState(currentTab);
             return true;
         }
         else {
@@ -423,56 +422,63 @@ public class EditTab extends JTabbedPane {
      * @return true if the file was actually saved, false if canceled.
      */
     public boolean saveAsCurrentFile() {
-        FileEditorTab fileEditorTab = getCurrentEditorTab();
-        File file = saveAsFile(fileEditorTab);
-        if (file != null) {
-            editor.setCurrentSaveDirectory(file.getParent());
-            fileEditorTab.setPathname(file.getPath());
-            fileEditorTab.setFileStatus(FileStatus.NOT_EDITED);
-            updateTitleAndMenuState(fileEditorTab);
-            return true;
+        FileEditorTab currentTab = getCurrentEditorTab();
+        File file = saveAsFile(currentTab);
+        if (file == null) {
+            return false;
         }
-        return false;
+
+        this.editor.setCurrentSaveDirectory(file.getParent());
+        currentTab.setPathname(file.getPath());
+        currentTab.setFileStatus(FileStatus.NOT_EDITED);
+        this.updateTitleAndMenuState(currentTab);
+        return true;
     }
 
     /**
      * Pops up a dialog box to do the "Save As" operation for the given edit pane.
      * The user will be asked to confirm before any file is overwritten.
      *
+     * @param tab The tab for the file to save (does nothing if null).
      * @return The file object if the file was actually saved, null if canceled.
      */
-    private File saveAsFile(FileEditorTab fileEditorTab) {
-        if (fileEditorTab == null) {
+    private File saveAsFile(FileEditorTab tab) {
+        if (tab == null) {
             return null;
         }
 
-        File file;
+        // Set Save As dialog directory in a logical way.  If file in
+        // edit pane had been previously saved, default to its directory.
+        // If a new file, default to current save directory.
+        // DPS 13-July-2011
         JFileChooser saveDialog;
-        while (true) {
-            // Set Save As dialog directory in a logical way.  If file in
-            // edit pane had been previously saved, default to its directory.
-            // If a new file, default to current save directory.
-            // DPS 13-July-2011
-            if (fileEditorTab.isNew()) {
-                saveDialog = new JFileChooser(editor.getCurrentSaveDirectory());
-            }
-            else {
-                saveDialog = new JFileChooser(new File(fileEditorTab.getPathname()).getParent());
-            }
-            String paneFile = fileEditorTab.getFilename();
-            if (paneFile != null) {
-                saveDialog.setSelectedFile(new File(paneFile));
-            }
-            // end of 13-July-2011 code.
-            saveDialog.setDialogTitle("Save As");
+        if (tab.isNew()) {
+            saveDialog = new JFileChooser(this.editor.getCurrentSaveDirectory());
+        }
+        else {
+            saveDialog = new JFileChooser(new File(tab.getPathname()).getParent());
+        }
+        if (tab.getFilename() != null) {
+            saveDialog.setSelectedFile(new File(tab.getFilename()));
+        }
+        // End of 13-July-2011 code.
+        saveDialog.setDialogTitle("Save As");
 
-            int decision = saveDialog.showSaveDialog(gui);
+        File file;
+        while (true) {
+            int decision = saveDialog.showSaveDialog(this.gui);
             if (decision != JFileChooser.APPROVE_OPTION) {
                 return null;
             }
             file = saveDialog.getSelectedFile();
             if (file.exists()) {
-                int overwrite = JOptionPane.showConfirmDialog(gui, "File \"" + file.getName() + "\" already exists.  Do you wish to overwrite it?", "Overwrite existing file?", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+                int overwrite = JOptionPane.showConfirmDialog(
+                    this.gui,
+                    "File \"" + file.getName() + "\" already exists.  Do you wish to overwrite it?",
+                    "Save Conflict",
+                    JOptionPane.YES_NO_CANCEL_OPTION,
+                    JOptionPane.WARNING_MESSAGE
+                );
                 switch (overwrite) {
                     case JOptionPane.YES_OPTION -> {
                         // Pass through to the break statement below
@@ -484,7 +490,7 @@ public class EditTab extends JTabbedPane {
                         return null;
                     }
                     default -> {
-                        // should never occur
+                        // Should never occur
                         return null;
                     }
                 }
@@ -495,12 +501,17 @@ public class EditTab extends JTabbedPane {
         }
 
         try {
-            BufferedWriter outFileStream = new BufferedWriter(new FileWriter(file));
-            outFileStream.write(fileEditorTab.getSource(), 0, fileEditorTab.getSource().length());
-            outFileStream.close();
+            BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+            writer.write(tab.getSource(), 0, tab.getSource().length());
+            writer.close();
         }
         catch (IOException exception) {
-            JOptionPane.showMessageDialog(null, "Save As operation could not be completed due to an error:\n" + exception, "Save As Operation Failed", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(
+                this.gui,
+                "Failed to save due to an error: " + exception,
+                "Error",
+                JOptionPane.ERROR_MESSAGE
+            );
             return null;
         }
 
@@ -546,7 +557,7 @@ public class EditTab extends JTabbedPane {
         tab = this.getCurrentEditorTab(); // Is now next tab or null
         if (tab == null) {
             this.editor.setTitle("", FileStatus.NO_FILE);
-            Application.getGUI().setMenuState(FileStatus.NO_FILE);
+            this.gui.setMenuState(FileStatus.NO_FILE);
         }
         else {
             this.updateTitleAndMenuState(tab);
@@ -562,9 +573,9 @@ public class EditTab extends JTabbedPane {
      * Handy little utility to update the title on the current tab and the frame title bar
      * and also to update the MARS menu state (controls which actions are enabled).
      */
-    private void updateTitleAndMenuState(FileEditorTab fileEditorTab) {
-        this.gui.setMenuState(fileEditorTab.getFileStatus());
-        this.updateTitle(fileEditorTab);
+    private void updateTitleAndMenuState(FileEditorTab tab) {
+        this.gui.setMenuState(tab.getFileStatus());
+        this.updateTitle(tab);
     }
 
     /**
@@ -572,8 +583,8 @@ public class EditTab extends JTabbedPane {
      *
      * @author DPS 9-Aug-2011
      */
-    private void updateTitle(FileEditorTab fileEditorTab) {
-        this.editor.setTitle(fileEditorTab.getFilename(), fileEditorTab.getFileStatus());
+    private void updateTitle(FileEditorTab tab) {
+        this.editor.setTitle(tab.getFilename(), tab.getFileStatus());
         this.saveWorkspaceState();
     }
 
@@ -583,10 +594,10 @@ public class EditTab extends JTabbedPane {
      * @return true if no unsaved edits or if user chooses to save them or not; false
      *     if there are unsaved edits and user cancels the operation.
      */
-    public boolean editsSavedOrAbandoned() {
-        FileEditorTab currentPane = getCurrentEditorTab();
-        if (currentPane != null && currentPane.hasUnsavedEdits()) {
-            return switch (showUnsavedEditsDialog(currentPane.getFilename())) {
+    public boolean resolveUnsavedChanges() {
+        FileEditorTab currentTab = getCurrentEditorTab();
+        if (currentTab != null && currentTab.hasUnsavedEdits()) {
+            return switch (showUnsavedEditsDialog(currentTab.getFilename())) {
                 case JOptionPane.YES_OPTION -> saveCurrentFile();
                 case JOptionPane.NO_OPTION -> true;
                 case JOptionPane.CANCEL_OPTION -> false;

@@ -45,6 +45,6 @@ public interface SimulationCode {
      *
      * @param statement A ProgramStatement representing the MIPS instruction to simulate.
      * @throws ProcessingException This is a run-time exception generated during simulation.
-     **/
+     */
     void simulate(ProgramStatement statement) throws ProcessingException;
 }

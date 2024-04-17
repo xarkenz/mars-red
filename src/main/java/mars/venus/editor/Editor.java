@@ -203,7 +203,7 @@ public class Editor {
      * @return false means user selected Cancel so caller should do that.
      *     Return of true means caller can proceed (edits were saved or discarded).
      */
-    public boolean editsSavedOrAbandoned() {
-        return gui.getMainPane().getEditTab().editsSavedOrAbandoned();
+    public boolean resolveUnsavedChanges() {
+        return gui.getMainPane().getEditTab().resolveUnsavedChanges();
     }
 }

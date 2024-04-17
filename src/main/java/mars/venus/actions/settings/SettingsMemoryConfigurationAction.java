@@ -183,7 +183,7 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
                 performClose();
             });
             JButton resetButton = new JButton("Reset");
-            resetButton.setToolTipText(SettingsHighlightingAction.RESET_TOOL_TIP_TEXT);
+            resetButton.setToolTipText(SettingsHighlightingAction.REVERT_TOOL_TIP_TEXT);
             resetButton.addActionListener(event -> {
                 performReset();
             });

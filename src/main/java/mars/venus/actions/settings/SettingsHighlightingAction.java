@@ -95,7 +95,7 @@ public class SettingsHighlightingAction extends VenusAction {
     // Tool tips for the control buttons along the bottom
     public static final String OK_TOOL_TIP_TEXT = "Apply current settings and close dialog";
     public static final String APPLY_TOOL_TIP_TEXT = "Apply current settings now and leave dialog open";
-    public static final String RESET_TOOL_TIP_TEXT = "Reset to initial settings without applying";
+    public static final String REVERT_TOOL_TIP_TEXT = "Reset to initial settings without applying";
     public static final String CANCEL_TOOL_TIP_TEXT = "Close dialog without applying current settings";
     // Tool tips for the data and register highlighting enable/disable controls
     private static final String DATA_HIGHLIGHT_ENABLE_TOOL_TIP_TEXT = "Click, to enable or disable highlighting in Data Segment window";
@@ -245,17 +245,17 @@ public class SettingsHighlightingAction extends VenusAction {
 
         // Bottom row - the control buttons for Apply&Close, Apply, Cancel
         Box controlPanel = Box.createHorizontalBox();
-        JButton okButton = new JButton("Apply and Close");
+        JButton okButton = new JButton("OK");
         okButton.setToolTipText(OK_TOOL_TIP_TEXT);
-        okButton.addActionListener(e -> {
+        okButton.addActionListener(event -> {
             setHighlightingSettings();
             closeDialog();
         });
         JButton applyButton = new JButton("Apply");
         applyButton.setToolTipText(APPLY_TOOL_TIP_TEXT);
         applyButton.addActionListener(e -> setHighlightingSettings());
-        JButton resetButton = new JButton("Reset");
-        resetButton.setToolTipText(RESET_TOOL_TIP_TEXT);
+        JButton resetButton = new JButton("Revert");
+        resetButton.setToolTipText(REVERT_TOOL_TIP_TEXT);
         resetButton.addActionListener(e -> resetButtonColors());
         JButton cancelButton = new JButton("Cancel");
         cancelButton.setToolTipText(CANCEL_TOOL_TIP_TEXT);
