@@ -11,12 +11,8 @@ import mars.venus.editor.FileEditorTab;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.NavigationFilter;
+import javax.swing.text.*;
 import javax.swing.text.Position.Bias;
-import javax.swing.undo.UndoableEdit;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -353,6 +349,8 @@ public class MessagesPane extends JTabbedPane {
                 // (which shouldn't happen unless the constants are changed!)
             }
         }
+
+        consoleTextArea.setCaretPosition(consoleTextArea.getDocument().getLength());
     }
 
     /**
@@ -411,157 +409,190 @@ public class MessagesPane extends JTabbedPane {
      * @return User input, as a String.
      */
     public String getInputString(int maxLength) {
-        ConsoleInputContext context = new ConsoleInputContext(maxLength);
-        return context.awaitResponse();
+        ConsoleInputContext context = new ConsoleInputContext(consoleTextArea, maxLength);
+        return context.awaitUserInput();
     }
 
     /**
-     * Thread class for obtaining user input in the {@link MessagesPane} console.
-     * Written by Ricardo Fernández Pascual [rfernandez@ditec.um.es] December 2009.
+     * Thread class for obtaining user input in the Console tab of {@link MessagesPane}.
+     * Originally written by Ricardo Fernández Pascual [rfernandez@ditec.um.es] December 2009.
      */
-    private class ConsoleInputContext {
+    private static class ConsoleInputContext {
+        private final JTextArea textArea;
         private final ArrayBlockingQueue<String> resultQueue = new ArrayBlockingQueue<>(1);
         private int initialPosition;
         private final int maxLength;
 
-        public ConsoleInputContext(int maxLength) {
+        public ConsoleInputContext(JTextArea textArea, int maxLength) {
+            this.textArea = textArea;
             this.maxLength = maxLength;
-            // initialPosition will be set in run()
+            // initialPosition will be set when input begins
         }
 
-        public String awaitResponse() {
-            this.beginInput();
+        /**
+         * Allow the user to input text into the console, waiting until the input is submitted.
+         * <p>
+         * <b>This blocks the current thread. Always run this from the simulator thread!</b>
+         *
+         * @return The input submitted by the user, not including the newline.
+         */
+        public String awaitUserInput() {
+            SwingUtilities.invokeLater(this::beginInput);
 
             try {
-                // Block the current thread until stopInput() is called
+                // Block the current thread until input is submitted
                 return resultQueue.take();
             }
             catch (InterruptedException exception) {
                 return null;
             }
             finally {
-                this.detach();
+                SwingUtilities.invokeLater(this::endInput);
             }
         }
 
-        private final DocumentListener documentListener = new DocumentListener() {
+        private final DocumentFilter documentFilter = new DocumentFilter() {
             @Override
-            public void insertUpdate(final DocumentEvent event) {
-                // Get the inserted text before doing anything else, otherwise it could change before handling
-                final String inserted;
-                try {
-                    inserted = event.getDocument().getText(event.getOffset(), event.getLength());
-                }
-                catch (BadLocationException exception) {
-                    // Should not happen
-                    exception.printStackTrace();
+            public void insertString(FilterBypass bypass, int offset, String text, AttributeSet attributes) throws BadLocationException {
+                // Prevent any edits before the initial position
+                if (offset < initialPosition) {
+                    textArea.getToolkit().beep();
                     return;
                 }
 
-                final int newlineOffset = inserted.indexOf('\n');
+                // If there are any newlines, act like the first one ended the input by stripping it
+                // and everything past it off. I don't know if this is the best way to handle characters
+                // after a newline, but I can't think of a better way.
+                int newlineIndex = text.indexOf('\n');
+                if (newlineIndex >= 0) {
+                    text = text.substring(0, newlineIndex);
+                }
 
-                SwingUtilities.invokeLater(() -> {
-                    try {
-                        if (newlineOffset >= 0) {
-                            int newlineIndex = event.getOffset() + newlineOffset;
-                            if (newlineIndex + 1 == event.getDocument().getLength()) {
-                                // There is a newline at the end of the inserted text, so stop input
-                                endInput();
-                            }
-                            else {
-                                // Remove the newline and put it at the end
-                                event.getDocument().remove(newlineIndex, 1);
-                                event.getDocument().insertString(event.getDocument().getLength(), "\n", null);
-                                // insertUpdate() will be called again since we inserted the newline; the
-                                // recursive call will fall into the base case above since the newline is at the end
-                            }
-                        }
-                        else if (maxLength >= 0 && event.getDocument().getLength() > initialPosition + maxLength) {
-                            event.getDocument().remove(initialPosition + maxLength, event.getDocument().getLength() - (initialPosition + maxLength));
-                            getToolkit().beep();
-                        }
-                    }
-                    catch (BadLocationException exception) {
-                        // Should not happen, but may if the text updates quickly enough
-                        exception.printStackTrace();
-                        endInput();
-                    }
-                });
+                // If the character limit would be exceeded, strip the excess off and beep to let the user know
+                if (maxLength >= 0 && bypass.getDocument().getLength() + text.length() > initialPosition + maxLength) {
+                    int trimmedLength = Math.max(0, initialPosition + maxLength - bypass.getDocument().getLength());
+                    text = text.substring(0, trimmedLength);
+                    textArea.getToolkit().beep();
+                }
+
+                bypass.insertString(offset, text, attributes);
+
+                // If there was a newline, submit the input
+                if (newlineIndex >= 0) {
+                    submitInput();
+                }
             }
 
             @Override
-            public void removeUpdate(final DocumentEvent event) {
-                SwingUtilities.invokeLater(() -> {
-                    if ((event.getDocument().getLength() < initialPosition || event.getOffset() < initialPosition) && event instanceof UndoableEdit) {
-                        ((UndoableEdit) event).undo();
-                        consoleTextArea.setCaretPosition(event.getOffset() + event.getLength());
-                        getToolkit().beep();
-                    }
-                });
+            public void replace(FilterBypass bypass, int offset, int length, String text, AttributeSet attributes) throws BadLocationException {
+                // Prevent any edits before the initial position
+                if (offset < initialPosition) {
+                    textArea.getToolkit().beep();
+                    return;
+                }
+
+                // If there are any newlines, act like the first one ended the input by stripping it
+                // and everything past it off. I don't know if this is the best way to handle characters
+                // after a newline, but I can't think of a better way.
+                int newlineIndex = text.indexOf('\n');
+                if (newlineIndex >= 0) {
+                    text = text.substring(0, newlineIndex);
+                }
+
+                // If the character limit would be exceeded, strip the excess off and beep to let the user know
+                if (maxLength >= 0 && (bypass.getDocument().getLength() - length) + text.length() > initialPosition + maxLength) {
+                    int trimmedLength = Math.max(0, initialPosition + maxLength - (bypass.getDocument().getLength() - length));
+                    text = text.substring(0, trimmedLength);
+                    textArea.getToolkit().beep();
+                }
+
+                bypass.replace(offset, length, text, attributes);
+
+                // If there was a newline, submit the input
+                if (newlineIndex >= 0) {
+                    submitInput();
+                }
             }
 
             @Override
-            public void changedUpdate(DocumentEvent event) {}
+            public void remove(FilterBypass bypass, int offset, int length) throws BadLocationException {
+                // Prevent any edits before the initial position
+                if (offset < initialPosition) {
+                    textArea.getToolkit().beep();
+                    return;
+                }
+
+                bypass.remove(offset, length);
+            }
         };
 
         private final NavigationFilter navigationFilter = new NavigationFilter() {
             @Override
             public void moveDot(FilterBypass bypass, int dot, Bias bias) {
+                // Prevent placement of the caret before the initial position
                 if (dot < initialPosition) {
-                    dot = Math.min(initialPosition, consoleTextArea.getDocument().getLength());
+                    dot = Math.min(initialPosition, textArea.getDocument().getLength());
                 }
                 bypass.moveDot(dot, bias);
             }
 
             @Override
             public void setDot(FilterBypass bypass, int dot, Bias bias) {
+                // Prevent placement of the caret before the initial position
                 if (dot < initialPosition) {
-                    dot = Math.min(initialPosition, consoleTextArea.getDocument().getLength());
+                    dot = Math.min(initialPosition, textArea.getDocument().getLength());
                 }
                 bypass.setDot(dot, bias);
             }
         };
 
+        // TODO: This doesn't actually do anything useful yet because input blocks the simulator thread.
         private final SimulatorListener simulatorListener = new SimulatorListener() {
             @Override
+            public void started(int maxSteps, int programCounter) {
+                textArea.setEditable(true);
+            }
+
+            @Override
+            public void paused(int maxSteps, int programCounter, Simulator.StopReason reason) {
+                textArea.setEditable(false);
+            }
+
+            @Override
             public void finished(int maxSteps, int programCounter, Simulator.StopReason reason, ProcessingException exception) {
-                endInput();
+                submitInput();
             }
         };
 
         private void beginInput() {
-            SwingUtilities.invokeLater(() -> {
-                setSelectedComponent(consoleTab);
-                consoleTextArea.setEditable(true);
-                consoleTextArea.requestFocusInWindow();
-                consoleTextArea.setCaretPosition(consoleTextArea.getDocument().getLength());
-                initialPosition = consoleTextArea.getCaretPosition();
-                consoleTextArea.setNavigationFilter(navigationFilter);
-                consoleTextArea.getDocument().addDocumentListener(documentListener);
-                Simulator.getInstance().addListener(simulatorListener);
-            });
+            textArea.setEditable(true);
+            textArea.requestFocusInWindow();
+            textArea.setCaretPosition(textArea.getDocument().getLength());
+            initialPosition = textArea.getCaretPosition();
+            textArea.setNavigationFilter(navigationFilter);
+            ((AbstractDocument) textArea.getDocument()).setDocumentFilter(documentFilter);
+            Simulator.getInstance().addListener(simulatorListener);
         }
 
-        private void endInput() {
+        private void submitInput() {
             try {
-                int position = Math.min(initialPosition, consoleTextArea.getDocument().getLength());
-                int length = Math.min(consoleTextArea.getDocument().getLength() - position, maxLength >= 0 ? maxLength : Integer.MAX_VALUE);
-                resultQueue.offer(consoleTextArea.getText(position, length));
+                int position = Math.min(initialPosition, textArea.getDocument().getLength());
+                int length = Math.min(textArea.getDocument().getLength() - position, maxLength >= 0 ? maxLength : Integer.MAX_VALUE);
+                resultQueue.offer(textArea.getText(position, length));
             }
             catch (BadLocationException exception) {
-                // This should not happen
+                // This should not happen, but if it somehow does, default to an empty string
                 resultQueue.offer("");
             }
         }
 
-        private void detach() {
-            SwingUtilities.invokeLater(() -> {
-                consoleTextArea.getDocument().removeDocumentListener(documentListener);
-                consoleTextArea.setEditable(false);
-                consoleTextArea.setNavigationFilter(null);
-                consoleTextArea.setCaretPosition(consoleTextArea.getDocument().getLength());
-                Simulator.getInstance().removeListener(simulatorListener);
-            });
+        private void endInput() {
+            textArea.setEditable(false);
+            textArea.setNavigationFilter(null);
+            ((AbstractDocument) textArea.getDocument()).setDocumentFilter(null);
+            textArea.append("\n");
+            textArea.setCaretPosition(textArea.getDocument().getLength());
+            Simulator.getInstance().removeListener(simulatorListener);
         }
     }
 }
