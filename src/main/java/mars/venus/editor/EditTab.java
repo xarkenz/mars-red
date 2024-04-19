@@ -60,6 +60,7 @@ public class EditTab extends JTabbedPane {
     private final Editor editor;
     private boolean isOpeningFiles;
     private boolean workspaceStateSavingEnabled;
+    private File mostRecentlyOpenedFile;
 
     /**
      * Create and initialize the Edit tab with no open files.
@@ -75,6 +76,7 @@ public class EditTab extends JTabbedPane {
         this.editor = editor;
         this.isOpeningFiles = false;
         this.workspaceStateSavingEnabled = true;
+        this.mostRecentlyOpenedFile = null;
 
         this.addChangeListener(event -> {
             FileEditorTab currentTab = this.getCurrentEditorTab();
@@ -112,36 +114,30 @@ public class EditTab extends JTabbedPane {
     }
 
     /**
-     * Get the editor tab corresponding to the given pathname, if it is open.
+     * Get the editor tab corresponding to the given file, if the file is open.
      *
-     * @param pathname Pathname to search for.
-     * @return The tab with the given pathname, or null if no such tab was found.
+     * @param file File object for the desired tab.
+     * @return The tab for the given file, or null if no such tab was found.
      */
-    public FileEditorTab getEditorTab(String pathname) {
-        for (int tabIndex = 0; tabIndex < this.getTabCount(); tabIndex++) {
-            FileEditorTab tab = (FileEditorTab) this.getComponentAt(tabIndex);
-            if (tab.getPathname().equals(pathname)) {
-                return tab;
-            }
-        }
-        return null;
+    public FileEditorTab getEditorTab(File file) {
+        return this.getEditorTabs().stream()
+            .filter(tab -> tab.getFile().equals(file))
+            .findAny()
+            .orElse(null);
     }
 
     /**
-     * If the given file is open in the tabbed pane, make it the
-     * current tab.  If not opened, open it in a new tab and make
-     * it the current tab.  If file is unable to be opened,
-     * leave current tab as is.
+     * If the given file is open, make it the current tab.
+     * If not opened, open it in a new tab and make it the current tab.
+     * If file is unable to be opened, leave current tab as is.
      *
-     * @param file File object for the desired file.
-     * @return Tab for the specified file, or null if file is unable to be opened
+     * @param file File object for the desired tab.
+     * @return The tab for the given file, or null if file is unable to be opened.
      */
     public FileEditorTab getCurrentEditorTab(File file) {
-        FileEditorTab tab = this.getEditorTab(file.getPath());
+        FileEditorTab tab = this.getEditorTab(file);
         if (tab != null) {
-            if (tab != this.getCurrentEditorTab()) {
-                this.setCurrentEditorTab(tab);
-            }
+            this.setCurrentEditorTab(tab);
             return tab;
         }
         // If no return yet, then file is not open.  Try to open it.
@@ -154,8 +150,7 @@ public class EditTab extends JTabbedPane {
     }
 
     /**
-     * Get the list of currently open editor tabs by iterating
-     * through the component list.
+     * Get the list of currently open editor tabs by iterating through the component list.
      *
      * @return The list of editor tabs.
      */
@@ -210,7 +205,7 @@ public class EditTab extends JTabbedPane {
 
         StringBuilder filesString = new StringBuilder();
         for (FileEditorTab tab : this.getEditorTabs()) {
-            filesString.append(tab.getPathname()).append(';');
+            filesString.append(tab.getFile().getPath()).append(';');
         }
         Application.getSettings().previouslyOpenFiles.set(filesString.toString());
     }
@@ -238,11 +233,11 @@ public class EditTab extends JTabbedPane {
         newTab.setShowLineNumbersEnabled(true);
         newTab.setFileStatus(FileStatus.NEW_NOT_EDITED);
         String name = this.editor.getNextDefaultFilename();
-        newTab.setPathname(name);
+        // This is kind of goofy, but it's fine since a File doesn't have to represent anything.
+        newTab.setFile(new File(name));
         this.addTab(name, newTab);
 
         RegisterFile.resetRegisters();
-        VenusUI.setReset(true);
         this.gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
         this.gui.getMainPane().getExecuteTab().clear();
 
@@ -392,14 +387,18 @@ public class EditTab extends JTabbedPane {
         }
         else if (tab.isNew()) {
             File file = this.saveAsFile(tab);
-            if (file != null) {
-                tab.setPathname(file.getPath());
+            if (file == null) {
+                return false;
             }
-            return file != null;
+
+            this.editor.setCurrentSaveDirectory(file.getParent());
+            tab.setFile(file);
+            this.updateTitleAndMenuState(tab);
+            return true;
         }
+
         try {
-            File file = new File(tab.getPathname());
-            BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(tab.getFile()));
             writer.write(tab.getSource(), 0, tab.getSource().length());
             writer.close();
             return true;
@@ -407,8 +406,8 @@ public class EditTab extends JTabbedPane {
         catch (IOException exception) {
             JOptionPane.showMessageDialog(
                 null,
-                "Save operation could not be completed due to an error:\n" + exception,
-                "Save Operation Failed",
+                "Failed to save due to an error:\n" + exception,
+                "Error",
                 JOptionPane.ERROR_MESSAGE
             );
             return false;
@@ -423,13 +422,14 @@ public class EditTab extends JTabbedPane {
      */
     public boolean saveAsCurrentFile() {
         FileEditorTab currentTab = getCurrentEditorTab();
+
         File file = saveAsFile(currentTab);
         if (file == null) {
             return false;
         }
 
         this.editor.setCurrentSaveDirectory(file.getParent());
-        currentTab.setPathname(file.getPath());
+        currentTab.setFile(file);
         currentTab.setFileStatus(FileStatus.NOT_EDITED);
         this.updateTitleAndMenuState(currentTab);
         return true;
@@ -456,10 +456,8 @@ public class EditTab extends JTabbedPane {
             saveDialog = new JFileChooser(this.editor.getCurrentSaveDirectory());
         }
         else {
-            saveDialog = new JFileChooser(new File(tab.getPathname()).getParent());
-        }
-        if (tab.getFilename() != null) {
-            saveDialog.setSelectedFile(new File(tab.getFilename()));
+            saveDialog = new JFileChooser(tab.getFile().getParent());
+            saveDialog.setSelectedFile(tab.getFile());
         }
         // End of 13-July-2011 code.
         saveDialog.setDialogTitle("Save As");
@@ -584,7 +582,7 @@ public class EditTab extends JTabbedPane {
      * @author DPS 9-Aug-2011
      */
     private void updateTitle(FileEditorTab tab) {
-        this.editor.setTitle(tab.getFilename(), tab.getFileStatus());
+        this.editor.setTitle(tab.getFile().getName(), tab.getFileStatus());
         this.saveWorkspaceState();
     }
 
@@ -595,10 +593,10 @@ public class EditTab extends JTabbedPane {
      *     if there are unsaved edits and user cancels the operation.
      */
     public boolean resolveUnsavedChanges() {
-        FileEditorTab currentTab = getCurrentEditorTab();
+        FileEditorTab currentTab = this.getCurrentEditorTab();
         if (currentTab != null && currentTab.hasUnsavedEdits()) {
-            return switch (showUnsavedEditsDialog(currentTab.getFilename())) {
-                case JOptionPane.YES_OPTION -> saveCurrentFile();
+            return switch (this.showUnsavedEditsDialog(currentTab.getFile().getName())) {
+                case JOptionPane.YES_OPTION -> this.saveCurrentFile();
                 case JOptionPane.NO_OPTION -> true;
                 case JOptionPane.CANCEL_OPTION -> false;
                 default -> false; // Should never occur
@@ -620,14 +618,12 @@ public class EditTab extends JTabbedPane {
     }
 
     private class FileOpener {
-        private File mostRecentlyOpenedFile;
         private final JFileChooser fileChooser;
         private int fileFilterCount;
         private final ArrayList<FileFilter> fileFilters;
         private final PropertyChangeListener listenForUserAddedFileFilter;
 
         public FileOpener() {
-            mostRecentlyOpenedFile = null;
             fileChooser = new JFileChooser();
             listenForUserAddedFileFilter = new ChoosableFileFilterChangeListener();
             fileChooser.addPropertyChangeListener(listenForUserAddedFileFilter);
@@ -639,8 +635,8 @@ public class EditTab extends JTabbedPane {
             fileFilters.add(fileChooser.getAcceptAllFileFilter());
             fileFilters.add(asmFilter);
             fileFilterCount = 0; // This will trigger fileChooser file filter load in next line
-            setChoosableFileFilters();
-            // Note: above note seems to not be true anymore, so force the last filter to be default.
+            this.setChoosableFileFilters();
+            // Note: above note seems to not be true anymore, so force the assembly filter to be default.
             fileChooser.setFileFilter(asmFilter);
         }
 
@@ -653,13 +649,13 @@ public class EditTab extends JTabbedPane {
         public ArrayList<File> openFiles() {
             // The fileChooser's list may be rebuilt from the master ArrayList if a new filter
             // has been added by the user
-            setChoosableFileFilters();
+            this.setChoosableFileFilters();
             // Set the current directory to the parent directory of the current file being edited,
             // or the working directory for MARS if that fails
             FileEditorTab currentTab = getCurrentEditorTab();
             File currentDirectory = null;
             if (currentTab != null) {
-                currentDirectory = new File(currentTab.getPathname()).getParentFile();
+                currentDirectory = currentTab.getFile().getParentFile();
             }
             if (currentDirectory == null) {
                 currentDirectory = new File(System.getProperty("user.dir"));
@@ -673,7 +669,7 @@ public class EditTab extends JTabbedPane {
             }
 
             if (fileChooser.showOpenDialog(gui) == JFileChooser.APPROVE_OPTION) {
-                ArrayList<File> unopenedFiles = openFiles(fileChooser.getSelectedFiles());
+                ArrayList<File> unopenedFiles = this.openFiles(fileChooser.getSelectedFiles());
                 if (!unopenedFiles.isEmpty()) {
                     return unopenedFiles;
                 }
@@ -705,19 +701,19 @@ public class EditTab extends JTabbedPane {
                 catch (IOException exception) {
                     // Ignore, the file will stay unchanged
                 }
-                String filePath = file.getPath();
-                // If this file is currently already open, then simply select its tab
-                FileEditorTab fileEditorTab = getEditorTab(filePath);
-                if (fileEditorTab != null) {
-                    // Don't bother reopening the file since it's already open
+
+                // Don't bother reopening the file if it's already open
+                if (getEditorTab(file) != null) {
                     continue;
                 }
-                fileEditorTab = new FileEditorTab(gui, EditTab.this);
-                fileEditorTab.setPathname(filePath);
+
+                FileEditorTab fileEditorTab = new FileEditorTab(gui, EditTab.this);
+                fileEditorTab.setFile(file);
+
                 if (file.canRead()) {
                     Application.program = new Program();
                     try {
-                        Application.program.readSource(filePath);
+                        Application.program.readSource(file.getPath());
                     }
                     catch (ProcessingException exception) {
                         unopenedFiles.add(file);
@@ -743,7 +739,7 @@ public class EditTab extends JTabbedPane {
                     fileEditorTab.setShowLineNumbersEnabled(true);
                     fileEditorTab.setFileStatus(FileStatus.NOT_EDITED);
 
-                    addTab(fileEditorTab.getFilename(), null, fileEditorTab, fileEditorTab.getPathname());
+                    addTab(file.getName(), null, fileEditorTab, file.getPath());
 
                     if (firstTabOpened == null) {
                         firstTabOpened = fileEditorTab;
@@ -766,7 +762,7 @@ public class EditTab extends JTabbedPane {
                     gui.getMainPane().getExecuteTab().clear();
                 }
                 firstTabOpened.requestTextAreaFocus();
-                mostRecentlyOpenedFile = new File(firstTabOpened.getPathname());
+                mostRecentlyOpenedFile = firstTabOpened.getFile();
             }
 
             // Save the updated workspace with the newly opened files
@@ -775,21 +771,24 @@ public class EditTab extends JTabbedPane {
             return unopenedFiles;
         }
 
-        // Private method to generate the file chooser's list of choosable file filters.
-        // It is called when the file chooser is created, and called again each time the Open
-        // dialog is activated.  We do this because the user may have added a new filter
-        // during the previous dialog.  This can be done by entering e.g. *.txt in the file
-        // name text field.  Java is funny, however, in that if the user does this then
-        // cancels the dialog, the new filter will remain in the list BUT if the user does
-        // this then ACCEPTS the dialog, the new filter will NOT remain in the list.  However
-        // the act of entering it causes a property change event to occur, and we have a
-        // handler that will add the new filter to our internal filter list and "restore" it
-        // the next time this method is called.  Strangely, if the user then similarly
-        // adds yet another new filter, the new one becomes simply a description change
-        // to the previous one, the previous object is modified AND NO PROPERTY CHANGE EVENT
-        // IS FIRED!  I could obviously deal with this situation if I wanted to, but enough
-        // is enough.  The limit will be one alternative filter at a time.
-        // DPS... 9 July 2008
+        /**
+         * Private method to generate the file chooser's list of choosable file filters.
+         * It is called when the file chooser is created, and called again each time the Open
+         * dialog is activated.  We do this because the user may have added a new filter
+         * during the previous dialog.  This can be done by entering e.g. *.txt in the file
+         * name text field.  Java is funny, however, in that if the user does this then
+         * cancels the dialog, the new filter will remain in the list BUT if the user does
+         * this then ACCEPTS the dialog, the new filter will NOT remain in the list.  However
+         * the act of entering it causes a property change event to occur, and we have a
+         * handler that will add the new filter to our internal filter list and "restore" it
+         * the next time this method is called.  Strangely, if the user then similarly
+         * adds yet another new filter, the new one becomes simply a description change
+         * to the previous one, the previous object is modified AND NO PROPERTY CHANGE EVENT
+         * IS FIRED!  I could obviously deal with this situation if I wanted to, but enough
+         * is enough.  The limit will be one alternative filter at a time.
+         *
+         * @author DPS 9 July 2008
+         */
         private void setChoosableFileFilters() {
             // See if a new filter has been added to the master list.  If so,
             // regenerate the fileChooser list from the master list.

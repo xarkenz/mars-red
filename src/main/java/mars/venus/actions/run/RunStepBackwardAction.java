@@ -55,7 +55,6 @@ public class RunStepBackwardAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        VenusUI.setStarted(true);
         gui.getMessagesPane().selectConsoleTab();
         RegistersPane registersPane = gui.getRegistersPane();
         ExecuteTab executeTab = gui.getMainPane().getExecuteTab();
@@ -82,7 +81,6 @@ public class RunStepBackwardAction extends VenusAction {
             executeTab.getTextSegmentWindow().highlightStepAtPC(inDelaySlot); // Argument added 25 June 2007
 
             executeTab.setProgramStatus(ProgramStatus.PAUSED);
-            VenusUI.setReset(false);
         }
     }
 }

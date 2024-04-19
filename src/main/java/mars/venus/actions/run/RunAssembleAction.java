@@ -76,10 +76,10 @@ public class RunAssembleAction extends VenusAction {
         }
 
         // Generate the list of files to assemble
-        String leadPathname = editTab.getCurrentEditorTab().getPathname();
+        String leadPathname = editTab.getCurrentEditorTab().getFile().getPath();
         List<String> pathnames;
         if (Application.getSettings().assembleAllEnabled.get()) {
-            pathnames = FilenameFinder.getFilenameList(new File(leadPathname).getParent(), Application.FILE_EXTENSIONS);
+            pathnames = FilenameFinder.getFilenameList(editTab.getCurrentEditorTab().getFile().getParent(), Application.FILE_EXTENSIONS);
         }
         else {
             pathnames = List.of(leadPathname);
@@ -118,8 +118,6 @@ public class RunAssembleAction extends VenusAction {
             registersPane.getRegistersWindow().clearWindow();
             registersPane.getCoprocessor1Window().clearWindow();
             registersPane.getCoprocessor0Window().clearWindow();
-            VenusUI.setReset(true);
-            VenusUI.setStarted(false);
             gui.getMainPane().setSelectedComponent(executeTab);
         }
         catch (ProcessingException exception) {

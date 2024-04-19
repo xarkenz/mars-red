@@ -20,7 +20,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 
 /*
@@ -79,11 +78,7 @@ public class VenusUI extends JFrame {
     private final Editor editor;
 
     private final String baseTitle;
-    private int menuState = FileStatus.NO_FILE;
-
-    // PLEASE PUT THESE TWO (& THEIR METHODS) SOMEWHERE THEY BELONG, NOT HERE
-    private static boolean reset = true; // registers/memory reset for execution
-    private static boolean started = false; // started execution
+    private FileStatus menuState;
 
     // The "action" objects, which include action listeners.  One of each will be created then
     // shared between a menu item and its corresponding toolbar button.  This is a very cool
@@ -135,6 +130,7 @@ public class VenusUI extends JFrame {
     private SettingsHighlightingAction settingsHighlightingAction;
     private SettingsMemoryConfigurationAction settingsMemoryConfigurationAction;
     private SettingsSelfModifyingCodeAction settingsSelfModifyingCodeAction;
+    private SettingsPreferencesAction settingsPreferencesAction;
 
     private HelpHelpAction helpHelpAction;
     private HelpAboutAction helpAboutAction;
@@ -152,6 +148,7 @@ public class VenusUI extends JFrame {
         splashScreen.showSplash();
 
         this.baseTitle = title;
+        this.menuState = FileStatus.NO_FILE;
         this.editor = new Editor(this);
         Application.setGUI(this);
 
@@ -324,6 +321,7 @@ public class VenusUI extends JFrame {
         settingsHighlightingAction = new SettingsHighlightingAction(this, "Highlighting...", null, "View and modify Execute tab highlighting colors", null, null);
         settingsExceptionHandlerAction = new SettingsExceptionHandlerAction(this, "Exception Handler...", null, "If set, the specified exception handler file will be included in all Assemble operations.", null, null);
         settingsMemoryConfigurationAction = new SettingsMemoryConfigurationAction(this, "Memory Configuration...", null, "View and modify memory segment base addresses for simulated MIPS.", null, null);
+        settingsPreferencesAction = new SettingsPreferencesAction(this, "Preferences...", null, "", null, null);
 
         helpHelpAction = new HelpHelpAction(this, "Help...", getSVGActionIcon("help.svg"), "Help", KeyEvent.VK_H, KeyStroke.getKeyStroke(KeyEvent.VK_H, tk.getMenuShortcutKeyMaskEx()));
         helpAboutAction = new HelpAboutAction(this, "About...", getSVGActionIcon("about.svg"), "Information about " + Application.NAME, null, null);
@@ -416,6 +414,7 @@ public class VenusUI extends JFrame {
         settingsMenu.add(createMenuItem(settingsHighlightingAction));
         settingsMenu.add(createMenuItem(settingsExceptionHandlerAction));
         settingsMenu.add(createMenuItem(settingsMemoryConfigurationAction));
+        settingsMenu.add(createMenuItem(settingsPreferencesAction));
         menuBar.add(settingsMenu);
 
         List<ToolAction> toolActions = new ToolManager().loadTools();
@@ -498,35 +497,23 @@ public class VenusUI extends JFrame {
     }
 
     /**
-     * Determine from FileStatus what the menu state (enabled/disabled) should
-     * be then call the appropriate method to set it.  Current states are:
-     * <ul>
-     * <li>setMenuStateInitial: set upon startup and after File->Close
-     * <li>setMenuStateEditingNew: set upon File->New
-     * <li>setMenuStateEditing: set upon File->Open or File->Save or erroneous Run->Assemble
-     * <li>setMenuStateRunnable: set upon successful Run->Assemble
-     * <li>setMenuStateRunning: set upon Run->Go
-     * <li>setMenuStateTerminated: set upon completion of simulated execution
-     * </ul>
+     * Enable/disable menu actions according to the given file status.
+     *
+     * @param status The file status used to determine menu state (usually the current tab's status).
      */
-    public void setMenuState(int status) {
+    public void setMenuState(FileStatus status) {
         menuState = status;
         switch (status) {
-            case FileStatus.NO_FILE -> this.setMenuStateInitial();
-            case FileStatus.NEW_NOT_EDITED -> this.setMenuStateEditingNew();
-            case FileStatus.NEW_EDITED -> this.setMenuStateEditingNew();
-            case FileStatus.NOT_EDITED -> this.setMenuStateNotEdited(); // was MenuStateEditing. DPS 9-Aug-2011
-            case FileStatus.EDITED -> this.setMenuStateEditing();
-            case FileStatus.RUNNABLE -> this.setMenuStateRunnable();
-            case FileStatus.RUNNING -> this.setMenuStateRunning();
-            case FileStatus.TERMINATED -> this.setMenuStateTerminated();
-            case FileStatus.OPENING -> {} // This is a temporary state. DPS 9-Aug-2011
-            default -> System.out.println("Invalid File Status: " + status);
+            case NO_FILE -> this.setMenuStateInitial();
+            case NEW_NOT_EDITED -> this.setMenuStateEditingNew();
+            case NEW_EDITED -> this.setMenuStateEditingNew();
+            case NOT_EDITED -> this.setMenuStateNotEdited();
+            case EDITED -> this.setMenuStateEditing();
         }
     }
 
     /**
-     * Enable/disable menu actions corresponding to the given program status.
+     * Enable/disable menu actions according to the given program status.
      *
      * @param status The program status used to determine menu state.
      */
@@ -539,8 +526,7 @@ public class VenusUI extends JFrame {
         }
     }
 
-    void setMenuStateInitial() {
-        // Note: undo and redo are handled separately by the undo manager
+    private void setMenuStateInitial() {
         fileNewAction.setEnabled(true);
         fileOpenAction.setEnabled(true);
         fileCloseAction.setEnabled(false);
@@ -551,8 +537,7 @@ public class VenusUI extends JFrame {
         fileDumpMemoryAction.setEnabled(false);
         filePrintAction.setEnabled(false);
         fileExitAction.setEnabled(true);
-        editUndoAction.setEnabled(false);
-        editRedoAction.setEnabled(false);
+        updateUndoRedoActions();
         editCutAction.setEnabled(false);
         editCopyAction.setEnabled(false);
         editPasteAction.setEnabled(false);
@@ -569,9 +554,6 @@ public class VenusUI extends JFrame {
         runPauseAction.setEnabled(false);
         runClearBreakpointsAction.setEnabled(false);
         runToggleBreakpointsAction.setEnabled(false);
-        helpHelpAction.setEnabled(true);
-        helpAboutAction.setEnabled(true);
-        updateUndoRedoActions();
     }
 
     /*
@@ -579,8 +561,7 @@ public class VenusUI extends JFrame {
      * existing Run menu state (except Assemble, which is always true).
      * Thus if there was a valid assembly it is retained.
      */
-    void setMenuStateNotEdited() {
-        // Note: undo and redo are handled separately by the undo manager
+    private void setMenuStateNotEdited() {
         fileNewAction.setEnabled(true);
         fileOpenAction.setEnabled(true);
         fileCloseAction.setEnabled(true);
@@ -612,12 +593,9 @@ public class VenusUI extends JFrame {
             runClearBreakpointsAction.setEnabled(false);
             runToggleBreakpointsAction.setEnabled(false);
         }
-        helpHelpAction.setEnabled(true);
-        helpAboutAction.setEnabled(true);
     }
 
-    void setMenuStateEditing() {
-        // Note: undo and redo are handled separately by the undo manager
+    private void setMenuStateEditing() {
         fileNewAction.setEnabled(true);
         fileOpenAction.setEnabled(true);
         fileCloseAction.setEnabled(true);
@@ -645,15 +623,12 @@ public class VenusUI extends JFrame {
         runPauseAction.setEnabled(false);
         runClearBreakpointsAction.setEnabled(false);
         runToggleBreakpointsAction.setEnabled(false);
-        helpHelpAction.setEnabled(true);
-        helpAboutAction.setEnabled(true);
     }
 
     /**
      * Use this when "File -> New" is used
      */
     void setMenuStateEditingNew() {
-        // Note: undo and redo are handled separately by the undo manager
         fileNewAction.setEnabled(true);
         fileOpenAction.setEnabled(true);
         fileCloseAction.setEnabled(true);
@@ -681,15 +656,12 @@ public class VenusUI extends JFrame {
         runPauseAction.setEnabled(false);
         runClearBreakpointsAction.setEnabled(false);
         runToggleBreakpointsAction.setEnabled(false);
-        helpHelpAction.setEnabled(true);
-        helpAboutAction.setEnabled(true);
     }
 
     /**
      * Use this upon successful assemble or reset
      */
     void setMenuStateRunnable() {
-        // Note: undo and redo are handled separately by the undo manager
         fileNewAction.setEnabled(true);
         fileOpenAction.setEnabled(true);
         fileCloseAction.setEnabled(true);
@@ -716,8 +688,6 @@ public class VenusUI extends JFrame {
         runStopAction.setEnabled(false);
         runPauseAction.setEnabled(false);
         runToggleBreakpointsAction.setEnabled(true);
-        helpHelpAction.setEnabled(true);
-        helpAboutAction.setEnabled(true);
     }
 
     /**
@@ -751,15 +721,12 @@ public class VenusUI extends JFrame {
         runStopAction.setEnabled(true);
         runPauseAction.setEnabled(true);
         runToggleBreakpointsAction.setEnabled(false);
-        helpHelpAction.setEnabled(true);
-        helpAboutAction.setEnabled(true);
     }
 
     /**
      * Use this upon completion of execution
      */
     void setMenuStateTerminated() {
-        // Note: undo and redo are handled separately by the undo manager
         fileNewAction.setEnabled(true);
         fileOpenAction.setEnabled(true);
         fileCloseAction.setEnabled(true);
@@ -786,8 +753,6 @@ public class VenusUI extends JFrame {
         runStopAction.setEnabled(false);
         runPauseAction.setEnabled(false);
         runToggleBreakpointsAction.setEnabled(true);
-        helpHelpAction.setEnabled(true);
-        helpAboutAction.setEnabled(true);
     }
 
     /**
@@ -803,6 +768,8 @@ public class VenusUI extends JFrame {
      * Set the content to display as part of the window title, if any. (Usually, this is a filename.)
      * The resulting full title will look like "(content) - (base title)" if the content is not null,
      * or simply the base title otherwise.
+     *
+     * @param content The content to display before the base title.
      */
     public void setTitleContent(String content) {
         if (content != null) {
@@ -814,48 +781,12 @@ public class VenusUI extends JFrame {
     }
 
     /**
-     * Get current menu state.  State values are constants in FileStatus class.  DPS 23 July 2008
+     * Get the current menu state, which reflects the state of the current file editor tab.
      *
-     * @return Current menu state.
+     * @return The current menu state.
      */
-    public int getMenuState() {
+    public FileStatus getMenuState() {
         return menuState;
-    }
-
-    /**
-     * Set whether the register values are reset.
-     *
-     * @param reset Boolean true if the register values have been reset.
-     */
-    public static void setReset(boolean reset) {
-        VenusUI.reset = reset;
-    }
-
-    /**
-     * Set whether MIPS program execution has started.
-     *
-     * @param started true if the MIPS program execution has started.
-     */
-    public static void setStarted(boolean started) {
-        VenusUI.started = started;
-    }
-
-    /**
-     * Get whether the register values are reset.
-     *
-     * @return Boolean true if the register values have been reset.
-     */
-    public static boolean getReset() {
-        return reset;
-    }
-
-    /**
-     * Get whether MIPS program is currently executing.
-     *
-     * @return true if MIPS program is currently executing.
-     */
-    public static boolean getStarted() {
-        return started;
     }
 
     /**

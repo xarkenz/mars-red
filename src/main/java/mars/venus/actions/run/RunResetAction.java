@@ -92,8 +92,6 @@ public class RunResetAction extends VenusAction {
         executeTab.getTextSegmentWindow().setCodeHighlighting(true);
         executeTab.getTextSegmentWindow().highlightStepAtPC();
         executeTab.setProgramStatus(ProgramStatus.NOT_STARTED);
-        VenusUI.setReset(true);
-        VenusUI.setStarted(false);
 
         gui.getMessagesPane().writeToConsole(getName() + ": reset completed.\n\n");
     }

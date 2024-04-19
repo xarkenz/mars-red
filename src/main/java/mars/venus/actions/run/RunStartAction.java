@@ -38,7 +38,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action for the Run -> Go menu item
+ * Action for the Run -> Start menu item
  */
 public class RunStartAction extends VenusAction {
     public RunStartAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
@@ -50,7 +50,7 @@ public class RunStartAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        if (!VenusUI.getStarted()) {
+        if (!gui.getProgramStatus().hasStarted()) {
             // DPS 17-July-2008
             // Store any program arguments into MIPS memory and registers before
             // execution begins. Arguments go into the gap between $sp and kernel memory.
@@ -62,8 +62,8 @@ public class RunStartAction extends VenusAction {
             }
         }
 
-        Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().setCodeHighlighting(false);
-        Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().unhighlightAllSteps();
+        gui.getMainPane().getExecuteTab().getTextSegmentWindow().setCodeHighlighting(false);
+        gui.getMainPane().getExecuteTab().getTextSegmentWindow().unhighlightAllSteps();
 
         try {
             int[] breakPoints = gui.getMainPane().getExecuteTab().getTextSegmentWindow().getSortedBreakPointsArray();

@@ -21,6 +21,7 @@ import mars.venus.execute.RunSpeedPanel;
 import javax.swing.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Observable;
 
 /*
@@ -198,7 +199,7 @@ public class Simulator extends Observable {
         }
     }
 
-    private final ArrayList<SimulatorListener> listeners = new ArrayList<>();
+    private final List<SimulatorListener> listeners = new ArrayList<>();
 
     public void addListener(SimulatorListener listener) {
         listeners.add(listener);
@@ -217,11 +218,9 @@ public class Simulator extends Observable {
     // instruction count limit, by breakpoint, or by an exit syscall.
 
     private void dispatchStartedUpdate(int maxSteps, int programCounter) {
-        VenusUI.setStarted(true); // added 8/27/05
-
         Application.getGUI().getMessagesPane().writeToMessages(NAME + ": started simulation.\n\n");
         Application.getGUI().getMessagesPane().selectConsoleTab();
-        Application.getGUI().setMenuState(FileStatus.RUNNING);
+        Application.getGUI().setMenuState(ProgramStatus.RUNNING);
 
         this.setChanged();
         this.notifyObservers(new SimulatorNotice(SimulatorNotice.SIMULATOR_START, maxSteps, RunSpeedPanel.getInstance().getRunSpeed(), programCounter));
@@ -264,7 +263,6 @@ public class Simulator extends Observable {
         executeTab.getTextSegmentWindow().highlightStepAtPC();
 
         executeTab.setProgramStatus(ProgramStatus.PAUSED);
-        VenusUI.setReset(false);
 
         for (SimulatorListener listener : listeners) {
             listener.paused(maxSteps, programCounter, reason);
@@ -325,7 +323,6 @@ public class Simulator extends Observable {
         }
 
         Application.getGUI().setProgramStatus(ProgramStatus.TERMINATED);
-        VenusUI.setReset(false);
 
         // Close any unclosed file descriptors opened in execution of program
         systemIO.resetFiles();

@@ -12,6 +12,7 @@ import javax.swing.text.Document;
 import javax.swing.undo.UndoManager;
 import java.awt.*;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Observable;
@@ -60,7 +61,9 @@ public class FileEditorTab extends JPanel implements Observer {
     private final JLabel caretPositionLabel;
     private final JCheckBox showLineNumbers;
     private final JLabel lineNumbers;
-    private final FileStatus fileStatus;
+
+    private FileStatus fileStatus;
+    private File file;
 
     /**
      * Create a new tab within the "Edit" tab for editing a file.
@@ -71,7 +74,8 @@ public class FileEditorTab extends JPanel implements Observer {
         this.editTab = editTab;
         // We want to be notified of editor font changes! See update() below.
         Application.getSettings().addObserver(this);
-        this.fileStatus = new FileStatus();
+        this.fileStatus = FileStatus.NO_FILE;
+        this.file = null;
         this.lineNumbers = new JLabel();
 
         this.textEditingArea = new JEditBasedTextArea(this, Application.getSettings(), lineNumbers);
@@ -97,7 +101,7 @@ public class FileEditorTab extends JPanel implements Observer {
                     if (getFileStatus() == FileStatus.NOT_EDITED) {
                         setFileStatus(FileStatus.EDITED);
                     }
-                    FileEditorTab.this.gui.getEditor().setTitle(getFilename(), getFileStatus());
+                    FileEditorTab.this.gui.getEditor().setTitle(file.getName(), fileStatus);
 
                     // Clear the Execute tab since the file has been edited
                     FileEditorTab.this.gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
@@ -236,51 +240,30 @@ public class FileEditorTab extends JPanel implements Observer {
     }
 
     /**
-     * Get source code text
+     * Get the source code text.
      *
-     * @return Sting containing source code
+     * @return String containing source code.
      */
     public String getSource() {
         return textEditingArea.getText();
     }
 
     /**
-     * Set the editing status for this EditPane's associated document.
-     * For the argument, use one of the constants from class FileStatus.
+     * Set the file status of this tab.
      *
-     * @param fileStatus the status constant from class FileStatus
+     * @param fileStatus The file status.
      */
-    public void setFileStatus(int fileStatus) {
-        this.fileStatus.setFileStatus(fileStatus);
+    public void setFileStatus(FileStatus fileStatus) {
+        this.fileStatus = fileStatus;
     }
 
     /**
-     * Get the editing status for this EditPane's associated document.
-     * This will be one of the constants from class FileStatus.
+     * Get the file status of this tab.
+     *
+     * @return The file status.
      */
-    public int getFileStatus() {
-        return this.fileStatus.getFileStatus();
-    }
-
-    /**
-     * @see FileStatus#getFilename()
-     */
-    public String getFilename() {
-        return this.fileStatus.getFilename();
-    }
-
-    /**
-     * @see FileStatus#getPathname()
-     */
-    public String getPathname() {
-        return this.fileStatus.getPathname();
-    }
-
-    /**
-     * @see FileStatus#setPathname(String)
-     */
-    public void setPathname(String pathname) {
-        this.fileStatus.setPathname(pathname);
+    public FileStatus getFileStatus() {
+        return this.fileStatus;
     }
 
     /**
@@ -298,6 +281,24 @@ public class FileEditorTab extends JPanel implements Observer {
     }
 
     /**
+     * Get the file represented by this tab.
+     *
+     * @return The file object.
+     */
+    public File getFile() {
+        return this.file;
+    }
+
+    /**
+     * Set the file represented by this tab.
+     *
+     * @param file The file object.
+     */
+    public void setFile(File file) {
+        this.file = file;
+    }
+
+    /**
      * Delegates to text area's requestFocusInWindow method.
      */
     public void requestTextAreaFocus() {
@@ -307,7 +308,7 @@ public class FileEditorTab extends JPanel implements Observer {
     /**
      * Get the manager in charge of Undo and Redo operations
      *
-     * @return the Undo manager
+     * @return The undo manager object.
      */
     public UndoManager getUndoManager() {
         return textEditingArea.getUndoManager();
@@ -323,7 +324,7 @@ public class FileEditorTab extends JPanel implements Observer {
     // Ctrl-C/X/V.
 
     /**
-     * Copy currently-selected text into clipboard.
+     * Copy the currently selected text to the clipboard.
      */
     public void copyText() {
         textEditingArea.copy();
@@ -332,7 +333,7 @@ public class FileEditorTab extends JPanel implements Observer {
     }
 
     /**
-     * Cut currently-selected text into clipboard.
+     * Cut the currently selected text to the clipboard.
      */
     public void cutText() {
         textEditingArea.cut();
@@ -340,7 +341,7 @@ public class FileEditorTab extends JPanel implements Observer {
     }
 
     /**
-     * Paste clipboard contents at cursor position.
+     * Paste the current clipboard contents at the cursor position.
      */
     public void pasteText() {
         textEditingArea.paste();
@@ -357,14 +358,14 @@ public class FileEditorTab extends JPanel implements Observer {
     }
 
     /**
-     * Undo previous edit.
+     * Undo the previous edit.
      */
     public void undo() {
         textEditingArea.undo();
     }
 
     /**
-     * Redo previously undone edit.
+     * Redo the previously undone edit.
      */
     public void redo() {
         textEditingArea.redo();

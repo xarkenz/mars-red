@@ -36,155 +36,51 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Team JSpim
  */
-public class FileStatus {
+public enum FileStatus {
     /**
-     * initial state or after close
+     * No files are open (this only applies to the menu state in {@link mars.venus.VenusUI}).
      */
-    public static final int NO_FILE = 0;
+    NO_FILE,
     /**
-     * New edit window with no edits
+     * Newly created file with no edits.
      */
-    public static final int NEW_NOT_EDITED = 1;
+    NEW_NOT_EDITED,
     /**
-     * New edit window with unsaved edits
+     * Newly created file with unsaved edits.
      */
-    public static final int NEW_EDITED = 2;
+    NEW_EDITED,
     /**
-     * open/saved edit window with no edits
+     * File from disk with no edits.
      */
-    public static final int NOT_EDITED = 3;
+    NOT_EDITED,
     /**
-     * open/saved edit window with unsaved edits
+     * File from disk with unsaved edits.
      */
-    public static final int EDITED = 4;
-    /**
-     * successful assembly
-     */
-    public static final int RUNNABLE = 5;
-    /**
-     * execution is under way
-     */
-    public static final int RUNNING = 6;
-    /**
-     * execution terminated
-     */
-    public static final int TERMINATED = 7;
-    /**
-     * file is being opened.  DPS 9-Aug-2011
-     */
-    public static final int OPENING = 8;
-
-    private int status;
-    private File file;
+    EDITED;
 
     /**
-     * Create a FileStatus object with {@link #NO_FILE} for status and null for current file.
-     */
-    public FileStatus() {
-        this(FileStatus.NO_FILE, null);
-    }
-
-    /**
-     * Create a FileStatus object with given status and file pathname.
-     *
-     * @param status   Initial file status.  See FileStatus static constants.
-     * @param pathname Full file pathname.
-     * @see #setPathname(String)
-     */
-    public FileStatus(int status, String pathname) {
-        this.status = status;
-        if (pathname == null) {
-            this.file = null;
-        }
-        else {
-            this.setPathname(pathname);
-        }
-    }
-
-    /**
-     * Set editing status of this file.  See FileStatus static constants.
-     *
-     * @param newStatus the new status
-     */
-    public void setFileStatus(int newStatus) {
-        this.status = newStatus;
-    }
-
-    /**
-     * Get editing status of this file.
-     *
-     * @return The current editing status.  See FileStatus static constants.
-     */
-    public int getFileStatus() {
-        return this.status;
-    }
-
-    /**
-     * Determine if file is "new", which means created using New but not yet saved.
+     * Determine whether file is "new", which means created using New but not yet saved.
      * If created using Open, it is not new.
      *
      * @return true if file was created using New and has not yet been saved, false otherwise.
      */
     public boolean isNew() {
-        return status == FileStatus.NEW_NOT_EDITED || status == FileStatus.NEW_EDITED;
+        return switch (this) {
+            case NEW_NOT_EDITED, NEW_EDITED -> true;
+            default -> false;
+        };
     }
 
     /**
-     * Determine if file has been modified since last save or, if not yet saved, since
+     * Determine whether file has been modified since last save or, if not yet saved, since
      * being created using New or Open.
      *
      * @return true if file has been modified since save or creation, false otherwise.
      */
     public boolean hasUnsavedEdits() {
-        return status == FileStatus.NEW_EDITED || status == FileStatus.EDITED;
-    }
-
-    /**
-     * Set full file pathname. See java.io.File(String pathname) for parameter specs.
-     *
-     * @param newPath the new pathname. If no directory path, getParent() will return null.
-     */
-    public void setPathname(String newPath) {
-        this.file = new File(newPath);
-    }
-
-    /**
-     * Set full file pathname. See java.io.File(String parent, String child) for parameter specs.
-     *
-     * @param parent The parent directory of the file.  Can be null.
-     * @param name   The name of the file (no directory path).
-     */
-    public void setPathname(String parent, String name) {
-        this.file = new File(parent, name);
-    }
-
-    /**
-     * Get full file pathname.
-     *
-     * @return The full pathname as a string.  Null if the current file is null.
-     * @see File#getPath()
-     */
-    public String getPathname() {
-        return (this.file == null) ? null : this.file.getPath();
-    }
-
-    /**
-     * Get file name with no path information.
-     *
-     * @return The filename as a string.  Null if the current file is null.
-     * @see File#getName()
-     */
-    public String getFilename() {
-        return (this.file == null) ? null : this.file.getName();
-    }
-
-    /**
-     * Get file parent pathname.
-     *
-     * @return The full parent pathname as a string.  Null if the current file is null.
-     * @see File#getParent()
-     */
-    public String getParent() {
-        return (this.file == null) ? null : this.file.getParent();
+        return switch (this) {
+            case NEW_EDITED, EDITED -> true;
+            default -> false;
+        };
     }
 }

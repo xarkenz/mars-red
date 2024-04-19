@@ -95,32 +95,30 @@ public abstract class AbstractFontSettingDialog extends JDialog {
         // with a horizontal line separating the two groups.
         String[][] fullList = {commonFontFamilies, allFontFamilies};
 
-        fontFamilySelector = new JComboBox<>(makeVectorData(fullList));
-        fontFamilySelector.setRenderer(new ComboBoxRenderer());
-        fontFamilySelector.addActionListener(new BlockComboListener(fontFamilySelector));
+        fontFamilySelector = new JComboBox<>(flattenWithNullSeparators(fullList));
+        fontFamilySelector.setRenderer(new SeparatedComboBoxRenderer());
+        fontFamilySelector.addActionListener(new SeparatedComboBoxListener(fontFamilySelector));
         fontFamilySelector.setSelectedItem(currentFont.getFamily());
         fontFamilySelector.setEditable(false);
         fontFamilySelector.setMaximumRowCount(commonFontFamilies.length);
-        fontFamilySelector.setToolTipText("Short list of common font families followed by complete list.");
+        fontFamilySelector.setToolTipText("Short list of common font families followed by complete list");
 
         fontStyleSelector = new JComboBox<>(EditorFont.Style.values());
         fontStyleSelector.setSelectedItem(EditorFont.getStyle(currentFont.getStyle()));
         fontStyleSelector.setEditable(false);
-        fontStyleSelector.setToolTipText("List of available font styles.");
+        fontStyleSelector.setToolTipText("List of available font styles");
 
         fontSizeSelector = new JSlider(EditorFont.MIN_SIZE, EditorFont.MAX_SIZE, currentFont.getSize());
         fontSizeSelector.setToolTipText("Use slider to select font size from " + EditorFont.MIN_SIZE + " to " + EditorFont.MAX_SIZE + ".");
         fontSizeSelector.addChangeListener(event -> {
-            int value = ((JSlider) event.getSource()).getValue();
-            fontSizeSpinSelector.setValue(value);
+            fontSizeSpinSelector.setValue(((JSlider) event.getSource()).getValue());
             fontSample.setFont(getFont());
         });
         SpinnerNumberModel fontSizeSpinnerModel = new SpinnerNumberModel(currentFont.getSize(), EditorFont.MIN_SIZE, EditorFont.MAX_SIZE, 1);
         fontSizeSpinSelector = new JSpinner(fontSizeSpinnerModel);
-        fontSizeSpinSelector.setToolTipText("Current font size in points.");
+        fontSizeSpinSelector.setToolTipText("Current font size in points");
         fontSizeSpinSelector.addChangeListener(event -> {
-            Object value = ((JSpinner) event.getSource()).getValue();
-            fontSizeSelector.setValue((Integer) value);
+            fontSizeSelector.setValue((Integer) ((JSpinner) event.getSource()).getValue());
             fontSample.setFont(getFont());
         });
         // Action listener to update sample when family or style selected
@@ -206,8 +204,6 @@ public abstract class AbstractFontSettingDialog extends JDialog {
      */
     protected abstract void apply(Font font);
 
-    /////////////////////////////////////////////////////////////////////
-    //
     // Method and two classes to permit one or more horizontal separators
     // within a combo box list.  I obtained this code on 13 July 2007
     // from http://www.codeguru.com/java/articles/164.shtml.  Author
@@ -216,44 +212,44 @@ public abstract class AbstractFontSettingDialog extends JDialog {
     // families from the very long list of all font families.  No attempt
     // to keep a list of recently-used fonts like Word does.  The list
     // of common font families is static.
-    //
-    /////////////////////////////////////////////////////////////////////
 
-    private static final String SEPARATOR = "__SEPARATOR__";
-
-    // Given an array of string arrays, will produce a Vector concatenating
-    // the arrays with a separator between each.
-    private Vector<String> makeVectorData(String[][] str) {
+    /**
+     * Given an array of string arrays, will produce a Vector concatenating
+     * the arrays with a separator between each. A separator is represented by a null element.
+     */
+    private static Vector<String> flattenWithNullSeparators(String[][] arrayData) {
         boolean needSeparator = false;
-        Vector<String> data = new Vector<>();
-        for (String[] strings : str) {
+        Vector<String> vectorData = new Vector<>();
+
+        for (String[] subarray : arrayData) {
             if (needSeparator) {
-                data.addElement(SEPARATOR);
+                vectorData.addElement(null);
             }
-            for (String string : strings) {
-                data.addElement(string);
+            for (String string : subarray) {
+                vectorData.addElement(string);
             }
-            needSeparator = (strings.length > 0);
+            // If the subarray was empty, adding a separator after it would be redundant
+            needSeparator = (subarray.length > 0);
         }
-        return data;
+
+        return vectorData;
     }
 
-    // Required renderer for handling the separator bar.
-    private static class ComboBoxRenderer extends JLabel implements ListCellRenderer<String> {
-        private final JSeparator separator;
+    /**
+     * Renderer to handle separators (represented by null) in a combo box.
+     */
+    private static class SeparatedComboBoxRenderer extends JLabel implements ListCellRenderer<String> {
+        private final JSeparator separator = new JSeparator(JSeparator.HORIZONTAL);
 
-        public ComboBoxRenderer() {
+        public SeparatedComboBoxRenderer() {
             setOpaque(true);
             setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
-            separator = new JSeparator(JSeparator.HORIZONTAL);
         }
 
         @Override
-        public Component getListCellRendererComponent(JList list, String value, int index, boolean isSelected, boolean cellHasFocus) {
-            if (value == null) {
-                value = "";
-            }
-            if (SEPARATOR.equals(value)) {
+        public Component getListCellRendererComponent(JList list, String item, int index, boolean isSelected, boolean cellHasFocus) {
+            if (item == null) {
+                // A null item represents a separator
                 return separator;
             }
             if (isSelected) {
@@ -265,30 +261,33 @@ public abstract class AbstractFontSettingDialog extends JDialog {
                 setForeground(list.getForeground());
             }
             setFont(list.getFont());
-            setText(value);
+            setText(item);
             return this;
         }
     }
 
-    // Required listener to handle the separator bar.
-    private static class BlockComboListener implements ActionListener {
-        private final JComboBox<String> combo;
-        private Object currentItem;
+    /**
+     * Listener to handle separators (represented by null) in a combo box.
+     */
+    private static class SeparatedComboBoxListener implements ActionListener {
+        private final JComboBox<String> comboBox;
+        private Object lastValidItem;
 
-        BlockComboListener(JComboBox<String> combo) {
-            this.combo = combo;
-            combo.setSelectedIndex(0);
-            currentItem = combo.getSelectedItem();
+        public SeparatedComboBoxListener(JComboBox<String> comboBox) {
+            this.comboBox = comboBox;
+            comboBox.setSelectedIndex(0);
+            lastValidItem = comboBox.getSelectedItem();
         }
 
         @Override
-        public void actionPerformed(ActionEvent e) {
-            Object tempItem = combo.getSelectedItem();
-            if (SEPARATOR.equals(tempItem)) {
-                combo.setSelectedItem(currentItem);
+        public void actionPerformed(ActionEvent event) {
+            Object selectedItem = comboBox.getSelectedItem();
+            if (selectedItem == null) {
+                // The user selected a separator, which is not a valid item, so revert to previous value
+                comboBox.setSelectedItem(lastValidItem);
             }
             else {
-                currentItem = tempItem;
+                lastValidItem = selectedItem;
             }
         }
     }

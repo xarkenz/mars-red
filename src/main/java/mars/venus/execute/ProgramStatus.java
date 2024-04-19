@@ -55,5 +55,17 @@ public enum ProgramStatus {
     /**
      * The program stopped execution after starting, and is no longer runnable.
      */
-    TERMINATED,
+    TERMINATED;
+
+    /**
+     * Determine whether the program has been previously started, even if it has been paused or terminated.
+     *
+     * @return true if the program is currently running or has stopped during execution, false otherwise.
+     */
+    public boolean hasStarted() {
+        return switch (this) {
+            case RUNNING, PAUSED, TERMINATED -> true;
+            case NOT_ASSEMBLED, NOT_STARTED -> false;
+        };
+    }
 }

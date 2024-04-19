@@ -48,7 +48,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class SettingsEditorAction extends VenusAction {
     /**
-     * Create a new SettingsEditorAction.  Has all the GuiAction parameters.
+     * Create a new SettingsEditorAction.
      */
     public SettingsEditorAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);

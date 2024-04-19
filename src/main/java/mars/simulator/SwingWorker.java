@@ -2,8 +2,7 @@ package mars.simulator;
 
 import javax.swing.*;
 
-// TODO: How is this different from the SwingWorker class included with Swing? -Sean Clarke
-/*-----------------------------------------------------
+/*
  * This file downloaded from the Sun Microsystems URL given below.
  *
  * I will subclass it to create worker thread for running
@@ -17,7 +16,7 @@ import javax.swing.*;
  * instructions on and examples of using this class, see
  * <a href="http://java.sun.com/docs/books/tutorial/uiswing/misc/threads.html">the Swing documentation</a>.
  * Note that the API changed slightly in the 3rd version:
- * You must now invoke start() on the SwingWorker after
+ * You must now invoke {@link #start()} on the SwingWorker after
  * creating it.
  */
 public abstract class SwingWorker {
@@ -100,7 +99,7 @@ public abstract class SwingWorker {
             try {
                 thread.join();
             }
-            catch (InterruptedException e) {
+            catch (InterruptedException exception) {
                 Thread.currentThread().interrupt(); // propagate
                 return null;
             }
@@ -117,6 +116,7 @@ public abstract class SwingWorker {
         final Runnable doFinished = this::finished;
 
         Runnable doConstruct = new Runnable() {
+            @Override
             public void run() {
                 try {
                     setValue(construct());

@@ -4,7 +4,7 @@ import mars.venus.VenusUI;
 
 import java.io.File;
 import java.util.ArrayList;
- 
+
 /*
 Copyright (c) 2003-2007,  Pete Sanderson and Kenneth Vollmar
 
@@ -113,13 +113,13 @@ public class Editor {
      * @param name   Name of file (last component of path)
      * @param status Edit status of file.  See FileStatus static constants.
      */
-    public void setTitle(String name, int status) {
+    public void setTitle(String name, FileStatus status) {
         if (status == FileStatus.NO_FILE || name == null || name.isBlank()) {
             gui.setTitleContent(null);
         }
         else {
             StringBuilder content = new StringBuilder();
-            if (status == FileStatus.NEW_EDITED || status == FileStatus.EDITED) {
+            if (status.hasUnsavedEdits()) {
                 // Add the prefix for unsaved changes
                 content.append('*');
             }

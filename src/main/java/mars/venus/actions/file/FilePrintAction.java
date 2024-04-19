@@ -53,31 +53,31 @@ public class FilePrintAction extends VenusAction {
      * text documents.  It displays a print dialog but does not act on any
      * changes the user may have specified there, such as number of copies.
      *
-     * @param event component triggering this call
+     * @param event The action event.
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        FileEditorTab fileEditorTab = gui.getMainPane().getCurrentEditorTab();
-        if (fileEditorTab == null) {
+        FileEditorTab currentTab = gui.getMainPane().getCurrentEditorTab();
+        if (currentTab == null) {
             return;
         }
         int fontSize = 10; // fixed at 10 point
-        double margin = 0.5; // all margins (left,right,top,bottom) fixed at 0.5"
+        double margin = 0.5; // all margins (left, right, top, bottom) fixed at 0.5"
         HardcopyWriter output;
         try {
-            output = new HardcopyWriter(gui, fileEditorTab.getFilename(), fontSize, margin, margin, margin, margin);
+            output = new HardcopyWriter(gui, currentTab.getFile().getPath(), fontSize, margin, margin, margin, margin);
         }
-        catch (HardcopyWriter.PrintCanceledException pce) {
+        catch (HardcopyWriter.PrintCanceledException exception) {
             return;
         }
-        BufferedReader input = new BufferedReader(new StringReader(fileEditorTab.getSource()));
-        int lineNumberDigits = Integer.toString(fileEditorTab.getSourceLineCount()).length();
+        BufferedReader input = new BufferedReader(new StringReader(currentTab.getSource()));
+        int lineNumberDigits = Integer.toString(currentTab.getSourceLineCount()).length();
         int lineNumber = 0;
         try {
             String line = input.readLine();
             while (line != null) {
                 StringBuilder formattedLine = new StringBuilder();
-                if (fileEditorTab.showingLineNumbers()) {
+                if (currentTab.showingLineNumbers()) {
                     lineNumber++;
                     formattedLine.append(lineNumber).append(": ");
                     while (formattedLine.length() < lineNumberDigits) {
@@ -91,7 +91,7 @@ public class FilePrintAction extends VenusAction {
             input.close();
             output.close();
         }
-        catch (IOException ioe) {
+        catch (IOException exception) {
             // No action
         }
     }

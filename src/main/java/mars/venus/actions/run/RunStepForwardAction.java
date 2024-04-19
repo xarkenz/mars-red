@@ -38,7 +38,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action for the Run -> Step menu item
+ * Action for the Run -> Step Forward menu item
  */
 public class RunStepForwardAction extends VenusAction {
     public RunStepForwardAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
@@ -50,7 +50,7 @@ public class RunStepForwardAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        if (!VenusUI.getStarted()) {
+        if (!gui.getProgramStatus().hasStarted()) {
             // DPS 17-July-2008
             // Store any program arguments into MIPS memory and registers before
             // execution begins. Arguments go into the gap between $sp and kernel memory.

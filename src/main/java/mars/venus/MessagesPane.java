@@ -65,6 +65,10 @@ public class MessagesPane extends JTabbedPane {
     // must obviously be smaller than the former.
     public static final int MAXIMUM_SCROLLED_CHARACTERS = Application.MAXIMUM_MESSAGE_CHARACTERS;
     public static final int NUMBER_OF_CHARACTERS_TO_CUT = Application.MAXIMUM_MESSAGE_CHARACTERS / 10; // 10%
+    public static final int MAXIMUM_LINE_COUNT = 1000;
+    public static final int EXTRA_TRIM_LINE_COUNT = 20;
+
+    private final StringBuffer consoleOutputBuffer;
 
     private final JTextArea messagesTextArea;
     private final JTextArea consoleTextArea;
@@ -77,6 +81,9 @@ public class MessagesPane extends JTabbedPane {
     public MessagesPane() {
         super();
         this.setMinimumSize(new Dimension(0, 0));
+
+        consoleOutputBuffer = new StringBuffer();
+
         messagesTextArea = new JTextArea();
         messagesTextArea.setEditable(false);
         messagesTextArea.setBackground(UIManager.getColor("Venus.MessagesPane.background"));
@@ -100,17 +107,17 @@ public class MessagesPane extends JTabbedPane {
         messagesTab.add(new JScrollPane(messagesTextArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.CENTER);
         messagesTextArea.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(MouseEvent e) {
+            public void mouseClicked(MouseEvent event) {
                 String text;
                 int lineStart = 0;
                 int lineEnd = 0;
                 try {
-                    int line = messagesTextArea.getLineOfOffset(messagesTextArea.viewToModel2D(e.getPoint()));
+                    int line = messagesTextArea.getLineOfOffset(messagesTextArea.viewToModel2D(event.getPoint()));
                     lineStart = messagesTextArea.getLineStartOffset(line);
                     lineEnd = messagesTextArea.getLineEndOffset(line);
                     text = messagesTextArea.getText(lineStart, lineEnd - lineStart);
                 }
-                catch (BadLocationException ble) {
+                catch (BadLocationException exception) {
                     text = "";
                 }
                 if (!text.isBlank()) {
@@ -166,13 +173,19 @@ public class MessagesPane extends JTabbedPane {
             }
         });
 
-        JButton consoleTabClearButton = new JButton("Clear");
-        consoleTabClearButton.setToolTipText("Clear the Console area.");
-        consoleTabClearButton.addActionListener(event -> consoleTextArea.setText(""));
+        JButton consoleClearButton = new JButton("Clear");
+        consoleClearButton.setToolTipText("Clear the Console area.");
+        consoleClearButton.addActionListener(event -> {
+            consoleTextArea.setText("");
+        });
         consoleTab = new JPanel(new BorderLayout());
         consoleTab.setBorder(new EmptyBorder(6, 6, 6, 6));
-        consoleTab.add(createBoxForButton(consoleTabClearButton), BorderLayout.WEST);
-        consoleTab.add(new JScrollPane(consoleTextArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.CENTER);
+        consoleTab.add(createBoxForButton(consoleClearButton), BorderLayout.WEST);
+        JScrollPane consoleScrollPane = new JScrollPane(consoleTextArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+//        consoleScrollPane.getVerticalScrollBar().addAdjustmentListener(event -> {
+//            System.out.println(event.getValueIsAdjusting() + " " + event.getAdjustable().getMaximum() + " " + event.getValue());
+//        });
+        consoleTab.add(consoleScrollPane, BorderLayout.CENTER);
         this.addTab("Messages", null, messagesTab, "Information, warnings and errors. Click on an error message to jump to the error source.");
         this.addTab("Console", null, consoleTab, "Simulated MIPS console input and output.");
     }
@@ -218,7 +231,7 @@ public class MessagesPane extends JTabbedPane {
                 messagesTextArea.getCaret().setSelectionVisible(true);
                 messagesTextArea.repaint();
             }
-            catch (BadLocationException ble) {
+            catch (BadLocationException exception) {
                 // If there is a problem, simply skip the selection
             }
         }
@@ -237,7 +250,7 @@ public class MessagesPane extends JTabbedPane {
     public void selectEditorTextLine(String fileName, int line, int column) {
         EditTab editTab = Application.getGUI().getMainPane().getEditTab();
         FileEditorTab fileEditorTab, currentPane = null;
-        fileEditorTab = editTab.getEditorTab(new File(fileName).getPath());
+        fileEditorTab = editTab.getEditorTab(new File(fileName));
         if (fileEditorTab != null) {
             if (fileEditorTab != editTab.getCurrentEditorTab()) {
                 editTab.setCurrentEditorTab(fileEditorTab);
@@ -259,24 +272,6 @@ public class MessagesPane extends JTabbedPane {
     }
 
     /**
-     * Returns component used to display assembler messages
-     *
-     * @return assembler message text component
-     */
-    public JTextArea getMessagesTextArea() {
-        return messagesTextArea;
-    }
-
-    /**
-     * Returns component used to display runtime messages
-     *
-     * @return runtime message text component
-     */
-    public JTextArea getConsoleTextArea() {
-        return consoleTextArea;
-    }
-
-    /**
      * Post a message to the assembler display
      *
      * @param message String to append to assembler display text
@@ -292,7 +287,7 @@ public class MessagesPane extends JTabbedPane {
                 try {
                     messagesTextArea.getDocument().remove(0, NUMBER_OF_CHARACTERS_TO_CUT);
                 }
-                catch (BadLocationException e) {
+                catch (BadLocationException exception) {
                     // Only if NUMBER_OF_CHARACTERS_TO_CUT > MAXIMUM_SCROLLED_CHARACTERS
                     // (which shouldn't happen unless the constants are changed!)
                 }
@@ -301,47 +296,81 @@ public class MessagesPane extends JTabbedPane {
     }
 
     /**
-     * Post a message to the runtime display
+     * Post a message to the runtime console.
      *
-     * @param message String to append to runtime display text
+     * @param text String to append to runtime console text.
      */
     // The work of this method is done by "invokeLater" because
     // its JTextArea is maintained by the main event thread
     // but also used, via this method, by the execution thread for
     // "print" syscalls. "invokeLater" schedules the code to be
     // run under the event-processing thread no matter what.
-    // DPS, 23 Aug 2005.
-    public void writeToConsole(final String message) {
-        SwingUtilities.invokeLater(() -> {
-            setSelectedComponent(consoleTab);
-            consoleTextArea.append(message);
-            // Can do some crude cutting here.  If the document gets "very large",
-            // let's cut off the oldest text. This will limit scrolling but the limit
-            // can be set reasonably high.
-            if (consoleTextArea.getDocument().getLength() > MAXIMUM_SCROLLED_CHARACTERS) {
-                try {
-                    consoleTextArea.getDocument().remove(0, NUMBER_OF_CHARACTERS_TO_CUT);
-                }
-                catch (BadLocationException ble) {
-                    // Only if NUMBER_OF_CHARACTERS_TO_CUT > MAXIMUM_SCROLLED_CHARACTERS
-                    // (which shouldn't happen unless the constants are changed!)
-                }
-            }
-        });
+    // DPS 23 Aug 2005
+    public void writeToConsole(String text) {
+        // Buffering the output allows one flush to handle several writes, meaning the event queue
+        // doesn't fill up with console text area updates and effectively block the GUI thread.
+        // (This is what happened previously in case of e.g. infinite print loops.)
+        // Sean Clarke 04/2024
+
+        boolean isFirstWriteSinceFlush;
+        synchronized (consoleOutputBuffer) {
+            isFirstWriteSinceFlush = consoleOutputBuffer.isEmpty();
+            // Add the text to the console output buffer
+            consoleOutputBuffer.append(text);
+        }
+
+        if (isFirstWriteSinceFlush) {
+            // The console output buffer was empty, meaning this text was the first text written
+            // since the last flush. Now, another flush is needed, which must happen on the GUI thread.
+            SwingUtilities.invokeLater(this::flushConsole);
+        }
     }
 
     /**
-     * Make the assembler message tab current (up front)
+     * Flush the console output buffer to the Console tab's text area,
+     * then trim the content to have at most {@link #MAXIMUM_LINE_COUNT} lines if necessary.
+     * <p>
+     * <b>This method must be called from the GUI thread.</b>
+     */
+    public void flushConsole() {
+        synchronized (consoleOutputBuffer) {
+            // Flush the output buffer
+            consoleTextArea.append(consoleOutputBuffer.toString());
+            consoleOutputBuffer.delete(0, consoleOutputBuffer.length());
+        }
+
+        // Do some crude trimming to save memory.  If the number of lines exceeds the maximum,
+        // trim off the excess old lines, plus some extra lines so we only have to do this occasionally.
+        // This will limit scrolling, but the maximum line count can be set reasonably high.
+        int lineCount = consoleTextArea.getLineCount();
+        if (lineCount > MAXIMUM_LINE_COUNT) {
+            try {
+                int lastLineToTrim = lineCount - MAXIMUM_LINE_COUNT + EXTRA_TRIM_LINE_COUNT;
+                consoleTextArea.getDocument().remove(0, consoleTextArea.getLineEndOffset(lastLineToTrim));
+            }
+            catch (BadLocationException exception) {
+                // Only if NUMBER_OF_CHARACTERS_TO_CUT > MAXIMUM_SCROLLED_CHARACTERS
+                // (which shouldn't happen unless the constants are changed!)
+            }
+        }
+    }
+
+    /**
+     * Ensure that the Messages tab is visible.
+     * <p>
+     * This method may be called from any thread.
      */
     public void selectMessagesTab() {
-        setSelectedComponent(messagesTab);
+        SwingUtilities.invokeLater(() -> setSelectedComponent(messagesTab));
     }
 
     /**
-     * Make the runtime message tab current (up front)
+     * Ensure that the Console tab is visible.
+     * <p>
+     * This method may be called from any thread.
      */
     public void selectConsoleTab() {
-        setSelectedComponent(consoleTab);
+        SwingUtilities.invokeLater(() -> setSelectedComponent(consoleTab));
     }
 
     /**
@@ -382,81 +411,112 @@ public class MessagesPane extends JTabbedPane {
      * @return User input, as a String.
      */
     public String getInputString(int maxLength) {
-        Asker asker = new Asker(maxLength); // Asker defined immediately below.
-        return asker.response();
+        ConsoleInputContext context = new ConsoleInputContext(maxLength);
+        return context.awaitResponse();
     }
 
     /**
      * Thread class for obtaining user input in the {@link MessagesPane} console.
      * Written by Ricardo Fernández Pascual [rfernandez@ditec.um.es] December 2009.
      */
-    private class Asker implements Runnable {
+    private class ConsoleInputContext {
         private final ArrayBlockingQueue<String> resultQueue = new ArrayBlockingQueue<>(1);
-        private int initialPos;
+        private int initialPosition;
         private final int maxLength;
 
-        public Asker(int maxLength) {
+        public ConsoleInputContext(int maxLength) {
             this.maxLength = maxLength;
-            // initialPos will be set in run()
+            // initialPosition will be set in run()
         }
 
-        private final DocumentListener listener = new DocumentListener() {
+        public String awaitResponse() {
+            this.beginInput();
+
+            try {
+                // Block the current thread until stopInput() is called
+                return resultQueue.take();
+            }
+            catch (InterruptedException exception) {
+                return null;
+            }
+            finally {
+                this.detach();
+            }
+        }
+
+        private final DocumentListener documentListener = new DocumentListener() {
             @Override
             public void insertUpdate(final DocumentEvent event) {
-                EventQueue.invokeLater(() -> {
+                // Get the inserted text before doing anything else, otherwise it could change before handling
+                final String inserted;
+                try {
+                    inserted = event.getDocument().getText(event.getOffset(), event.getLength());
+                }
+                catch (BadLocationException exception) {
+                    // Should not happen
+                    exception.printStackTrace();
+                    return;
+                }
+
+                final int newlineOffset = inserted.indexOf('\n');
+
+                SwingUtilities.invokeLater(() -> {
                     try {
-                        String inserted = event.getDocument().getText(event.getOffset(), event.getLength());
-                        int newlineIndex = inserted.indexOf('\n');
-                        if (newlineIndex >= 0) {
-                            int offset = event.getOffset() + newlineIndex;
-                            if (offset + 1 == event.getDocument().getLength()) {
-                                returnResponse();
+                        if (newlineOffset >= 0) {
+                            int newlineIndex = event.getOffset() + newlineOffset;
+                            if (newlineIndex + 1 == event.getDocument().getLength()) {
+                                // There is a newline at the end of the inserted text, so stop input
+                                endInput();
                             }
                             else {
-                                // remove the '\n' and put it at the end
-                                event.getDocument().remove(offset, 1);
+                                // Remove the newline and put it at the end
+                                event.getDocument().remove(newlineIndex, 1);
                                 event.getDocument().insertString(event.getDocument().getLength(), "\n", null);
-                                // insertUpdate will be called again, since we have inserted the '\n' at the end
+                                // insertUpdate() will be called again since we inserted the newline; the
+                                // recursive call will fall into the base case above since the newline is at the end
                             }
                         }
-                        else if (maxLength >= 0 && event.getDocument().getLength() - initialPos >= maxLength) {
-                            returnResponse();
+                        else if (maxLength >= 0 && event.getDocument().getLength() > initialPosition + maxLength) {
+                            event.getDocument().remove(initialPosition + maxLength, event.getDocument().getLength() - (initialPosition + maxLength));
+                            getToolkit().beep();
                         }
                     }
-                    catch (BadLocationException ex) {
-                        returnResponse();
+                    catch (BadLocationException exception) {
+                        // Should not happen, but may if the text updates quickly enough
+                        exception.printStackTrace();
+                        endInput();
                     }
                 });
             }
 
             @Override
             public void removeUpdate(final DocumentEvent event) {
-                EventQueue.invokeLater(() -> {
-                    if ((event.getDocument().getLength() < initialPos || event.getOffset() < initialPos) && event instanceof UndoableEdit) {
+                SwingUtilities.invokeLater(() -> {
+                    if ((event.getDocument().getLength() < initialPosition || event.getOffset() < initialPosition) && event instanceof UndoableEdit) {
                         ((UndoableEdit) event).undo();
                         consoleTextArea.setCaretPosition(event.getOffset() + event.getLength());
+                        getToolkit().beep();
                     }
                 });
             }
 
             @Override
-            public void changedUpdate(DocumentEvent event) {
-            }
+            public void changedUpdate(DocumentEvent event) {}
         };
 
         private final NavigationFilter navigationFilter = new NavigationFilter() {
             @Override
             public void moveDot(FilterBypass bypass, int dot, Bias bias) {
-                if (dot < initialPos) {
-                    dot = Math.min(initialPos, consoleTextArea.getDocument().getLength());
+                if (dot < initialPosition) {
+                    dot = Math.min(initialPosition, consoleTextArea.getDocument().getLength());
                 }
                 bypass.moveDot(dot, bias);
             }
 
             @Override
             public void setDot(FilterBypass bypass, int dot, Bias bias) {
-                if (dot < initialPos) {
-                    dot = Math.min(initialPos, consoleTextArea.getDocument().getLength());
+                if (dot < initialPosition) {
+                    dot = Math.min(initialPosition, consoleTextArea.getDocument().getLength());
                 }
                 bypass.setDot(dot, bias);
             }
@@ -465,57 +525,43 @@ public class MessagesPane extends JTabbedPane {
         private final SimulatorListener simulatorListener = new SimulatorListener() {
             @Override
             public void finished(int maxSteps, int programCounter, Simulator.StopReason reason, ProcessingException exception) {
-                returnResponse();
+                endInput();
             }
         };
 
-        // Must be invoked from the GUI thread.
-        @Override
-        public void run() {
-            setSelectedComponent(consoleTab);
-            consoleTextArea.setEditable(true);
-            consoleTextArea.requestFocusInWindow();
-            consoleTextArea.setCaretPosition(consoleTextArea.getDocument().getLength());
-            initialPos = consoleTextArea.getCaretPosition();
-            consoleTextArea.setNavigationFilter(navigationFilter);
-            consoleTextArea.getDocument().addDocumentListener(listener);
-            Simulator.getInstance().addListener(simulatorListener);
-        }
-
-        // Not required to be called from the GUI thread.
-        private void cleanup() {
-            EventQueue.invokeLater(() -> {
-                consoleTextArea.getDocument().removeDocumentListener(listener);
-                consoleTextArea.setEditable(false);
-                consoleTextArea.setNavigationFilter(null);
+        private void beginInput() {
+            SwingUtilities.invokeLater(() -> {
+                setSelectedComponent(consoleTab);
+                consoleTextArea.setEditable(true);
+                consoleTextArea.requestFocusInWindow();
                 consoleTextArea.setCaretPosition(consoleTextArea.getDocument().getLength());
-                Simulator.getInstance().removeListener(simulatorListener);
+                initialPosition = consoleTextArea.getCaretPosition();
+                consoleTextArea.setNavigationFilter(navigationFilter);
+                consoleTextArea.getDocument().addDocumentListener(documentListener);
+                Simulator.getInstance().addListener(simulatorListener);
             });
         }
 
-        private void returnResponse() {
+        private void endInput() {
             try {
-                int pos = Math.min(initialPos, consoleTextArea.getDocument().getLength());
-                int len = Math.min(consoleTextArea.getDocument().getLength() - pos, maxLength >= 0 ? maxLength : Integer.MAX_VALUE);
-                resultQueue.offer(consoleTextArea.getText(pos, len));
+                int position = Math.min(initialPosition, consoleTextArea.getDocument().getLength());
+                int length = Math.min(consoleTextArea.getDocument().getLength() - position, maxLength >= 0 ? maxLength : Integer.MAX_VALUE);
+                resultQueue.offer(consoleTextArea.getText(position, length));
             }
-            catch (BadLocationException ex) {
+            catch (BadLocationException exception) {
                 // This should not happen
                 resultQueue.offer("");
             }
         }
 
-        private String response() {
-            EventQueue.invokeLater(this);
-            try {
-                return resultQueue.take();
-            }
-            catch (InterruptedException ex) {
-                return null;
-            }
-            finally {
-                cleanup();
-            }
+        private void detach() {
+            SwingUtilities.invokeLater(() -> {
+                consoleTextArea.getDocument().removeDocumentListener(documentListener);
+                consoleTextArea.setEditable(false);
+                consoleTextArea.setNavigationFilter(null);
+                consoleTextArea.setCaretPosition(consoleTextArea.getDocument().getLength());
+                Simulator.getInstance().removeListener(simulatorListener);
+            });
         }
     }
 }
