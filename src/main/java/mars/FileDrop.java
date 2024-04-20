@@ -313,43 +313,6 @@ public class FileDrop {
         }
     }
 
-//    public static boolean remove(Component editorComponent) {
-//        return remove(null, editorComponent, true);
-//    }
-//
-//    public static boolean remove(PrintStream out, Component editorComponent, boolean recursive) {
-//        if (!supportsDnD()) {
-//            return false;
-//        } else {
-//            log(out, "FileDrop: Removing drag-and-drop hooks.");
-//            editorComponent.setDropTarget(null);
-//            if (recursive && editorComponent instanceof Container) {
-//                Component[] comps = ((Container) editorComponent).getComponents();
-//
-//                for (Component comp : comps) {
-//                    remove(out, comp, recursive);
-//                }
-//
-//                return true;
-//            } else {
-//                return false;
-//            }
-//        }
-//    }
-
-//    public static class Event extends EventObject {
-//        private final File[] files;
-//
-//        public Event(File[] files, Object source) {
-//            super(source);
-//            this.files = files;
-//        }
-//
-//        public File[] getFiles() {
-//            return this.files;
-//        }
-//    }
-
     /**
      * Listener for files dropped.
      */
@@ -361,61 +324,4 @@ public class FileDrop {
          */
         void filesDropped(File[] files);
     }
-
-//    public static class TransferableObject implements Transferable {
-//        public static final String MIME_TYPE = "application/x-net.iharder.dnd.TransferableObject";
-//        public static final DataFlavor DATA_FLAVOR = new DataFlavor(FileDrop.TransferableObject.class, "application/x-net.iharder.dnd.TransferableObject");
-//        private FileDrop.TransferableObject.Fetcher fetcher;
-//        private Object data;
-//        private DataFlavor customFlavor;
-//
-//        public TransferableObject(Object data) {
-//            this.data = data;
-//            this.customFlavor = new DataFlavor(data.getClass(), "application/x-net.iharder.dnd.TransferableObject");
-//        }
-//
-//        public TransferableObject(FileDrop.TransferableObject.Fetcher fetcher) {
-//            this.fetcher = fetcher;
-//        }
-//
-//        public TransferableObject(Class dataClass, FileDrop.TransferableObject.Fetcher fetcher) {
-//            this.fetcher = fetcher;
-//            this.customFlavor = new DataFlavor(dataClass, "application/x-net.iharder.dnd.TransferableObject");
-//        }
-//
-//        public DataFlavor getCustomDataFlavor() {
-//            return this.customFlavor;
-//        }
-//
-//        @Override
-//        public DataFlavor[] getTransferDataFlavors() {
-//            return this.customFlavor != null
-//                    ? new DataFlavor[]{this.customFlavor, DATA_FLAVOR, DataFlavor.stringFlavor}
-//                    : new DataFlavor[]{DATA_FLAVOR, DataFlavor.stringFlavor};
-//        }
-//
-//        @Override
-//        public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException, IOException {
-//            if (flavor.equals(DATA_FLAVOR)) {
-//                return this.fetcher == null ? this.data : this.fetcher.getObject();
-//            } else if (flavor.equals(DataFlavor.stringFlavor)) {
-//                return this.fetcher == null ? this.data.toString() : this.fetcher.getObject().toString();
-//            } else {
-//                throw new UnsupportedFlavorException(flavor);
-//            }
-//        }
-//
-//        @Override
-//        public boolean isDataFlavorSupported(DataFlavor flavor) {
-//            if (flavor.equals(DATA_FLAVOR)) {
-//                return true;
-//            } else {
-//                return flavor.equals(DataFlavor.stringFlavor);
-//            }
-//        }
-//
-//        public interface Fetcher {
-//            Object getObject();
-//        }
-//    }
 }
