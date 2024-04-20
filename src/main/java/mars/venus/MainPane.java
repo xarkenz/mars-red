@@ -1,5 +1,6 @@
 package mars.venus;
 
+import mars.FileDrop;
 import mars.venus.editor.EditTab;
 import mars.venus.editor.Editor;
 import mars.venus.editor.FileEditorTab;
@@ -8,6 +9,7 @@ import mars.venus.execute.ExecuteTab;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import java.io.File;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -75,6 +77,7 @@ public class MainPane extends JTabbedPane {
                 }
             }
         });
+        new FileDrop(this, editTab::openFiles);
     }
 
     /**
