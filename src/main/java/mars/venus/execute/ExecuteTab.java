@@ -41,9 +41,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class ExecuteTab extends JDesktopPane {
     private final VenusUI gui;
-    private final RegistersWindow registerValues;
-    private final Coprocessor1Window coprocessor1Values;
-    private final Coprocessor0Window coprocessor0Values;
     private final DataSegmentWindow dataSegment;
     private final TextSegmentWindow textSegment;
     private final SymbolTableWindow labelValues;
@@ -55,12 +52,9 @@ public class ExecuteTab extends JDesktopPane {
     /**
      * Initialize the Execute pane.
      *
-     * @param gui      The parent GUI instance.
-     * @param regs     The Window containing integer register set
-     * @param cop1Regs The Window containing Coprocessor 1 register set
-     * @param cop0Regs The Window containing Coprocessor 0 register set
+     * @param gui The parent GUI instance.
      */
-    public ExecuteTab(VenusUI gui, RegistersWindow regs, Coprocessor1Window cop1Regs, Coprocessor0Window cop0Regs) {
+    public ExecuteTab(VenusUI gui) {
         this.gui = gui;
         // Although these are displayed in Data Segment, they apply to all three internal
         // windows within the Execute pane.  So they will be housed here.
@@ -68,9 +62,6 @@ public class ExecuteTab extends JDesktopPane {
         valueDisplayBase = new NumberDisplayBaseChooser("Hexadecimal Values", Application.getSettings().displayValuesInHex.get());
         addressDisplayBase.setToolTipText("If checked, displays all memory addresses in hexadecimal.  Otherwise, decimal.");
         valueDisplayBase.setToolTipText("If checked, displays all memory and register contents in hexadecimal.  Otherwise, decimal.");
-        registerValues = regs;
-        coprocessor1Values = cop1Regs;
-        coprocessor0Values = cop0Regs;
         textSegment = new TextSegmentWindow();
         labelValues = new SymbolTableWindow();
         dataSegment = new DataSegmentWindow(new NumberDisplayBaseChooser[] { addressDisplayBase, valueDisplayBase });

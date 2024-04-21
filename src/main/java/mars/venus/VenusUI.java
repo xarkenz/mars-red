@@ -9,6 +9,7 @@ import mars.venus.actions.help.*;
 import mars.venus.actions.run.*;
 import mars.venus.actions.settings.*;
 import mars.venus.editor.Editor;
+import mars.venus.editor.FileEditorTab;
 import mars.venus.editor.FileStatus;
 import mars.venus.execute.ProgramStatus;
 import mars.venus.execute.RunSpeedPanel;
@@ -191,13 +192,10 @@ public class VenusUI extends JFrame {
         // roughly in bottom-up order; some are created in component constructors and thus are
         // not visible here.
 
-        RegistersWindow registersTab = new RegistersWindow();
-        Coprocessor1Window coprocessor1Tab = new Coprocessor1Window();
-        Coprocessor0Window coprocessor0Tab = new Coprocessor0Window();
-        registersPane = new RegistersPane(this, registersTab, coprocessor1Tab, coprocessor0Tab);
+        registersPane = new RegistersPane(this);
         registersPane.setPreferredSize(registersPanePreferredSize);
 
-        mainPane = new MainPane(this, editor, registersTab, coprocessor1Tab, coprocessor0Tab);
+        mainPane = new MainPane(this, editor);
         mainPane.setPreferredSize(mainPanePreferredSize);
         messagesPane = new MessagesPane();
         messagesPane.setPreferredSize(messagesPanePreferredSize);
@@ -519,7 +517,12 @@ public class VenusUI extends JFrame {
      */
     public void setMenuState(ProgramStatus status) {
         switch (status) {
-            case NOT_ASSEMBLED -> this.setMenuState(this.getMainPane().getEditTab().getCurrentEditorTab().getFileStatus());
+            case NOT_ASSEMBLED -> {
+                FileEditorTab currentEditorTab = this.getMainPane().getEditTab().getCurrentEditorTab();
+                if (currentEditorTab != null) {
+                    this.setMenuState(currentEditorTab.getFileStatus());
+                }
+            }
             case NOT_STARTED, PAUSED -> this.setMenuStateRunnable();
             case RUNNING -> this.setMenuStateRunning();
             case TERMINATED -> this.setMenuStateTerminated();
@@ -836,16 +839,19 @@ public class VenusUI extends JFrame {
     }
 
     /**
-     * Have the menu request keyboard focus.  DPS 5-4-10
+     * Have the menu request keyboard focus.
+     *
+     * @author DPS 5-4-10
      */
     public void haveMenuRequestFocus() {
         this.menu.requestFocus();
     }
 
     /**
-     * Send keyboard event to menu for possible processing.  DPS 5-4-10
+     * Send keyboard event to menu for possible processing.
      *
      * @param event KeyEvent for menu component to consider for processing.
+     * @author DPS 5-4-10
      */
     public void dispatchEventToMenu(KeyEvent event) {
         this.menu.dispatchEvent(event);

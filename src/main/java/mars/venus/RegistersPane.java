@@ -45,12 +45,12 @@ public class RegistersPane extends JTabbedPane {
     /**
      * Constructor for the RegistersPane class.
      */
-    public RegistersPane(VenusUI gui, RegistersWindow registersTab, Coprocessor1Window coprocessor1Tab, Coprocessor0Window coprocessor0Tab) {
+    public RegistersPane(VenusUI gui) {
         super();
         this.gui = gui;
-        this.registersTab = registersTab;
-        this.coprocessor1Tab = coprocessor1Tab;
-        this.coprocessor0Tab = coprocessor0Tab;
+        this.registersTab = new RegistersWindow();
+        this.coprocessor1Tab = new Coprocessor1Window();
+        this.coprocessor0Tab = new Coprocessor0Window();
         registersTab.setVisible(true);
         coprocessor1Tab.setVisible(true);
         coprocessor0Tab.setVisible(true);

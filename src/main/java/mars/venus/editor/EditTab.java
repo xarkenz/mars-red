@@ -80,6 +80,7 @@ public class EditTab extends JTabbedPane {
 
         this.addChangeListener(event -> {
             FileEditorTab currentTab = this.getCurrentEditorTab();
+
             if (currentTab != null) {
                 // New IF statement to permit free traversal of edit panes w/o invalidating
                 // assembly if assemble-all is selected.  DPS 9-Aug-2011
@@ -92,6 +93,8 @@ public class EditTab extends JTabbedPane {
                 }
                 currentTab.requestTextAreaFocus();
             }
+
+            this.saveWorkspaceState();
         });
     }
 
@@ -216,10 +219,10 @@ public class EditTab extends JTabbedPane {
      */
     public void loadWorkspaceState() {
         String filesString = Application.getSettings().previouslyOpenFiles.get();
-        File[] files = Arrays.stream(filesString.split(";"))
+        List<File> files = Arrays.stream(filesString.split(";"))
             .map(String::trim)
             .map(File::new)
-            .toArray(File[]::new);
+            .toList();
         this.openFiles(files);
     }
 
@@ -254,8 +257,10 @@ public class EditTab extends JTabbedPane {
      *
      * @return The list of files which could not be opened due to an error. (Can be empty.)
      */
-    public ArrayList<File> openFiles() {
-        return new FileOpener().openFiles();
+    public List<File> openFiles() {
+        List<File> unopenedFiles = new FileOpener().openFiles();
+        this.gui.getMainPane().setSelectedComponent(this);
+        return unopenedFiles;
     }
 
     /**
@@ -264,18 +269,19 @@ public class EditTab extends JTabbedPane {
      * @return False if the file could not be opened due to an error, true otherwise.
      */
     public boolean openFile(File file) {
-        return openFiles(new File[] { file }).isEmpty();
+        return this.openFiles(List.of(file)).isEmpty();
     }
 
     /**
      * Open the specified files in new editor tabs, switching focus to
      * the first newly opened tab.
      *
-     * @return The list of files which could not be opened due to an error.
-     *     (Can be empty.)
+     * @return The list of files which could not be opened due to an error. (Can be empty.)
      */
-    public ArrayList<File> openFiles(File[] files) {
-        return new FileOpener().openFiles(files);
+    public List<File> openFiles(List<File> files) {
+        List<File> unopenedFiles = new FileOpener().openFiles(files);
+        this.gui.getMainPane().setSelectedComponent(this);
+        return unopenedFiles;
     }
 
     /**
@@ -354,7 +360,6 @@ public class EditTab extends JTabbedPane {
             }
         }
 
-        this.saveWorkspaceState();
         return closedAll;
     }
 
@@ -364,10 +369,11 @@ public class EditTab extends JTabbedPane {
      * @return true if the file was actually saved.
      */
     public boolean saveCurrentFile() {
-        FileEditorTab currentTab = getCurrentEditorTab();
+        FileEditorTab currentTab = this.getCurrentEditorTab();
+
         if (this.saveFile(currentTab)) {
             currentTab.setFileStatus(FileStatus.NOT_EDITED);
-            updateTitleAndMenuState(currentTab);
+            this.updateTitleAndMenuState(currentTab);
             return true;
         }
         else {
@@ -421,9 +427,9 @@ public class EditTab extends JTabbedPane {
      * @return true if the file was actually saved, false if canceled.
      */
     public boolean saveAsCurrentFile() {
-        FileEditorTab currentTab = getCurrentEditorTab();
+        FileEditorTab currentTab = this.getCurrentEditorTab();
 
-        File file = saveAsFile(currentTab);
+        File file = this.saveAsFile(currentTab);
         if (file == null) {
             return false;
         }
@@ -552,6 +558,7 @@ public class EditTab extends JTabbedPane {
      */
     public void remove(FileEditorTab tab) {
         super.remove(tab);
+
         tab = this.getCurrentEditorTab(); // Is now next tab or null
         if (tab == null) {
             this.editor.setTitle("", FileStatus.NO_FILE);
@@ -583,7 +590,6 @@ public class EditTab extends JTabbedPane {
      */
     private void updateTitle(FileEditorTab tab) {
         this.editor.setTitle(tab.getFile().getName(), tab.getFileStatus());
-        this.saveWorkspaceState();
     }
 
     /**
@@ -609,7 +615,7 @@ public class EditTab extends JTabbedPane {
 
     private int showUnsavedEditsDialog(String name) {
         return JOptionPane.showConfirmDialog(
-            gui,
+            this.gui,
             "There are unsaved changes in " + name + ". Would you like to save them?",
             "Save unsaved changes?",
             JOptionPane.YES_NO_CANCEL_OPTION,
@@ -646,7 +652,7 @@ public class EditTab extends JTabbedPane {
          *
          * @return The list of files which could not be opened due to an error. (Can be empty.)
          */
-        public ArrayList<File> openFiles() {
+        public List<File> openFiles() {
             // The fileChooser's list may be rebuilt from the master ArrayList if a new filter
             // has been added by the user
             this.setChoosableFileFilters();
@@ -669,7 +675,7 @@ public class EditTab extends JTabbedPane {
             }
 
             if (fileChooser.showOpenDialog(gui) == JFileChooser.APPROVE_OPTION) {
-                ArrayList<File> unopenedFiles = this.openFiles(fileChooser.getSelectedFiles());
+                List<File> unopenedFiles = this.openFiles(List.of(fileChooser.getSelectedFiles()));
                 if (!unopenedFiles.isEmpty()) {
                     return unopenedFiles;
                 }
@@ -689,8 +695,8 @@ public class EditTab extends JTabbedPane {
          *
          * @return The list of files which could not be opened due to an error. (Can be empty.)
          */
-        public ArrayList<File> openFiles(File[] files) {
-            ArrayList<File> unopenedFiles = new ArrayList<>();
+        public List<File> openFiles(List<File> files) {
+            List<File> unopenedFiles = new ArrayList<>();
             FileEditorTab firstTabOpened = null;
             isOpeningFiles = true; // DPS 9-Aug-2011
 

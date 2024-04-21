@@ -52,10 +52,10 @@ public class MainPane extends JTabbedPane {
     /**
      * Constructor for the MainPane class.
      */
-    public MainPane(VenusUI mainUI, Editor editor, RegistersWindow regs, Coprocessor1Window cop1Regs, Coprocessor0Window cop0Regs) {
+    public MainPane(VenusUI mainUI, Editor editor) {
         super();
         this.editTab = new EditTab(mainUI, editor);
-        this.executeTab = new ExecuteTab(mainUI, regs, cop1Regs, cop0Regs);
+        this.executeTab = new ExecuteTab(mainUI);
 
         // TODO: Maybe new icons designed for the top tabs could look decent? -Sean Clarke
         this.setTabPlacement(JTabbedPane.TOP);
@@ -64,10 +64,10 @@ public class MainPane extends JTabbedPane {
         this.addTab("Execute", null, executeTab, "View and control assembly language program execution. Enabled upon successful assemble.");
 
         // Listener has one specific purpose: when Execute tab is selected for the
-        // * first time, set the bounds of its internal frames by invoking the
-        // * setWindowsBounds() method.  Once this occurs, listener removes itself!
-        // * We do NOT want to reset bounds each time Execute tab is selected.
-        // * See ExecutePane.setWindowsBounds documentation for more details.
+        // first time, set the bounds of its internal frames by invoking the
+        // setWindowsBounds() method.  Once this occurs, listener removes itself!
+        // We do NOT want to reset bounds each time Execute tab is selected.
+        // See ExecutePane.setWindowsBounds documentation for more details.
         this.addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent event) {
@@ -77,6 +77,8 @@ public class MainPane extends JTabbedPane {
                 }
             }
         });
+
+        // Enable file drag and drop functionality
         new FileDrop(this, editTab::openFiles);
     }
 

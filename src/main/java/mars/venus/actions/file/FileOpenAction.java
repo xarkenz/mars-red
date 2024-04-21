@@ -7,6 +7,7 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
@@ -52,7 +53,7 @@ public class FileOpenAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        ArrayList<File> unopenedFiles = gui.getEditor().open();
+        List<File> unopenedFiles = gui.getEditor().open();
         if (!unopenedFiles.isEmpty()) {
             StringBuilder message = new StringBuilder("<html>The following files could not be opened:<ul>");
             for (File file : unopenedFiles) {

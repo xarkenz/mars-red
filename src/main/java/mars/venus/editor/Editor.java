@@ -4,6 +4,7 @@ import mars.venus.VenusUI;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 /*
 Copyright (c) 2003-2007,  Pete Sanderson and Kenneth Vollmar
@@ -185,10 +186,9 @@ public class Editor {
      * Launch a file chooser for the user to select one or more files,
      * attempting to open them in new editor tabs afterward.
      *
-     * @return The list of files which could not be opened due to an error.
-     *     (Can be empty.)
+     * @return The list of files which could not be opened due to an error. (Can be empty.)
      */
-    public ArrayList<File> open() {
+    public List<File> open() {
         return gui.getMainPane().getEditTab().openFiles();
     }
 
