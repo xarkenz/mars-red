@@ -65,7 +65,7 @@ public class RunStepForwardAction extends VenusAction {
         gui.getMainPane().getExecuteTab().getTextSegmentWindow().setCodeHighlighting(true);
 
         try {
-            Application.program.simulateStepAtPC(this);
+            Application.program.simulateStep();
         }
         catch (ProcessingException exception) {
             // Ignore

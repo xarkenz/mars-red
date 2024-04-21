@@ -61,7 +61,7 @@ public class SettingsDelayedBranchingAction extends VenusAction {
             // Stop execution if executing -- should NEVER happen because this
             // Action's widget is disabled during MIPS execution.
             if (gui.getMainPane().getExecuteTab().getProgramStatus() == ProgramStatus.RUNNING) {
-                Simulator.getInstance().stop(this);
+                Simulator.getInstance().terminate();
             }
             gui.getRunAssembleAction().actionPerformed(null);
         }

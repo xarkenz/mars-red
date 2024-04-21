@@ -91,8 +91,12 @@ public class RunResetAction extends VenusAction {
         executeTab.getTextSegmentWindow().resetModifiedSourceCode();
         executeTab.getTextSegmentWindow().setCodeHighlighting(true);
         executeTab.getTextSegmentWindow().highlightStepAtPC();
-        executeTab.setProgramStatus(ProgramStatus.NOT_STARTED);
 
-        gui.getMessagesPane().writeToConsole(getName() + ": reset completed.\n\n");
+        gui.getMessagesPane().writeToMessages(getName() + ": reset completed.\n\n");
+        if (executeTab.getProgramStatus().hasStarted() && executeTab.getProgramStatus() != ProgramStatus.TERMINATED) {
+            gui.getMessagesPane().writeToConsole("\n--- program terminated by user ---\n\n");
+        }
+
+        executeTab.setProgramStatus(ProgramStatus.NOT_STARTED);
     }
 }

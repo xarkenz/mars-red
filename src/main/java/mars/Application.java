@@ -72,7 +72,7 @@ public class Application {
     /**
      * The current MARS Red version number. Can't wait for {@link #initialize()} call to get it.
      */
-    public static final String VERSION = "5.0-beta2";
+    public static final String VERSION = "5.0-beta3";
     /**
      * List of accepted file extensions for MIPS assembly source files.
      */

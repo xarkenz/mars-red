@@ -4,9 +4,7 @@ import mars.assembler.*;
 import mars.mips.hardware.RegisterFile;
 import mars.simulator.BackStepper;
 import mars.simulator.Simulator;
-import mars.venus.actions.VenusAction;
 
-import javax.swing.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.ArrayList;
@@ -310,12 +308,12 @@ public class Program {
      * Simulates execution of the MIPS program. Program must have already been assembled.
      * Begins simulation at beginning of text segment and continues to completion.
      *
-     * @param breakPoints int array of breakpoints (PC addresses).  Can be null.
-     * @return true if execution completed and false otherwise
-     * @throws ProcessingException Will throw exception if errors occurred while simulating.
+     * @param breakPoints Array of breakpoints (PC addresses).  (Can be null.)
+     * @return true if execution completed, false otherwise.
+     * @throws ProcessingException Thrown if errors occurred while simulating.
      */
     public boolean simulate(int[] breakPoints) throws ProcessingException {
-        return this.simulateFromPC(breakPoints, -1, null);
+        return this.simulate(breakPoints, -1);
     }
 
     /**
@@ -323,12 +321,12 @@ public class Program {
      * Begins simulation at beginning of text segment and continues to completion or
      * until the specified maximum number of steps are simulated.
      *
-     * @param maxSteps maximum number of steps to simulate.
-     * @return true if execution completed and false otherwise
-     * @throws ProcessingException Will throw exception if errors occurred while simulating.
+     * @param maxSteps Maximum number of steps to simulate.  Default -1 means no maximum.
+     * @return true if execution completed, false otherwise.
+     * @throws ProcessingException Thrown if errors occurred while simulating.
      */
     public boolean simulate(int maxSteps) throws ProcessingException {
-        return this.simulateFromPC(null, maxSteps, null);
+        return this.simulate(null, maxSteps);
     }
 
     /**
@@ -336,30 +334,28 @@ public class Program {
      * Begins simulation at current program counter address and continues until stopped,
      * paused, maximum steps exceeded, or exception occurs.
      *
-     * @param breakPoints int array of breakpoints (PC addresses).  Can be null.
-     * @param maxSteps    maximum number of instruction executions.  Default -1 means no maximum.
-     * @param action      the GUI action responsible for this call (GO normally).  set to null if none.
-     * @return true if execution completed and false otherwise
-     * @throws ProcessingException Will throw exception if errors occurred while simulating.
+     * @param breakPoints Array of breakpoints (PC addresses).  (Can be null.)
+     * @param maxSteps    Maximum number of steps to simulate.  Default -1 means no maximum.
+     * @return true if execution completed, false otherwise.
+     * @throws ProcessingException Thrown if errors occurred while simulating.
      */
-    public boolean simulateFromPC(int[] breakPoints, int maxSteps, VenusAction action) throws ProcessingException {
+    public boolean simulate(int[] breakPoints, int maxSteps) throws ProcessingException {
         steppedExecution = false;
         Simulator simulator = Simulator.getInstance();
-        return simulator.simulate(this, RegisterFile.getProgramCounter(), maxSteps, breakPoints, action);
+        return simulator.simulate(this, RegisterFile.getProgramCounter(), maxSteps, breakPoints);
     }
 
     /**
      * Simulates execution of the MIPS program. Program must have already been assembled.
      * Begins simulation at current program counter address and executes one step.
      *
-     * @param action the GUI action responsible for this call (STEP normally). Set to null if none.
-     * @return true if execution completed and false otherwise
-     * @throws ProcessingException Will throw exception if errors occurred while simulating.
+     * @return true if execution completed, false otherwise.
+     * @throws ProcessingException Thrown if errors occurred while simulating.
      */
-    public boolean simulateStepAtPC(VenusAction action) throws ProcessingException {
+    public boolean simulateStep() throws ProcessingException {
         steppedExecution = true;
         Simulator simulator = Simulator.getInstance();
-        return simulator.simulate(this, RegisterFile.getProgramCounter(), 1, null, action);
+        return simulator.simulate(this, RegisterFile.getProgramCounter(), 1, null);
     }
 
     /**
@@ -375,7 +371,7 @@ public class Program {
 
     /**
      * Instantiates a new {@link MacroPool} and sends reference of this
-     * {@link Program} to it
+     * {@link Program} to it.
      *
      * @return instantiated MacroPool
      * @author M.H.Sekhavat <sekhavat17@gmail.com>

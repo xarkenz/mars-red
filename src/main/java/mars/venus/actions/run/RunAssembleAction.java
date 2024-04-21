@@ -102,7 +102,12 @@ public class RunAssembleAction extends VenusAction {
             if (warnings.warningsOccurred()) {
                 gui.getMessagesPane().writeToMessages(warnings.generateWarningReport());
             }
-            gui.getMessagesPane().writeToMessages(getName() + ": operation completed successfully.\n\n");
+            else {
+                gui.getMessagesPane().writeToMessages(getName() + ": operation completed successfully.\n\n");
+            }
+            if (executeTab.getProgramStatus().hasStarted() && executeTab.getProgramStatus() != ProgramStatus.TERMINATED) {
+                gui.getMessagesPane().writeToConsole("\n--- program terminated by user ---\n\n");
+            }
 
             gui.setProgramStatus(ProgramStatus.NOT_STARTED);
             RegisterFile.resetRegisters();

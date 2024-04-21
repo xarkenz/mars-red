@@ -367,7 +367,7 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
         stopButton = new JButton("Stop");
         stopButton.setToolTipText("Terminate MIPS program execution");
         stopButton.setEnabled(false);
-        stopButton.addActionListener(e -> Simulator.getInstance().stop(null));
+        stopButton.addActionListener(e -> Simulator.getInstance().terminate());
         stopButton.addKeyListener(new EnterKeyListener(stopButton));
 
         JButton resetButton = new JButton("Reset");

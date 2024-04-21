@@ -67,7 +67,7 @@ public class RunStartAction extends VenusAction {
 
         try {
             int[] breakPoints = gui.getMainPane().getExecuteTab().getTextSegmentWindow().getSortedBreakPointsArray();
-            Application.program.simulateFromPC(breakPoints, -1, this);
+            Application.program.simulate(breakPoints);
         }
         catch (ProcessingException exception) {
             // Ignore

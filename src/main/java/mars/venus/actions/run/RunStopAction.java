@@ -45,6 +45,6 @@ public class RunStopAction extends VenusAction {
 
     @Override
     public void actionPerformed(ActionEvent event) {
-        Simulator.getInstance().stop(this);
+        Simulator.getInstance().terminate();
     }
 }
