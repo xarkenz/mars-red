@@ -42,7 +42,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /**
  * An Assembler is capable of assembling a MIPS program. It has only one public
- * method, <tt>assemble()</tt>, which implements a two-pass assembler. It
+ * method, {@code assemble()}, which implements a two-pass assembler. It
  * translates MIPS source code into binary machine code.
  *
  * @author Pete Sanderson

@@ -54,7 +54,7 @@ Step 4. Retrieve return values, if any, from result registers as specified.<br>
   <tr><td>print integer in binary</td>      <td align="center">35</td>   <td>$a0 = integer to print</td>  <td>Displayed value is 32 bits, left-padding with zeroes if necessary.</td></tr>
   <tr><td>print integer as unsigned</td>    <td align="center">36</td>   <td>$a0 = integer to print</td>  <td>Displayed as unsigned decimal value.</td></tr>
   <tr><td align="center">(not used)</td>    <td align="center">37-39</td><td>&nbsp;</td>  <td>&nbsp;</td></tr>
-  <tr><td>set seed</td>                     <td align="center">40</td>   <td>$a0 = i.d. of pseudorandom number generator (any int).<br>$a1 = seed for corresponding pseudorandom number generator.</td>  <td>No values are returned. Sets the seed of the corresponding underlying Java pseudorandom number generator (<tt>java.util.Random</tt>). <i>See note below table</i></td></tr>
+  <tr><td>set seed</td>                     <td align="center">40</td>   <td>$a0 = i.d. of pseudorandom number generator (any int).<br>$a1 = seed for corresponding pseudorandom number generator.</td>  <td>No values are returned. Sets the seed of the corresponding underlying Java pseudorandom number generator ({@code java.util.Random}). <i>See note below table</i></td></tr>
   <tr><td>random int</td>                   <td align="center">41</td>   <td>$a0 = i.d. of pseudorandom number generator (any int).</td>  <td>$a0 contains the next pseudorandom, uniformly distributed int value from this random number generator's sequence. <i>See note below table</i></td></tr>
   <tr><td>random int range</td>             <td align="center">42</td>   <td>$a0 = i.d. of pseudorandom number generator (any int).<br>$a1 = upper bound of range of returned values.</td>  <td>$a0 contains pseudorandom, uniformly distributed int value in the range 0 <= [int] < [upper bound], drawn from this random number generator's sequence.  <i>See note below table</i></td></tr>
   <tr><td>random float</td>                 <td align="center">43</td>   <td>$a0 = i.d. of pseudorandom number generator (any int).</td>  <td>$f0 contains the next pseudorandom, uniformly distributed float value in the range 0.0 <= f < 1.0 from this random number generator's sequence.  <i>See note below table</i></td></tr>
@@ -82,15 +82,15 @@ other: plain message (no icon displayed)
 <br><b>Service 8</b> - Follows semantics of UNIX 'fgets'.  For specified length n, string can be no longer than n-1. If less than that, adds newline to end.  In either case, then pads with null byte  If n = 1, input is ignored and null byte placed at buffer address. If n < 1, input is ignored and nothing is written to the buffer.
 <br><b>Service 11</b> - Prints ASCII character corresponding to contents of low-order byte.
 <br><b>Service 13</b> - MARS implements three flag values: 0 for read-only, 1 for write-only with create, and 9 for write-only with create and append.  It ignores mode.  The returned file descriptor will be negative if the operation failed.  The underlying file I/O
-implementation uses <tt>java.io.FileInputStream.read()</tt> to read and <tt>java.io.FileOutputStream.write()</tt> to write.  MARS maintains file descriptors internally and allocates them starting with 3.  File descriptors 0, 1 and 2 are
+implementation uses {@code java.io.FileInputStream.read()} to read and {@code java.io.FileOutputStream.write()} to write.  MARS maintains file descriptors internally and allocates them starting with 3.  File descriptors 0, 1 and 2 are
 always open for: reading from standard input, writing to standard output, and writing to standard error, respectively (new in release 4.3).
 <br><b>Services 13,14,15</b> - In MARS 3.7, the result register was changed to $v0 for SPIM compatability.  It was previously $a0 as erroneously printed
 in Appendix B of <i>Computer Organization and Design,</i>.
 <br><b>Service 17</b> - If the MIPS program is run under control of the MARS graphical interface (GUI), the exit code in $a0 is ignored.
-<br><b>Service 30</b> - System time comes from <tt>java.util.Date.getTime()</tt> as milliseconds since 1 January 1970.
+<br><b>Service 30</b> - System time comes from {@code java.util.Date.getTime()} as milliseconds since 1 January 1970.
 <br><b>Services 31,33</b> - Simulate MIDI output through sound card.  Details below.
-<br><b>Services 40-44</b> use underlying Java pseudorandom number generators provided by the <tt>java.util.Random</tt> class.  Each stream (identified
-by $a0 contents) is modeled by a different <tt>Random</tt> object.  There are no default seed values, so use the Set Seed service (40) if 
+<br><b>Services 40-44</b> use underlying Java pseudorandom number generators provided by the {@code java.util.Random} class.  Each stream (identified
+by $a0 contents) is modeled by a different {@code Random} object.  There are no default seed values, so use the Set Seed service (40) if
 replicated random sequences are desired.
 
 
@@ -136,7 +136,7 @@ buffer: .asciiz "The quick brown fox jumps over the lazy dog."
 
 <h3>Using SYSCALL system services 31 and 33: MIDI output</h3>
 These system services are unique to MARS, and provide a means of producing sound.  MIDI output is
-simulated by your system sound card, and the simulation is provided by the <tt>javax.sound.midi</tt>
+simulated by your system sound card, and the simulation is provided by the {@code javax.sound.midi}
 package.  
 <p>Service 31 will generate the tone then immediately return.  Service 33 will generate the tone then
 sleep for the tone's duration before returning.  Thus it essentially combines services 31 and 32.

@@ -92,53 +92,51 @@ public class MarsLauncher {
     }
 
     /**
-     * Mars takes a number of command line arguments.<br>
-     * Usage:  Mars [options] filename<br>
-     * Valid options (not case sensitive, separate by spaces) are:<br>
+     * Mars takes a number of command line arguments.
+     * <p>
+     * Usage: {@code Mars [options] filename}
+     * <p>
+     * Valid options (not case sensitive, separate by spaces) are:
      * <ul>
-     * <li>a  -- assemble only, do not simulate<br>
-     * <li>ad  -- both a and d<br>
-     * <li>ae&lt;n&gt;  -- terminate MARS with integer exit code &lt;n&gt; if an assemble error occurs.<br>
-     * <li>ascii  -- display memory or register contents interpreted as ASCII
-     * <li>b  -- brief - do not display register/memory address along with contents<br>
-     * <li>d  -- print debugging statements<br>
-     * <li>da  -- both a and d<br>
-     * <li>db  -- MIPS delayed branching is enabled.<br>
-     * <li>dec  -- display memory or register contents in decimal.<br>
-     * <li>dump  -- dump memory contents to file.  Option has 3 arguments, e.g. <br>
-     *   <tt>dump &lt;segment&gt; &lt;format&gt; &lt;file&gt;</tt>.  Also supports<br>
-     *   an address range (see <i>m-n</i> below).  Current supported <br>
-     *   segments are <tt>.text</tt> and <tt>.data</tt>.  Current supported dump formats <br>
-     *   are <tt>Binary</tt>, <tt>HexText</tt>, <tt>BinaryText</tt>.<br>
-     * <li>h  -- display help.  Use by itself and with no filename</br>
-     * <li>hex  -- display memory or register contents in hexadecimal (default)<br>
-     * <li>ic  -- display count of MIPS basic instructions 'executed'");
-     * <li>mc  -- set memory configuration.  Option has 1 argument, e.g.<br>
-     *   <tt>mc &lt;config$gt;</tt>, where &lt;config&gt; is <tt>Default</tt><br>
-     *   for the MARS default 32-bit address space, <tt>CompactDataAtZero</tt> for<br>
-     *   a 32KB address space with data segment at address 0, or <tt>CompactTextAtZero</tt><br>
-     *   for a 32KB address space with text segment at address 0.<br>
-     * <li>me  -- display MARS messages to standard err instead of standard out. Can separate via redirection.</br>
-     * <li>nc  -- do not display copyright notice (for cleaner redirected/piped output).</br>
-     * <li>np  -- No Pseudo-instructions allowed ("ne" will work also).<br>
-     * <li>p  -- Project mode - assemble all files in the same directory as given file.<br>
-     * <li>se&lt;n&gt;  -- terminate MARS with integer exit code &lt;n&gt; if a simulation (run) error occurs.<br>
-     * <li>sm  -- Start execution at Main - Execution will start at program statement globally labeled main.<br>
-     * <li>smc  -- Self Modifying Code - Program can write and branch to either text or data segment<br>
-     * <li>we  -- assembler Warnings will be considered Errors<br>
-     * <li>&lt;n&gt;  -- where &lt;n&gt; is an integer maximum count of steps to simulate.<br>
-     *   If 0, negative or not specified, there is no maximum.<br>
-     * <li>$&lt;reg&gt;  -- where &lt;reg&gt; is number or name (e.g. 5, t3, f10) of register whose <br>
-     *   content to display at end of run.  Option may be repeated.<br>
-     * <li>&lt;reg_name&gt;  -- where &lt;reg_name&gt; is name (e.g. t3, f10) of register whose <br>
-     *   content to display at end of run.  Option may be repeated. $ not required.<br>
-     * <li>&lt;m&gt;-&lt;n&gt;  -- memory address range from &lt;m&gt; to &lt;n&gt; whose contents to<br>
-     *   display at end of run. &lt;m&gt; and &lt;n&gt; may be hex or decimal,<br>
-     *   &lt;m&gt; <= &lt;n&gt;, both must be on word boundary.  Option may be repeated.<br>
-     * <li>pa  -- Program Arguments follow in a space-separated list.  This<br>
-     *   option must be placed AFTER ALL FILE NAMES, because everything<br>
-     *   that follows it is interpreted as a program argument to be<br>
-     *   made available to the MIPS program at runtime.<br>
+     * <li><code>a</code>  -- Assemble only, do not simulate.
+     * <li><code>ae&lt;n&gt;</code>  -- Terminate MARS with integer exit code <i>n</i> if an assemble error occurs.
+     * <li><code>ascii</code>  -- Display memory or register contents interpreted as ASCII.
+     * <li><code>b</code>  -- Brief; do not display register/memory address along with contents.
+     * <li><code>d</code>  -- Print debugging statements.
+     * <li><code>da</code>, <code>ad</code>  -- Both <code>a</code> and <code>d</code>.
+     * <li><code>db</code>  -- Enable delayed branching.
+     * <li><code>dec</code>  -- Display memory or register contents in decimal.
+     * <li><code>dump &lt;segment&gt; &lt;format&gt; &lt;file&gt;</code>  -- Dump memory contents to file.
+     *     Supports an address range (see <code>&lt;m&gt;-&lt;n&gt;</code> below).  Current supported
+     *     segments are {@code .text} and {@code .data}.  Current supported dump formats
+     *     are {@code Binary}, {@code HexText}, {@code BinaryText}.
+     * <li><code>h</code>  -- Display help.  Use by itself and with no filename.
+     * <li><code>hex</code>  -- Display memory or register contents in hexadecimal (default).
+     * <li><code>ic</code>  -- Display count of MIPS basic instructions 'executed'.
+     * <li><code>mc &lt;config&gt;</code>  -- Set memory configuration, where <i>config</i> is {@code Default}
+     *     for the MARS default 32-bit address space, {@code CompactDataAtZero} for
+     *     a 32KB address space with data segment at address 0, or {@code CompactTextAtZero}
+     *     for a 32KB address space with text segment at address 0.
+     * <li><code>me</code>  -- Display MARS messages to standard error instead of standard output. Can separate via redirection.
+     * <li><code>nc</code>  -- Do not display copyright notice (for cleaner redirected/piped output).
+     * <li><code>np</code>, <code>ne</code>  -- No extended instructions (pseudo-instructions) allowed.
+     * <li><code>p</code>  -- Project mode; assemble all files in the same directory as given file.
+     * <li><code>se&lt;n&gt;</code>  -- Terminate MARS with integer exit code <i>n</i> if a simulation error occurs.
+     * <li><code>sm</code>  -- Start execution at {@code main}. Execution will start at program statement globally labeled {@code main}.
+     * <li><code>smc</code>  -- Allow self-modifying code. If enabled, the program can write and branch to either text or data segment.
+     * <li><code>we</code>  -- Assembler warnings will be considered errors.
+     * <li><code>&lt;n&gt;</code>  -- Set the step limit, where <i>n</i> is the maximum number of steps to simulate.
+     *     If 0, negative or not specified, no step limit will be applied.
+     * <li><code>&lt;reg&gt;</code>  -- Display register contents after simulation, where <i>reg</i> is the number or name
+     *     (e.g. {@code $5}, {@code $t3}, {@code $f10}) of a register.  May be repeated to specify multiple registers.
+     *     The {@code $} is not required, except for register numbers such as {@code $5}.
+     * <li><code>&lt;m&gt;-&lt;n&gt;</code>  -- Display memory address range from <i>m</i> (inclusive)
+     *     to <i>n</i> (exclusive) after simulation, where <i>m</i> and <i>n</i> may be hex or decimal,
+     *     <i>m</i> &le; <i>n</i>, and both must lie on a word boundary.
+     *     May be repeated to specify multiple memory address ranges.
+     * <li><code>pa</code>  -- Specify program arguments separated by spaces.
+     *     This option must be the last one specified since everything that follows it is interpreted as a
+     *     program argument to be made available to the MIPS program at runtime.
      * </ul>
      */
     public MarsLauncher(String[] args) {

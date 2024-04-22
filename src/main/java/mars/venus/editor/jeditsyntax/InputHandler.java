@@ -20,7 +20,7 @@ import java.util.*;
 
 /**
  * An input handler converts the user's key strokes into concrete actions.
- * It also takes care of macro recording and action repetition.<p>
+ * It also takes care of macro recording and action repetition.
  * <p>
  * This class provides all the necessary support code for an input
  * handler, but doesn't actually do any key binding logic. It is up

@@ -91,7 +91,7 @@ public class ProgramStatement {
         this.basicAssemblyStatement = null;
         this.basicStatementList = new BasicStatementList();
         this.machineStatement = null;
-        this.binaryStatement = 0;  // nop, or sll $0, $0, 0  (32 bits of 0's)
+        this.binaryStatement = 0; // nop, or sll $0, $0, 0  (32 bits of 0's)
     }
 
     /**
@@ -558,24 +558,27 @@ public class ProgramStatement {
     /**
      * Produces operand value from given array position (first operand is position 0).
      *
-     * @param i Operand position in array (first operand is position 0).
-     * @return Operand value at given operand array position.  If < 0 or >= numOperands, it returns -1.
+     * @param pos Operand position in array (first operand is position 0).
+     * @return Operand value at given operand array position, or -1 if out of range.
      */
-    public int getOperand(int i) {
-        if (i >= 0 && i < this.numOperands) {
-            return operands[i];
+    public int getOperand(int pos) {
+        if (0 <= pos && pos < this.numOperands) {
+            return operands[pos];
         }
         else {
             return -1;
         }
     }
 
-    // Given operand (register or integer) and mask character ('f', 's', or 't'),
-    // generate the correct sequence of bits and replace the mask with them.
+    /**
+     * Given operand (register or integer) and mask character ('f', 's', or 't'),
+     * generate the correct sequence of bits and replace the mask with them.
+     */
     private void insertBinaryCode(int value, char mask, ErrorList errors) {
         int startPos = this.machineStatement.indexOf(mask);
         int endPos = this.machineStatement.lastIndexOf(mask);
-        if (startPos == -1 || endPos == -1) { // should NEVER occur
+        if (startPos == -1 || endPos == -1) {
+            // should NEVER occur
             errors.add(new ErrorMessage(this.sourceProgram, this.sourceLine, 0, "INTERNAL ERROR: mismatch in number of operands in statement vs mask"));
             return;
         }
@@ -587,11 +590,13 @@ public class ProgramStatement {
         this.machineStatement = state;
     }
 
-    /*
+    /**
      * Given a model BasicInstruction and the assembled (not source) operand array for a statement,
      * this method will construct the corresponding basic instruction list.  This method is
      * used by the constructor that is given only the int address and binary code.  It is not
-     * intended to be used when source code is available.  DPS 11-July-2013
+     * intended to be used when source code is available.
+     *
+     * @author DPS 11-July-2013
      */
     private BasicStatementList buildBasicStatementListFromBinaryCode(int binary, BasicInstruction instr, int[] operands, int numOperands) {
         BasicStatementList statementList = new BasicStatementList();
@@ -646,21 +651,20 @@ public class ProgramStatement {
         return statementList;
     }
 
-    //////////////////////////////////////////////////////////
-    //
-    //  Little class to represent basic statement as list
-    //  of elements.  Each element is either a string, an
-    //  address or a value.  The toString() method will
-    //  return a string representation of the basic statement
-    //  in which any addresses or values are rendered in the
-    //  current number format (e.g. decimal or hex).
-    //
-    //  NOTE: Address operands on Branch instructions are
-    //  considered values instead of addresses because they
-    //  are relative to the PC.
-    //
-    //  DPS 29-July-2010
-
+    /**
+     * Little class to represent basic statement as list
+     * of elements.  Each element is either a string, an
+     * address or a value.  {@link #toString()} method will
+     * return a string representation of the basic statement
+     * in which any addresses or values are rendered in the
+     * current number format (e.g. decimal or hex).
+     * <p>
+     * NOTE: Address operands on Branch instructions are
+     * considered values instead of addresses because they
+     * are relative to the PC.
+     *
+     * @author DPS 29-July-2010
+     */
     private static class BasicStatementList {
         private static final int TYPE_STRING = 0;
         private static final int TYPE_ADDRESS = 1;

@@ -141,8 +141,8 @@ public final class DataTypes {
      *
      * @param direct Directive that controls storage allocation for value.
      * @param value  The value to be stored.
-     * @return Returns <tt>true</tt> if value can be stored in the number of bytes allowed
-     *     by the given directive (.word, .half, .byte), <tt>false</tt> otherwise.
+     * @return Returns {@code true} if value can be stored in the number of bytes allowed
+     *     by the given directive (.word, .half, .byte), {@code false} otherwise.
      */
     public static boolean outOfRange(Directive direct, int value) {
         if (direct == Directive.HALF && (value < MIN_HALF_VALUE || value > MAX_HALF_VALUE)) {
@@ -161,8 +161,8 @@ public final class DataTypes {
      *
      * @param direct Directive that controls storage allocation for value.
      * @param value  The value to be stored.
-     * @return Returns <tt>true</tt> if value is within range of
-     *     the given directive (.float, .double), <tt>false</tt> otherwise.
+     * @return Returns {@code true} if value is within range of
+     *     the given directive (.float, .double), {@code false} otherwise.
      */
     public static boolean outOfRange(Directive direct, double value) {
         return direct == Directive.FLOAT && (value < LOW_FLOAT_VALUE || value > MAX_FLOAT_VALUE);

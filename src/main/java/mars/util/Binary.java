@@ -3,7 +3,7 @@ package mars.util;
 import mars.Application;
 
 import java.util.Arrays;
-	
+
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
 
@@ -69,7 +69,7 @@ public class Binary {
      * @return String consisting of '1' and '0' characters corresponding to the requested binary sequence.
      */
     public static String intToBinaryString(int value) {
-        return intToBinaryString(value, 32);
+        return intToBinaryString(value, Integer.SIZE);
     }
 
     /**
@@ -97,7 +97,7 @@ public class Binary {
      * @return String consisting of '1' and '0' characters corresponding to the requested binary sequence.
      */
     public static String longToBinaryString(long value) {
-        return longToBinaryString(value, 64);
+        return longToBinaryString(value, Long.SIZE);
     }
 
     /**
@@ -495,16 +495,15 @@ public class Binary {
         return value & ~(1 << bit);
     }
 
-    // setByte and getByte added by DPS on 12 July 2006
-
     /**
      * Sets the specified byte of the specified value to the low order 8 bits of
      * specified replacement value, and returns the result.
      *
      * @param value   The value in which the byte is to be set.
-     * @param bite    byte position in range 0 (least significant) to 3 (most)
-     * @param replace value to place into that byte position - use low order 8 bits
-     * @return value modified value.
+     * @param bite    Byte position in range 0 (least significant) to 3 (most).
+     * @param replace Value to place into that byte position - use low order 8 bits.
+     * @return Modified value.
+     * @author DPS 12 July 2006
      */
     public static int setByte(int value, int bite, int replace) {
         return value & ~(0xFF << (bite << 3)) | ((replace & 0xFF) << (bite << 3));
@@ -514,25 +513,27 @@ public class Binary {
      * Gets the specified byte of the specified value.
      *
      * @param value The value in which the byte is to be retrieved.
-     * @param bite  byte position in range 0 (least significant) to 3 (most)
-     * @return zero-extended byte value in low order byte.
+     * @param bite  Byte position in range 0 (least significant) to 3 (most)
+     * @return Zero-extended byte value in low order byte.
+     * @author DPS 12 July 2006
      */
     public static int getByte(int value, int bite) {
         return value << ((3 - bite) << 3) >>> 24;
     }
 
-    // KENV 1/4/05
-
     /**
      * Parsing method to see if a string represents a hex number.
      * As per {@link Integer#decode(String)},
      * a string represents a hex number if the string is in the forms:
-     * Signopt 0x HexDigits
-     * Signopt 0X HexDigits
-     * Signopt # HexDigits   <---- Disallow this form since # is MIPS comment
+     * <ul>
+     * <li>{@code Signopt "0x" HexDigits}
+     * <li>{@code Signopt "0X" HexDigits}
+     * <li>{@code Signopt "#" HexDigits} (not allowed here, as {@code "#"} starts a MIPS comment)
+     * </ul>
      *
      * @param string String containing numeric digits (could be decimal, octal, or hex)
-     * @return Returns <tt>true</tt> if string represents a hex number, else returns <tt>false</tt>.
+     * @return Returns {@code true} if string represents a hex number, else returns {@code false}.
+     * @author KENV 1/4/05
      */
     public static boolean isHex(String string) {
         try {
@@ -546,36 +547,37 @@ public class Binary {
                     Binary.stringToLong(string);
                 }
                 catch (NumberFormatException e) {
-                    return false;  // both failed; it is neither valid int nor long
+                    return false; // both failed; it is neither valid int nor long
                 }
             }
 
-            if ((string.charAt(0) == '-') &&  // sign is optional but if present can only be -
+            if ((string.charAt(0) == '-') && // sign is optional but if present can only be -
                 (string.charAt(1) == '0') && (Character.toUpperCase(string.charAt(1)) == 'X')) {
-                return true;  // Form is Sign 0x.... and the entire string is parseable as a number
+                return true; // Form is Sign 0x.... and the entire string is parseable as a number
             }
-
             else if ((string.charAt(0) == '0') && (Character.toUpperCase(string.charAt(1)) == 'X')) {
-                return true;  // Form is 0x.... and the entire string is parseable as a number
+                return true; // Form is 0x.... and the entire string is parseable as a number
+            }
+            else {
+                return false;
             }
         }
         catch (StringIndexOutOfBoundsException e) {
             return false;
         }
-
-        return false; // default
     }
-
-    // KENV 1/4/05
 
     /**
      * Parsing method to see if a string represents an octal number.
      * As per {@link Integer#decode(String)},
      * a string represents an octal number if the string is in the forms:
-     * Signopt 0 OctalDigits
+     * <ul>
+     * <li>{@code Signopt "0" OctalDigits}
+     * </ul>
      *
      * @param string String containing numeric digits (could be decimal, octal, or hex)
-     * @return Returns <tt>true</tt> if string represents an octal number, else returns <tt>false</tt>.
+     * @return Returns {@code true} if string represents an octal number, else returns {@code false}.
+     * @author KENV 1/4/05
      */
     public static boolean isOctal(String string) {
         try {

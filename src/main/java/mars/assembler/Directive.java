@@ -77,7 +77,7 @@ public enum Directive {
      * Find the directive, if any, which matches the given String.
      *
      * @param name String containing candidate directive name (e.g. ".ascii")
-     * @return If match is found, returns matching directive, else returns <tt>null</tt>.
+     * @return If match is found, returns matching directive, else returns {@code null}.
      */
     public static Directive matchDirective(String name) {
         return Arrays.stream(values())

@@ -47,8 +47,8 @@ directly into the Run I/O tab at the bottom of the screen.</li>
    <li><b>Assemble and execute programs using delayed branching.</b>  Default value is <b>false</b>.  MIPS processors use delayed branches
        as part of the pipelined design, but it can be confusing to programmers.  With delayed branching, the instruction 
        following a branch or jump instruction <i>will always be executed</i> even if the branch condition is true!  Assemblers 
-       and, failing that, programmers, often deal with this by following branches and jumps with a "<tt>nop</tt>" instruction.  The MARS
-       assembler does <i>not</i> insert a <tt>nop</tt>.  When delayed branching was introduced in Release 3.3, the machine code generated
+       and, failing that, programmers, often deal with this by following branches and jumps with a "{@code nop}" instruction.  The MARS
+       assembler does <i>not</i> insert a {@code nop}.  When delayed branching was introduced in Release 3.3, the machine code generated
 		 for a branch instruction depended on this setting since
        its target value is relative to the Program Counter (<i>PC-relative addressing</i>).  Although technically correct, this led to 
 		 confusion in the MARS community because the generated code did not match textbook examples.  Starting with Release 3.4, the relative branching
@@ -71,7 +71,7 @@ exception handler in all assemble operations.  Default value is <b>false</b>.  I
 	New with Release 3.7.  
    </ol>
 Beginning with Release 3.2, settings are retained from one interactive session to the next.  Settings are stored in a system-dependent
-way as specified by <tt>java.util.prefs.Preferences</tt>.  Windows systems use the Registry.
+way as specified by {@code java.util.prefs.Preferences}.  Windows systems use the Registry.
 These settings are independent of command options given when using MARS from a command line;
 neither affects the other.  We anticipate future releases will include additional settings and preferences.
 <p>
@@ -79,6 +79,6 @@ neither affects the other.  We anticipate future releases will include additiona
 <hr>
 <p>
 This document is available for printing on the MARS home page
-<tt><b>http://www.cs.missouristate.edu/MARS/</b></tt>.
+{@code <b>http://www.cs.missouristate.edu/MARS/</b>}.
 </body>
 </html>

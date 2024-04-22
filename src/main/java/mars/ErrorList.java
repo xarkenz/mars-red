@@ -71,7 +71,7 @@ public class ErrorList {
     /**
      * Determine whether error has occurred or not.
      *
-     * @return <tt>true</tt> if an error has occurred (does not include warnings), <tt>false</tt> otherwise.
+     * @return {@code true} if an error has occurred (does not include warnings), {@code false} otherwise.
      */
     public boolean errorsOccurred() {
         return errorCount != 0;
@@ -80,7 +80,7 @@ public class ErrorList {
     /**
      * Determine whether warning has occurred or not.
      *
-     * @return <tt>true</tt> if an warning has occurred, <tt>false</tt> otherwise.
+     * @return {@code true} if an warning has occurred, {@code false} otherwise.
      */
     public boolean warningsOccurred() {
         return warningCount != 0;

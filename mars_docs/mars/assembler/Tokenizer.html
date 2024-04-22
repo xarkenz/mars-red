@@ -106,7 +106,7 @@ A tokenizer is capable of tokenizing a complete MIPS program, or a given line fr
  recognizing each MIPS language element.  The types of language elements are known as "tokens".
  MIPS tokens are defined in the TokenTypes class.<br><br>
  Example: <br>
- The MIPS statement  <tt>here:  lw  $t3, 8($t4)   #load third member of array</tt><br>
+ The MIPS statement  {@code here:  lw  $t3, 8($t4)   #load third member of array}<br>
  generates the following token list<br>
  IDENTIFIER, COLON, OPERATOR, REGISTER_NAME, COMMA, INTEGER_5, LEFT_PAREN, 
  REGISTER_NAME, RIGHT_PAREN, COMMENT<br>

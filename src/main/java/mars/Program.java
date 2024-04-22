@@ -368,7 +368,7 @@ public class Program {
      * {@link Program} to it.
      *
      * @return instantiated MacroPool
-     * @author M.H.Sekhavat <sekhavat17@gmail.com>
+     * @author M.H.Sekhavat &lt;sekhavat17@gmail.com&gt;
      */
     public MacroPool createMacroPool() {
         macroPool = new MacroPool(this);
@@ -376,20 +376,20 @@ public class Program {
     }
 
     /**
-     * Gets local macro pool {@link MacroPool} for this program
+     * Gets local macro pool {@link MacroPool} for this program.
      *
      * @return MacroPool
-     * @author M.H.Sekhavat <sekhavat17@gmail.com>
+     * @author M.H.Sekhavat &lt;sekhavat17@gmail.com&gt;
      */
     public MacroPool getLocalMacroPool() {
         return macroPool;
     }
 
     /**
-     * Sets local macro pool {@link MacroPool} for this program
+     * Sets local macro pool {@link MacroPool} for this program.
      *
      * @param macroPool reference to MacroPool
-     * @author M.H.Sekhavat <sekhavat17@gmail.com>
+     * @author M.H.Sekhavat &lt;sekhavat17@gmail.com&gt;
      */
     public void setLocalMacroPool(MacroPool macroPool) {
         this.macroPool = macroPool;

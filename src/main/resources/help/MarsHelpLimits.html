@@ -54,8 +54,8 @@ regardless of whether the Delayed Branching setting is enabled or not.
 The generated binary code for branches will now match that of examples in the <em>Computer Organization
 and Design</em> textbook.  This is a change from the past, and was made after extensive discussions 
 with several faculty adopters of MARS.  Previously, the branch offset was 1 lower if the Delayed Branching setting
-was enabled -- the instruction <tt>label: beq $0,$0,label</tt> would generate <tt>0x1000FFFF</tt> if
-Delayed Branching was enabled and <tt>0x10000000</tt> if it was disabled.  Now it will generate <tt>0x1000FFFF</tt> in
+was enabled -- the instruction {@code label: beq $0,$0,label} would generate {@code 0x1000FFFF} if
+Delayed Branching was enabled and {@code 0x10000000} if it was disabled.  Now it will generate {@code 0x1000FFFF} in
 either case.  The simulator will always branch to the correct location; MARS does not allow assembly under one
 setting and simulation under the other to occur.</li>
 </ul>
@@ -63,6 +63,6 @@ setting and simulation under the other to occur.</li>
 <hr>
 <p>
 This document is available for printing on the MARS home page
-<tt><b>http://www.cs.missouristate.edu/MARS/</b></tt>.
+{@code <b>http://www.cs.missouristate.edu/MARS/</b>}.
 </body>
 </html>
