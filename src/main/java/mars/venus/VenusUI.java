@@ -522,6 +522,9 @@ public class VenusUI extends JFrame {
                 if (currentEditorTab != null) {
                     this.setMenuState(currentEditorTab.getFileStatus());
                 }
+//                else {
+//                    this.setMenuState(FileStatus.NO_FILE);
+//                }
             }
             case NOT_STARTED, PAUSED -> this.setMenuStateRunnable();
             case RUNNING -> this.setMenuStateRunning();

@@ -16,7 +16,6 @@ import javax.swing.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Observable;
 
 /*
 Copyright (c) 2003-2010,  Pete Sanderson and Kenneth Vollmar
@@ -52,9 +51,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @author Pete Sanderson
  * @version August 2005
  */
-public class Simulator extends Observable {
+public class Simulator {
     private static Simulator instance = null;
-    private static Runnable interactiveGUIUpdater = null;
     // Others can set this true to indicate external interrupt.  Initially used
     // to simulate keyboard and display interrupts.  The device is identified
     // by the address of its MMIO control register.  keyboard 0xFFFF0000 and
@@ -62,47 +60,10 @@ public class Simulator extends Observable {
     public static final int NO_DEVICE = 0;
     public static volatile int externalInterruptingDevice = NO_DEVICE;
 
-    private SimulatorThread simulatorThread;
+    private final List<SimulatorListener> guiListeners;
+    private final List<SimulatorListener> threadListeners;
     private final SystemIO systemIO;
-
-    /**
-     * Enumeration of reasons for the simulation to stop. "Stop" in this context
-     * could mean either terminate or pause.
-     */
-    public enum StopReason {
-        /**
-         * A breakpoint was reached, causing execution to pause.
-         */
-        BREAKPOINT,
-        /**
-         * An exception occurred, causing the program to terminate.
-         */
-        EXCEPTION,
-        /**
-         * The requested number of steps have completed successfully, causing execution to pause.
-         * This is also used when stepping one step at a time.
-         */
-        STEP_LIMIT_REACHED,
-        /**
-         * One of the exit syscalls was invoked, causing the program to terminate.
-         */
-        EXIT_SYSCALL,
-        /**
-         * A null instruction was reached (the program counter ran off the bottom),
-         * causing the program to terminate.
-         */
-        RAN_OFF_BOTTOM,
-        /**
-         * Execution was stopped by something outside of the Simulator.
-         * This is usually caused by the Pause/Stop actions.
-         */
-        EXTERNAL,
-        /**
-         * An unhandled internal error occurred during execution,
-         * causing the simulator thread to terminate prematurely.
-         */
-        INTERNAL_ERROR,
-    }
+    private SimulatorThread simulatorThread;
 
     /**
      * Returns the singleton instance of the MIPS simulator.
@@ -121,21 +82,55 @@ public class Simulator extends Observable {
     }
 
     private Simulator() {
+        this.guiListeners = new ArrayList<>();
+        this.threadListeners = new ArrayList<>();
+        this.systemIO = new SystemIO(this);
         this.simulatorThread = null;
-        this.systemIO = new SystemIO();
-
-        if (Application.getGUI() != null) {
-            Simulator.interactiveGUIUpdater = () -> {
-                ((RegistersDisplayTab) Application.getGUI().getRegistersPane().getSelectedComponent()).updateRegisters();
-                Application.getGUI().getMainPane().getExecuteTab().getDataSegmentWindow().updateValues();
-                Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().setCodeHighlighting(true);
-                Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().highlightStepAtPC();
-            };
-        }
     }
 
+    /**
+     * Obtain the associated {@link SystemIO} instance, which handles I/O-related syscall functionality.
+     *
+     * @return The system I/O handler.
+     */
     public SystemIO getSystemIO() {
         return this.systemIO;
+    }
+
+    /**
+     * Add a {@link SimulatorListener} whose callbacks will be executed on the GUI thread.
+     *
+     * @param listener The listener to add.
+     */
+    public void addGUIListener(SimulatorListener listener) {
+        this.guiListeners.add(listener);
+    }
+
+    /**
+     * Remove a {@link SimulatorListener} which was added via {@link #addGUIListener(SimulatorListener)}.
+     *
+     * @param listener The listener to remove.
+     */
+    public void removeGUIListener(SimulatorListener listener) {
+        this.guiListeners.remove(listener);
+    }
+
+    /**
+     * Add a {@link SimulatorListener} whose callbacks will be executed on the simulator thread.
+     *
+     * @param listener The listener to add.
+     */
+    public void addThreadListener(SimulatorListener listener) {
+        this.threadListeners.add(listener);
+    }
+
+    /**
+     * Remove a {@link SimulatorListener} which was added via {@link #addThreadListener(SimulatorListener)}.
+     *
+     * @param listener The listener to remove.
+     */
+    public void removeThreadListener(SimulatorListener listener) {
+        this.threadListeners.remove(listener);
     }
 
     /**
@@ -158,41 +153,45 @@ public class Simulator extends Observable {
      * @param programCounter Address of first instruction to simulate; this is the initial value of the program counter.
      * @param maxSteps       Maximum number of steps to perform before returning false (0 or less means no max).
      * @param breakpoints    Array of breakpoint program counter values. (Can be null.)
-     * @return In command-line mode, true if execution completed, false otherwise. If in GUI mode, always true.
      * @throws ProcessingException Throws exception if run-time exception occurs.
      */
-    public boolean simulate(Program program, int programCounter, int maxSteps, int[] breakpoints) throws ProcessingException {
+    public void simulate(Program program, int programCounter, int maxSteps, int[] breakpoints) throws ProcessingException {
         this.simulatorThread = new SimulatorThread(this, program, programCounter, maxSteps, breakpoints);
         this.simulatorThread.start();
 
         if (Application.getGUI() == null) {
-            // The simulator was run from command-line instead of GUI.
-            // So, just stick around until execution thread is finished.
+            // The simulator was run from the command line
+
+            // This is a slightly hacky way to get the exception out of the simulator thread (we love Java)
+            final ProcessingException[] exception = new ProcessingException[1];
+            SimulatorListener exceptionListener = new SimulatorListener() {
+                @Override
+                public void simulatorFinished(SimulatorFinishEvent event) {
+                    exception[0] = event.exception();
+                }
+            };
+            this.addThreadListener(exceptionListener);
+
             try {
+                // Wait for the simulator thread to finish
                 this.simulatorThread.join();
             }
-            catch (InterruptedException exception) {
+            catch (InterruptedException interruptedException) {
                 // This should not happen, as the simulator thread should handle the interrupt
-                System.err.println("Error: unhandled simulator interrupt: " + exception);
+                System.err.println("Error: unhandled simulator interrupt: " + interruptedException);
             }
-            ProcessingException exception = this.simulatorThread.exception;
-            boolean isFinished = this.simulatorThread.isFinished;
             this.simulatorThread = null;
-            if (exception != null) {
-                throw exception;
+            this.removeThreadListener(exceptionListener);
+
+            if (exception[0] != null) {
+                throw exception[0];
             }
-            return isFinished;
-        }
-        else {
-            // The simulator was run from the GUI, so just return true
-            return true;
         }
     }
 
     /**
      * Flag the simulator to stop due to pausing. Once it has done so,
-     * {@link SimulatorListener#paused(int, int, StopReason)}
-     * will be called for all registered listeners.
+     * {@link SimulatorListener#simulatorPaused(SimulatorPauseEvent)} will be called for all registered listeners.
      */
     public void pause() {
         if (simulatorThread != null) {
@@ -202,9 +201,8 @@ public class Simulator extends Observable {
     }
 
     /**
-     * Flag the simulator to stop due to finishing. Once it has done so,
-     * {@link SimulatorListener#finished(int, int, StopReason, ProcessingException)}
-     * will be called for all registered listeners.
+     * Flag the simulator to stop due to termination. Once it has done so,
+     * {@link SimulatorListener#simulatorFinished(SimulatorFinishEvent)} will be called for all registered listeners.
      */
     public void terminate() {
         if (simulatorThread != null) {
@@ -213,137 +211,80 @@ public class Simulator extends Observable {
         }
     }
 
-    private final List<SimulatorListener> listeners = new ArrayList<>();
-
-    public void addListener(SimulatorListener listener) {
-        listeners.add(listener);
-    }
-
-    public void removeListener(SimulatorListener listener) {
-        listeners.remove(listener);
-    }
-
     /**
      * Called when the simulator has started execution of the current program.
-     * Invokes {@link SimulatorListener#started(int, int)} for all listeners.
+     * Invokes {@link SimulatorListener#simulatorStarted(SimulatorStartEvent)} for all listeners.
      */
-    private void dispatchStartedUpdate(int maxSteps, int programCounter) {
-        Application.getGUI().getMessagesPane().writeToMessages(this.getClass().getSimpleName() + ": started simulation.\n\n");
-        Application.getGUI().getMessagesPane().selectConsoleTab();
+    private void dispatchStartEvent(int maxSteps, int programCounter) {
         Application.getGUI().setMenuState(ProgramStatus.RUNNING);
 
-        this.setChanged();
-        this.notifyObservers(new SimulatorNotice(SimulatorNotice.SIMULATOR_START, maxSteps, RunSpeedPanel.getInstance().getRunSpeed(), programCounter));
-
-        for (SimulatorListener listener : listeners) {
-            listener.started(maxSteps, programCounter);
+        final SimulatorStartEvent event = new SimulatorStartEvent(maxSteps, programCounter);
+        for (SimulatorListener listener : threadListeners) {
+            listener.simulatorStarted(event);
+        }
+        if (Application.getGUI() != null) {
+            SwingUtilities.invokeLater(() -> {
+                for (SimulatorListener listener : guiListeners) {
+                    listener.simulatorStarted(event);
+                }
+            });
         }
     }
 
     /**
      * Called when the simulator has paused execution of the current program.
-     * Invokes {@link SimulatorListener#paused(int, int, StopReason)} for all listeners.
+     * Invokes {@link SimulatorListener#simulatorPaused(SimulatorPauseEvent)} for all listeners.
      */
-    public void dispatchPausedUpdate(int maxSteps, int programCounter, Simulator.StopReason reason) {
-        this.setChanged();
-        this.notifyObservers(new SimulatorNotice(SimulatorNotice.SIMULATOR_STOP, maxSteps, RunSpeedPanel.getInstance().getRunSpeed(), programCounter));
+    public void dispatchPauseEvent(int maxSteps, int programCounter, SimulatorPauseEvent.Reason reason) {
+        Application.getGUI().setProgramStatus(ProgramStatus.PAUSED);
 
-        MessagesPane messagesPane = Application.getGUI().getMessagesPane();
-        switch (reason) {
-            case BREAKPOINT -> {
-                messagesPane.writeToMessages(this.getClass().getSimpleName() + ": paused simulation at breakpoint.\n\n");
-                messagesPane.selectMessagesTab();
-            }
-            case EXTERNAL -> {
-                messagesPane.writeToMessages(this.getClass().getSimpleName() + ": paused simulation.\n\n");
-            }
+        final SimulatorPauseEvent event = new SimulatorPauseEvent(maxSteps, programCounter, reason);
+        for (SimulatorListener listener : threadListeners) {
+            listener.simulatorPaused(event);
         }
-
-        RegistersPane registersPane = Application.getGUI().getRegistersPane();
-        ExecuteTab executeTab = Application.getGUI().getMainPane().getExecuteTab();
-        // Update register and data segment values
-        registersPane.getRegistersWindow().updateRegisters();
-        registersPane.getCoprocessor1Window().updateRegisters();
-        registersPane.getCoprocessor0Window().updateRegisters();
-        executeTab.getDataSegmentWindow().updateValues();
-        // Highlight last executed instruction in text segment
-        executeTab.getTextSegmentWindow().setCodeHighlighting(true);
-        executeTab.getTextSegmentWindow().unhighlightAllSteps();
-        executeTab.getTextSegmentWindow().highlightStepAtPC();
-
-        executeTab.setProgramStatus(ProgramStatus.PAUSED);
-
-        for (SimulatorListener listener : listeners) {
-            listener.paused(maxSteps, programCounter, reason);
+        if (Application.getGUI() != null) {
+            SwingUtilities.invokeLater(() -> {
+                for (SimulatorListener listener : guiListeners) {
+                    listener.simulatorPaused(event);
+                }
+            });
         }
     }
 
     /**
      * Called when the simulator has finished execution of the current program.
-     * Invokes {@link SimulatorListener#finished(int, int, StopReason, ProcessingException)} for all listeners.
+     * Invokes {@link SimulatorListener#simulatorFinished(SimulatorFinishEvent)} for all listeners.
      */
-    private void dispatchFinishedUpdate(int maxSteps, int programCounter, StopReason reason, ProcessingException exception) {
-        this.setChanged();
-        this.notifyObservers(new SimulatorNotice(SimulatorNotice.SIMULATOR_STOP, maxSteps, RunSpeedPanel.getInstance().getRunSpeed(), programCounter));
-
-        RegistersPane registersPane = Application.getGUI().getRegistersPane();
-        ExecuteTab executeTab = Application.getGUI().getMainPane().getExecuteTab();
-        // Update register and data segment values
-        registersPane.getRegistersWindow().updateRegisters();
-        registersPane.getCoprocessor1Window().updateRegisters();
-        registersPane.getCoprocessor0Window().updateRegisters();
-        executeTab.getDataSegmentWindow().updateValues();
-        // Highlight last executed instruction in text segment
-        executeTab.getTextSegmentWindow().setCodeHighlighting(true);
-        executeTab.getTextSegmentWindow().unhighlightAllSteps();
-        executeTab.getTextSegmentWindow().highlightStepAtAddress(RegisterFile.getProgramCounter() - BasicInstruction.INSTRUCTION_LENGTH_BYTES);
-
-        // Bring Coprocessor 0 to the front if terminated due to exception
-        if (exception != null) {
-            registersPane.setSelectedComponent(registersPane.getCoprocessor0Window());
-        }
-
-        MessagesPane messagesPane = Application.getGUI().getMessagesPane();
-        switch (reason) {
-            case EXIT_SYSCALL -> {
-                messagesPane.writeToMessages(this.getClass().getSimpleName() + ": finished simulation successfully.\n\n");
-                messagesPane.writeToConsole("\n--- program finished ---\n\n");
-                messagesPane.selectConsoleTab();
-            }
-            case RAN_OFF_BOTTOM -> {
-                messagesPane.writeToMessages(this.getClass().getSimpleName() + ": finished simulation due to null instruction.\n\n");
-                messagesPane.writeToConsole("\n--- program automatically terminated (ran off bottom) ---\n\n");
-                messagesPane.selectConsoleTab();
-            }
-            case EXCEPTION -> {
-                messagesPane.writeToMessages(this.getClass().getSimpleName() + ": finished simulation with errors.\n\n");
-                if (exception == null) {
-                    messagesPane.writeToConsole("\n--- program terminated due to error(s) ---\n\n");
-                }
-                else {
-                    messagesPane.writeToConsole("\n--- program terminated due to error(s): ---\n");
-                    messagesPane.writeToConsole(exception.errors().generateErrorReport());
-                    messagesPane.writeToConsole("--- end of error report ---\n\n");
-                }
-                messagesPane.selectConsoleTab();
-            }
-            case EXTERNAL -> {
-                messagesPane.writeToMessages(this.getClass().getSimpleName() + ": stopped simulation.\n\n");
-                messagesPane.writeToConsole("\n--- program terminated by user ---\n\n");
-            }
-            case INTERNAL_ERROR -> {
-                messagesPane.writeToMessages(this.getClass().getSimpleName() + ": stopped simulation after encountering an internal error.");
-                messagesPane.writeToConsole("\n--- program terminated due to internal error ---\n\n");
-            }
-        }
-
+    private void dispatchFinishEvent(int maxSteps, int programCounter, SimulatorFinishEvent.Reason reason, ProcessingException exception) {
         Application.getGUI().setProgramStatus(ProgramStatus.TERMINATED);
 
-        // Close any unclosed file descriptors opened in execution of program
-        systemIO.resetFiles();
+        final SimulatorFinishEvent event = new SimulatorFinishEvent(maxSteps, programCounter, reason, exception);
+        for (SimulatorListener listener : threadListeners) {
+            listener.simulatorFinished(event);
+        }
+        if (Application.getGUI() != null) {
+            SwingUtilities.invokeLater(() -> {
+                for (SimulatorListener listener : guiListeners) {
+                    listener.simulatorFinished(event);
+                }
+            });
+        }
+    }
 
-        for (SimulatorListener listener : listeners) {
-            listener.finished(maxSteps, programCounter, reason, exception);
+    /**
+     * Called when the simulator has finished executing an instruction, but only if the run speed is not unlimited.
+     * Invokes {@link SimulatorListener#simulatorStepped()} for all listeners.
+     */
+    private void dispatchStepEvent() {
+        for (SimulatorListener listener : threadListeners) {
+            listener.simulatorStepped();
+        }
+        if (Application.getGUI() != null) {
+            SwingUtilities.invokeLater(() -> {
+                for (SimulatorListener listener : guiListeners) {
+                    listener.simulatorStepped();
+                }
+            });
         }
     }
 
@@ -358,9 +299,7 @@ public class Simulator extends Observable {
         private final int[] breakPoints;
 
         private int programCounter;
-        private ProcessingException exception;
-        private StopReason stopReason;
-        private boolean isFinished;
+        private Runnable interruptEventDispatcher;
 
         /**
          * Create a new {@code SimulatorThread} without starting it.
@@ -377,34 +316,42 @@ public class Simulator extends Observable {
             this.maxSteps = maxSteps;
             this.breakPoints = breakPoints;
             this.programCounter = programCounter;
-            this.exception = null;
-            this.stopReason = StopReason.INTERNAL_ERROR; // In case something truly wild happens
-            this.isFinished = false;
+            this.interruptEventDispatcher = this::dispatchExternalFinishEvent;
+        }
+
+        private void dispatchExternalPauseEvent() {
+            // Dispatch a pause event once the simulator stops
+            this.simulator.dispatchPauseEvent(this.maxSteps, this.programCounter, SimulatorPauseEvent.Reason.EXTERNAL);
+        }
+
+        private void dispatchExternalFinishEvent() {
+            // Dispatch a pause event once the simulator stops
+            this.simulator.dispatchFinishEvent(this.maxSteps, this.programCounter, SimulatorFinishEvent.Reason.EXTERNAL, null);
         }
 
         /**
          * Flag this thread to stop due to pausing. Once it has done so,
-         * {@link SimulatorListener#paused(int, int, StopReason)}
+         * {@link SimulatorListener#simulatorPaused(SimulatorPauseEvent)}
          * will be called for all registered listeners.
          */
         public void stopForPause() {
-            this.isFinished = false;
+            this.interruptEventDispatcher = this::dispatchExternalPauseEvent;
             this.interrupt();
         }
 
         /**
          * Flag this thread to stop due to finishing. Once it has done so,
-         * {@link SimulatorListener#finished(int, int, StopReason, ProcessingException)}
+         * {@link SimulatorListener#simulatorFinished(SimulatorFinishEvent)}
          * will be called for all registered listeners.
          */
         public void stopForTermination() {
-            this.isFinished = true;
+            this.interruptEventDispatcher = this::dispatchExternalFinishEvent;
             this.interrupt();
         }
 
         /**
          * Simulate the program given to this thread until a pause or finish condition is reached.
-         * Once the program starts, {@link SimulatorListener#started(int, int)}
+         * Once the program starts, {@link SimulatorListener#simulatorStarted(SimulatorStartEvent)}
          * will be called for all registered listeners.
          */
         @Override
@@ -424,20 +371,7 @@ public class Simulator extends Observable {
                 // Should only happen if there is a bug somewhere
                 System.err.println("Error: unhandled exception during simulation:");
                 exception.printStackTrace();
-                this.isFinished = true;
-                this.stopReason = StopReason.INTERNAL_ERROR;
-            }
-            finally {
-                // If running from the command-line, then there is no GUI to update.
-                // TODO: remove this check once all the hardcoded logic is moved into listeners
-                if (Application.getGUI() != null) {
-                    if (this.isFinished) {
-                        this.simulator.dispatchFinishedUpdate(this.maxSteps, this.programCounter, this.stopReason, this.exception);
-                    }
-                    else {
-                        this.simulator.dispatchPausedUpdate(this.maxSteps, this.programCounter, this.stopReason);
-                    }
-                }
+                this.simulator.dispatchFinishEvent(this.maxSteps, this.programCounter, SimulatorFinishEvent.Reason.INTERNAL_ERROR, null);
             }
         }
 
@@ -450,7 +384,7 @@ public class Simulator extends Observable {
                 Arrays.sort(this.breakPoints);
             }
 
-            this.simulator.dispatchStartedUpdate(this.maxSteps, this.programCounter);
+            this.simulator.dispatchStartEvent(this.maxSteps, this.programCounter);
 
             RegisterFile.initializeProgramCounter(this.programCounter);
             ProgramStatement statement;
@@ -458,17 +392,19 @@ public class Simulator extends Observable {
                 statement = Application.memory.getStatement(RegisterFile.getProgramCounter());
             }
             catch (AddressErrorException exception) {
-                ErrorList errors = new ErrorList();
-                errors.add(new ErrorMessage(this.program, 0, 0, "invalid program counter value: " + Binary.intToHexString(RegisterFile.getProgramCounter())));
                 // Next statement is a hack.  Previous statement sets EPC register to (PC - 4)
                 // because it assumes the bad address comes from an operand so the program counter has already been
                 // incremented.  In this case, bad address is the instruction fetch itself so program counter has
                 // not yet been incremented.  We'll set the EPC directly here.  DPS 8-July-2013
                 Coprocessor0.updateRegister(Coprocessor0.EPC, RegisterFile.getProgramCounter());
 
-                this.stopReason = StopReason.EXCEPTION;
-                this.isFinished = true;
-                this.exception = new ProcessingException(errors, exception);
+                ErrorList errors = new ErrorList();
+                errors.add(new ErrorMessage(
+                    this.program,
+                    0, 0,
+                    "invalid program counter value: " + Binary.intToHexString(RegisterFile.getProgramCounter())
+                ));
+                this.simulator.dispatchFinishEvent(this.maxSteps, this.programCounter, SimulatorFinishEvent.Reason.EXCEPTION, new ProcessingException(errors, exception));
                 return;
             }
 
@@ -507,7 +443,7 @@ public class Simulator extends Observable {
 
             // Main simulation loop
             while (statement != null) {
-                this.programCounter = RegisterFile.getProgramCounter(); // added: 7/26/06 (explanation above)
+                this.programCounter = RegisterFile.getProgramCounter(); // Added 7/26/06 (explanation above)
                 RegisterFile.incrementPC();
                 // Perform the MIPS instruction in synchronized block.  If external threads agree
                 // to access MIPS memory and registers only through synchronized blocks on same
@@ -543,8 +479,7 @@ public class Simulator extends Observable {
                     }
                     catch (ProcessingException exception) {
                         if (exception.errors() == null) {
-                            this.stopReason = StopReason.EXIT_SYSCALL;
-                            this.isFinished = true;
+                            this.simulator.dispatchFinishEvent(this.maxSteps, this.programCounter, SimulatorFinishEvent.Reason.EXIT_SYSCALL, null);
                             return;
                         }
 
@@ -565,9 +500,7 @@ public class Simulator extends Observable {
                             RegisterFile.setProgramCounter(Memory.exceptionHandlerAddress);
                         }
                         else {
-                            this.stopReason = StopReason.EXCEPTION;
-                            this.isFinished = true;
-                            this.exception = exception;
+                            this.simulator.dispatchFinishEvent(this.maxSteps, this.programCounter, SimulatorFinishEvent.Reason.EXCEPTION, exception);
                             return;
                         }
                     }
@@ -581,43 +514,39 @@ public class Simulator extends Observable {
                 else if (DelayedBranch.isRegistered()) {
                     DelayedBranch.trigger();
                 }
-
                 // Check for an interrupt (either a pause or termination)
                 if (Thread.interrupted()) {
-                    // this.isFinished will be set by the method that caused the interrupt
-                    this.stopReason = StopReason.EXTERNAL;
+                    // this.interruptEventDispatcher will be set by the method that caused the interrupt
+                    this.interruptEventDispatcher.run();
                     return;
                 }
                 // Check for a breakpoint
                 if (this.breakPoints != null && Arrays.binarySearch(this.breakPoints, RegisterFile.getProgramCounter()) >= 0) {
-                    this.stopReason = StopReason.BREAKPOINT;
-                    this.isFinished = false;
+                    this.simulator.dispatchPauseEvent(this.maxSteps, this.programCounter, SimulatorPauseEvent.Reason.BREAKPOINT);
                     return;
                 }
                 // Check whether the step limit has been reached (if one exists)
                 if (this.maxSteps > 0) {
                     stepCount++;
                     if (stepCount >= this.maxSteps) {
-                        this.stopReason = StopReason.STEP_LIMIT_REACHED;
-                        this.isFinished = false;
+                        this.simulator.dispatchPauseEvent(this.maxSteps, this.programCounter, SimulatorPauseEvent.Reason.STEP_LIMIT_REACHED);
                         return;
                     }
                 }
 
-                // Schedule a GUI update if the program is not running at unlimited speed
-                if (Simulator.interactiveGUIUpdater != null && RunSpeedPanel.getInstance().getRunSpeed() < RunSpeedPanel.UNLIMITED_SPEED) {
-                    SwingUtilities.invokeLater(Simulator.interactiveGUIUpdater);
-                }
-
-                // Wait according to the speed setting
+                // Update GUI and delay the next step if the program is not running at unlimited speed
                 if (Application.getGUI() != null || Application.runSpeedPanelExists) { // OR added by DPS 24 July 2008 to enable speed control by stand-alone tool
                     if (RunSpeedPanel.getInstance().getRunSpeed() < RunSpeedPanel.UNLIMITED_SPEED) {
+                        // Schedule a GUI update
+                        this.simulator.dispatchStepEvent();
+
+                        // Wait according to the speed setting
                         try {
                             Thread.sleep((int) (1000 / RunSpeedPanel.getInstance().getRunSpeed())); // make sure it's never zero!
                         }
                         catch (InterruptedException exception) {
-                            // this.isFinished will be set by the method that caused the interrupt
-                            this.stopReason = StopReason.EXTERNAL;
+                            // this.interruptEventDispatcher will be set by the method that caused the interrupt
+                            this.interruptEventDispatcher.run();
                             return;
                         }
                     }
@@ -628,9 +557,9 @@ public class Simulator extends Observable {
                     statement = Application.memory.getStatement(RegisterFile.getProgramCounter());
                 }
                 catch (AddressErrorException exception) {
-                    // Next statement is a hack.  Previous statement sets EPC register to (ProgramCounter - 4)
-                    // because it assumes the bad address comes from an operand so the ProgramCounter has already been
-                    // incremented.  In this case, bad address is the instruction fetch itself so Program Counter has
+                    // Next statement is a hack.  Previous statement sets EPC register to (PC - 4)
+                    // because it assumes the bad address comes from an operand so the program counter has already been
+                    // incremented.  In this case, bad address is the instruction fetch itself so program counter has
                     // not yet been incremented.  We'll set the EPC directly here.  DPS 8-July-2013
                     Coprocessor0.updateRegister(Coprocessor0.EPC, RegisterFile.getProgramCounter());
 
@@ -640,16 +569,14 @@ public class Simulator extends Observable {
                         0, 0,
                         "invalid program counter value: " + Binary.intToHexString(RegisterFile.getProgramCounter())
                     ));
-                    this.exception = new ProcessingException(errors, exception);
-                    this.stopReason = StopReason.EXCEPTION;
-                    this.isFinished = true;
+                    this.simulator.dispatchFinishEvent(this.maxSteps, this.programCounter, SimulatorFinishEvent.Reason.EXCEPTION, new ProcessingException(errors, exception));
                     return;
                 }
             }
 
             // If we got here, it was due to a null statement, which means the program counter
             // "fell off the end" of the program.
-            // Note: The "while" loop should not contain any "break" statements for this reason.
+            // Note: The "while" loop above should not contain any "break" statements for this reason.
 
             // DPS July 2007.  This "if" statement is needed for correct program
             // termination if delayed branching on and last statement in
@@ -659,8 +586,7 @@ public class Simulator extends Observable {
                 DelayedBranch.clear();
             }
 
-            this.stopReason = StopReason.RAN_OFF_BOTTOM;
-            this.isFinished = true;
+            this.simulator.dispatchFinishEvent(this.maxSteps, this.programCounter, SimulatorFinishEvent.Reason.RAN_OFF_BOTTOM, null);
         }
     }
 }

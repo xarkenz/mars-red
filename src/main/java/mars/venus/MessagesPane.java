@@ -2,17 +2,13 @@ package mars.venus;
 
 import mars.ErrorList;
 import mars.Application;
-import mars.ProcessingException;
-import mars.simulator.Simulator;
-import mars.simulator.SimulatorListener;
-import mars.simulator.SystemIO;
+import mars.simulator.*;
 import mars.venus.editor.EditTab;
 import mars.venus.editor.FileEditorTab;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.*;
-import javax.swing.text.Position.Bias;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -52,7 +48,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Team JSpim
  */
-public class MessagesPane extends JTabbedPane {
+public class MessagesPane extends JTabbedPane implements SimulatorListener {
     // These constants are designed to keep scrolled contents of the
     // two message areas from becoming overwhelmingly large (which
     // seems to slow things down as new text is appended).  Once it
@@ -184,6 +180,8 @@ public class MessagesPane extends JTabbedPane {
         consoleTab.add(consoleScrollPane, BorderLayout.CENTER);
         this.addTab("Messages", null, messagesTab, "Information, warnings and errors. Click on an error message to jump to the error source.");
         this.addTab("Console", null, consoleTab, "Simulated MIPS console input and output.");
+
+        Simulator.getInstance().addGUIListener(this);
     }
 
     /**
@@ -274,7 +272,6 @@ public class MessagesPane extends JTabbedPane {
      */
     public void writeToMessages(final String message) {
         SwingUtilities.invokeLater(() -> {
-            setSelectedComponent(messagesTab);
             messagesTextArea.append(message);
             // Can do some crude cutting here.  If the document gets "very large",
             // let's cut off the oldest text. This will limit scrolling but the limit
@@ -296,12 +293,14 @@ public class MessagesPane extends JTabbedPane {
      *
      * @param text String to append to runtime console text.
      */
-    // The work of this method is done by "invokeLater" because
-    // its JTextArea is maintained by the main event thread
-    // but also used, via this method, by the execution thread for
-    // "print" syscalls. "invokeLater" schedules the code to be
-    // run under the event-processing thread no matter what.
-    // DPS 23 Aug 2005
+    /*
+     * The work of this method is done by "invokeLater" because
+     * its JTextArea is maintained by the main event thread
+     * but also used, via this method, by the execution thread for
+     * "print" syscalls. "invokeLater" schedules the code to be
+     * run under the event-processing thread no matter what.
+     * DPS 23 Aug 2005
+     */
     public void writeToConsole(String text) {
         // Buffering the output allows one flush to handle several writes, meaning the event queue
         // doesn't fill up with console text area updates and effectively block the GUI thread.
@@ -384,6 +383,7 @@ public class MessagesPane extends JTabbedPane {
      * @param prompt Prompt to display to the user.
      * @return User input, as a String.
      */
+    // FIXME: This does not mix well with pausing/stopping! Figure out how to pause this process
     public String getInputString(String prompt) {
         JOptionPane pane = new JOptionPane(prompt, JOptionPane.QUESTION_MESSAGE, JOptionPane.DEFAULT_OPTION);
         pane.setWantsInput(true);
@@ -411,6 +411,78 @@ public class MessagesPane extends JTabbedPane {
     public String getInputString(int maxLength) {
         ConsoleInputContext context = new ConsoleInputContext(consoleTextArea, maxLength);
         return context.awaitUserInput();
+    }
+
+    /**
+     * Called when the simulator begins execution of a program.
+     *
+     * @param event The event which occurred.
+     */
+    @Override
+    public void simulatorStarted(SimulatorStartEvent event) {
+        this.writeToMessages(Simulator.class.getSimpleName() + ": started simulation.\n");
+        this.setSelectedComponent(consoleTab);
+    }
+
+    /**
+     * Called when the simulator stops execution of a program due to pausing.
+     *
+     * @param event The event which occurred.
+     */
+    @Override
+    public void simulatorPaused(SimulatorPauseEvent event) {
+        switch (event.reason()) {
+            case BREAKPOINT -> {
+                this.writeToMessages(Simulator.class.getSimpleName() + ": paused simulation at breakpoint.\n");
+            }
+            case STEP_LIMIT_REACHED -> {
+                this.writeToMessages(Simulator.class.getSimpleName() + ": paused simulation after " + event.maxSteps() + " step(s).\n");
+            }
+            case EXTERNAL -> {
+                this.writeToMessages(Simulator.class.getSimpleName() + ": paused simulation.\n");
+            }
+        }
+    }
+
+    /**
+     * Called when the simulator stops execution of a program due to termination or finishing.
+     *
+     * @param event The event which occurred.
+     */
+    @Override
+    public void simulatorFinished(SimulatorFinishEvent event) {
+        switch (event.reason()) {
+            case EXIT_SYSCALL -> {
+                this.writeToMessages(Simulator.class.getSimpleName() + ": finished simulation successfully.\n");
+                this.writeToConsole("\n--- program finished ---\n\n");
+                this.setSelectedComponent(consoleTab);
+            }
+            case RAN_OFF_BOTTOM -> {
+                this.writeToMessages(Simulator.class.getSimpleName() + ": finished simulation due to null instruction.\n");
+                this.writeToConsole("\n--- program automatically terminated (ran off bottom) ---\n\n");
+                this.setSelectedComponent(consoleTab);
+            }
+            case EXCEPTION -> {
+                this.writeToMessages(Simulator.class.getSimpleName() + ": finished simulation with errors.\n");
+                if (event.exception() == null) {
+                    this.writeToConsole("\n--- program terminated due to error(s) ---\n\n");
+                }
+                else {
+                    this.writeToConsole("\n--- program terminated due to error(s): ---\n");
+                    this.writeToConsole(event.exception().errors().generateErrorReport());
+                    this.writeToConsole("--- end of error report ---\n\n");
+                }
+                this.setSelectedComponent(consoleTab);
+            }
+            case EXTERNAL -> {
+                this.writeToMessages(Simulator.class.getSimpleName() + ": stopped simulation.\n");
+                this.writeToConsole("\n--- program terminated by user ---\n\n");
+            }
+            case INTERNAL_ERROR -> {
+                this.writeToMessages(Simulator.class.getSimpleName() + ": stopped simulation after encountering an internal error.\n");
+                this.writeToConsole("\n--- program terminated due to internal error ---\n\n");
+            }
+        }
     }
 
     /**
@@ -528,7 +600,7 @@ public class MessagesPane extends JTabbedPane {
 
         private final NavigationFilter navigationFilter = new NavigationFilter() {
             @Override
-            public void moveDot(FilterBypass bypass, int dot, Bias bias) {
+            public void moveDot(FilterBypass bypass, int dot, Position.Bias bias) {
                 // Prevent placement of the caret before the initial position
                 if (dot < initialPosition) {
                     dot = Math.min(initialPosition, textArea.getDocument().getLength());
@@ -537,7 +609,7 @@ public class MessagesPane extends JTabbedPane {
             }
 
             @Override
-            public void setDot(FilterBypass bypass, int dot, Bias bias) {
+            public void setDot(FilterBypass bypass, int dot, Position.Bias bias) {
                 // Prevent placement of the caret before the initial position
                 if (dot < initialPosition) {
                     dot = Math.min(initialPosition, textArea.getDocument().getLength());
@@ -546,20 +618,19 @@ public class MessagesPane extends JTabbedPane {
             }
         };
 
-        // TODO: This doesn't actually do anything useful yet because input blocks the simulator thread.
         private final SimulatorListener simulatorListener = new SimulatorListener() {
             @Override
-            public void started(int maxSteps, int programCounter) {
+            public void simulatorStarted(SimulatorStartEvent event) {
                 textArea.setEditable(true);
             }
 
             @Override
-            public void paused(int maxSteps, int programCounter, Simulator.StopReason reason) {
+            public void simulatorPaused(SimulatorPauseEvent event) {
                 textArea.setEditable(false);
             }
 
             @Override
-            public void finished(int maxSteps, int programCounter, Simulator.StopReason reason, ProcessingException exception) {
+            public void simulatorFinished(SimulatorFinishEvent event) {
                 submitInput();
             }
         };
@@ -571,7 +642,7 @@ public class MessagesPane extends JTabbedPane {
             initialPosition = textArea.getCaretPosition();
             textArea.setNavigationFilter(navigationFilter);
             ((AbstractDocument) textArea.getDocument()).setDocumentFilter(documentFilter);
-            Simulator.getInstance().addListener(simulatorListener);
+            Simulator.getInstance().addGUIListener(simulatorListener);
         }
 
         private void submitInput() {
@@ -592,7 +663,7 @@ public class MessagesPane extends JTabbedPane {
             ((AbstractDocument) textArea.getDocument()).setDocumentFilter(null);
             textArea.append("\n");
             textArea.setCaretPosition(textArea.getDocument().getLength());
-            Simulator.getInstance().removeListener(simulatorListener);
+            Simulator.getInstance().removeGUIListener(simulatorListener);
         }
     }
 }

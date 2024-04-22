@@ -3,8 +3,7 @@ package mars.venus.execute;
 import mars.Application;
 import mars.settings.Settings;
 import mars.mips.hardware.*;
-import mars.simulator.Simulator;
-import mars.simulator.SimulatorNotice;
+import mars.simulator.*;
 import mars.util.Binary;
 import mars.venus.MonoRightCellRenderer;
 import mars.venus.NumberDisplayBaseChooser;
@@ -55,7 +54,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Sanderson and Bumgarner
  */
-public class DataSegmentWindow extends JInternalFrame implements Observer {
+public class DataSegmentWindow extends JInternalFrame implements SimulatorListener, Observer {
     private Object[][] tableData;
     private JTable table;
     private JScrollPane tableScrollPane;
@@ -139,7 +138,7 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
         super("Memory Viewer", true, false, true, false);
         this.setFrameIcon(null);
 
-        Simulator.getInstance().addObserver(this);
+        Simulator.getInstance().addGUIListener(this);
         settings = Application.getSettings();
         settings.addObserver(this);
 
@@ -576,6 +575,28 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
         updateModelForMemoryRange(this.firstAddress);
     }
 
+    @Override
+    public void simulatorStarted(SimulatorStartEvent event) {
+        Memory.getInstance().addObserver(this);
+    }
+
+    @Override
+    public void simulatorPaused(SimulatorPauseEvent event) {
+        Memory.getInstance().deleteObserver(this);
+        updateValues();
+    }
+
+    @Override
+    public void simulatorFinished(SimulatorFinishEvent event) {
+        Memory.getInstance().deleteObserver(this);
+        updateValues();
+    }
+
+    @Override
+    public void simulatorStepped() {
+        updateValues();
+    }
+
     /**
      * Reset range of memory addresses to base address of currently selected segment and update display.
      */
@@ -741,32 +762,20 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
      */
     @Override
     public void update(Observable observable, Object obj) {
-        if (observable == Simulator.getInstance()) {
-            SimulatorNotice notice = (SimulatorNotice) obj;
-            if (notice.action() == SimulatorNotice.SIMULATOR_START) {
-                // Simulated MIPS execution starts.  Respond to memory changes if running in timed
-                // or stepped mode.
-                if (notice.runSpeed() != RunSpeedPanel.UNLIMITED_SPEED || notice.maxSteps() == 1) {
-                    Memory.getInstance().addObserver(this);
-                    addressHighlighting = true;
-                }
-            }
-            else {
-                // Simulated MIPS execution stops.  Stop responding.
-                Memory.getInstance().deleteObserver(this);
-            }
-        }
-        else if (observable == settings) {
+        if (observable == settings) {
             // Suspended work in progress. Intended to disable combobox item for text segment. DPS 9-July-2013.
             //baseAddressSelector.getModel().getElementAt(TEXT_BASE_ADDRESS_INDEX)
             //*.setEnabled(settings.getBooleanSetting(Settings.SELF_MODIFYING_CODE_ENABLED));
         }
         else if (obj instanceof MemoryAccessNotice access) { // NOTE: observable != Memory.getInstance() because Memory class delegates notification duty.
             if (access.getAccessType() == AccessNotice.WRITE) {
-                int address = access.getAddress();
-                // Use the same highlighting technique as for Text Segment -- see
-                // AddressCellRenderer class below.
-                this.highlightCellForAddress(address);
+                if (RunSpeedPanel.getInstance().getRunSpeed() != RunSpeedPanel.UNLIMITED_SPEED) {
+                    addressHighlighting = true;
+                    this.highlightCellForAddress(access.getAddress());
+                }
+                else {
+                    addressHighlighting = false;
+                }
             }
         }
     }
@@ -780,7 +789,9 @@ public class DataSegmentWindow extends JInternalFrame implements Observer {
      * this problem. One suggested solution, a JComboBox superclass overriding
      * setSelectedIndex to also call selectedItemChanged() did not help.  Only this
      * solution to extend the model class to call the protected
-     * "fireContentsChanged()" method worked. DPS 25-Jan-2009
+     * "fireContentsChanged()" method worked.
+     *
+     * @author DPS 25-Jan-2009
      */
     // TODO: Has this bug been fixed? -Sean Clarke
     private static class CustomComboBoxModel extends DefaultComboBoxModel<String> {

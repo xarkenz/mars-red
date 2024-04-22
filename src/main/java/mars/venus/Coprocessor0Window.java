@@ -1,21 +1,14 @@
 package mars.venus;
 
 import mars.Application;
-import mars.mips.hardware.AccessNotice;
 import mars.mips.hardware.Coprocessor0;
 import mars.mips.hardware.Register;
-import mars.mips.hardware.RegisterAccessNotice;
-import mars.simulator.Simulator;
-import mars.simulator.SimulatorNotice;
+import mars.simulator.SimulatorFinishEvent;
 import mars.util.Binary;
-import mars.venus.execute.RunSpeedPanel;
 
 import javax.swing.*;
-import javax.swing.event.TableModelEvent;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
-import java.util.Observable;
-import java.util.Observer;
 
 /*
 Copyright (c) 2003-2009,  Pete Sanderson and Kenneth Vollmar
@@ -50,7 +43,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Sanderson, Bumgarner
  */
-public class Coprocessor0Window extends JPanel implements RegistersDisplayTab, Observer {
+public class Coprocessor0Window extends RegistersDisplayTab {
     private static final int NAME_COLUMN = 0;
     private static final int NUMBER_COLUMN = 1;
     private static final int VALUE_COLUMN = 2;
@@ -68,23 +61,25 @@ public class Coprocessor0Window extends JPanel implements RegistersDisplayTab, O
     };
 
     private final RegistersTable table;
-    private int[] rowGivenRegisterNumber; // translate register number to table row.
-    private boolean highlighting;
-    private int highlightRow;
+    private int[] rowGivenRegisterNumber; // Translates register number to table row
 
     /**
      * Constructor which sets up a fresh window with a table that contains the register values.
      */
     public Coprocessor0Window() {
-        Simulator.getInstance().addObserver(this);
-        highlighting = false;
+        super();
         table = new RegistersTable(new RegisterTableModel(setupWindow()), HEADER_TIPS, REGISTER_TIPS);
         table.setupColumn(NAME_COLUMN, 50, SwingConstants.LEFT);
         table.setupColumn(NUMBER_COLUMN, 25, SwingConstants.LEFT);
         table.setupColumn(VALUE_COLUMN, 60, SwingConstants.LEFT);
         table.setPreferredScrollableViewportSize(new Dimension(200, 700));
-        setLayout(new BorderLayout());  // table display will occupy entire width if widened
+        setLayout(new BorderLayout()); // Table display will occupy entire width if widened
         add(new JScrollPane(table, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED));
+    }
+
+    @Override
+    protected RegistersTable getTable() {
+        return table;
     }
 
     /**
@@ -95,7 +90,7 @@ public class Coprocessor0Window extends JPanel implements RegistersDisplayTab, O
     private Object[][] setupWindow() {
         Register[] registers = Coprocessor0.getRegisters();
         Object[][] tableData = new Object[registers.length][3];
-        rowGivenRegisterNumber = new int[32]; // maximum number of registers
+        rowGivenRegisterNumber = new int[32]; // Maximum number of registers
         for (int row = 0; row < registers.length; row++) {
             rowGivenRegisterNumber[registers[row].getNumber()] = row;
             tableData[row][0] = registers[row].getName();
@@ -115,26 +110,6 @@ public class Coprocessor0Window extends JPanel implements RegistersDisplayTab, O
     }
 
     /**
-     * Clear highlight background color from any row currently highlighted.
-     */
-    public void clearHighlighting() {
-        highlighting = false;
-        if (table != null) {
-            table.tableChanged(new TableModelEvent(table.getModel()));
-        }
-        highlightRow = -1; // Assure highlight will not occur upon re-assemble
-    }
-
-    /**
-     * Refresh the table, triggering re-rendering.
-     */
-    public void refresh() {
-        if (table != null) {
-            table.tableChanged(new TableModelEvent(table.getModel()));
-        }
-    }
-
-    /**
      * Update register display using specified number base (10 or 16).
      *
      * @param base Desired number base.
@@ -150,53 +125,10 @@ public class Coprocessor0Window extends JPanel implements RegistersDisplayTab, O
      * This method handles the updating of the GUI.
      *
      * @param number The number of the register to update.
-     * @param value  New value.
+     * @param value  The new value.
      */
     public void updateRegisterValue(int number, int value, int base) {
         ((RegisterTableModel) table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(value, base), rowGivenRegisterNumber[number], 2);
-    }
-
-    /**
-     * Required by Observer interface.  Called when notified by an Observable that we are registered with.
-     * Observables include:
-     * The Simulator object, which lets us know when it starts and stops running
-     * A register object, which lets us know of register operations
-     * The Simulator keeps us informed of when simulated MIPS execution is active.
-     * This is the only time we care about register operations.
-     *
-     * @param observable The Observable object who is notifying us
-     * @param obj        Auxiliary object with additional information.
-     */
-    @Override
-    public void update(Observable observable, Object obj) {
-        if (observable == mars.simulator.Simulator.getInstance()) {
-            SimulatorNotice notice = (SimulatorNotice) obj;
-            if (notice.action() == SimulatorNotice.SIMULATOR_START) {
-                // Simulated MIPS execution starts.  Respond to memory changes if running in timed
-                // or stepped mode.
-                if (notice.runSpeed() != RunSpeedPanel.UNLIMITED_SPEED || notice.maxSteps() == 1) {
-                    Coprocessor0.addRegistersObserver(this);
-                    highlighting = true;
-                }
-            }
-            else {
-                // Simulated MIPS execution stops.  Stop responding.
-                Coprocessor0.deleteRegistersObserver(this);
-            }
-        }
-        else if (obj instanceof RegisterAccessNotice access) {
-            // NOTE: each register is a separate Observable
-            if (access.getAccessType() == AccessNotice.WRITE) {
-                // For now, use highlighting technique used by Label Window feature to highlight
-                // memory cell corresponding to a selected label.  The highlighting is not
-                // as visually distinct as changing the background color, but will do for now.
-                // Ideally, use the same highlighting technique as for Text Segment -- see
-                // AddressCellRenderer class in DataSegmentWindow.java.
-                highlighting = true;
-                highlightCellForRegister((Register) observable);
-                Application.getGUI().getRegistersPane().setSelectedComponent(this);
-            }
-        }
     }
 
     /**
@@ -204,13 +136,28 @@ public class Coprocessor0Window extends JPanel implements RegistersDisplayTab, O
      *
      * @param register Register object corresponding to row to be selected.
      */
-    void highlightCellForRegister(Register register) {
-        int registerRow = Coprocessor0.getRegisterPosition(register);
-        if (registerRow < 0) {
-            return; // Not a valid Coprocessor0 register
+    @Override
+    public void highlightRegister(Register register) {
+        table.highlightRow(Coprocessor0.getRegisterPosition(register));
+    }
+
+    @Override
+    public void startObservingRegisters() {
+        Coprocessor0.addRegistersObserver(this);
+    }
+
+    @Override
+    public void stopObservingRegisters() {
+        Coprocessor0.deleteRegistersObserver(this);
+    }
+
+    @Override
+    public void simulatorFinished(SimulatorFinishEvent event) {
+        super.simulatorFinished(event);
+        // Bring Coprocessor 0 to the front if terminated due to exception
+        if (event.exception() != null) {
+            Application.getGUI().getRegistersPane().setSelectedComponent(this);
         }
-        highlightRow = registerRow;
-        table.tableChanged(new TableModelEvent(table.getModel()));
     }
 
     private static class RegisterTableModel extends AbstractTableModel {
@@ -243,8 +190,7 @@ public class Coprocessor0Window extends JPanel implements RegistersDisplayTab, O
         }
 
         /**
-         * JTable uses this method to determine the default renderer/
-         * editor for each cell.
+         * JTable uses this method to determine the default renderer/editor for each cell.
          */
         @Override
         public Class<?> getColumnClass(int col) {
@@ -272,13 +218,13 @@ public class Coprocessor0Window extends JPanel implements RegistersDisplayTab, O
             try {
                 intValue = Binary.stringToInt(value.toString());
             }
-            catch (NumberFormatException e) {
+            catch (NumberFormatException exception) {
                 data[row][col] = "INVALID";
                 fireTableCellUpdated(row, col);
                 return;
             }
-            //  Assures that if changed during MIPS program execution, the update will
-            //  occur only between MIPS instructions.
+            // Assures that if changed during MIPS program execution, the update will
+            // occur only between MIPS instructions.
             synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
                 Coprocessor0.updateRegister(Coprocessor0.getRegisters()[row].getNumber(), intValue);
             }

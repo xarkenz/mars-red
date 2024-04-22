@@ -309,11 +309,10 @@ public class Program {
      * Begins simulation at beginning of text segment and continues to completion.
      *
      * @param breakPoints Array of breakpoints (PC addresses).  (Can be null.)
-     * @return true if execution completed, false otherwise.
      * @throws ProcessingException Thrown if errors occurred while simulating.
      */
-    public boolean simulate(int[] breakPoints) throws ProcessingException {
-        return this.simulate(breakPoints, -1);
+    public void simulate(int[] breakPoints) throws ProcessingException {
+        this.simulate(breakPoints, -1);
     }
 
     /**
@@ -322,11 +321,10 @@ public class Program {
      * until the specified maximum number of steps are simulated.
      *
      * @param maxSteps Maximum number of steps to simulate.  Default -1 means no maximum.
-     * @return true if execution completed, false otherwise.
      * @throws ProcessingException Thrown if errors occurred while simulating.
      */
-    public boolean simulate(int maxSteps) throws ProcessingException {
-        return this.simulate(null, maxSteps);
+    public void simulate(int maxSteps) throws ProcessingException {
+        this.simulate(null, maxSteps);
     }
 
     /**
@@ -336,26 +334,22 @@ public class Program {
      *
      * @param breakPoints Array of breakpoints (PC addresses).  (Can be null.)
      * @param maxSteps    Maximum number of steps to simulate.  Default -1 means no maximum.
-     * @return true if execution completed, false otherwise.
      * @throws ProcessingException Thrown if errors occurred while simulating.
      */
-    public boolean simulate(int[] breakPoints, int maxSteps) throws ProcessingException {
+    public void simulate(int[] breakPoints, int maxSteps) throws ProcessingException {
         steppedExecution = false;
-        Simulator simulator = Simulator.getInstance();
-        return simulator.simulate(this, RegisterFile.getProgramCounter(), maxSteps, breakPoints);
+        Simulator.getInstance().simulate(this, RegisterFile.getProgramCounter(), maxSteps, breakPoints);
     }
 
     /**
      * Simulates execution of the MIPS program. Program must have already been assembled.
      * Begins simulation at current program counter address and executes one step.
      *
-     * @return true if execution completed, false otherwise.
      * @throws ProcessingException Thrown if errors occurred while simulating.
      */
-    public boolean simulateStep() throws ProcessingException {
+    public void simulateStep() throws ProcessingException {
         steppedExecution = true;
-        Simulator simulator = Simulator.getInstance();
-        return simulator.simulate(this, RegisterFile.getProgramCounter(), 1, null);
+        Simulator.getInstance().simulate(this, RegisterFile.getProgramCounter(), 1, null);
     }
 
     /**

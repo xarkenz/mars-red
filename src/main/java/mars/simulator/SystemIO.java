@@ -59,6 +59,10 @@ public class SystemIO {
 
     private static BufferedReader inputReader = null;
 
+    private ArrayList<FileHandle> handles;
+    private int nextDescriptor;
+    private String fileOperationMessage = null;
+
     /**
      * Private method to simply return the BufferedReader used for
      * keyboard input, redirected input, or piped input.
@@ -74,12 +78,14 @@ public class SystemIO {
         return inputReader;
     }
 
-    private ArrayList<FileHandle> handles;
-    private int nextDescriptor;
-    private String fileOperationMessage = null;
-
-    public SystemIO() {
+    public SystemIO(Simulator simulator) {
         this.initHandles();
+        simulator.addThreadListener(new SimulatorListener() {
+            @Override
+            public void simulatorFinished(SimulatorFinishEvent event) {
+                SystemIO.this.resetFiles();
+            }
+        });
     }
 
     /**

@@ -473,22 +473,24 @@ public class MarsLauncher {
         try {
             Application.getSettings().delayedBranchingEnabled.setNonPersistent(delayedBranching);
             Application.getSettings().selfModifyingCodeEnabled.setNonPersistent(selfModifyingCode);
-            File mainFile = new File(filenameList.get(0)).getAbsoluteFile();// First file is "main" file
+            File mainFile = new File(filenameList.get(0)).getAbsoluteFile(); // First file is "main" file
             ArrayList<String> filesToAssemble;
             if (assembleProject) {
                 filesToAssemble = FilenameFinder.getFilenameList(mainFile.getParent(), Application.FILE_EXTENSIONS);
                 if (filenameList.size() > 1) {
                     // Using "p" project option PLUS listing more than one filename on command line.
                     // Add the additional files, avoiding duplicates.
-                    filenameList.remove(0); // first one has already been processed
+                    filenameList.remove(0); // First one has already been processed
                     ArrayList<String> moreFilesToAssemble = FilenameFinder.getFilenameList(filenameList, FilenameFinder.MATCH_ALL_EXTENSIONS);
                     // Remove any duplicates then merge the two lists.
                     for (int index = 0; index < moreFilesToAssemble.size(); index++) {
                         for (String fileToAssemble : filesToAssemble) {
                             if (fileToAssemble.equals(moreFilesToAssemble.get(index))) {
                                 moreFilesToAssemble.remove(index);
-                                index--; // adjust for left shift in moreFilesToAssemble...
-                                break;   // break out of inner loop...
+                                // Adjust for left shift in moreFilesToAssemble
+                                index--;
+                                // Break out of inner loop
+                                break;
                             }
                         }
                     }
@@ -520,18 +522,18 @@ public class MarsLauncher {
                     out.println("--------  SIMULATION BEGINS  -----------");
                 }
                 programRan = true;
-                boolean done = code.simulate(maxSteps);
-                if (!done) {
-                    out.println("\nProgram terminated when maximum step limit " + maxSteps + " reached.");
+                code.simulate(maxSteps);
+                if (maxSteps > 0) {
+                    out.println("\nProgram terminated after " + maxSteps + " steps.");
                 }
             }
             if (Application.debug) {
                 out.println("\n--------  ALL PROCESSING COMPLETE  -----------");
             }
         }
-        catch (ProcessingException e) {
+        catch (ProcessingException exception) {
             Application.exitCode = (programRan) ? simulateErrorExitCode : assembleErrorExitCode;
-            out.println(e.errors().generateErrorAndWarningReport());
+            out.println(exception.errors().generateErrorAndWarningReport());
             out.println("Processing terminated due to errors.");
         }
         return programRan;

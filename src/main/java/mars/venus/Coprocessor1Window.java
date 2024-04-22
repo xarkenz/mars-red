@@ -2,20 +2,12 @@ package mars.venus;
 
 import mars.Application;
 import mars.mips.hardware.*;
-import mars.simulator.Simulator;
-import mars.simulator.SimulatorNotice;
 import mars.util.Binary;
-import mars.venus.execute.RunSpeedPanel;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.event.TableModelEvent;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Observable;
-import java.util.Observer;
 
 /*
 Copyright (c) 2003-2009,  Pete Sanderson and Kenneth Vollmar
@@ -50,7 +42,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Pete Sanderson 2005
  */
-public class Coprocessor1Window extends JPanel implements RegistersDisplayTab, ActionListener, Observer {
+public class Coprocessor1Window extends RegistersDisplayTab {
     private static final int NAME_COLUMN = 0;
     private static final int FLOAT_COLUMN = 1;
     private static final int DOUBLE_COLUMN = 2;
@@ -97,14 +89,12 @@ public class Coprocessor1Window extends JPanel implements RegistersDisplayTab, A
 
     private final RegistersTable table;
     private final JCheckBox[] conditionFlagCheckBoxes;
-    private boolean highlighting;
-    private int highlightRow;
 
     /**
      * Constructor which sets up a fresh window with a table that contains the register values.
      */
     public Coprocessor1Window() {
-        Simulator.getInstance().addObserver(this);
+        super();
         // Display registers in table contained in scroll pane.
         this.setLayout(new BorderLayout()); // table display will occupy entire width if widened
         table = new RegistersTable(new RegisterTableModel(setupWindow()), HEADER_TIPS, REGISTER_TIPS);
@@ -117,12 +107,23 @@ public class Coprocessor1Window extends JPanel implements RegistersDisplayTab, A
         flagsPane.setBorder(new EmptyBorder(6, 6, 6, 6));
         flagsPane.setToolTipText("Flags are used by certain floating point instructions, default flag is 0");
         flagsPane.add(new JLabel("Condition Flags", JLabel.CENTER), BorderLayout.NORTH);
-        int numFlags = Coprocessor1.getConditionFlagCount();
-        conditionFlagCheckBoxes = new JCheckBox[numFlags];
-        JPanel checksPane = new JPanel(new GridLayout(2, numFlags / 2));
-        for (int flag = 0; flag < numFlags; flag++) {
+        int flagCount = Coprocessor1.getConditionFlagCount();
+        conditionFlagCheckBoxes = new JCheckBox[flagCount];
+        JPanel checksPane = new JPanel(new GridLayout(2, flagCount / 2));
+        for (int flag = 0; flag < flagCount; flag++) {
             conditionFlagCheckBoxes[flag] = new JCheckBox(Integer.toString(flag));
-            conditionFlagCheckBoxes[flag].addActionListener(this);
+            final int finalFlag = flag;
+            conditionFlagCheckBoxes[flag].addActionListener(event -> {
+                JCheckBox checkBox = (JCheckBox) event.getSource();
+                if (checkBox.isSelected()) {
+                    checkBox.setSelected(true);
+                    Coprocessor1.setConditionFlag(finalFlag);
+                }
+                else {
+                    checkBox.setSelected(false);
+                    Coprocessor1.clearConditionFlag(finalFlag);
+                }
+            });
             conditionFlagCheckBoxes[flag].setToolTipText("Flag " + flag);
             checksPane.add(conditionFlagCheckBoxes[flag]);
         }
@@ -130,24 +131,9 @@ public class Coprocessor1Window extends JPanel implements RegistersDisplayTab, A
         this.add(flagsPane, BorderLayout.SOUTH);
     }
 
-    /**
-     * Called when user clicks on a condition flag checkbox.
-     * Updates both the display and the underlying Coprocessor 1 flag.
-     *
-     * @param event The event that triggered this call
-     */
     @Override
-    public void actionPerformed(ActionEvent event) {
-        JCheckBox checkBox = (JCheckBox) event.getSource();
-        int flag = Integer.parseInt(checkBox.getText());
-        if (checkBox.isSelected()) {
-            checkBox.setSelected(true);
-            Coprocessor1.setConditionFlag(flag);
-        }
-        else {
-            checkBox.setSelected(false);
-            Coprocessor1.clearConditionFlag(flag);
-        }
+    protected RegistersTable getTable() {
+        return table;
     }
 
     /**
@@ -156,7 +142,6 @@ public class Coprocessor1Window extends JPanel implements RegistersDisplayTab, A
      * @return The array object with the data for the window.
      */
     public Object[][] setupWindow() {
-        this.highlighting = false;
         Object[][] tableData = new Object[32][3];
         for (Register register : Coprocessor1.getRegisters()) {
             tableData[register.getNumber()][0] = register.getName();
@@ -188,26 +173,6 @@ public class Coprocessor1Window extends JPanel implements RegistersDisplayTab, A
         updateRegisters(Application.getGUI().getMainPane().getExecuteTab().getValueDisplayBase());
         Coprocessor1.clearConditionFlags();
         updateConditionFlagDisplay();
-    }
-
-    /**
-     * Clear highlight background color from any row currently highlighted.
-     */
-    public void clearHighlighting() {
-        highlighting = false;
-        if (table != null) {
-            table.tableChanged(new TableModelEvent(table.getModel()));
-        }
-        highlightRow = -1; // Assure highlight will not occur upon re-assemble
-    }
-
-    /**
-     * Refresh the table, triggering re-rendering.
-     */
-    public void refresh() {
-        if (table != null) {
-            table.tableChanged(new TableModelEvent(table.getModel()));
-        }
     }
 
     /**
@@ -261,56 +226,23 @@ public class Coprocessor1Window extends JPanel implements RegistersDisplayTab, A
     }
 
     /**
-     * Required by Observer interface.  Called when notified by an Observable that we are registered with.
-     * Observables include:
-     * The Simulator object, which lets us know when it starts and stops running
-     * A register object, which lets us know of register operations
-     * The Simulator keeps us informed of when simulated MIPS execution is active.
-     * This is the only time we care about register operations.
-     *
-     * @param observable The Observable object who is notifying us
-     * @param obj        Auxiliary object with additional information.
-     */
-    @Override
-    public void update(Observable observable, Object obj) {
-        if (observable == mars.simulator.Simulator.getInstance()) {
-            SimulatorNotice notice = (SimulatorNotice) obj;
-            if (notice.action() == SimulatorNotice.SIMULATOR_START) {
-                // Simulated MIPS execution starts.  Respond to memory changes if running in timed
-                // or stepped mode.
-                if (notice.runSpeed() != RunSpeedPanel.UNLIMITED_SPEED || notice.maxSteps() == 1) {
-                    Coprocessor1.addRegistersObserver(this);
-                    highlighting = true;
-                }
-            }
-            else {
-                // Simulated MIPS execution stops.  Stop responding.
-                Coprocessor1.deleteRegistersObserver(this);
-            }
-        }
-        else if (obj instanceof RegisterAccessNotice access) {
-            // NOTE: each register is a separate Observable
-            if (access.getAccessType() == AccessNotice.WRITE) {
-                // For now, use highlighting technique used by Label Window feature to highlight
-                // memory cell corresponding to a selected label.  The highlighting is not
-                // as visually distinct as changing the background color, but will do for now.
-                // Ideally, use the same highlighting technique as for Text Segment -- see
-                // AddressCellRenderer class in DataSegmentWindow.java.
-                highlighting = true;
-                highlightCellForRegister((Register) observable);
-                Application.getGUI().getRegistersPane().setSelectedComponent(this);
-            }
-        }
-    }
-
-    /**
      * Highlight the row corresponding to the given register.
      *
      * @param register Register object corresponding to row to be selected.
      */
-    void highlightCellForRegister(Register register) {
-        highlightRow = register.getNumber();
-        table.tableChanged(new TableModelEvent(table.getModel()));
+    @Override
+    public void highlightRegister(Register register) {
+        table.highlightRow(register.getNumber());
+    }
+
+    @Override
+    public void startObservingRegisters() {
+        Coprocessor1.addRegistersObserver(this);
+    }
+
+    @Override
+    public void stopObservingRegisters() {
+        Coprocessor1.deleteRegistersObserver(this);
     }
 
     private static class RegisterTableModel extends AbstractTableModel {
@@ -343,8 +275,7 @@ public class Coprocessor1Window extends JPanel implements RegistersDisplayTab, A
         }
 
         /**
-         * JTable uses this method to determine the default renderer/
-         * editor for each cell.
+         * JTable uses this method to determine the default renderer/editor for each cell.
          */
         @Override
         public Class<?> getColumnClass(int col) {

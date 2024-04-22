@@ -1,20 +1,13 @@
 package mars.venus;
 
 import mars.Application;
-import mars.mips.hardware.AccessNotice;
 import mars.mips.hardware.Register;
-import mars.mips.hardware.RegisterAccessNotice;
 import mars.mips.hardware.RegisterFile;
-import mars.simulator.Simulator;
-import mars.simulator.SimulatorNotice;
 import mars.util.Binary;
-import mars.venus.execute.RunSpeedPanel;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
-import java.util.Observable;
-import java.util.Observer;
 
 /*
 Copyright (c) 2003-2009,  Pete Sanderson and Kenneth Vollmar
@@ -49,7 +42,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Sanderson, Bumgarner
  */
-public class RegistersWindow extends JPanel implements RegistersDisplayTab, Observer {
+public class RegistersWindow extends RegistersDisplayTab {
     private static final int NAME_COLUMN = 0;
     private static final int NUMBER_COLUMN = 1;
     private static final int VALUE_COLUMN = 2;
@@ -103,14 +96,19 @@ public class RegistersWindow extends JPanel implements RegistersDisplayTab, Obse
      * Constructor which sets up a fresh window with a table that contains the register values.
      */
     public RegistersWindow() {
-        Simulator.getInstance().addObserver(this);
+        super();
         table = new RegistersTable(new RegisterTableModel(setupWindow()), HEADER_TIPS, REGISTER_TIPS);
         table.setupColumn(NAME_COLUMN, 25, SwingConstants.LEFT);
         table.setupColumn(NUMBER_COLUMN, 25, SwingConstants.LEFT);
         table.setupColumn(VALUE_COLUMN, 60, SwingConstants.LEFT);
         table.setPreferredScrollableViewportSize(new Dimension(200, 700));
-        setLayout(new BorderLayout()); // table display will occupy entire width if widened
+        setLayout(new BorderLayout()); // Table display will occupy entire width if widened
         add(new JScrollPane(table, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER));
+    }
+
+    @Override
+    protected RegistersTable getTable() {
+        return table;
     }
 
     /**
@@ -151,24 +149,6 @@ public class RegistersWindow extends JPanel implements RegistersDisplayTab, Obse
     }
 
     /**
-     * Clear highlight background color from any cell currently highlighted.
-     */
-    public void clearHighlighting() {
-        if (table != null) {
-            table.clearHighlighting();
-        }
-    }
-
-    /**
-     * Refresh the table, triggering re-rendering.
-     */
-    public void refresh() {
-        if (table != null) {
-            table.refresh();
-        }
-    }
-
-    /**
      * Update register display using specified number base (10 or 16).
      *
      * @param base Desired number base.
@@ -204,58 +184,29 @@ public class RegistersWindow extends JPanel implements RegistersDisplayTab, Obse
     }
 
     /**
-     * Required by Observer interface.  Called when notified by an Observable that we are registered with.
-     * Observables include:
-     * The Simulator object, which lets us know when it starts and stops running
-     * A register object, which lets us know of register operations
-     * The Simulator keeps us informed of when simulated MIPS execution is active.
-     * This is the only time we care about register operations.
-     *
-     * @param observable The Observable object who is notifying us
-     * @param obj        Auxiliary object with additional information.
-     */
-    @Override
-    public void update(Observable observable, Object obj) {
-        if (observable == Simulator.getInstance()) {
-            SimulatorNotice notice = (SimulatorNotice) obj;
-            if (notice.action() == SimulatorNotice.SIMULATOR_START) {
-                // Simulated MIPS execution starts.  Respond to memory changes if running in timed
-                // or stepped mode.
-                if (notice.runSpeed() != RunSpeedPanel.UNLIMITED_SPEED || notice.maxSteps() == 1) {
-                    RegisterFile.addRegistersObserver(this);
-                    table.setUpdating(true);
-                }
-            }
-            else {
-                // Simulated MIPS execution stops.  Stop responding.
-                RegisterFile.deleteRegistersObserver(this);
-            }
-        }
-        else if (obj instanceof RegisterAccessNotice access) {
-            // NOTE: each register is a separate Observable
-            if (access.getAccessType() == AccessNotice.WRITE) {
-                // Uses the same highlighting technique as for Text Segment -- see
-                // AddressCellRenderer class in DataSegmentWindow.java.
-                table.setUpdating(true);
-                highlightRegister((Register) observable);
-                Application.getGUI().getRegistersPane().setSelectedComponent(this);
-            }
-        }
-    }
-
-    /**
      * Highlight the row corresponding to the given register.
      *
      * @param register Register object corresponding to row to be selected.
      */
+    @Override
     public void highlightRegister(Register register) {
         table.highlightRow(register.getNumber());
+    }
+
+    @Override
+    public void startObservingRegisters() {
+        RegisterFile.addRegistersObserver(this);
+    }
+
+    @Override
+    public void stopObservingRegisters() {
+        RegisterFile.deleteRegistersObserver(this);
     }
 
     private static class RegisterTableModel extends AbstractTableModel {
         private static final String[] COLUMN_NAMES = {"Name", "Number", "Value"};
 
-        Object[][] data;
+        private final Object[][] data;
 
         public RegisterTableModel(Object[][] data) {
             this.data = data;
@@ -282,8 +233,7 @@ public class RegistersWindow extends JPanel implements RegistersDisplayTab, Obse
         }
 
         /**
-         * JTable uses this method to determine the default renderer/
-         * editor for each cell.
+         * JTable uses this method to determine the default renderer/editor for each cell.
          */
         @Override
         public Class<?> getColumnClass(int col) {
@@ -317,8 +267,8 @@ public class RegistersWindow extends JPanel implements RegistersDisplayTab, Obse
                 fireTableCellUpdated(row, col);
                 return;
             }
-            //  Assures that if changed during MIPS program execution, the update will
-            //  occur only between MIPS instructions.
+            // Assures that if changed during MIPS program execution, the update will
+            // occur only between MIPS instructions.
             synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
                 RegisterFile.updateRegister(row, intValue);
             }

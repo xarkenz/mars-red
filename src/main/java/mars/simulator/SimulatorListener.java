@@ -1,7 +1,5 @@
 package mars.simulator;
 
-import mars.ProcessingException;
-
 /*
 Copyright (c) 2003-2010,  Pete Sanderson and Kenneth Vollmar
 
@@ -31,19 +29,43 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * This interface is used to detect simulator events can be implemented and attached to the {@link Simulator}
- * via {@link Simulator#addListener(SimulatorListener)}.
+ * This interface is used to detect simulator events. It can be implemented and attached to the {@link Simulator}
+ * via {@link Simulator#addGUIListener(SimulatorListener)} or {@link Simulator#addThreadListener(SimulatorListener)}.
+ * <p>
+ * Note: which method above is used to add the listener will determine which thread the callbacks run on.
  */
 public interface SimulatorListener {
-    default void started(int maxSteps, int programCounter) {
+    /**
+     * Called when the simulator begins execution of a program.
+     *
+     * @param event The event which occurred.
+     */
+    default void simulatorStarted(SimulatorStartEvent event) {
         // No action by default
     }
 
-    default void paused(int maxSteps, int programCounter, Simulator.StopReason reason) {
+    /**
+     * Called when the simulator stops execution of a program due to pausing.
+     *
+     * @param event The event which occurred.
+     */
+    default void simulatorPaused(SimulatorPauseEvent event) {
         // No action by default
     }
 
-    default void finished(int maxSteps, int programCounter, Simulator.StopReason reason, ProcessingException exception) {
+    /**
+     * Called when the simulator stops execution of a program due to termination or finishing.
+     *
+     * @param event The event which occurred.
+     */
+    default void simulatorFinished(SimulatorFinishEvent event) {
+        // No action by default
+    }
+
+    /**
+     * Called when the simulator has finished executing an instruction, but only if the run speed is not unlimited.
+     */
+    default void simulatorStepped() {
         // No action by default
     }
 }
