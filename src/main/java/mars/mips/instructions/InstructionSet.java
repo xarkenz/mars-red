@@ -136,59 +136,59 @@ public class InstructionSet {
             int[] operands = statement.getOperands();
             long product = (long) RegisterFile.getValue(operands[0]) * (long) RegisterFile.getValue(operands[1]);
             // Register 33 is HIGH and 34 is LOW
-            RegisterFile.updateRegister(33, (int) (product >> 32));
-            RegisterFile.updateRegister(34, (int) ((product << 32) >> 32));
+            RegisterFile.updateRegister(RegisterFile.HIGH_ORDER, (int) (product >> 32));
+            RegisterFile.updateRegister(RegisterFile.LOW_ORDER, (int) ((product << 32) >> 32));
         }));
         instructionList.add(new BasicInstruction("multu $t1,$t2", "Multiplication unsigned : Set HI to high-order 32 bits, LO to low-order 32 bits of the product of unsigned $t1 and $t2 (use mfhi to access HI, mflo to access LO)", BasicInstructionFormat.R_FORMAT, "000000 fffff sssss 00000 00000 011001", statement -> {
             int[] operands = statement.getOperands();
             long product = (((long) RegisterFile.getValue(operands[0])) << 32 >>> 32) * (((long) RegisterFile.getValue(operands[1])) << 32 >>> 32);
             // Register 33 is HIGH and 34 is LOW
-            RegisterFile.updateRegister(33, (int) (product >> 32));
-            RegisterFile.updateRegister(34, (int) ((product << 32) >> 32));
+            RegisterFile.updateRegister(RegisterFile.HIGH_ORDER, (int) (product >> 32));
+            RegisterFile.updateRegister(RegisterFile.LOW_ORDER, (int) ((product << 32) >> 32));
         }));
         instructionList.add(new BasicInstruction("mul $t1,$t2,$t3", "Multiplication without overflow  : Set HI to high-order 32 bits, LO and $t1 to low-order 32 bits of the product of $t2 and $t3 (use mfhi to access HI, mflo to access LO)", BasicInstructionFormat.R_FORMAT, "011100 sssss ttttt fffff 00000 000010", statement -> {
             int[] operands = statement.getOperands();
             long product = (long) RegisterFile.getValue(operands[1]) * (long) RegisterFile.getValue(operands[2]);
             RegisterFile.updateRegister(operands[0], (int) ((product << 32) >> 32));
             // Register 33 is HIGH and 34 is LOW.  Not required by MIPS; SPIM does it.
-            RegisterFile.updateRegister(33, (int) (product >> 32));
-            RegisterFile.updateRegister(34, (int) ((product << 32) >> 32));
+            RegisterFile.updateRegister(RegisterFile.HIGH_ORDER, (int) (product >> 32));
+            RegisterFile.updateRegister(RegisterFile.LOW_ORDER, (int) ((product << 32) >> 32));
         }));
         instructionList.add(new BasicInstruction("madd $t1,$t2", "Multiply add : Multiply $t1 by $t2 then increment HI by high-order 32 bits of product, increment LO by low-order 32 bits of product (use mfhi to access HI, mflo to access LO)", BasicInstructionFormat.R_FORMAT, "011100 fffff sssss 00000 00000 000000", statement -> {
             int[] operands = statement.getOperands();
             long product = (long) RegisterFile.getValue(operands[0]) * (long) RegisterFile.getValue(operands[1]);
             // Register 33 is HIGH and 34 is LOW.
-            long contentsHiLo = Binary.twoIntsToLong(RegisterFile.getValue(33), RegisterFile.getValue(34));
+            long contentsHiLo = Binary.twoIntsToLong(RegisterFile.getValue(RegisterFile.HIGH_ORDER), RegisterFile.getValue(RegisterFile.LOW_ORDER));
             long sum = contentsHiLo + product;
-            RegisterFile.updateRegister(33, Binary.highOrderLongToInt(sum));
-            RegisterFile.updateRegister(34, Binary.lowOrderLongToInt(sum));
+            RegisterFile.updateRegister(RegisterFile.HIGH_ORDER, Binary.highOrderLongToInt(sum));
+            RegisterFile.updateRegister(RegisterFile.LOW_ORDER, Binary.lowOrderLongToInt(sum));
         }));
         instructionList.add(new BasicInstruction("maddu $t1,$t2", "Multiply add unsigned : Multiply $t1 by $t2 then increment HI by high-order 32 bits of product, increment LO by low-order 32 bits of product, unsigned (use mfhi to access HI, mflo to access LO)", BasicInstructionFormat.R_FORMAT, "011100 fffff sssss 00000 00000 000001", statement -> {
             int[] operands = statement.getOperands();
             long product = (((long) RegisterFile.getValue(operands[0])) << 32 >>> 32) * (((long) RegisterFile.getValue(operands[1])) << 32 >>> 32);
             // Register 33 is HIGH and 34 is LOW.
-            long contentsHiLo = Binary.twoIntsToLong(RegisterFile.getValue(33), RegisterFile.getValue(34));
+            long contentsHiLo = Binary.twoIntsToLong(RegisterFile.getValue(RegisterFile.HIGH_ORDER), RegisterFile.getValue(RegisterFile.LOW_ORDER));
             long sum = contentsHiLo + product;
-            RegisterFile.updateRegister(33, Binary.highOrderLongToInt(sum));
-            RegisterFile.updateRegister(34, Binary.lowOrderLongToInt(sum));
+            RegisterFile.updateRegister(RegisterFile.HIGH_ORDER, Binary.highOrderLongToInt(sum));
+            RegisterFile.updateRegister(RegisterFile.LOW_ORDER, Binary.lowOrderLongToInt(sum));
         }));
         instructionList.add(new BasicInstruction("msub $t1,$t2", "Multiply subtract : Multiply $t1 by $t2 then decrement HI by high-order 32 bits of product, decrement LO by low-order 32 bits of product (use mfhi to access HI, mflo to access LO)", BasicInstructionFormat.R_FORMAT, "011100 fffff sssss 00000 00000 000100", statement -> {
             int[] operands = statement.getOperands();
             long product = (long) RegisterFile.getValue(operands[0]) * (long) RegisterFile.getValue(operands[1]);
             // Register 33 is HIGH and 34 is LOW.
-            long contentsHiLo = Binary.twoIntsToLong(RegisterFile.getValue(33), RegisterFile.getValue(34));
+            long contentsHiLo = Binary.twoIntsToLong(RegisterFile.getValue(RegisterFile.HIGH_ORDER), RegisterFile.getValue(RegisterFile.LOW_ORDER));
             long diff = contentsHiLo - product;
-            RegisterFile.updateRegister(33, Binary.highOrderLongToInt(diff));
-            RegisterFile.updateRegister(34, Binary.lowOrderLongToInt(diff));
+            RegisterFile.updateRegister(RegisterFile.HIGH_ORDER, Binary.highOrderLongToInt(diff));
+            RegisterFile.updateRegister(RegisterFile.LOW_ORDER, Binary.lowOrderLongToInt(diff));
         }));
         instructionList.add(new BasicInstruction("msubu $t1,$t2", "Multiply subtract unsigned : Multiply $t1 by $t2 then decrement HI by high-order 32 bits of product, decement LO by low-order 32 bits of product, unsigned (use mfhi to access HI, mflo to access LO)", BasicInstructionFormat.R_FORMAT, "011100 fffff sssss 00000 00000 000101", statement -> {
             int[] operands = statement.getOperands();
             long product = (((long) RegisterFile.getValue(operands[0])) << 32 >>> 32) * (((long) RegisterFile.getValue(operands[1])) << 32 >>> 32);
             // Register 33 is HIGH and 34 is LOW.
-            long contentsHiLo = Binary.twoIntsToLong(RegisterFile.getValue(33), RegisterFile.getValue(34));
+            long contentsHiLo = Binary.twoIntsToLong(RegisterFile.getValue(RegisterFile.HIGH_ORDER), RegisterFile.getValue(RegisterFile.LOW_ORDER));
             long diff = contentsHiLo - product;
-            RegisterFile.updateRegister(33, Binary.highOrderLongToInt(diff));
-            RegisterFile.updateRegister(34, Binary.lowOrderLongToInt(diff));
+            RegisterFile.updateRegister(RegisterFile.HIGH_ORDER, Binary.highOrderLongToInt(diff));
+            RegisterFile.updateRegister(RegisterFile.LOW_ORDER, Binary.lowOrderLongToInt(diff));
         }));
         instructionList.add(new BasicInstruction("div $t1,$t2", "Division with overflow : Divide $t1 by $t2 then set LO to quotient and HI to remainder (use mfhi to access HI, mflo to access LO)", BasicInstructionFormat.R_FORMAT, "000000 fffff sssss 00000 00000 011010", statement -> {
             int[] operands = statement.getOperands();
@@ -199,8 +199,8 @@ public class InstructionSet {
                 return;
             }
             // Register 33 is HIGH and 34 is LOW
-            RegisterFile.updateRegister(33, RegisterFile.getValue(operands[0]) % RegisterFile.getValue(operands[1]));
-            RegisterFile.updateRegister(34, RegisterFile.getValue(operands[0]) / RegisterFile.getValue(operands[1]));
+            RegisterFile.updateRegister(RegisterFile.HIGH_ORDER, RegisterFile.getValue(operands[0]) % RegisterFile.getValue(operands[1]));
+            RegisterFile.updateRegister(RegisterFile.LOW_ORDER, RegisterFile.getValue(operands[0]) / RegisterFile.getValue(operands[1]));
         }));
         instructionList.add(new BasicInstruction("divu $t1,$t2", "Division unsigned without overflow : Divide unsigned $t1 by $t2 then set LO to quotient and HI to remainder (use mfhi to access HI, mflo to access LO)", BasicInstructionFormat.R_FORMAT, "000000 fffff sssss 00000 00000 011011", statement -> {
             int[] operands = statement.getOperands();
@@ -211,24 +211,24 @@ public class InstructionSet {
             long oper1 = ((long) RegisterFile.getValue(operands[0])) << 32 >>> 32;
             long oper2 = ((long) RegisterFile.getValue(operands[1])) << 32 >>> 32;
             // Register 33 is HIGH and 34 is LOW
-            RegisterFile.updateRegister(33, (int) (((oper1 % oper2) << 32) >> 32));
-            RegisterFile.updateRegister(34, (int) (((oper1 / oper2) << 32) >> 32));
+            RegisterFile.updateRegister(RegisterFile.HIGH_ORDER, (int) (((oper1 % oper2) << 32) >> 32));
+            RegisterFile.updateRegister(RegisterFile.LOW_ORDER, (int) (((oper1 / oper2) << 32) >> 32));
         }));
         instructionList.add(new BasicInstruction("mfhi $t1", "Move from HI register : Set $t1 to contents of HI (see multiply and divide operations)", BasicInstructionFormat.R_FORMAT, "000000 00000 00000 fffff 00000 010000", statement -> {
             int[] operands = statement.getOperands();
-            RegisterFile.updateRegister(operands[0], RegisterFile.getValue(33));
+            RegisterFile.updateRegister(operands[0], RegisterFile.getValue(RegisterFile.HIGH_ORDER));
         }));
         instructionList.add(new BasicInstruction("mflo $t1", "Move from LO register : Set $t1 to contents of LO (see multiply and divide operations)", BasicInstructionFormat.R_FORMAT, "000000 00000 00000 fffff 00000 010010", statement -> {
             int[] operands = statement.getOperands();
-            RegisterFile.updateRegister(operands[0], RegisterFile.getValue(34));
+            RegisterFile.updateRegister(operands[0], RegisterFile.getValue(RegisterFile.LOW_ORDER));
         }));
         instructionList.add(new BasicInstruction("mthi $t1", "Move to HI registerr : Set HI to contents of $t1 (see multiply and divide operations)", BasicInstructionFormat.R_FORMAT, "000000 fffff 00000 00000 00000 010001", statement -> {
             int[] operands = statement.getOperands();
-            RegisterFile.updateRegister(33, RegisterFile.getValue(operands[0]));
+            RegisterFile.updateRegister(RegisterFile.HIGH_ORDER, RegisterFile.getValue(operands[0]));
         }));
         instructionList.add(new BasicInstruction("mtlo $t1", "Move to LO register : Set LO to contents of $t1 (see multiply and divide operations)", BasicInstructionFormat.R_FORMAT, "000000 fffff 00000 00000 00000 010011", statement -> {
             int[] operands = statement.getOperands();
-            RegisterFile.updateRegister(34, RegisterFile.getValue(operands[0]));
+            RegisterFile.updateRegister(RegisterFile.LOW_ORDER, RegisterFile.getValue(operands[0]));
         }));
         instructionList.add(new BasicInstruction("and $t1,$t2,$t3", "Bitwise AND : Set $t1 to bitwise AND of $t2 and $t3", BasicInstructionFormat.R_FORMAT, "000000 sssss ttttt fffff 00000 100100", statement -> {
             int[] operands = statement.getOperands();
@@ -444,7 +444,7 @@ public class InstructionSet {
         instructionList.add(new BasicInstruction("bltzal $t1,label", "Branch if less than zero and link : If $t1 is less than or equal to zero, then set $ra to the Program Counter and branch to statement at label's address", BasicInstructionFormat.I_BRANCH_FORMAT, "000001 fffff 10000 ssssssssssssssss", statement -> {
             int[] operands = statement.getOperands();
             if (RegisterFile.getValue(operands[0]) < 0) {  // the "and link" part
-                processReturnAddress(31);//RegisterFile.updateRegister("$ra",RegisterFile.getProgramCounter());
+                processReturnAddress(31);
                 processBranch(operands[1]);
             }
         }));
@@ -538,17 +538,17 @@ public class InstructionSet {
         }));
         instructionList.add(new BasicInstruction("jal target", "Jump and link : Set $ra to Program Counter (return address) then jump to statement at target address", BasicInstructionFormat.J_FORMAT, "000011 ffffffffffffffffffffffffff", statement -> {
             int[] operands = statement.getOperands();
-            processReturnAddress(31);// RegisterFile.updateRegister(31, RegisterFile.getProgramCounter());
+            processReturnAddress(31);
             processJump((RegisterFile.getProgramCounter() & 0xF0000000) | (operands[0] << 2));
         }));
         instructionList.add(new BasicInstruction("jalr $t1,$t2", "Jump and link register : Set $t1 to Program Counter (return address) then jump to statement whose address is in $t2", BasicInstructionFormat.R_FORMAT, "000000 sssss 00000 fffff 00000 001001", statement -> {
             int[] operands = statement.getOperands();
-            processReturnAddress(operands[0]);//RegisterFile.updateRegister(operands[0], RegisterFile.getProgramCounter());
+            processReturnAddress(operands[0]);
             processJump(RegisterFile.getValue(operands[1]));
         }));
         instructionList.add(new BasicInstruction("jalr $t1", "Jump and link register : Set $ra to Program Counter (return address) then jump to statement whose address is in $t1", BasicInstructionFormat.R_FORMAT, "000000 fffff 00000 11111 00000 001001", statement -> {
             int[] operands = statement.getOperands();
-            processReturnAddress(31);//RegisterFile.updateRegister(31, RegisterFile.getProgramCounter());
+            processReturnAddress(31);
             processJump(RegisterFile.getValue(operands[0]));
         }));
         instructionList.add(new BasicInstruction("lb $t1,-100($t2)", "Load byte : Set $t1 to sign-extended 8-bit value from effective memory byte address", BasicInstructionFormat.I_FORMAT, "100000 ttttt fffff ssssssssssssssss", statement -> {

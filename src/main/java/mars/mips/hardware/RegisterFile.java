@@ -44,10 +44,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 public class RegisterFile {
     public static final int GLOBAL_POINTER = 28;
     public static final int STACK_POINTER = 29;
+    public static final int FRAME_POINTER = 30;
+    public static final int RETURN_ADDRESS = 31;
     public static final int PROGRAM_COUNTER = 32;
     public static final int HIGH_ORDER = 33;
     public static final int LOW_ORDER = 34;
-    public static final int USER_REGISTER_COUNT = 32;
 
     private static final Register[] registers = {
         new Register("$zero", 0, 0),
@@ -80,8 +81,8 @@ public class RegisterFile {
         new Register("$k1", 27, 0),
         new Register("$gp", GLOBAL_POINTER, Memory.globalPointer),
         new Register("$sp", STACK_POINTER, Memory.stackPointer),
-        new Register("$fp", 30, 0),
-        new Register("$ra", 31, 0),
+        new Register("$fp", FRAME_POINTER, 0),
+        new Register("$ra", RETURN_ADDRESS, 0),
         // These are internal registers which are not accessible directly by the user
         new Register("pc", PROGRAM_COUNTER, Memory.textBaseAddress),
         new Register("hi", HIGH_ORDER, 0),
@@ -90,7 +91,7 @@ public class RegisterFile {
 
     /**
      * Update the register value whose number is given, unless it is {@code $zero}.
-     * Also handles the internal lo and hi registers.
+     * Also handles the internal pc, lo, and hi registers.
      *
      * @param number Register to set the value of.
      * @param value The desired value for the register.
@@ -99,7 +100,7 @@ public class RegisterFile {
     public static int updateRegister(int number, int value) {
         int previousValue;
         // The $zero register cannot be updated
-        if (0 < number && number < USER_REGISTER_COUNT) {
+        if (0 < number && number < registers.length) {
             // Originally, this used a linear search to figure out which register to update.
             // Since all registers 0-31 are present in order, a simple array access should work.
             // - Sean Clarke 03/2024
