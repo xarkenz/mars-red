@@ -1,32 +1,23 @@
-# This is a basic workflow to help you get started with Actions
+# Credit: https://github.com/MathieuSoysal/Javadoc-publisher.yml
 
-name: Build and Deploy
+name: Deploy Javadoc
 
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the main branch
   push:
-    branches: [ main ]
+    branches:
+      - main
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build-and-deploy:
-    # The type of runner that the job will run on
+  publish:
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
+    permissions:
+      contents: write  # if you have a protection rule on your repository, you'll need to give write permission to the workflow.
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Install and Build
-        uses: actions/setup-java@v2
+      - name: Deploy JavaDoc 🚀
+        uses: MathieuSoysal/Javadoc-publisher.yml@v2.5.0
         with:
-          distribution: 'zulu' # See 'Supported distributions' for available options
-          java-version: '17'
-      - run: javadoc -sourcepath ./src -d ./docs -subpackages main.java
-      - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@v4.2.3
-        with:
-          branch: docs # The branch the action should deploy to.
-          folder: docs # The folder the action should deploy.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          javadoc-branch: javadoc
+          java-version: 17
+          target-folder: javadoc # url will be https://<username>.github.io/<repo>/javadoc, This can be left as nothing to generate javadocs in the root folder.
+          project: maven
