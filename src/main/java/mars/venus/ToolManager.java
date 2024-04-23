@@ -50,16 +50,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 public class ToolManager {
     private static final String TOOLS_PACKAGE_PREFIX = "mars.tools.";
     private static final String TOOLS_DIRECTORY_PATH = "mars/tools";
-    private static final String CLASS_EXTENSION = ".class";
+    private static final String CLASS_EXTENSION = "class";
 
-    private List<ToolAction> toolActions = null;
+    private static List<ToolAction> toolActions = null;
+
+    private ToolManager() {}
 
     /**
      * Get the list of actions to fill the Tools menu, which may be empty. The loader
      * searches for all classes in the {@code mars.tools} package that implement {@link MarsTool}.
      *
-     * @return A list of actions, one for each {@code MarsTool} discovered.
-     *         This can also be retrieved later via {@link #getToolActions()}.
+     * @return An array of actions, one for each {@code MarsTool} discovered.
      */
     /*
      * This method is adapted from the loadGameControllers() method in Bret Barker's
@@ -79,52 +80,45 @@ public class ToolManager {
      * as a ZipFile, get the ZipEntry enumeration, find the class files in the tools
      * folder, then continue as before.
      */
-    public List<ToolAction> loadTools() {
-        this.toolActions = new ArrayList<>();
+    public static ToolAction[] getToolActions() {
+        if (toolActions == null) {
+            toolActions = new ArrayList<>();
 
-        // Add any tools stored externally, as listed in Config.properties file.
-        // This needs some work, because mars.Globals.getExternalTools() returns
-        // whatever is in the properties file entry.  Since the class file will
-        // not be located in the mars.tools folder, the loop below will not process
-        // it correctly.  Not sure how to create a Class object given an absolute
-        // pathname.
+            // Add any tools stored externally, as listed in Config.properties file.
+            // This needs some work, because mars.Globals.getExternalTools() returns
+            // whatever is in the properties file entry.  Since the class file will
+            // not be located in the mars.tools folder, the loop below will not process
+            // it correctly.  Not sure how to create a Class object given an absolute
+            // pathname.
 
-        // Grab all class files in the same directory as MarsTool
-        List<String> filenames = FilenameFinder.getFilenameList(this.getClass().getClassLoader(), TOOLS_DIRECTORY_PATH, CLASS_EXTENSION);
-        Set<String> knownFilenames = new HashSet<>();
+            // Grab all class files in the same directory as the tools package
+            List<String> filenames = FilenameFinder.findFilenames(ToolManager.class.getClassLoader(), TOOLS_DIRECTORY_PATH, CLASS_EXTENSION);
+            Set<String> knownFilenames = new HashSet<>();
 
-        for (String filename : filenames) {
-            if (!knownFilenames.add(filename)) {
-                // We've already encountered this file (happens if run in MARS development directory)
-                continue;
-            }
-            try {
-                // Obtain the class corresponding to the filename
-                String className = TOOLS_PACKAGE_PREFIX + filename.substring(0, filename.length() - CLASS_EXTENSION.length());
-                Class<?> loadedClass = Class.forName(className);
-                // Ensure it is a concrete class implementing the MarsTool interface
-                if (Modifier.isAbstract(loadedClass.getModifiers()) || Modifier.isInterface(loadedClass.getModifiers()) || !MarsTool.class.isAssignableFrom(loadedClass)) {
+            for (String filename : filenames) {
+                if (!knownFilenames.add(filename)) {
+                    // We've already encountered this file (happens if run in MARS development directory)
                     continue;
                 }
-                // Obtain an instance of the class
-                MarsTool tool = (MarsTool) loadedClass.getDeclaredConstructor().newInstance();
-                // Create an action for the tool and add it to the list
-                this.toolActions.add(new ToolAction(tool));
-            }
-            catch (Exception exception) {
-                System.err.println(this.getClass().getSimpleName() + ": " + exception);
+                try {
+                    // Obtain the class corresponding to the filename
+                    String className = TOOLS_PACKAGE_PREFIX + filename.substring(0, filename.length() - CLASS_EXTENSION.length() - 1);
+                    Class<?> loadedClass = Class.forName(className);
+                    // Ensure it is a concrete class implementing the MarsTool interface
+                    if (Modifier.isAbstract(loadedClass.getModifiers()) || Modifier.isInterface(loadedClass.getModifiers()) || !MarsTool.class.isAssignableFrom(loadedClass)) {
+                        continue;
+                    }
+                    // Obtain an instance of the class
+                    MarsTool tool = (MarsTool) loadedClass.getDeclaredConstructor().newInstance();
+                    // Create an action for the tool and add it to the list
+                    toolActions.add(new ToolAction(tool));
+                }
+                catch (Exception exception) {
+                    System.err.println(ToolManager.class.getSimpleName() + ": " + exception);
+                }
             }
         }
 
-        return this.toolActions;
-    }
-
-    /**
-     * Get the list of actions for the loaded tools.
-     *
-     * @return The list of tool actions.
-     */
-    public List<ToolAction> getToolActions() {
-        return this.toolActions;
+        return toolActions.toArray(ToolAction[]::new);
     }
 }

@@ -345,7 +345,7 @@ public class ProgramStatement {
                 errors.add(new ErrorMessage(this.sourceProgram, this.sourceLine, 0, "Jump target word address beyond 26-bit range"));
                 return;
             }
-            // Note the  bit shift to make this a word address.
+            // Note the bit shift to make this a word address.
             this.operands[0] = this.operands[0] >>> 2;
             this.insertBinaryCode(this.operands[0], Instruction.operandMask[0], errors);
         }

@@ -4,6 +4,8 @@ import mars.Application;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 /*
 Copyright (c) 2003-2013,  Pete Sanderson and Kenneth Vollmar
@@ -34,32 +36,60 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Provides standard i/o services needed to simulate the MIPS syscall
+ * Provides standard input/output services needed to simulate the MIPS syscall
  * routines.  These methods will detect whether the simulator is being
  * run from the command line or through the GUI, then do I/O to
- * System.in and System.out in the former situation, and interact with
+ * {@link System#in} and {@link System#out} in the former situation, and interact with
  * the GUI in the latter.
  *
- * @author Pete Sanderson and Ken Vollmar
- * @version August 2003-2005
+ * @author Pete Sanderson and Ken Vollmar, August 2003-2005
  */
 public class SystemIO {
-    public static final int O_RDONLY = 0x00000000; // Open the file for read access
-    public static final int O_WRONLY = 0x00000001; // Open the file for write access
-    public static final int O_RDWR = 0x00000002; // Open the file for both reading and writing
-    public static final int O_APPEND = 0x00000008; // Always write data to the end of the file
-    public static final int O_CREAT = 0x00000200; // Create the file if it doesn't already exist
-    public static final int O_EXCL = 0x00000800; // Used in conjunction with O_CREAT, fails if file already exists
+    /**
+     * Open the file for read access.
+     */
+    public static final int O_RDONLY = 0x00000000;
+    /**
+     * Open the file for write access.
+     */
+    public static final int O_WRONLY = 0x00000001;
+    /**
+     * Open the file for both reading and writing.
+     */
+    public static final int O_RDWR = 0x00000002;
+    /**
+     * Always write data to the end of the file.
+     */
+    public static final int O_APPEND = 0x00000008;
+    /**
+     * Create the file if it doesn't already exist.
+     */
+    public static final int O_CREAT = 0x00000200;
+    /**
+     * Fail if the file already exists. (Used in conjunction with {@link #O_CREAT}.)
+     */
+    public static final int O_EXCL = 0x00000800;
 
-    // File descriptors for standard I/O channels
+    /**
+     * File descriptor for standard input ({@link System#in}).
+     */
     public static final int STDIN_DESCRIPTOR = 0;
+    /**
+     * File descriptor for standard output ({@link System#out}).
+     */
     public static final int STDOUT_DESCRIPTOR = 1;
+    /**
+     * File descriptor for standard error ({@link System#err}).
+     */
     public static final int STDERR_DESCRIPTOR = 2;
+    /**
+     * The first file descriptor that will be allocated to the user.
+     */
     public static final int FIRST_USER_DESCRIPTOR = 3;
 
     private static BufferedReader inputReader = null;
 
-    private ArrayList<FileHandle> handles;
+    private List<FileHandle> handles;
     private int nextDescriptor;
     private String fileOperationMessage = null;
 
@@ -78,6 +108,11 @@ public class SystemIO {
         return inputReader;
     }
 
+    /**
+     * Set up I/O functionality for the given simulator.
+     *
+     * @param simulator The simulator this instance will be bound to.
+     */
     public SystemIO(Simulator simulator) {
         this.initHandles();
         simulator.addThreadListener(new SimulatorListener() {
@@ -117,6 +152,12 @@ public class SystemIO {
         return this.fileOperationMessage;
     }
 
+    /**
+     * Retrieve the file handle corresponding to the given file descriptor.
+     *
+     * @param descriptor The file descriptor for the desired handle.
+     * @return The handle, if it exists and is currently in use, or null otherwise.
+     */
     public FileHandle getOpenHandle(int descriptor) {
         if (0 <= descriptor && descriptor < this.handles.size()) {
             FileHandle handle = this.handles.get(descriptor);
@@ -127,6 +168,12 @@ public class SystemIO {
         return null;
     }
 
+    /**
+     * Retrieve the input stream corresponding to the given file descriptor.
+     *
+     * @param descriptor The file descriptor for the desired stream.
+     * @return The stream, if the descriptor corresponds to a valid input stream, or null otherwise.
+     */
     public InputStream getInputStream(int descriptor) {
         FileHandle handle = this.getOpenHandle(descriptor);
         if (handle != null) {
@@ -137,6 +184,12 @@ public class SystemIO {
         }
     }
 
+    /**
+     * Retrieve the output stream corresponding to the given file descriptor.
+     *
+     * @param descriptor The file descriptor for the desired stream.
+     * @return The stream, if the descriptor corresponds to a valid output stream, or null otherwise.
+     */
     public OutputStream getOutputStream(int descriptor) {
         FileHandle handle = this.getOpenHandle(descriptor);
         if (handle != null) {
@@ -152,7 +205,7 @@ public class SystemIO {
      * IMPLEMENTED.  Also note that file permission modes are also NOT IMPLEMENTED.
      *
      * @param filename The path of the file to open.
-     * @param flags    0 for read, 1 for write, 9 for append
+     * @param flags    One of {@link #O_RDONLY}, {@link #O_WRONLY}, {@link #O_WRONLY} | {@link #O_APPEND}.
      * @return File descriptor for the file opened, or -1 if an error occurred.
      * @author Ken Vollmar
      */
@@ -214,10 +267,10 @@ public class SystemIO {
     /**
      * Write bytes to file.
      *
-     * @param descriptor      file descriptor
-     * @param buffer          byte array containing characters to write
-     * @param lengthRequested number of bytes to write
-     * @return number of bytes written, or -1 on error
+     * @param descriptor      Target file descriptor.
+     * @param buffer          Byte array containing characters to write.
+     * @param lengthRequested Number of bytes to write.
+     * @return Number of bytes written, or -1 on error.
      */
     public int writeToFile(int descriptor, byte[] buffer, int lengthRequested) {
         /////////////// DPS 8-Jan-2013  ////////////////////////////////////////////////////
@@ -270,10 +323,10 @@ public class SystemIO {
     /**
      * Read bytes from file.
      *
-     * @param descriptor      file descriptor
-     * @param buffer          byte array to contain bytes read
-     * @param lengthRequested number of bytes to read
-     * @return number of bytes read, 0 on EOF, or -1 on error
+     * @param descriptor      Target file descriptor.
+     * @param buffer          Byte array to contain bytes read.
+     * @param lengthRequested Maximum number of bytes to read.
+     * @return Number of bytes read, 0 on EOF, or -1 on error.
      */
     public int readFromFile(int descriptor, byte[] buffer, int lengthRequested) {
         /////////////// DPS 8-Jan-2013  //////////////////////////////////////////////////
@@ -281,8 +334,8 @@ public class SystemIO {
         if (descriptor == STDIN_DESCRIPTOR && Application.getGUI() != null) {
             String input = Application.getGUI().getMessagesPane().getInputString(lengthRequested);
             byte[] bytesRead = input.getBytes();
-            for (int i = 0; i < buffer.length; i++) {
-                buffer[i] = (i < bytesRead.length) ? bytesRead[i] : 0;
+            for (int index = 0; index < buffer.length; index++) {
+                buffer[index] = (index < bytesRead.length) ? bytesRead[index] : 0;
             }
             return Math.min(buffer.length, bytesRead.length);
         }
@@ -297,43 +350,83 @@ public class SystemIO {
             return -1;
         }
         try {
-            // Reads up to lengthRequested bytes of data from this Input stream into an array of bytes.
+            // Reads up to lengthRequested bytes of data from this input stream into an array of bytes.
             int lengthRead = inputStream.read(buffer, 0, lengthRequested);
             // This method will return -1 upon EOF, but our spec says that negative
             // value represents an error, so we return 0 for EOF.  DPS 10-July-2008.
             return lengthRead == -1 ? 0 : lengthRead;
         }
-        catch (IOException e) {
+        catch (IOException exception) {
             fileOperationMessage = "IOException on read of file with descriptor " + descriptor;
             return -1;
         }
-        catch (IndexOutOfBoundsException e) {
+        catch (IndexOutOfBoundsException exception) {
             fileOperationMessage = "IndexOutOfBoundsException on read of file with descriptor " + descriptor;
             return -1;
         }
     }
 
+    /**
+     * Virtual representation of a file for the file-related syscalls to use.
+     * An instance of this class can be in one of two states: <b>open</b> or <b>closed</b>.
+     * <p>
+     * In the <b>open</b> state, the instance contains a currently active input/output stream,
+     * as well as the name of the stream and which flags it was opened with.
+     * <p>
+     * In the <b>closed</b> state, the instance instead stores one integer for the index of the
+     * next free file descriptor in the list of handles. This allows the list of handles to
+     * always know the next closed file descriptor it can open.
+     *
+     * @author Sean Clarke 04/2024
+     */
     public static class FileHandle {
         private String name;
         private Closeable stream;
         private int flagsOrNextDescriptor;
 
+        /**
+         * Create a new <b>closed</b> handle with the previous head of the closed handle list.
+         *
+         * @param nextDescriptor The descriptor of the next closed handle following this one.
+         */
         public FileHandle(int nextDescriptor) {
             this.name = null;
             this.stream = null;
             this.flagsOrNextDescriptor = nextDescriptor;
         }
 
+        /**
+         * Create a new <b>open</b> handle with the given stream information.
+         *
+         * @param name   The name of the stream.
+         * @param stream The input/output stream.
+         * @param flags  The opening flags for this stream.
+         */
         public FileHandle(String name, Closeable stream, int flags) {
             this.open(name, stream, flags);
         }
 
+        /**
+         * Open this handle with the given stream information.
+         * <p>
+         * Note: this does not attempt to close an existing stream. Ensure {@link #close(int)} is called
+         * beforehand if this handle is already open.
+         *
+         * @param name   The name of the stream.
+         * @param stream The input/output stream.
+         * @param flags  The opening flags for this stream.
+         */
         public void open(String name, Closeable stream, int flags) {
             this.name = name;
             this.stream = stream;
             this.flagsOrNextDescriptor = flags;
         }
 
+        /**
+         * Close this handle with the previous head of the closed handle list.
+         *
+         * @param nextDescriptor The descriptor of the next closed handle following this one.
+         */
         public void close(int nextDescriptor) {
             if (this.stream != null) {
                 try {
@@ -347,22 +440,57 @@ public class SystemIO {
             this.flagsOrNextDescriptor = nextDescriptor;
         }
 
+        /**
+         * Determine whether this handle is <b>open</b> or <b>closed</b>.
+         *
+         * @return {@code true} if this handle is <b>open</b>, or {@code false} otherwise.
+         */
         public boolean isOpen() {
             return this.stream != null;
         }
 
+        /**
+         * Get the name of the stream used by this handle.
+         * <p>
+         * Note: only call this method if this handle is <b>open</b>.
+         *
+         * @return The name of the stream.
+         */
         public String getName() {
+            Objects.requireNonNull(this.stream);
             return this.name;
         }
 
+        /**
+         * Get the flags the stream was opened with.
+         * <p>
+         * Note: only call this method if this handle is <b>open</b>.
+         *
+         * @return The integer flags.
+         */
         public int getFlags() {
+            Objects.requireNonNull(this.stream);
             return this.flagsOrNextDescriptor;
         }
 
+        /**
+         * Get the descriptor of the next closed handle following this one.
+         * <p>
+         * Note: only call this method if this handle is <b>closed</b>.
+         *
+         * @return The descriptor of the next handle.
+         */
         public int getNextDescriptor() {
             return this.flagsOrNextDescriptor;
         }
 
+        /**
+         * Get the input stream used by this handle.
+         * <p>
+         * Note: only call this method if this handle is <b>open</b>.
+         *
+         * @return The input stream, or {@code null} if this handle uses an output stream instead.
+         */
         public InputStream getInputStream() {
             if (this.stream instanceof InputStream inputStream) {
                 return inputStream;
@@ -372,6 +500,13 @@ public class SystemIO {
             }
         }
 
+        /**
+         * Get the output stream used by this handle.
+         * <p>
+         * Note: only call this method if this handle is <b>open</b>.
+         *
+         * @return The output stream, or {@code null} if this handle uses an input stream instead.
+         */
         public OutputStream getOutputStream() {
             if (this.stream instanceof OutputStream outputStream) {
                 return outputStream;
@@ -408,7 +543,8 @@ public class SystemIO {
             try {
                 input = getInputReader().readLine();
             }
-            catch (IOException ignored) {
+            catch (IOException exception) {
+                // Leave the input as an empty string
             }
         }
         else {
@@ -437,7 +573,8 @@ public class SystemIO {
             try {
                 input = getInputReader().readLine();
             }
-            catch (IOException ignored) {
+            catch (IOException exception) {
+                // Leave the input as an empty string
             }
         }
         else {
@@ -464,7 +601,8 @@ public class SystemIO {
             try {
                 input = getInputReader().readLine();
             }
-            catch (IOException ignored) {
+            catch (IOException exception) {
+                // Leave the input as an empty string
             }
         }
         else {
@@ -490,7 +628,8 @@ public class SystemIO {
             try {
                 input = getInputReader().readLine();
             }
-            catch (IOException ignored) {
+            catch (IOException exception) {
+                // Leave the input as an empty string
             }
         }
         else {
@@ -505,9 +644,9 @@ public class SystemIO {
             }
         }
 
-        if (input.length() > maxLength) {
-            // Modified DPS 13-July-2011.  Originally: return input.substring(0, maxLength);
-            return (maxLength <= 0) ? "" : input.substring(0, maxLength);
+        // Trim the output if a maximum length is set
+        if (maxLength > 0 && input.length() > maxLength) {
+            return input.substring(0, maxLength);
         }
         else {
             return input;
@@ -517,7 +656,7 @@ public class SystemIO {
     /**
      * Implements syscall to read a char value.
      *
-     * @return Integer value with leas byte corresponding to user input.
+     * @return Integer value with least significant byte corresponding to user input.
      * @throws IndexOutOfBoundsException Thrown if invalid input is entered.
      */
     public int readChar() throws IndexOutOfBoundsException {
@@ -526,7 +665,8 @@ public class SystemIO {
             try {
                 input = getInputReader().readLine();
             }
-            catch (IOException ignored) {
+            catch (IOException exception) {
+                // Leave the input as an empty string
             }
         }
         else {

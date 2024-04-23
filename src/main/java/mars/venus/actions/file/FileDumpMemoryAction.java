@@ -2,7 +2,7 @@ package mars.venus.actions.file;
 
 import mars.Application;
 import mars.mips.dump.DumpFormat;
-import mars.mips.dump.DumpFormatLoader;
+import mars.mips.dump.DumpFormatManager;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
 import mars.util.Binary;
@@ -165,7 +165,7 @@ public class FileDumpMemoryAction extends VenusAction {
         contents.add(segmentPanel, BorderLayout.WEST);
 
         // Next, create list of all available dump formats.
-        DumpFormat[] dumpFormats = new DumpFormatLoader().loadDumpFormats().toArray(DumpFormat[]::new);
+        DumpFormat[] dumpFormats = DumpFormatManager.getDumpFormats();
         dumpFormatSelector = new JComboBox<>(dumpFormats);
         dumpFormatSelector.setRenderer(new DumpFormatComboBoxRenderer(dumpFormatSelector));
         dumpFormatSelector.setSelectedIndex(0);

@@ -417,8 +417,8 @@ public class VenusUI extends JFrame {
         settingsMenu.add(createMenuItem(settingsPreferencesAction));
         menuBar.add(settingsMenu);
 
-        List<ToolAction> toolActions = new ToolManager().loadTools();
-        if (!toolActions.isEmpty()) {
+        ToolAction[] toolActions = ToolManager.getToolActions();
+        if (toolActions.length > 0) {
             JMenu toolsMenu = new JMenu("Tools");
             toolsMenu.setMnemonic(KeyEvent.VK_T);
             for (ToolAction toolAction : toolActions) {

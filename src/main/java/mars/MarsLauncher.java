@@ -4,17 +4,15 @@ import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 import mars.mips.dump.DumpFormat;
-import mars.mips.dump.DumpFormatLoader;
+import mars.mips.dump.DumpFormatManager;
 import mars.mips.hardware.*;
 import mars.simulator.ProgramArgumentList;
 import mars.util.Binary;
 import mars.util.FilenameFinder;
 import mars.util.MemoryDump;
-import mars.venus.SplashScreen;
 import mars.venus.VenusUI;
 
 import javax.swing.*;
-import java.awt.*;
 import java.io.*;
 import java.util.*;
 
@@ -83,16 +81,19 @@ public class MarsLauncher {
     private int simulateErrorExitCode; // MARS command exit code to return if simulation error occurs
 
     /**
-     * Launch MARS as a standalone program.
+     * Launch MARS Red as a standalone executable with the given command-line arguments. If no arguments are specified,
+     * the application will launch in GUI mode.
      *
      * @param args Command line arguments.
+     * @see MarsLauncher#MarsLauncher(String[])
      */
     public static void main(String[] args) {
         new MarsLauncher(args);
     }
 
     /**
-     * Mars takes a number of command line arguments.
+     * Launch an instance of MARS Red with the given command-line arguments. If no arguments are specified,
+     * the application will launch in GUI mode.
      * <p>
      * Usage: {@code Mars [options] filename}
      * <p>
@@ -138,6 +139,8 @@ public class MarsLauncher {
      *     This option must be the last one specified since everything that follows it is interpreted as a
      *     program argument to be made available to the MIPS program at runtime.
      * </ul>
+     *
+     * @param args Command line arguments.
      */
     public MarsLauncher(String[] args) {
         Application.initialize();
@@ -228,9 +231,7 @@ public class MarsLauncher {
                 out.println("Error while attempting to save dump, segment/address-range " + triple[0] + " is invalid!");
                 continue;
             }
-            DumpFormatLoader loader = new DumpFormatLoader();
-            ArrayList<DumpFormat> dumpFormats = loader.loadDumpFormats();
-            DumpFormat format = DumpFormatLoader.findDumpFormatGivenCommandDescriptor(dumpFormats, triple[1]);
+            DumpFormat format = DumpFormatManager.getDumpFormat(triple[1]);
             if (format == null) {
                 out.println("Error while attempting to save dump, format " + triple[1] + " was not found!");
                 continue;
@@ -472,14 +473,14 @@ public class MarsLauncher {
             Application.getSettings().delayedBranchingEnabled.setNonPersistent(delayedBranching);
             Application.getSettings().selfModifyingCodeEnabled.setNonPersistent(selfModifyingCode);
             File mainFile = new File(filenameList.get(0)).getAbsoluteFile(); // First file is "main" file
-            ArrayList<String> filesToAssemble;
+            List<String> filesToAssemble;
             if (assembleProject) {
-                filesToAssemble = FilenameFinder.getFilenameList(mainFile.getParent(), Application.FILE_EXTENSIONS);
+                filesToAssemble = FilenameFinder.findFilenames(mainFile.getParent(), Application.FILE_EXTENSIONS);
                 if (filenameList.size() > 1) {
                     // Using "p" project option PLUS listing more than one filename on command line.
                     // Add the additional files, avoiding duplicates.
                     filenameList.remove(0); // First one has already been processed
-                    ArrayList<String> moreFilesToAssemble = FilenameFinder.getFilenameList(filenameList, FilenameFinder.MATCH_ALL_EXTENSIONS);
+                    List<String> moreFilesToAssemble = FilenameFinder.findFilenames(filenameList, FilenameFinder.MATCH_ALL_EXTENSIONS);
                     // Remove any duplicates then merge the two lists.
                     for (int index = 0; index < moreFilesToAssemble.size(); index++) {
                         for (String fileToAssemble : filesToAssemble) {
@@ -496,17 +497,17 @@ public class MarsLauncher {
                 }
             }
             else {
-                filesToAssemble = FilenameFinder.getFilenameList(filenameList, FilenameFinder.MATCH_ALL_EXTENSIONS);
+                filesToAssemble = FilenameFinder.findFilenames(filenameList, FilenameFinder.MATCH_ALL_EXTENSIONS);
             }
             if (Application.debug) {
                 out.println("--------  TOKENIZING BEGINS  -----------");
             }
-            ArrayList<Program> MIPSprogramsToAssemble = code.prepareFilesForAssembly(filesToAssemble, mainFile.getAbsolutePath(), null);
+            List<Program> programsToAssemble = code.prepareFilesForAssembly(filesToAssemble, mainFile.getAbsolutePath(), null);
             if (Application.debug) {
                 out.println("--------  ASSEMBLY BEGINS  -----------");
             }
             // Added logic to check for warnings and print if any. DPS 11/28/06
-            ErrorList warnings = code.assemble(MIPSprogramsToAssemble, pseudo, warningsAreErrors);
+            ErrorList warnings = code.assemble(programsToAssemble, pseudo, warningsAreErrors);
             if (warnings != null && warnings.warningsOccurred()) {
                 out.println(warnings.generateWarningReport());
             }
@@ -755,22 +756,10 @@ public class MarsLauncher {
      * Display command line help text.
      */
     private void displayHelp() {
-        String[] segmentNames = MemoryDump.getSegmentNames();
-        StringBuilder segments = new StringBuilder();
-        for (int i = 0; i < segmentNames.length; i++) {
-            segments.append(segmentNames[i]);
-            if (i < segmentNames.length - 1) {
-                segments.append(", ");
-            }
-        }
-        ArrayList<DumpFormat> dumpFormats = new DumpFormatLoader().loadDumpFormats();
-        StringBuilder formats = new StringBuilder();
-        for (int i = 0; i < dumpFormats.size(); i++) {
-            formats.append(dumpFormats.get(i).getCommandDescriptor());
-            if (i < dumpFormats.size() - 1) {
-                formats.append(", ");
-            }
-        }
+        String segments = String.join(", ", List.of(MemoryDump.getSegmentNames()));
+        String formats = String.join(", ", Arrays.stream(DumpFormatManager.getDumpFormats())
+            .map(DumpFormat::getCommandDescriptor)
+            .toList());
         out.println("Usage:  Mars  [options] filename [additional filenames]");
         out.println("  Valid options (not case sensitive, separate by spaces) are:");
         out.println("      a  -- assemble only, do not simulate");

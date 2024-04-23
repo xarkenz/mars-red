@@ -17,6 +17,7 @@ import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -661,16 +662,16 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
             Program program = new Program();
             Application.program = program; // Shouldn't have to do this...
             String fileToAssemble = mostRecentlyOpenedFile.getPath();
-            ArrayList<String> filesToAssemble;
+            List<String> filesToAssemble;
             if (multiFileAssemble) {
                 // Setting (check box in file open dialog) calls for multiple file assembly
-                filesToAssemble = FilenameFinder.getFilenameList(new File(fileToAssemble).getParent(), Application.FILE_EXTENSIONS);
+                filesToAssemble = FilenameFinder.findFilenames(new File(fileToAssemble).getParent(), Application.FILE_EXTENSIONS);
             }
             else {
                 filesToAssemble = new ArrayList<>();
                 filesToAssemble.add(fileToAssemble);
             }
-            ArrayList<Program> programsToAssemble;
+            List<Program> programsToAssemble;
             try {
                 operationStatusMessages.displayNonTerminatingMessage("Assembling " + fileToAssemble);
                 programsToAssemble = program.prepareFilesForAssembly(filesToAssemble, fileToAssemble, exceptionHandler);

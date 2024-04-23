@@ -79,7 +79,7 @@ public class Program {
      * @param sourceLineList List of SourceLine.
      *                       Each SourceLine represents one line of MIPS source code.
      */
-    public void setSourceLineList(ArrayList<SourceLine> sourceLineList) {
+    public void setSourceLineList(List<SourceLine> sourceLineList) {
         this.sourceLineList = sourceLineList;
         this.sourceList = sourceLineList.stream()
             .map(SourceLine::getSource)
@@ -130,15 +130,14 @@ public class Program {
      *
      * @see ProgramStatement
      */
-    public void setParsedStatements(ArrayList<ProgramStatement> parsedList) {
+    public void setParsedStatements(List<ProgramStatement> parsedList) {
         this.parsedList = parsedList;
     }
 
     /**
      * Produces list of parsed source code statements.
      *
-     * @return List of ProgramStatement.  Each ProgramStatement represents a parsed
-     *     MIPS statement.
+     * @return List of ProgramStatement.  Each ProgramStatement represents a parsed MIPS statement.
      * @see ProgramStatement
      */
     public List<ProgramStatement> getParsedStatements() {
@@ -148,8 +147,7 @@ public class Program {
     /**
      * Produces list of machine statements that are assembled from the program.
      *
-     * @return List of ProgramStatement.  Each ProgramStatement represents an assembled
-     *     basic MIPS instruction.
+     * @return List of ProgramStatement.  Each ProgramStatement represents an assembled basic MIPS instruction.
      * @see ProgramStatement
      */
     public List<ProgramStatement> getMachineStatements() {
@@ -237,19 +235,19 @@ public class Program {
      * Prepares the given list of files for assembly.  This involves
      * reading and tokenizing all the source files.  There may be only one.
      *
-     * @param pathnames        ArrayList containing the source file path(s) in no particular order
+     * @param pathnames        List containing the source file path(s) in no particular order
      * @param leadPathname     String containing path of source file that needs to go first and
-     *                         will be represented by "this" MIPSprogram object.
+     *                         will be represented by "this" Program object.
      * @param exceptionHandler String containing path of source file containing exception
      *                         handler.  This will be assembled first, even ahead of leadPathname, to allow it to
      *                         include "startup" instructions loaded beginning at 0x00400000.  Specify null or
      *                         empty String to indicate there is no such designated exception handler.
-     * @return ArrayList containing one MIPSprogram object for each file to assemble.
-     *     objects for any additional files (send ArrayList to assembler)
+     * @return List containing one Program object for each file to assemble.
+     *     objects for any additional files (send list to assembler)
      * @throws ProcessingException Will throw exception if errors occurred while reading or tokenizing.
      */
-    public ArrayList<Program> prepareFilesForAssembly(List<String> pathnames, String leadPathname, String exceptionHandler) throws ProcessingException {
-        ArrayList<Program> programsToAssemble = new ArrayList<>();
+    public List<Program> prepareFilesForAssembly(List<String> pathnames, String leadPathname, String exceptionHandler) throws ProcessingException {
+        List<Program> programsToAssemble = new ArrayList<>();
         int leadFilePosition = 0;
         if (exceptionHandler != null && !exceptionHandler.isEmpty()) {
             pathnames.add(0, exceptionHandler);
@@ -274,13 +272,13 @@ public class Program {
      * Assembles the MIPS source program. All files comprising the program must have
      * already been tokenized.  Assembler warnings are not considered errors.
      *
-     * @param programsToAssemble       ArrayList of MIPSprogram objects, each representing a tokenized source file.
+     * @param programsToAssemble       List of Program objects, each representing a tokenized source file.
      * @param extendedAssemblerEnabled A boolean value - true means extended (pseudo) instructions
      *                                 are permitted in source code and false means they are to be flagged as errors.
      * @return ErrorList containing nothing or only warnings (otherwise would have thrown exception).
      * @throws ProcessingException Will throw exception if errors occurred while assembling.
      */
-    public ErrorList assemble(ArrayList<Program> programsToAssemble, boolean extendedAssemblerEnabled) throws ProcessingException {
+    public ErrorList assemble(List<Program> programsToAssemble, boolean extendedAssemblerEnabled) throws ProcessingException {
         return assemble(programsToAssemble, extendedAssemblerEnabled, false);
     }
 
@@ -288,7 +286,7 @@ public class Program {
      * Assembles the MIPS source program. All files comprising the program must have
      * already been tokenized.
      *
-     * @param programsToAssemble       ArrayList of MIPSprogram objects, each representing a tokenized source file.
+     * @param programsToAssemble       List of Program objects, each representing a tokenized source file.
      * @param extendedAssemblerEnabled A boolean value - true means extended (pseudo) instructions
      *                                 are permitted in source code and false means they are to be flagged as errors
      * @param warningsAreErrors        A boolean value - true means assembler warnings will be considered errors and terminate
@@ -296,12 +294,12 @@ public class Program {
      * @return ErrorList containing nothing or only warnings (otherwise would have thrown exception).
      * @throws ProcessingException Will throw exception if errors occurred while assembling.
      */
-    public ErrorList assemble(ArrayList<Program> programsToAssemble, boolean extendedAssemblerEnabled, boolean warningsAreErrors) throws ProcessingException {
+    public ErrorList assemble(List<Program> programsToAssemble, boolean extendedAssemblerEnabled, boolean warningsAreErrors) throws ProcessingException {
         this.backStepper = null;
-        Assembler asm = new Assembler();
-        this.machineList = asm.assemble(programsToAssemble, extendedAssemblerEnabled, warningsAreErrors);
+        Assembler assembler = new Assembler();
+        this.machineList = assembler.assemble(programsToAssemble, extendedAssemblerEnabled, warningsAreErrors);
         this.backStepper = new BackStepper();
-        return asm.getErrorList();
+        return assembler.getErrorList();
     }
 
     /**

@@ -5,6 +5,7 @@ import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.*;
 import mars.mips.instructions.syscalls.Syscall;
+import mars.mips.instructions.syscalls.SyscallManager;
 import mars.simulator.DelayedBranch;
 import mars.simulator.Exceptions;
 import mars.util.Binary;
@@ -57,7 +58,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 public class InstructionSet {
     private final ArrayList<Instruction> instructionList;
     private ArrayList<MatchMap> opcodeMatchMaps;
-    private SyscallManager syscallManager;
 
     /**
      * Creates a new InstructionSet object.
@@ -1442,8 +1442,7 @@ public class InstructionSet {
         addPseudoInstructions();
 
         ////////////// GET AND CREATE LIST OF SYSCALL FUNCTION OBJECTS ////////////////////
-        syscallManager = new SyscallManager();
-        syscallManager.loadSyscalls();
+        SyscallManager.getSyscalls();
 
         // Initialization step.  Create token list for each instruction example.  This is
         // used by parser to determine user program correct syntax.
@@ -1583,7 +1582,7 @@ public class InstructionSet {
      * a class that implements Syscall or extends AbstractSyscall.
      */
     private void findAndSimulateSyscall(int number, ProgramStatement statement) throws ProcessingException {
-        Syscall service = syscallManager.findSyscall(number);
+        Syscall service = SyscallManager.getSyscall(number);
         if (service != null) {
             service.simulate(statement);
             return;

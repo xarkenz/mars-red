@@ -7,6 +7,7 @@ import mars.mips.instructions.BasicInstruction;
 import mars.mips.instructions.ExtendedInstruction;
 import mars.mips.instructions.Instruction;
 import mars.util.Binary;
+import mars.venus.NumberDisplayBaseChooser;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -49,7 +50,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @version August 2003
  */
 public class Assembler {
-    private ArrayList<ProgramStatement> machineList;
+    private List<ProgramStatement> machineList;
     private ErrorList errors;
     private boolean inDataSegment; // status maintained by parser
     private boolean inMacroSegment; // status maintained by parser, true if in macro definition segment
@@ -86,7 +87,7 @@ public class Assembler {
      *     statement.
      * @see ProgramStatement
      */
-    public ArrayList<ProgramStatement> assemble(Program tokenizedProgramFile, boolean extendedAssemblerEnabled) throws ProcessingException {
+    public List<ProgramStatement> assemble(Program tokenizedProgramFile, boolean extendedAssemblerEnabled) throws ProcessingException {
         return assemble(tokenizedProgramFile, extendedAssemblerEnabled, false);
     }
 
@@ -108,10 +109,8 @@ public class Assembler {
      *     statement.
      * @see ProgramStatement
      */
-    public ArrayList<ProgramStatement> assemble(Program tokenizedProgramFile, boolean extendedAssemblerEnabled, boolean warningsAreErrors) throws ProcessingException {
-        ArrayList<Program> tokenizedProgramFiles = new ArrayList<>();
-        tokenizedProgramFiles.add(tokenizedProgramFile);
-        return this.assemble(tokenizedProgramFiles, extendedAssemblerEnabled, warningsAreErrors);
+    public List<ProgramStatement> assemble(Program tokenizedProgramFile, boolean extendedAssemblerEnabled, boolean warningsAreErrors) throws ProcessingException {
+        return this.assemble(List.of(tokenizedProgramFile), extendedAssemblerEnabled, warningsAreErrors);
     }
 
     /**
@@ -130,7 +129,7 @@ public class Assembler {
      *     statement. Returns null if incoming array list is null or empty.
      * @see ProgramStatement
      */
-    public ArrayList<ProgramStatement> assemble(ArrayList<Program> tokenizedProgramFiles, boolean extendedAssemblerEnabled) throws ProcessingException {
+    public List<ProgramStatement> assemble(List<Program> tokenizedProgramFiles, boolean extendedAssemblerEnabled) throws ProcessingException {
         return assemble(tokenizedProgramFiles, extendedAssemblerEnabled, false);
     }
 
@@ -153,7 +152,7 @@ public class Assembler {
      *     statement. Returns null if incoming array list is null or empty.
      * @see ProgramStatement
      */
-    public ArrayList<ProgramStatement> assemble(ArrayList<Program> tokenizedProgramFiles, boolean extendedAssemblerEnabled, boolean warningsAreErrors) throws ProcessingException {
+    public List<ProgramStatement> assemble(List<Program> tokenizedProgramFiles, boolean extendedAssemblerEnabled, boolean warningsAreErrors) throws ProcessingException {
         if (tokenizedProgramFiles == null || tokenizedProgramFiles.isEmpty()) {
             return null;
         }
@@ -194,7 +193,7 @@ public class Assembler {
             currentFileDataSegmentForwardReferences.clear();
             List<SourceLine> sourceLines = fileCurrentlyBeingAssembled.getSourceLines();
             List<TokenList> tokenLists = fileCurrentlyBeingAssembled.getTokenLists();
-            ArrayList<ProgramStatement> parsedStatements = new ArrayList<>();
+            List<ProgramStatement> parsedStatements = new ArrayList<>();
             // each file keeps its own macro definitions
             fileCurrentlyBeingAssembled.createMacroPool();
             // FIRST PASS OF ASSEMBLER VERIFIES SYNTAX, GENERATES SYMBOL TABLE,
@@ -210,7 +209,7 @@ public class Assembler {
                     // record this token's original source program and line #. Differs from final, if .include used
                     token.setOriginal(sourceLine.getMIPSprogram(), sourceLine.getLineNumber());
                 }
-                ArrayList<ProgramStatement> statements = this.parseLine(tokens, sourceLine.getSource(), sourceLine.getLineNumber(), extendedAssemblerEnabled);
+                List<ProgramStatement> statements = this.parseLine(tokens, sourceLine.getSource(), sourceLine.getLineNumber(), extendedAssemblerEnabled);
                 if (statements != null) {
                     parsedStatements.addAll(statements);
                 }
@@ -363,22 +362,31 @@ public class Assembler {
         // Yes, I would not have to sort here if I used SortedSet rather than ArrayList
         // but in case of duplicate I like having both statements handy for error message.
         this.machineList.sort(new ProgramStatementComparator());
-        catchDuplicateAddresses(this.machineList, errors);
+        catchDuplicateAddresses();
         if (errors.errorsOccurred() || (errors.warningsOccurred() && warningsAreErrors)) {
             throw new ProcessingException(errors);
         }
         return this.machineList;
     }
 
-    // //////////////////////////////////////////////////////////////////////
-    // Will check for duplicate text addresses, which can happen inadvertently when using
-    // operand on .text directive. Will generate error message for each one that occurs.
-    private void catchDuplicateAddresses(ArrayList<ProgramStatement> statements, ErrorList errors) {
-        for (int i = 0; i < statements.size() - 1; i++) {
-            ProgramStatement statement1 = statements.get(i);
-            ProgramStatement statement2 = statements.get(i + 1);
+    /**
+     * Check for duplicate text addresses, which can happen inadvertently when using
+     * operand on .text directive. Will generate error message for each one that occurs.
+     */
+    private void catchDuplicateAddresses() {
+        for (int address = 0; address < this.machineList.size() - 1; address++) {
+            ProgramStatement statement1 = this.machineList.get(address);
+            ProgramStatement statement2 = this.machineList.get(address + 1);
             if (statement1.getAddress() == statement2.getAddress()) {
-                errors.add(new ErrorMessage(statement2.getSourceMIPSprogram(), statement2.getSourceLine(), 0, "Duplicate text segment address: " + mars.venus.NumberDisplayBaseChooser.formatUnsignedInteger(statement2.getAddress(), (Application.getSettings().displayAddressesInHex.get()) ? 16 : 10) + " already occupied by " + statement1.getSourceFile() + " line " + statement1.getSourceLine() + " (caused by use of " + ((Memory.inTextSegment(statement2.getAddress())) ? ".text" : ".ktext") + " operand)"));
+                errors.add(new ErrorMessage(
+                    statement2.getSourceMIPSprogram(),
+                    statement2.getSourceLine(), 0,
+                    "Duplicate text segment address: "
+                        + NumberDisplayBaseChooser.formatUnsignedInteger(statement2.getAddress(), (Application.getSettings().displayAddressesInHex.get()) ? 16 : 10)
+                        + " already occupied by " + statement1.getSourceFile()
+                        + " line " + statement1.getSourceLine()
+                        + " (caused by use of " + ((Memory.inTextSegment(statement2.getAddress())) ? ".text" : ".ktext") + " operand)"
+                ));
             }
         }
     }
@@ -393,11 +401,11 @@ public class Assembler {
      * @param source
      * @param sourceLineNumber
      * @param extendedAssemblerEnabled
-     * @return ArrayList of ProgramStatements because parsing a macro expansion
+     * @return List of ProgramStatements because parsing a macro expansion
      *     request will return a list of ProgramStatements expanded
      */
-    private ArrayList<ProgramStatement> parseLine(TokenList tokenList, String source, int sourceLineNumber, boolean extendedAssemblerEnabled) {
-        ArrayList<ProgramStatement> parsedStatements = new ArrayList<>();
+    private List<ProgramStatement> parseLine(TokenList tokenList, String source, int sourceLineNumber, boolean extendedAssemblerEnabled) {
+        List<ProgramStatement> parsedStatements = new ArrayList<>();
 
         TokenList tokens = this.stripComment(tokenList);
 
@@ -456,8 +464,8 @@ public class Assembler {
                         substituted = tokenList2.getProcessedLine();
                     }
 
-                    // recursively parse lines of expanded macro
-                    ArrayList<ProgramStatement> statements = parseLine(tokenList2, "<" + (i - macro.getFromLine() + macro.getOriginalFromLine()) + "> " + substituted.trim(), sourceLineNumber, extendedAssemblerEnabled);
+                    // Recursively parse lines of expanded macro
+                    List<ProgramStatement> statements = parseLine(tokenList2, "<" + (i - macro.getFromLine() + macro.getOriginalFromLine()) + "> " + substituted.trim(), sourceLineNumber, extendedAssemblerEnabled);
                     if (statements != null) {
                         parsedStatements.addAll(statements);
                     }

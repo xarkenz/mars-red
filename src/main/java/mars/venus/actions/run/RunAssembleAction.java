@@ -9,13 +9,11 @@ import mars.util.FilenameFinder;
 import mars.venus.*;
 import mars.venus.actions.VenusAction;
 import mars.venus.editor.EditTab;
-import mars.venus.editor.FileEditorTab;
 import mars.venus.execute.ExecuteTab;
 import mars.venus.execute.ProgramStatus;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
  
@@ -51,16 +49,21 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the Run -> Assemble menu item (and toolbar icon)
  */
 public class RunAssembleAction extends VenusAction {
-    private static ArrayList<Program> programsToAssemble;
-    // Threshold for adding filename to printed message of files being assembled.
+    /**
+     * Threshold for adding filename to printed message of files being assembled.
+     */
     private static final int LINE_LENGTH_LIMIT = 60;
+
+    private static List<Program> programsToAssemble;
 
     public RunAssembleAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 
-    // These are both used by RunResetAction to re-assemble under identical conditions.
-    public static ArrayList<Program> getProgramsToAssemble() {
+    /**
+     * This is used by {@link RunResetAction} to re-assemble under identical conditions.
+     */
+    public static List<Program> getProgramsToAssemble() {
         return programsToAssemble;
     }
 
@@ -79,7 +82,7 @@ public class RunAssembleAction extends VenusAction {
         String leadPathname = editTab.getCurrentEditorTab().getFile().getPath();
         List<String> pathnames;
         if (Application.getSettings().assembleAllEnabled.get()) {
-            pathnames = FilenameFinder.getFilenameList(editTab.getCurrentEditorTab().getFile().getParent(), Application.FILE_EXTENSIONS);
+            pathnames = FilenameFinder.findFilenames(editTab.getCurrentEditorTab().getFile().getParent(), Application.FILE_EXTENSIONS);
         }
         else {
             pathnames = List.of(leadPathname);
@@ -157,7 +160,7 @@ public class RunAssembleAction extends VenusAction {
      * Handy little utility for building comma-separated list of filenames
      * while not letting line length get out of hand.
      */
-    private String buildFileNameList(String preamble, ArrayList<Program> programList) {
+    private String buildFileNameList(String preamble, List<Program> programList) {
         StringBuilder result = new StringBuilder(preamble);
         int lineLength = result.length();
         for (int i = 0; i < programList.size(); i++) {
