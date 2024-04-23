@@ -134,6 +134,7 @@ public class VenusUI extends JFrame {
     private SettingsPreferencesAction settingsPreferencesAction;
 
     private HelpHelpAction helpHelpAction;
+    private HelpUpdateAction helpUpdateAction;
     private HelpAboutAction helpAboutAction;
 
     /**
@@ -322,6 +323,7 @@ public class VenusUI extends JFrame {
         settingsPreferencesAction = new SettingsPreferencesAction(this, "Preferences...", null, "", null, null);
 
         helpHelpAction = new HelpHelpAction(this, "Help...", getSVGActionIcon("help.svg"), "Help", KeyEvent.VK_H, KeyStroke.getKeyStroke(KeyEvent.VK_H, tk.getMenuShortcutKeyMaskEx()));
+        helpUpdateAction = new HelpUpdateAction(this, "Update...", getSVGActionIcon("update.svg"), "Check for updates", null, null);
         helpAboutAction = new HelpAboutAction(this, "About...", getSVGActionIcon("about.svg"), "Information about " + Application.NAME, null, null);
     }
 
@@ -428,6 +430,7 @@ public class VenusUI extends JFrame {
         JMenu helpMenu = new JMenu("Help");
         helpMenu.setMnemonic(KeyEvent.VK_H);
         helpMenu.add(createMenuItem(helpHelpAction));
+        helpMenu.add(createMenuItem(helpUpdateAction));
         helpMenu.add(createMenuItem(helpAboutAction));
         menuBar.add(helpMenu);
 
