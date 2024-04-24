@@ -21,7 +21,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.net.URL;
-import java.util.List;
 
 /*
 Copyright (c) 2003-2013,  Pete Sanderson and Kenneth Vollmar
@@ -178,6 +177,17 @@ public class VenusUI extends JFrame {
         }
         Image iconImage = Toolkit.getDefaultToolkit().getImage(iconImageURL);
         this.setIconImage(iconImage);
+
+        try {
+            Class.forName( "com.apple.eawt.Application", false, null );
+            com.apple.eawt.Application.getApplication().setDockIconImage( iconImage );
+        }
+        catch (ClassNotFoundException exception) {
+            // Not on Mac, apple class not found
+        }
+        catch (IllegalAccessError error) {
+            System.err.println("Error setting icon on Mac, try running with the flag '--add-exports java.desktop/com.apple.eawt=ALL-UNNAMED'");
+        }
 
         // Everything in frame will be arranged on JPanel "center", which is only frame component.
         // "center" has BorderLayout and 2 major components:
