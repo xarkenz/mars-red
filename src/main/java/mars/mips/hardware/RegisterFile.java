@@ -90,7 +90,7 @@ public class RegisterFile {
     };
 
     /**
-     * Update the register value whose number is given, unless it is {@code $zero}.
+     * Update the register value whose number is given, unless it is <code>$zero</code>.
      * Also handles the internal pc, lo, and hi registers.
      *
      * @param number Register to set the value of.

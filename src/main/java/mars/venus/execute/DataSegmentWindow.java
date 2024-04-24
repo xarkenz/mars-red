@@ -726,7 +726,7 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
      * kernel data segment base or higher than kernel memory.  It is called by the
      * above action listeners.
      * <p>
-     * {@code prevButton} and {@code nextButton} are also enabled/disabled appropriately.
+     * <code>prevButton</code> and <code>nextButton</code> are also enabled/disabled appropriately.
      */
     private void updateFirstAddress(int address) {
         int lowLimit = (userOrKernelMode == USER_MODE) ? Math.min(Math.min(Memory.textBaseAddress, Memory.dataSegmentBaseAddress), Memory.dataBaseAddress) : Memory.kernelDataBaseAddress;

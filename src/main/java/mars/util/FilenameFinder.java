@@ -3,6 +3,7 @@ package mars.util;
 import javax.swing.filechooser.FileFilter;
 import java.io.File;
 import java.io.IOException;
+import java.net.JarURLConnection;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -100,26 +101,27 @@ public class FilenameFinder {
             Enumeration<URL> urls = classLoader.getResources(directoryPath);
 
             while (urls.hasMoreElements()) {
-                File directory = new File(urls.nextElement().toURI());
-                File[] files = directory.listFiles();
-                if (files == null) {
-                    if (directory.toString().toLowerCase().endsWith(JAR_EXTENSION)) {
-                        // Must be running from a JAR file. Use ZipFile to find files and create list.
-                        // Modified 12/28/09 by DPS to add results to existing filenameList instead of overwriting it.
-                        filenameList.addAll(getListFromJar(extractJarFilename(directory.toString()), directoryPath, fileExtension));
-                    }
+                URL url = urls.nextElement();
+                if (url.getProtocol().equals("jar")) {
+                    // Must be running from a JAR file. Use ZipFile to find files and create list.
+                    // Modified 12/28/09 by DPS to add results to existing filenameList instead of overwriting it.
+                    filenameList.addAll(getListFromJar(extractJarFilename(url.getPath()), directoryPath, fileExtension));
                 }
-                else {
-                    // Have array of File objects; convert to names and add to list
-                    FileFilter filter = getFileFilter(fileExtension, "", NO_DIRECTORIES);
-                    filenameList.addAll(Arrays.stream(files)
-                        .filter(filter::accept)
-                        .map(File::getName)
-                        .toList());
+                else if (url.getProtocol().equals("file")) {
+                    File directory = new File(url.getPath());
+                    File[] files = directory.listFiles();
+                    if (files != null) {
+                        // Have array of File objects; convert to names and add to list
+                        FileFilter filter = getFileFilter(fileExtension, "", NO_DIRECTORIES);
+                        filenameList.addAll(Arrays.stream(files)
+                            .filter(filter::accept)
+                            .map(File::getName)
+                            .toList());
+                    }
                 }
             }
         }
-        catch (URISyntaxException | IOException exception) {
+        catch (IOException exception) {
             exception.printStackTrace();
         }
 
@@ -211,7 +213,8 @@ public class FilenameFinder {
         String fileExtension;
         if (fileExtensions == null || fileExtensions.isEmpty()) {
             filenameList = findFilenames(directoryPath, "");
-        } else {
+        }
+        else {
             for (String extension : fileExtensions) {
                 fileExtension = checkFileExtension(extension);
                 filenameList.addAll(findFilenames(directoryPath, fileExtension));

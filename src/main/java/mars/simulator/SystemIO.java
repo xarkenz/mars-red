@@ -443,7 +443,7 @@ public class SystemIO {
         /**
          * Determine whether this handle is <b>open</b> or <b>closed</b>.
          *
-         * @return {@code true} if this handle is <b>open</b>, or {@code false} otherwise.
+         * @return <code>true</code> if this handle is <b>open</b>, or <code>false</code> otherwise.
          */
         public boolean isOpen() {
             return this.stream != null;
@@ -489,7 +489,7 @@ public class SystemIO {
          * <p>
          * Note: only call this method if this handle is <b>open</b>.
          *
-         * @return The input stream, or {@code null} if this handle uses an output stream instead.
+         * @return The input stream, or <code>null</code> if this handle uses an output stream instead.
          */
         public InputStream getInputStream() {
             if (this.stream instanceof InputStream inputStream) {
@@ -505,7 +505,7 @@ public class SystemIO {
          * <p>
          * Note: only call this method if this handle is <b>open</b>.
          *
-         * @return The output stream, or {@code null} if this handle uses an input stream instead.
+         * @return The output stream, or <code>null</code> if this handle uses an input stream instead.
          */
         public OutputStream getOutputStream() {
             if (this.stream instanceof OutputStream outputStream) {

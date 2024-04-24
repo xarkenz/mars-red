@@ -203,31 +203,31 @@ public class HelpHelpAction extends VenusAction {
         String helpRemarks = """
             <html><center><table border=0 cellpadding=0>
                 <tr><th colspan=2><b><i><font size=+1>&nbsp;&nbsp;Operand Key for Example Instructions&nbsp;&nbsp;</font></i></b></th></tr>
-                <tr><td>{@code label, target}</td><td>any textual label</td></tr>
-                <tr><td>{@code $t1, $t2, $t3}</td><td>any integer register</td></tr>
-                <tr><td>{@code $f2, $f4, $f6}</td><td><i>even-numbered</i> floating point register</td></tr>
-                <tr><td>{@code $f0, $f1, $f3}</td><td><i>any</i> floating point register</td></tr>
-                <tr><td>{@code $8}</td><td>any Coprocessor 0 register</td></tr>
-                <tr><td>{@code 1}</td><td>condition flag (0 to 7)</td></tr>
-                <tr><td>{@code 10}</td><td>unsigned 5-bit integer (0 to 31)</td></tr>
-                <tr><td>{@code -100}</td><td>signed 16-bit integer (-32768 to 32767)</td></tr>
-                <tr><td>{@code 100}</td><td>unsigned 16-bit integer (0 to 65535)</td></tr>
-                <tr><td>{@code 100000}</td><td>signed 32-bit integer (-2147483648 to 2147483647)</td></tr>
+                <tr><td><code>label, target</code></td><td>any textual label</td></tr>
+                <tr><td><code>$t1, $t2, $t3</code></td><td>any integer register</td></tr>
+                <tr><td><code>$f2, $f4, $f6</code></td><td><i>even-numbered</i> floating point register</td></tr>
+                <tr><td><code>$f0, $f1, $f3</code></td><td><i>any</i> floating point register</td></tr>
+                <tr><td><code>$8</code></td><td>any Coprocessor 0 register</td></tr>
+                <tr><td><code>1</code></td><td>condition flag (0 to 7)</td></tr>
+                <tr><td><code>10</code></td><td>unsigned 5-bit integer (0 to 31)</td></tr>
+                <tr><td><code>-100</code></td><td>signed 16-bit integer (-32768 to 32767)</td></tr>
+                <tr><td><code>100</code></td><td>unsigned 16-bit integer (0 to 65535)</td></tr>
+                <tr><td><code>100000</code></td><td>signed 32-bit integer (-2147483648 to 2147483647)</td></tr>
                 <tr></tr>
                 <tr><td colspan=2><b><i><font size=+1>Load & Store addressing mode, basic instructions</font></i></b></td></tr>
-                <tr><td>{@code -100($t2)}</td><td>sign-extended 16-bit integer added to contents of $t2</td></tr>
+                <tr><td><code>-100($t2)</code></td><td>sign-extended 16-bit integer added to contents of $t2</td></tr>
                 <tr></tr>
                 <tr><td colspan=2><b><i><font size=+1>Load & Store addressing modes, pseudo instructions</font></i></b></td></tr>
-                <tr><td>{@code ($t2)}</td><td>contents of $t2</td></tr>
-                <tr><td>{@code -100}</td><td>signed 16-bit integer</td></tr>
-                <tr><td>{@code 100}</td><td>unsigned 16-bit integer</td></tr>
-                <tr><td>{@code 100000}</td><td>signed 32-bit integer</td></tr>
-                <tr><td>{@code 100($t2)}</td><td>zero-extended unsigned 16-bit integer added to contents of $t2</td></tr>
-                <tr><td>{@code 100000($t2)}</td><td>signed 32-bit integer added to contents of $t2</td></tr>
-                <tr><td>{@code label}</td><td>32-bit address of label</td></tr>
-                <tr><td>{@code label($t2)}</td><td>32-bit address of label added to contents of $t2</td></tr>
-                <tr><td>{@code label+100000}</td><td>32-bit integer added to label's address</td></tr>
-                <tr><td>{@code label+100000($t2)&nbsp;&nbsp;&nbsp;}</td><td>sum of 32-bit integer, label's address, and contents of $t2</td></tr>
+                <tr><td><code>($t2)</code></td><td>contents of $t2</td></tr>
+                <tr><td><code>-100</code></td><td>signed 16-bit integer</td></tr>
+                <tr><td><code>100</code></td><td>unsigned 16-bit integer</td></tr>
+                <tr><td><code>100000</code></td><td>signed 32-bit integer</td></tr>
+                <tr><td><code>100($t2)</code></td><td>zero-extended unsigned 16-bit integer added to contents of $t2</td></tr>
+                <tr><td><code>100000($t2)</code></td><td>signed 32-bit integer added to contents of $t2</td></tr>
+                <tr><td><code>label</code></td><td>32-bit address of label</td></tr>
+                <tr><td><code>label($t2)</code></td><td>32-bit address of label added to contents of $t2</td></tr>
+                <tr><td><code>label+100000</code></td><td>32-bit integer added to label's address</td></tr>
+                <tr><td><code>label+100000($t2)&nbsp;&nbsp;&nbsp;</code></td><td>sum of 32-bit integer, label's address, and contents of $t2</td></tr>
             </table></center></html>
             """;
         JLabel helpRemarksLabel = new JLabel(helpRemarks, JLabel.CENTER);

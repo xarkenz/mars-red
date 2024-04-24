@@ -253,7 +253,7 @@ public abstract class TokenMarker {
     protected boolean nextLineRequested;
 
     /**
-     * Creates a new {@code TokenMarker}. This DOES NOT create
+     * Creates a new <code>TokenMarker</code>. This DOES NOT create
      * a {@link #lineInfo} array; an initial call to {@link #insertLines(int, int)}
      * does that.
      */

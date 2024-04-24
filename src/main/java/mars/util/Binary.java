@@ -526,13 +526,13 @@ public class Binary {
      * As per {@link Integer#decode(String)},
      * a string represents a hex number if the string is in the forms:
      * <ul>
-     * <li>{@code Signopt "0x" HexDigits}
-     * <li>{@code Signopt "0X" HexDigits}
-     * <li>{@code Signopt "#" HexDigits} (not allowed here, as {@code "#"} starts a MIPS comment)
+     * <li><code>Signopt "0x" HexDigits</code>
+     * <li><code>Signopt "0X" HexDigits</code>
+     * <li><code>Signopt "#" HexDigits</code> (not allowed here, as <code>"#"</code> starts a MIPS comment)
      * </ul>
      *
      * @param string String containing numeric digits (could be decimal, octal, or hex)
-     * @return Returns {@code true} if string represents a hex number, else returns {@code false}.
+     * @return Returns <code>true</code> if string represents a hex number, else returns <code>false</code>.
      * @author KENV 1/4/05
      */
     public static boolean isHex(String string) {
@@ -572,11 +572,11 @@ public class Binary {
      * As per {@link Integer#decode(String)},
      * a string represents an octal number if the string is in the forms:
      * <ul>
-     * <li>{@code Signopt "0" OctalDigits}
+     * <li><code>Signopt "0" OctalDigits</code>
      * </ul>
      *
      * @param string String containing numeric digits (could be decimal, octal, or hex)
-     * @return Returns {@code true} if string represents an octal number, else returns {@code false}.
+     * @return Returns <code>true</code> if string represents an octal number, else returns <code>false</code>.
      * @author KENV 1/4/05
      */
     public static boolean isOctal(String string) {

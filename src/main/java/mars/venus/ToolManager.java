@@ -58,9 +58,9 @@ public class ToolManager {
 
     /**
      * Get the list of actions to fill the Tools menu, which may be empty. The loader
-     * searches for all classes in the {@code mars.tools} package that implement {@link MarsTool}.
+     * searches for all classes in the <code>mars.tools</code> package that implement {@link MarsTool}.
      *
-     * @return An array of actions, one for each {@code MarsTool} discovered.
+     * @return An array of actions, one for each <code>MarsTool</code> discovered.
      */
     /*
      * This method is adapted from the loadGameControllers() method in Bret Barker's

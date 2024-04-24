@@ -104,9 +104,10 @@ public class RunAssembleAction extends VenusAction {
 
             if (warnings.warningsOccurred()) {
                 gui.getMessagesPane().writeToMessages(warnings.generateWarningReport());
+                gui.getMessagesPane().selectMessagesTab();
             }
             else {
-                gui.getMessagesPane().writeToMessages(getName() + ": operation completed successfully.\n\n");
+                gui.getMessagesPane().writeToMessages(getName() + ": operation completed successfully.\n");
             }
             if (executeTab.getProgramStatus().hasStarted() && executeTab.getProgramStatus() != ProgramStatus.TERMINATED) {
                 gui.getMessagesPane().writeToConsole("\n--- program terminated by user ---\n\n");
@@ -131,7 +132,8 @@ public class RunAssembleAction extends VenusAction {
         catch (ProcessingException exception) {
             String errorReport = exception.errors().generateErrorAndWarningReport();
             gui.getMessagesPane().writeToMessages(errorReport);
-            gui.getMessagesPane().writeToMessages(getName() + ": operation completed with errors.\n\n");
+            gui.getMessagesPane().writeToMessages(getName() + ": operation completed with errors.\n");
+            gui.getMessagesPane().selectMessagesTab();
             // Select editor line containing first error, and corresponding error message.
             ArrayList<ErrorMessage> errorMessages = exception.errors().getErrorMessages();
             for (ErrorMessage message : errorMessages) {
@@ -172,6 +174,9 @@ public class RunAssembleAction extends VenusAction {
                 lineLength = 0;
             }
         }
-        return result + ((lineLength == 0) ? "" : "\n") + '\n';
+        if (lineLength > 0) {
+            result.append('\n');
+        }
+        return result.toString();
     }
 }

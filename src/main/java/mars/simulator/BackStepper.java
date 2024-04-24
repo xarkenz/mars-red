@@ -167,7 +167,7 @@ public class BackStepper {
      *
      * @param address The affected memory address.
      * @param value   The "restore" value to be stored there.
-     * @return {@code value}
+     * @return <code>value</code>
      */
     public int addMemoryRestoreRawWord(int address, int value) {
         backSteps.push(BackStepAction.MEMORY_RESTORE_RAW_WORD, pc(), address, value);
@@ -180,7 +180,7 @@ public class BackStepper {
      *
      * @param address The affected memory address.
      * @param value   The "restore" value to be stored there.
-     * @return {@code value}
+     * @return <code>value</code>
      */
     public int addMemoryRestoreWord(int address, int value) {
         backSteps.push(BackStepAction.MEMORY_RESTORE_WORD, pc(), address, value);
@@ -193,7 +193,7 @@ public class BackStepper {
      *
      * @param address The affected memory address.
      * @param value   The "restore" value to be stored there, in low order half.
-     * @return {@code value}
+     * @return <code>value</code>
      */
     public int addMemoryRestoreHalf(int address, int value) {
         backSteps.push(BackStepAction.MEMORY_RESTORE_HALF, pc(), address, value);
@@ -206,7 +206,7 @@ public class BackStepper {
      *
      * @param address The affected memory address.
      * @param value   The "restore" value to be stored there, in low order byte.
-     * @return {@code value}
+     * @return <code>value</code>
      */
     public int addMemoryRestoreByte(int address, int value) {
         backSteps.push(BackStepAction.MEMORY_RESTORE_BYTE, pc(), address, value);
@@ -219,7 +219,7 @@ public class BackStepper {
      *
      * @param register The affected register number.
      * @param value    The "restore" value to be stored there.
-     * @return {@code value}
+     * @return <code>value</code>
      */
     public int addRegisterFileRestore(int register, int value) {
         backSteps.push(BackStepAction.REGISTER_RESTORE, pc(), register, value);
@@ -231,7 +231,7 @@ public class BackStepper {
      * is to restore the program counter.
      *
      * @param value The "restore" value to be stored there.
-     * @return {@code value}
+     * @return <code>value</code>
      */
     public int addPCRestore(int value) {
         // adjust for value reflecting incremented PC.
@@ -248,7 +248,7 @@ public class BackStepper {
      *
      * @param register The affected register number.
      * @param value    The "restore" value to be stored there.
-     * @return {@code value}
+     * @return <code>value</code>
      */
     public int addCoprocessor0Restore(int register, int value) {
         backSteps.push(BackStepAction.COPROC0_REGISTER_RESTORE, pc(), register, value);
@@ -261,7 +261,7 @@ public class BackStepper {
      *
      * @param register The affected register number.
      * @param value    The "restore" value to be stored there.
-     * @return {@code value}
+     * @return <code>value</code>
      */
     public int addCoprocessor1Restore(int register, int value) {
         backSteps.push(BackStepAction.COPROC1_REGISTER_RESTORE, pc(), register, value);
@@ -273,7 +273,7 @@ public class BackStepper {
      * is to set the given coprocessor 1 condition flag (to 1).
      *
      * @param flag The condition flag number.
-     * @return {@code flag}
+     * @return <code>flag</code>
      */
     public int addConditionFlagSet(int flag) {
         backSteps.push(BackStepAction.COPROC1_CONDITION_SET, pc(), flag);
@@ -285,7 +285,7 @@ public class BackStepper {
      * is to clear the given coprocessor 1 condition flag (to 0).
      *
      * @param flag The condition flag number.
-     * @return {@code flag}
+     * @return <code>flag</code>
      */
     public int addConditionFlagClear(int flag) {
         backSteps.push(BackStepAction.COPROC1_CONDITION_CLEAR, pc(), flag);

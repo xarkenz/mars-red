@@ -36,7 +36,7 @@ import java.util.Date;
 import java.util.TimeZone;
 
 /**
- * {@code HardcopyWriter} class from the book "Java Examples in a Nutshell,
+ * <code>HardcopyWriter</code> class from the book "Java Examples in a Nutshell,
  * 3rd Edition" by David Flanagan.  Publisher is O'Reilly, ISBN is
  * 0-596-00620-9.  Published Jan 2004.  Web page for the book is
  * <a href="http://www.oreilly.com/catalog/jenut3/">here</a>.

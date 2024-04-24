@@ -50,9 +50,9 @@ public class DumpFormatManager {
 
     /**
      * Get the list of dump formats to use, loading them if necessary. The loader searches for all classes
-     * in the {@code mars.mips.dump} package that implement {@link DumpFormat}.
+     * in the <code>mars.mips.dump</code> package that implement {@link DumpFormat}.
      *
-     * @return An array of {@code DumpFormat} instances.
+     * @return An array of <code>DumpFormat</code> instances.
      */
     public static DumpFormat[] getDumpFormats() {
         // The map will be populated only the first time this method is called

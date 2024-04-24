@@ -75,7 +75,7 @@ public enum TokenType {
      *
      * @param value String containing candidate language element, extracted from MIPS program.
      * @return Returns the corresponding TokenTypes object if the parameter matches a
-     *     defined MIPS token type, else returns {@code null}.
+     *     defined MIPS token type, else returns <code>null</code>.
      */
     public static TokenType matchTokenType(String value) {
         // If it starts with single quote ('), it is a mal-formed character literal

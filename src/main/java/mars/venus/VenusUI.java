@@ -316,14 +316,14 @@ public class VenusUI extends JFrame {
         settingsDelayedBranchingAction = new SettingsDelayedBranchingAction(this, "Delayed branching", null, "If set, delayed branching will occur during MIPS execution.", null, null);
         settingsSelfModifyingCodeAction = new SettingsSelfModifyingCodeAction(this, "Self-modifying code", null, "If set, the MIPS program can write and branch to both text and data segments.", null, null);
         settingsDarkThemeAction = new SettingsDarkThemeAction(this, "Enable dark theme", null, "If set, the application will launch with a dark theme.", null, null);
-        settingsEditorAction = new SettingsEditorAction(this, "Editor Settings...", null, "View and modify text editor settings.", null, null);
+        settingsEditorAction = new SettingsEditorAction(this, "Editor Settings...", null, "View and modify text editor settings", null, null);
         settingsHighlightingAction = new SettingsHighlightingAction(this, "Highlighting...", null, "View and modify Execute tab highlighting colors", null, null);
         settingsExceptionHandlerAction = new SettingsExceptionHandlerAction(this, "Exception Handler...", null, "If set, the specified exception handler file will be included in all Assemble operations.", null, null);
-        settingsMemoryConfigurationAction = new SettingsMemoryConfigurationAction(this, "Memory Configuration...", null, "View and modify memory segment base addresses for simulated MIPS.", null, null);
+        settingsMemoryConfigurationAction = new SettingsMemoryConfigurationAction(this, "Memory Configuration...", null, "View and modify memory segment base addresses for simulated MIPS", null, null);
         settingsPreferencesAction = new SettingsPreferencesAction(this, "Preferences...", null, "", null, null);
 
-        helpHelpAction = new HelpHelpAction(this, "Help...", getSVGActionIcon("help.svg"), "Help", KeyEvent.VK_H, KeyStroke.getKeyStroke(KeyEvent.VK_H, tk.getMenuShortcutKeyMaskEx()));
-        helpUpdateAction = new HelpUpdateAction(this, "Update...", getSVGActionIcon("update.svg"), "Check for updates", null, null);
+        helpHelpAction = new HelpHelpAction(this, "Help...", getSVGActionIcon("help.svg"), "View help information", KeyEvent.VK_H, KeyStroke.getKeyStroke(KeyEvent.VK_H, tk.getMenuShortcutKeyMaskEx()));
+        helpUpdateAction = new HelpUpdateAction(this, "Check for Updates...", getSVGActionIcon("update.svg"), "Check if a newer version is available", null, null);
         helpAboutAction = new HelpAboutAction(this, "About...", getSVGActionIcon("about.svg"), "Information about " + Application.NAME, null, null);
     }
 

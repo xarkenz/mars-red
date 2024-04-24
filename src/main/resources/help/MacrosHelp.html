@@ -3,7 +3,7 @@
 	<body>
 		<center>
 			<h3>Writing and Using Macros</h3>
-			<h4>{@code .macro}, {@code .end_macro},{@code .eqv} and {@code .include} directives are new in MARS 4.3</h4>
+			<h4><code>.macro</code>, <code>.end_macro</code>,<code>.eqv</code> and <code>.include</code> directives are new in MARS 4.3</h4>
 		</center>
 		<h3> Introduction to macros</h3>
 		<p>Patterson and Hennessy define a <b>macro</b> as <i>a pattern-matching and replacement facility 
@@ -19,11 +19,11 @@
 		is called <i>macro expansion.</i>.  They do not require the protocols and execution overhead of procedures.</p>
 		
 		<p>As a simple example, you may want to terminate your program from a number of locations.  If you are running
-		from the MARS IDE, you will use system call 10, {@code exit}.  The instruction sequence is pretty easy</p>
+		from the MARS IDE, you will use system call 10, <code>exit</code>.  The instruction sequence is pretty easy</p>
 		<pre>
 		li $v0,10
 		syscall		</pre>
-		but still tedious.  You can define a macro, let's call it {@code done}, to represent this sequence
+		but still tedious.  You can define a macro, let's call it <code>done</code>, to represent this sequence
 		<pre>
 		.macro done
 		li $v0,10
@@ -32,7 +32,7 @@
 		then invoke it whenever you wish with the statement
 		<pre>
 		done</pre>  
-		At assembly time, the assembler will replace each occurrence of the statement {@code done} with the two-statement
+		At assembly time, the assembler will replace each occurrence of the statement <code>done</code> with the two-statement
 		sequence
 		<pre>
 		li $v0,10
@@ -40,8 +40,8 @@
 		This is the macro expansion.  The runtime simulator is unaware of macros or macro expansion.</p>
 		
 		<p>If running MARS from the command line, perhaps you want to return a termination value.  This can be done
-		with syscall 17, {@code exit2}, which takes the termination value as an argument.  An equivalent macro,
-		let's call it {@code terminate}  would be
+		with syscall 17, <code>exit2</code>, which takes the termination value as an argument.  An equivalent macro,
+		let's call it <code>terminate</code>  would be
 		<pre>
 		.macro terminate (%termination_value)
 		li $a0, %termination_value
@@ -53,12 +53,12 @@
 		<pre>
 		terminate (1)</pre>
 		to terminate with value 1.  Upon assembly,
-		the statement {@code terminate (1)} would be replaced by the three-statement sequence
+		the statement <code>terminate (1)</code> would be replaced by the three-statement sequence
 		<pre>
 		li $a0, 1
 		li $v0, 17
 		syscall		</pre>
-		The <i>argument value</i>, 1, is substituted wherever the formal parameter {@code %termination_value} appears
+		The <i>argument value</i>, 1, is substituted wherever the formal parameter <code>%termination_value</code> appears
 		in the macro body.
 		This is a textual substitution.  Note that in this example the argument value must be an integer, not a 
 		register name or a label, because the parameter is used as the second operand in the Load Immediate operation.</p>
@@ -70,17 +70,17 @@
 		<p>Additional examples and details follow.</p>
 
 		<h3> How to define macros </h3>
-		The first line begins with a {@code .macro} directive followed by an optional list of formal parameters.
+		The first line begins with a <code>.macro</code> directive followed by an optional list of formal parameters.
 		Placing commas between parameters and parentheses around the list is optional.
 		<p>
-			Each formal parameter is an identifier that begins with a {@code %} character.  For compatibility with
-			the SPIM preprocessor APP, it may alternatively begin with {@code $}.
+			Each formal parameter is an identifier that begins with a <code>%</code> character.  For compatibility with
+			the SPIM preprocessor APP, it may alternatively begin with <code>$</code>.
 		</p>
 		<p>
 		The lines that follow define the body of the macro.  Use the formal parameters as appropriate.  The body
 		may contain data segments as well as text segments.
 		</p>
-		<p>The macro definition finishes with a {@code .end_macro} directive.
+		<p>The macro definition finishes with a <code>.end_macro</code> directive.
 		</p>
 		<p>See the Notes below for additional information.</p>
 		
@@ -102,7 +102,7 @@
 				All macro definitions are local in each file and they cannot be global.
 			</li>
 			<li>
-				Nested macro definitions are not supported. No {@code .macro} directive should appear inside body of a macro definition.
+				Nested macro definitions are not supported. No <code>.macro</code> directive should appear inside body of a macro definition.
 			</li>
 			<li>
 				A macro definition can contain a call to a previously-defined macro.  Only backward references are allowed.
@@ -129,7 +129,7 @@
 		<ul>
 			<li>
 				Printing an integer (argument may be either an immediate value or register name): 				
-				<pre>{@code 	.macro print_int (%x)
+				<pre><code> 	.macro print_int (%x)
 	li $v0, 1
 	add $a0, $zero, %x
 	syscall
@@ -137,11 +137,11 @@
 	
 	print_int ($s0)
 	print_int (10)
-}</pre>
+</code></pre>
 			</li>
 			<li>
 				Printing a string (macro will first assign a label to its parameter in data segment then print it): 				
-				<pre>{@code 	.macro print_str (%str)
+				<pre><code> 	.macro print_str (%str)
 	.data
 myLabel: .asciiz %str
 	.text
@@ -152,11 +152,11 @@ myLabel: .asciiz %str
 	
 	print_str ("test1")	#"test1" will be labeled with name "myLabel_M0"
 	print_str ("test2")	#"test2" will be labeled with name "myLabel_M1"
-}</pre>
+</code></pre>
 			</li>
 			<li>
 				Implementing a simple for-loop: 				
-	<pre>{@code 	# generic looping mechanism
+	<pre><code> 	# generic looping mechanism
 	.macro for (%regIterator, %from, %to, %bodyMacroName)
 	add %regIterator, $zero, %from
 	Loop:
@@ -173,26 +173,26 @@ myLabel: .asciiz %str
 	
 	#printing 1 to 10:
 	for ($t0, 1, 10, body)
-}</pre>
-				The {@code for} macro has 4 parameters. {@code %regIterator} should be the name of a register which iterates from {@code %from} to {@code %to} and in each iteration {@code %bodyMacroName} will be expanded and run.
+</code></pre>
+				The <code>for</code> macro has 4 parameters. <code>%regIterator</code> should be the name of a register which iterates from <code>%from</code> to <code>%to</code> and in each iteration <code>%bodyMacroName</code> will be expanded and run.
 				Arguments for 
-				{@code %from} and {@code %to} can be either a register name or an immediate value, and {@code %bodyMacroName} should be name of a macro that has no parameters.
+				<code>%from</code> and <code>%to</code> can be either a register name or an immediate value, and <code>%bodyMacroName</code> should be name of a macro that has no parameters.
 			</li>
 		</ul>
 <h3>Macro source line numbers</h3>
 <p>For purpose of error messaging and Text Segment display, MARS attempts to display line numbers for both the definition and use of the pertinent
-macro statement.  If an error message shows the line number in the form "{@code X->Y}" (e.g. "{@code 20->4}"), then {@code X} is the line number in the expansion
-(use) where the error was detected and {@code Y} is the line number in the macro definition.  In the Text Segment display
+macro statement.  If an error message shows the line number in the form "<code>X->Y</code>" (e.g. "<code>20->4</code>"), then <code>X</code> is the line number in the expansion
+(use) where the error was detected and <code>Y</code> is the line number in the macro definition.  In the Text Segment display
 of source code, the macro definition 
-line number will be displayed within brackets, e.g. "{@code &lt;4&gt;}", at the point of expansion.  Line numbers should correspond to the
+line number will be displayed within brackets, e.g. "<code>&lt;4&gt;</code>", at the point of expansion.  Line numbers should correspond to the
 numbers you would see in the text editor. </p>
 
 <h3>The .eqv directive</h3>
-<p>The {@code .eqv} directive (short for "equivalence") is also new in MARS 4.3.  It is similar to {@code #define} in C or C++.  It
+<p>The <code>.eqv</code> directive (short for "equivalence") is also new in MARS 4.3.  It is similar to <code>#define</code> in C or C++.  It
 is used to substitute an arbitrary string for an identifier.  It is useful but much less powerful than macros.  
 It was developed independently of the macro facility.
 </p>
-<p>Using {@code .eqv}, you can specify simple substitutions that provide "define once, use many times" capability at assembly
+<p>Using <code>.eqv</code>, you can specify simple substitutions that provide "define once, use many times" capability at assembly
 pre-processing time.  For example, once you define
 <pre>
        .eqv  LIMIT      20
@@ -207,7 +207,7 @@ loop:  move $a0, CTR
        add   CTR, CTR, 1
        blt   CTR, LIMIT, loop
        CLEAR_CTR</pre>
-During assembly pre-processing, the {@code .eqv} substitutions will be applied.  The resulting code is
+During assembly pre-processing, the <code>.eqv</code> substitutions will be applied.  The resulting code is
 <pre>
        li   $v0,1
        add  $t2, $zero, 0
@@ -218,33 +218,33 @@ loop:  move $a0, $t2
        add  $t2, $zero, 0</pre>
 which when run will display the values 0 through 19 on one line with no intervening spaces.
 </p>
-<p>Note that the substitution string is not limited to a single token.  Like {@code .macro}, {@code .eqv} is local to the file
-in which it is defined, and must be defined prior to use.  Macro bodies can contain references to {@code .eqv} directives.
+<p>Note that the substitution string is not limited to a single token.  Like <code>.macro</code>, <code>.eqv</code> is local to the file
+in which it is defined, and must be defined prior to use.  Macro bodies can contain references to <code>.eqv</code> directives.
  </p>
 
  <h3>The .include directive</h3>
- <p>The {@code .include} directive is also new in MARS 4.3.  It has one operand, a quoted filename.  When the
+ <p>The <code>.include</code> directive is also new in MARS 4.3.  It has one operand, a quoted filename.  When the
  directive is carried out, the contents of the specified file are substituted for the directive.  This occurs
- during assembly preprocessing.  It is like {@code #include} in C or C++.</p>
+ during assembly preprocessing.  It is like <code>#include</code> in C or C++.</p>
  
- <p>{@code .include} is designed to make  macro and equivalence (.eqv directive) use
+ <p><code>.include</code> is designed to make  macro and equivalence (.eqv directive) use
  more convenient.  Both macro definitions and equivalence definitions are <i>local</i>, which means they can be used only
- in the same file where defined.  Without {@code .include}, you would have to repeat their definitions in every
+ in the same file where defined.  Without <code>.include</code>, you would have to repeat their definitions in every
  file where you want to use them.  Besides being tedious, this is poor programming practice; remember
  "define once, use many times."  Now you can define macros and equivalences in a separate file, then include it 
  in any file where you want to use them.</p>
  
- <p>The {@code .include} preprocessor will detect and flag any circular includes (file that includes itself, directly or
+ <p>The <code>.include</code> preprocessor will detect and flag any circular includes (file that includes itself, directly or
  indirectly).</pp>
  
- <p>The use of {@code .include} presents some challenges for error messaging and for source code numbering in the Text
+ <p>The use of <code>.include</code> presents some challenges for error messaging and for source code numbering in the Text
  Segment display.  If a file being included has any assembly errors, the filename and line number in the error 
  message should refer to the file being included, not the file it was substituted into.  Similarly, the line number
  given in the Text Segment source code display refers to the line in the file being included.  Thus the displayed line numbers do not
  monotonically increase - this is also the case when using the "assemble all" setting.  Line numbers should correspond to the numbers
  you would see in the text editor.</p>
  
- <p>As a simple example, you could define the {@code done} macro (and others) in a separate file
+ <p>As a simple example, you could define the <code>done</code> macro (and others) in a separate file
  then include it wherever you need it.  Suppose "macros.asm" contains the following:
  		<pre>
 		.macro done
@@ -281,8 +281,8 @@ value:		.word	 13
  
 <h3>Acknowledgements</h3>
 <p>The MARS macro facility was developed in 2012 by Mohammad Hossein Sekhavat, sekhavat17@gmail.com, while an engineering student at 
-Sharif University in Tehran.  MARS creators Pete and Ken are incredibly grateful for his contribution!  Pete developed {@code .eqv}
-and {@code .include} at about the same time.</p>
+Sharif University in Tehran.  MARS creators Pete and Ken are incredibly grateful for his contribution!  Pete developed <code>.eqv</code>
+and <code>.include</code> at about the same time.</p>
 
 <h3>References</h3>
 		<p>[1] <i>Computer Organization and Design: The Hardware/Software Interface, Fourth Edition,</i> Patterson and Hennessy, 

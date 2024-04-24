@@ -7,7 +7,7 @@ import mars.simulator.Exceptions;
 import mars.util.Binary;
 
 import java.util.*;
-	
+
 /*
 Copyright (c) 2003-2009,  Pete Sanderson and Kenneth Vollmar
 
@@ -39,8 +39,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * Represents MIPS memory.  Different segments are represented by different data structs.
  *
- * @author Pete Sanderson
- * @version August 2003
+ * @author Pete Sanderson, August 2003
  */
 // NOTE: This implementation is purely big-endian.  MIPS can handle either one.
 public class Memory extends Observable {
@@ -140,7 +139,7 @@ public class Memory extends Observable {
      * and high end of address range, but retrieval from the tree has to be based
      * on target address being ANYWHERE IN THE RANGE (not an exact key match).
      */
-    Collection<MemoryObservable> observables = getNewMemoryObserversCollection();
+    private final List<MemoryObservable> observables = new ArrayList<>();
 
     // The data segment is allocated in blocks of 1024 ints (4096 bytes).  Each block is
     // referenced by a "block table" entry, and the table has 1024 entries.  The capacity
@@ -996,10 +995,10 @@ public class Memory extends Observable {
         return address >= mmioBaseAddress && address < kernelHighAddress;
     }
 
-    //  ALL THE OBSERVABLE STUFF GOES HERE.  FOR COMPATIBILITY, Memory IS STILL
-    //  EXTENDING OBSERVABLE, BUT WILL NOT USE INHERITED METHODS.  WILL INSTEAD
-    //  USE A COLLECTION OF MemoryObserver OBJECTS, EACH OF WHICH IS COMBINATION
-    //  OF AN OBSERVER WITH AN ADDRESS RANGE.
+    // ALL THE OBSERVABLE STUFF GOES HERE.  FOR COMPATIBILITY, Memory IS STILL
+    // EXTENDING OBSERVABLE, BUT WILL NOT USE INHERITED METHODS.  WILL INSTEAD
+    // USE A COLLECTION OF MemoryObserver OBJECTS, EACH OF WHICH IS COMBINATION
+    // OF AN OBSERVER WITH AN ADDRESS RANGE.
 
     /**
      * Method to accept registration from observer for any memory address.  Overrides
@@ -1008,13 +1007,15 @@ public class Memory extends Observable {
      *
      * @param obs the observer
      */
+    @Override
     public void addObserver(Observer obs) {
-        try {  // split so start address always >= end address
+        try {
+            // split so start address always >= end address
             this.addObserver(obs, 0, 0x7ffffffc);
             this.addObserver(obs, 0x80000000, 0xfffffffc);
         }
-        catch (AddressErrorException aee) {
-            System.out.println("Internal Error in Memory.addObserver: " + aee);
+        catch (AddressErrorException exception) {
+            System.err.println("Internal Error in Memory.addObserver: " + exception);
         }
     }
 
@@ -1047,22 +1048,26 @@ public class Memory extends Observable {
         if (endAddr != startAddr && endAddr % WORD_LENGTH_BYTES != 0) {
             throw new AddressErrorException("address not aligned on word boundary ", Exceptions.ADDRESS_EXCEPTION_LOAD, startAddr);
         }
-        // upper half of address space (above 0x7fffffff) has sign bit 1 thus is seen as
-        // negative.
+        // Upper half of address space (above 0x7fffffff) has sign bit 1, and thus is seen as negative
         if (startAddr >= 0 && endAddr < 0) {
             throw new AddressErrorException("range cannot cross 0x8000000; please split it up", Exceptions.ADDRESS_EXCEPTION_LOAD, startAddr);
         }
         if (endAddr < startAddr) {
             throw new AddressErrorException("end address of range < start address of range ", Exceptions.ADDRESS_EXCEPTION_LOAD, startAddr);
         }
-        observables.add(new MemoryObservable(obs, startAddr, endAddr));
+        synchronized (this.observables) {
+            this.observables.add(new MemoryObservable(obs, startAddr, endAddr));
+        }
     }
 
     /**
      * Return number of observers
      */
+    @Override
     public int countObservers() {
-        return observables.size();
+        synchronized (this.observables) {
+            return this.observables.size();
+        }
     }
 
     /**
@@ -1070,18 +1075,23 @@ public class Memory extends Observable {
      *
      * @param obs Observer to be removed
      */
+    @Override
     public void deleteObserver(Observer obs) {
-        for (MemoryObservable observable : observables) {
-            observable.deleteObserver(obs);
+        synchronized (this.observables) {
+            for (MemoryObservable observable : this.observables) {
+                observable.deleteObserver(obs);
+            }
         }
     }
 
     /**
      * Remove all memory observers
      */
+    @Override
     public void deleteObservers() {
-        // just drop the collection
-        observables = getNewMemoryObserversCollection();
+        synchronized (this.observables) {
+            this.observables.clear();
+        }
     }
 
     /**
@@ -1091,6 +1101,7 @@ public class Memory extends Observable {
      *
      * @throws UnsupportedOperationException Always thrown.
      */
+    @Override
     public void notifyObservers() {
         throw new UnsupportedOperationException();
     }
@@ -1102,12 +1113,9 @@ public class Memory extends Observable {
      *
      * @throws UnsupportedOperationException Always thrown.
      */
+    @Override
     public void notifyObservers(Object obj) {
         throw new UnsupportedOperationException();
-    }
-
-    private static Collection<MemoryObservable> getNewMemoryObserversCollection() {
-        return new Vector<>(); // Vectors are thread-safe
     }
 
     /**
@@ -1135,6 +1143,7 @@ public class Memory extends Observable {
 
         // Useful to have for future refactoring, if it actually becomes worthwhile to sort
         // these or put 'em in a tree (rather than sequential search through list).
+        @Override
         public int compareTo(MemoryObservable other) {
             if (this.lowAddress < other.lowAddress || this.lowAddress == other.lowAddress && this.highAddress < other.highAddress) {
                 return -1;
@@ -1152,10 +1161,12 @@ public class Memory extends Observable {
      * is from command mode, Globals.program is null but still want ability to observe.
      */
     private void notifyAnyObservers(int type, int address, int length, int value) {
-        if ((Application.program != null || Application.getGUI() == null) && !this.observables.isEmpty()) {
-            for (MemoryObservable observable : this.observables) {
-                if (observable.match(address)) {
-                    observable.notifyObserver(new MemoryAccessNotice(type, address, length, value));
+        synchronized (this.observables) {
+            if ((Application.program != null || Application.getGUI() == null) && !this.observables.isEmpty()) {
+                for (MemoryObservable observable : this.observables) {
+                    if (observable.match(address)) {
+                        observable.notifyObserver(new MemoryAccessNotice(type, address, length, value));
+                    }
                 }
             }
         }

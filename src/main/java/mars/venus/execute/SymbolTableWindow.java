@@ -60,7 +60,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class SymbolTableWindow extends JInternalFrame {
     private final JPanel labelPanel;
-    private JPanel globalSymbolTableHeader;
     private final JCheckBox dataLabels;
     private final JCheckBox textLabels;
     private final ArrayList<SymbolTableDisplay> symbolTableDisplays;
@@ -141,7 +140,6 @@ public class SymbolTableWindow extends JInternalFrame {
         super("Symbol Table", true, false, true, false);
         this.setFrameIcon(null);
 
-        globalSymbolTableHeader = null;
         sortState = Application.getSettings().symbolTableSortState.get();
         if (sortState < 0 || SORT_STATE_TRANSITIONS.length <= sortState) {
             sortState = 0;
@@ -196,11 +194,6 @@ public class SymbolTableWindow extends JInternalFrame {
         for (SymbolTableDisplay symbolTableDisplay : symbolTableDisplays) {
             if (symbolTableDisplay.hasSymbols()) {
                 JTable table = symbolTableDisplay.generateLabelTable();
-                if (symbolTableDisplay == globalSymbolTableDisplay) {
-                    globalSymbolTableHeader = new JPanel(new BorderLayout());
-                    globalSymbolTableHeader.add(table.getTableHeader(), BorderLayout.CENTER);
-                    globalSymbolTableHeader.setBorder(BorderFactory.createEmptyBorder(0, 12, 0, 12));
-                }
                 // The following is selfish on my part.  Column re-ordering doesn't work correctly when
                 // displaying multiple symbol tables; the headers re-order but the columns do not.
                 // Given the low perceived benefit of reordering displayed symbol table information
@@ -211,17 +204,20 @@ public class SymbolTableWindow extends JInternalFrame {
                 table.addMouseListener(new LabelDisplayMouseListener());
                 table.setBorder(BorderFactory.createLineBorder(UIManager.getColor("Table.gridColor"), 2));
                 JPanel tablePanel = new JPanel(new BorderLayout());
-                tablePanel.add(table, BorderLayout.CENTER);
                 tablePanel.setBorder(BorderFactory.createTitledBorder(
                     BorderFactory.createEmptyBorder(12, 12, 12, 12),
                     symbolTableDisplay.getSymbolTableName(),
                     TitledBorder.CENTER,
                     TitledBorder.TOP
                 ));
+                int height = (int) table.getPreferredSize().getHeight() + tablePanel.getInsets().top + tablePanel.getInsets().bottom;
+                tablePanel.setMaximumSize(new Dimension((int) tablePanel.getMaximumSize().getWidth(), height));
+                tablePanel.add(table, BorderLayout.CENTER);
                 allSymbolTables.add(Box.createVerticalStrut(12));
                 allSymbolTables.add(tablePanel);
             }
         }
+        allSymbolTables.add(Box.createVerticalGlue());
 
         JPanel sortPanel = new JPanel(new GridLayout(1, COLUMN_NAMES.length));
         for (int column = 0; column < COLUMN_NAMES.length; column++) {
@@ -329,7 +325,7 @@ public class SymbolTableWindow extends JInternalFrame {
         /**
          * Create a new instance.
          *
-         * @param program Associated {@code Program} object.  If null, this represents global symbol table.
+         * @param program Associated <code>Program</code> object.  If null, this represents global symbol table.
          */
         public SymbolTableDisplay(Program program) {
             this.program = program;
@@ -382,6 +378,7 @@ public class SymbolTableWindow extends JInternalFrame {
             else {
                 labelTable.setModel(model);
             }
+            labelTable.setFont(MonoRightCellRenderer.MONOSPACED_PLAIN_12POINT);
             labelTable.getColumnModel().getColumn(ADDRESS_COLUMN).setCellRenderer(new MonoRightCellRenderer());
             return labelTable;
         }
@@ -454,7 +451,7 @@ public class SymbolTableWindow extends JInternalFrame {
     // label table column headers. From Sun's JTable tutorial.
     // http://java.sun.com/docs/books/tutorial/uiswing/components/table.html
     private class MyTippedJTable extends JTable {
-        MyTippedJTable(LabelTableModel model) {
+        public MyTippedJTable(LabelTableModel model) {
             super(model);
         }
 

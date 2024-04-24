@@ -33,7 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Stores information of macros defined by now.
  * <br>
  * Will be used in first pass of assembling MIPS source code. When reaching
- * {@code .macro} directive, parser calls
+ * <code>.macro</code> directive, parser calls
  * {@link MacroPool#beginMacro(Token)} and skips source code lines until
  * reaches <code>.end_macro</code> directive. then calls
  * {@link MacroPool#commitMacro(Token)} and the macro information stored in a

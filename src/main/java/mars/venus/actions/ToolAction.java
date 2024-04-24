@@ -45,7 +45,7 @@ public class ToolAction extends AbstractAction {
     private final MarsTool tool;
 
     /**
-     * Create a new {@code ToolAction} for the specified {@link MarsTool}.
+     * Create a new <code>ToolAction</code> for the specified {@link MarsTool}.
      *
      * @param tool The tool this action will open when performed.
      */

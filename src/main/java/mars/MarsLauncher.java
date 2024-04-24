@@ -95,7 +95,7 @@ public class MarsLauncher {
      * Launch an instance of MARS Red with the given command-line arguments. If no arguments are specified,
      * the application will launch in GUI mode.
      * <p>
-     * Usage: {@code Mars [options] filename}
+     * Usage: <code>Mars [options] filename</code>
      * <p>
      * Valid options (not case sensitive, separate by spaces) are:
      * <ul>
@@ -109,28 +109,28 @@ public class MarsLauncher {
      * <li><code>dec</code>  -- Display memory or register contents in decimal.
      * <li><code>dump &lt;segment&gt; &lt;format&gt; &lt;file&gt;</code>  -- Dump memory contents to file.
      *     Supports an address range (see <code>&lt;m&gt;-&lt;n&gt;</code> below).  Current supported
-     *     segments are {@code .text} and {@code .data}.  Current supported dump formats
-     *     are {@code Binary}, {@code HexText}, {@code BinaryText}.
+     *     segments are <code>.text</code> and <code>.data</code>.  Current supported dump formats
+     *     are <code>Binary</code>, <code>HexText</code>, <code>BinaryText</code>.
      * <li><code>h</code>  -- Display help.  Use by itself and with no filename.
      * <li><code>hex</code>  -- Display memory or register contents in hexadecimal (default).
      * <li><code>ic</code>  -- Display count of MIPS basic instructions 'executed'.
-     * <li><code>mc &lt;config&gt;</code>  -- Set memory configuration, where <i>config</i> is {@code Default}
-     *     for the MARS default 32-bit address space, {@code CompactDataAtZero} for
-     *     a 32KB address space with data segment at address 0, or {@code CompactTextAtZero}
+     * <li><code>mc &lt;config&gt;</code>  -- Set memory configuration, where <i>config</i> is <code>Default</code>
+     *     for the MARS default 32-bit address space, <code>CompactDataAtZero</code> for
+     *     a 32KB address space with data segment at address 0, or <code>CompactTextAtZero</code>
      *     for a 32KB address space with text segment at address 0.
      * <li><code>me</code>  -- Display MARS messages to standard error instead of standard output. Can separate via redirection.
      * <li><code>nc</code>  -- Do not display copyright notice (for cleaner redirected/piped output).
      * <li><code>np</code>, <code>ne</code>  -- No extended instructions (pseudo-instructions) allowed.
      * <li><code>p</code>  -- Project mode; assemble all files in the same directory as given file.
      * <li><code>se&lt;n&gt;</code>  -- Terminate MARS with integer exit code <i>n</i> if a simulation error occurs.
-     * <li><code>sm</code>  -- Start execution at {@code main}. Execution will start at program statement globally labeled {@code main}.
+     * <li><code>sm</code>  -- Start execution at <code>main</code>. Execution will start at program statement globally labeled <code>main</code>.
      * <li><code>smc</code>  -- Allow self-modifying code. If enabled, the program can write and branch to either text or data segment.
      * <li><code>we</code>  -- Assembler warnings will be considered errors.
      * <li><code>&lt;n&gt;</code>  -- Set the step limit, where <i>n</i> is the maximum number of steps to simulate.
      *     If 0, negative or not specified, no step limit will be applied.
      * <li><code>&lt;reg&gt;</code>  -- Display register contents after simulation, where <i>reg</i> is the number or name
-     *     (e.g. {@code $5}, {@code $t3}, {@code $f10}) of a register.  May be repeated to specify multiple registers.
-     *     The {@code $} is not required, except for register numbers such as {@code $5}.
+     *     (e.g. <code>$5</code>, <code>$t3</code>, <code>$f10</code>) of a register.  May be repeated to specify multiple registers.
+     *     The <code>$</code> is not required, except for register numbers such as <code>$5</code>.
      * <li><code>&lt;m&gt;-&lt;n&gt;</code>  -- Display memory address range from <i>m</i> (inclusive)
      *     to <i>n</i> (exclusive) after simulation, where <i>m</i> and <i>n</i> may be hex or decimal,
      *     <i>m</i> &le; <i>n</i>, and both must lie on a word boundary.

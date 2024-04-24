@@ -57,10 +57,10 @@ public class SyscallManager {
 
     /**
      * Get the list of syscalls to use, loading them if necessary. The loader searches for all classes
-     * in the {@code mars.mips.instructions.syscalls} package that implement {@link Syscall}.
+     * in the <code>mars.mips.instructions.syscalls</code> package that implement {@link Syscall}.
      * Service number overrides are processed as the syscalls are loaded.
      *
-     * @return An array of {@code Syscall} instances.
+     * @return An array of <code>Syscall</code> instances.
      */
     public static Syscall[] getSyscalls() {
         // The map will be populated only the first time this method is called

@@ -302,7 +302,7 @@ public class Simulator {
         private Runnable interruptEventDispatcher;
 
         /**
-         * Create a new {@code SimulatorThread} without starting it.
+         * Create a new <code>SimulatorThread</code> without starting it.
          *
          * @param program        The program to be simulated.
          * @param programCounter Address in text segment of first instruction to simulate.

@@ -29,12 +29,12 @@ Some essential facts about writing and using exception handlers include:
 <li>The MIPS instruction set includes a number of instructions that
 conditionally trigger a trap exception based on the relative values of two
 registers or of a constant and a register:
-{@code teq}, {@code teqi} (trap if equal),
-{@code tne}, {@code tnei} (trap if not equal),
-{@code tge}, {@code tgeu},
-{@code tgei}, {@code tgeiu} (trap if greater than or equal),
-{@code tlt}, {@code tltu},
-{@code tlti}, {@code tltiu} (trap if less than)
+<code>teq</code>, <code>teqi</code> (trap if equal),
+<code>tne</code>, <code>tnei</code> (trap if not equal),
+<code>tge</code>, <code>tgeu</code>,
+<code>tgei</code>, <code>tgeiu</code> (trap if greater than or equal),
+<code>tlt</code>, <code>tltu</code>,
+<code>tlti</code>, <code>tltiu</code> (trap if less than)
 </li>
 <li>When an exception occurs, 
   <ol>
@@ -45,8 +45,8 @@ registers or of a constant and a register:
   <li>If the exception was caused by an invalid memory address, 
   Coprocessor 0 register $8 (vaddr) is set to the invalid address.</li>
   <li>Execution flow jumps to the MIPS
-   instruction at memory location {@code 0x800000180}.  This address
-   in the kernel text segment ({@code .ktext} directive) is the
+   instruction at memory location <code>0x800000180</code>.  This address
+   in the kernel text segment (<code>.ktext</code> directive) is the
    standard MIPS32 exception handler location.  The only way to change
    it in MARS is to change the MIPS memory configuration through
    the Settings menu item Memory Configuration.
@@ -69,14 +69,14 @@ registers or of a constant and a register:
   </li>
   </ol>
 </li>
-<li>If there is no instruction at location {@code 0x800000180},
+<li>If there is no instruction at location <code>0x800000180</code>,
 MARS will terminate the MIPS program with an appropriate error message.
 </li>
 <li>The exception handler can return control to the program using 
-the {@code eret} instruction.  This will place the EPC register $14 value into the
+the <code>eret</code> instruction.  This will place the EPC register $14 value into the
 Program Counter, so be sure to increment $14 by 4 before returning
-to skip over the instruction that caused the exception.  The {@code mfc0}
-and {@code mtc0} instructions are used to read from and write to Coprocessor 0
+to skip over the instruction that caused the exception.  The <code>mfc0</code>
+and <code>mtc0</code> instructions are used to read from and write to Coprocessor 0
 registers.</li>
    <li>Bits 8-15 of the Cause register $13 can also be used to indicate
    pending interrupts.  Currently this is used only by the Keyboard and
@@ -84,7 +84,7 @@ registers.</li>
    and bit 9 represents a display interrupt.  For more details, see the
    Help panel for that Tool.
    </li>
-<li>Exception types declared in {@code mars.simulator.Exceptions}, but
+<li>Exception types declared in <code>mars.simulator.Exceptions</code>, but
 not necessarily implemented, are ADDRESS_EXCEPTION_LOAD (4), ADDRESS_EXCEPTION_STORE (5),
 	SYSCALL_EXCEPTION (8),
 	BREAKPOINT_EXCEPTION (9),
@@ -134,7 +134,7 @@ msg:
 <p></p>
 
 <h3>Widely Used Exception Handler</h3>
-The exception handler {@code exceptions.s} provided with
+The exception handler <code>exceptions.s</code> provided with
 the SPIM simulator will assemble and run under MARS.  The MARS
 assembler will generate warnings because this program
 contains directives that it does not

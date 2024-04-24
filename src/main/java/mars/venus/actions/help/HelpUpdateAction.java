@@ -29,58 +29,74 @@ import java.util.Map;
  * @author Colin Wong
  */
 public class HelpUpdateAction extends VenusAction {
-    private static final String UPDATE_URL = "https://api.github.com/repos/xarkenz/mars-red/releases";
+    private static final String RELEASES_URL = "https://api.github.com/repos/xarkenz/mars-red/releases";
 
     public HelpUpdateAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 
-    public void actionPerformed(ActionEvent e) {
+    @Override
+    public void actionPerformed(ActionEvent event) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(new URI(UPDATE_URL))
-                    .timeout(Duration.of(5, ChronoUnit.SECONDS))
-                    .GET()
-                    .build();
-            HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+                .uri(new URI(RELEASES_URL))
+                .timeout(Duration.of(5, ChronoUnit.SECONDS))
+                .GET()
+                .build();
+            HttpResponse<String> response = HttpClient.newHttpClient()
+                .send(request, HttpResponse.BodyHandlers.ofString());
             JSONArray releaseArray = new JSONArray(response.body());
 
             // Parse releases into versions and URLs from json response
             Map<Version, String> versionsToUrls = new HashMap<>();
-            for (int i = 0; i < releaseArray.length(); i++) {
-                JSONObject release = releaseArray.getJSONObject(i);
+            for (int index = 0; index < releaseArray.length(); index++) {
+                JSONObject release = releaseArray.getJSONObject(index);
                 String releaseVersion = release.getString("tag_name");
                 // Remove leading 'v' before tag name
-                if (releaseVersion.startsWith("v"))
+                if (releaseVersion.startsWith("v")) {
                     releaseVersion = releaseVersion.replaceFirst("v", "");
+                }
                 versionsToUrls.put(Version.parse(releaseVersion), release.getString("html_url"));
             }
             // Sort version entries in decreasing order
             List<Map.Entry<Version, String>> sortedVersions = versionsToUrls.entrySet().stream()
-                    .sorted(Map.Entry.comparingByKey(Comparator.reverseOrder()))
-                    .toList();
+                .sorted(Map.Entry.comparingByKey(Comparator.reverseOrder()))
+                .toList();
 
             // Check if largest fetched version is "greater than" current version
             Version currentVersion = Version.parse(Application.VERSION);
             if (!sortedVersions.isEmpty() && sortedVersions.get(0).getKey().compareTo(currentVersion) > 0) {
                 Map.Entry<Version, String> newestVersion = sortedVersions.get(0);
-                if (JOptionPane.showConfirmDialog(this.gui,
-                        "Update found:\n"
-                                + "Current version: " + currentVersion + "\tNew version: " + newestVersion.getKey() + "\n"
-                                + "Go to release page?",
-                        "Update " + Application.NAME,
-                        JOptionPane.YES_NO_OPTION) == 0) {
+                int choice = JOptionPane.showConfirmDialog(
+                    this.gui,
+                    "A newer version of " + Application.NAME + " is available.\n"
+                        + "Current version: " + currentVersion + "\n"
+                        + "Latest version: " + newestVersion.getKey() + "\n"
+                        + "Go to release page?",
+                    "Check for Updates",
+                    JOptionPane.YES_NO_OPTION
+                );
+                if (choice == JOptionPane.YES_OPTION) {
                     Desktop.getDesktop().browse(new URI(newestVersion.getValue()));
                 }
-            } else {
-                JOptionPane.showMessageDialog(this.gui, "All up-to-date!", "Update " + Application.NAME, JOptionPane.INFORMATION_MESSAGE);
             }
-        } catch (IOException var3) {
-            System.out.println("Error 504: could not open update page");
-        } catch (URISyntaxException var4) {
-            System.out.println("Error 503: could not open update page");
-        } catch (InterruptedException ex) {
-            System.out.println("Error: update request timeout exceeded");
+            else {
+                JOptionPane.showMessageDialog(
+                    this.gui,
+                    "You are using the latest version of " + Application.NAME + " (" + currentVersion + ").",
+                    "Check for Updates",
+                    JOptionPane.INFORMATION_MESSAGE
+                );
+            }
+        }
+        catch (IOException exception) {
+            System.err.println(this.getClass().getSimpleName() + ": error 504: could not open releases page");
+        }
+        catch (URISyntaxException exception) {
+            System.err.println(this.getClass().getSimpleName() + ": error 503: could not open releases page");
+        }
+        catch (InterruptedException exception) {
+            System.err.println(this.getClass().getSimpleName() + ": error: update request timeout exceeded");
         }
     }
 }

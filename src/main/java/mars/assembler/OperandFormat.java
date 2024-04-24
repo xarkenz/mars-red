@@ -53,8 +53,8 @@ public class OperandFormat {
      * @param instruction The (presumably best matched) MIPS instruction.
      * @param errors ErrorList into which any error messages generated here will be added.
      *
-     * @return Returns {@code true} if the programmer's statement matches the MIPS
-     * specification, else returns {@code false}.
+     * @return Returns <code>true</code> if the programmer's statement matches the MIPS
+     * specification, else returns <code>false</code>.
      */
     static boolean tokenOperandMatch(TokenList tokenList, Instruction instruction, ErrorList errors) {
         if (!numOperandsCheck(tokenList, instruction, errors)) {

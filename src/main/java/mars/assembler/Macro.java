@@ -52,7 +52,7 @@ public class Macro {
     private int fromLine, toLine;
     private int origFromLine, origToLine;
     /**
-     * Arguments like {@code %arg} will be substituted by macro expansion.
+     * Arguments like <code>%arg</code> will be substituted by macro expansion.
      */
     private ArrayList<String> args;
 
@@ -141,13 +141,13 @@ public class Macro {
      * Substitutes macro arguments in a line of source code inside macro
      * definition to be parsed after macro expansion.
      * <br>
-     * Also appends "_M#" to all labels defined inside macro body, where # is value of {@code counter}.
+     * Also appends "_M#" to all labels defined inside macro body, where # is value of <code>counter</code>.
      *
      * @param line    Source line number in macro definition to be substituted.
      * @param args    List of tokens to expand to.
      * @param counter Unique macro expansion ID.
      * @param errors  Destination for any errors from within this method.
-     * @return {@code}-th line of source code, with substituted arguments.
+     * @return The line of source code, with substituted arguments.
      */
     public String getSubstitutedLine(int line, TokenList args, long counter, ErrorList errors) {
         TokenList tokens = program.getTokenLists().get(line - 1);
@@ -181,7 +181,7 @@ public class Macro {
     }
 
     /**
-     * Returns true if {@code value} is name of a label defined in this macro's body.
+     * Returns true if <code>value</code> is name of a label defined in this macro's body.
      *
      * @param value
      * @return
@@ -191,7 +191,7 @@ public class Macro {
     }
 
     /**
-     * Replaces token {@code tokenToBeReplaced} which occurs in {@code source} with {@code substitute}.
+     * Replaces token <code>tokenToBeReplaced</code> which occurs in <code>source</code> with <code>substitute</code>.
      *
      * @param source
      * @param tokenToBeReplaced
@@ -210,7 +210,7 @@ public class Macro {
     }
 
     /**
-     * Returns whether {@code tokenValue} is macro parameter or not.
+     * Returns whether <code>tokenValue</code> is macro parameter or not.
      *
      * @param tokenValue
      * @param acceptSpimStyleParameters accepts SPIM-style parameters which begin with '$' if true

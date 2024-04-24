@@ -195,7 +195,7 @@ public class EditTab extends JTabbedPane {
      * the paths of the files that are open.
      * <p>
      * Most file-related operations trigger this automatically unless the
-     * {@code workspaceStateSavingEnabled} flag is set to {@code false}.
+     * <code>workspaceStateSavingEnabled</code> flag is set to <code>false</code>.
      *
      * @see #setWorkspaceStateSavingEnabled(boolean)
      */
