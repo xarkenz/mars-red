@@ -42,6 +42,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class ProcessingException extends Exception {
     private final ErrorList errs;
+    private int exitCode = 0;
 
     /**
      * Constructor for ProcessingException.
@@ -107,6 +108,19 @@ public class ProcessingException extends Exception {
     /**
      * Constructor for ProcessingException.
      * <p>
+     * No error list, but allows passing of exit code (i.e., syscall 17
+     * for exiting with exit code).
+     *
+     * @param exitCode exit code
+     */
+    public ProcessingException(int exitCode) {
+        errs = null;
+        this.exitCode = exitCode;
+    }
+
+    /**
+     * Constructor for ProcessingException.
+     * <p>
      * No parameter and thus no error list.  Use this for normal MIPS
      * program termination (e.g. syscall 10 for exit).
      */
@@ -124,4 +138,11 @@ public class ProcessingException extends Exception {
     public ErrorList errors() {
         return errs;
     }
+
+    /**
+     * Produce the error code passed by the program.
+     *
+     * @return Returns the error code.
+     */
+    public int exitCode() { return exitCode; }
 }

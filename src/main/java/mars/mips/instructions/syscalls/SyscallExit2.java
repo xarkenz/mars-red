@@ -48,13 +48,14 @@ public class SyscallExit2 extends AbstractSyscall {
     /**
      * Performs syscall function to exit the MIPS program with return value given in $a0.
      * If running in command mode, MARS will exit with that value.  If running under GUI,
-     * return value is ignored.
+     * return value is displayed in the message console.
      */
     @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
+        int exitCode = RegisterFile.getValue(4);
         if (Application.getGUI() == null) {
             Application.exitCode = RegisterFile.getValue(4);
         }
-        throw new ProcessingException(); // Empty error list indicates a clean exit
+        throw new ProcessingException(exitCode); // Pass exit code to message console
     }
 }
