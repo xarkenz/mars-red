@@ -92,7 +92,7 @@
         <tr><td>Write File</td>       <td>15</td>  <td><code>$a0</code> &mdash; file descriptor<br><code>$a1</code> &mdash; address of output buffer<br><code>$a2</code> &mdash; number of characters to write</td>  <td><code>$v0</code> &mdash; number of characters written (negative if an error occurred)</td></tr>
         <tr><td>Close File</td>       <td>16</td>  <td><code>$a0</code> &mdash; file descriptor</td>  <td></td></tr>
         <tr><td>Exit2<br><i>(terminate with exit code)</i></td>  <td>17</td>  <td><code>$a0</code> &mdash; integer exit code</td>  <td><p>
-            Program execution is terminated immediately. If the program is run from within the MARS graphical user interface (GUI), the exit code in <code>$a0</code> is ignored.
+            Program execution is terminated immediately. If the program is run from within the MARS graphical user interface (GUI), the exit code in <code>$a0</code> is displayed in the message console.
         </p></td></tr>
         <tr><td colspan="4"><p>
             <b>Note:</b> Services 1 through 17 above are compatible with the SPIM simulator, though Open File (13) lacks some support. Services 30 and higher are exclusive to MARS.

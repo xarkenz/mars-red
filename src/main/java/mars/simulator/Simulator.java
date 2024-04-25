@@ -7,8 +7,6 @@ import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
 import mars.mips.instructions.BasicInstruction;
 import mars.util.Binary;
-import mars.venus.*;
-import mars.venus.execute.ExecuteTab;
 import mars.venus.execute.ProgramStatus;
 import mars.venus.execute.RunSpeedPanel;
 
@@ -370,7 +368,7 @@ public class Simulator {
             catch (Exception exception) {
                 // Should only happen if there is a bug somewhere
                 System.err.println("Error: unhandled exception during simulation:");
-                exception.printStackTrace();
+                exception.printStackTrace(System.err);
                 this.simulator.dispatchFinishEvent(this.maxSteps, this.programCounter, SimulatorFinishEvent.Reason.INTERNAL_ERROR, null);
             }
         }
@@ -479,7 +477,7 @@ public class Simulator {
                     }
                     catch (ProcessingException exception) {
                         if (exception.errors() == null) {
-                            this.simulator.dispatchFinishEvent(this.maxSteps, this.programCounter, SimulatorFinishEvent.Reason.EXIT_SYSCALL, null);
+                            this.simulator.dispatchFinishEvent(this.maxSteps, this.programCounter, SimulatorFinishEvent.Reason.EXIT_SYSCALL, exception);
                             return;
                         }
 

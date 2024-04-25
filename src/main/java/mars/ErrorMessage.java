@@ -165,7 +165,7 @@ public class ErrorMessage {
                 this.line = line;
             }
             else {
-                mars.assembler.SourceLine sourceLine = sourceProgram.getSourceLines().get(line - 1);
+                mars.assembler.SourceLine sourceLine = sourceProgram.getSourceLines().get(Math.max(0, line - 1));
                 this.filename = sourceLine.getFilename();
                 this.line = sourceLine.getLineNumber();
             }
