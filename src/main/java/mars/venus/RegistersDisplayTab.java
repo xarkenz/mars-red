@@ -88,7 +88,6 @@ public abstract class RegistersDisplayTab extends JPanel implements SimulatorLis
     /**
      * Required by Observer interface.  Called when notified by an Observable that we are registered with.
      * Observables include:
-     * The Simulator object, which lets us know when it starts and stops running
      * A register object, which lets us know of register operations
      * The Simulator keeps us informed of when simulated MIPS execution is active.
      * This is the only time we care about register operations.

@@ -460,7 +460,7 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
                 else {
                     this.writeToMessages(Simulator.class.getSimpleName() + ": finished simulation with exit code " + exitCode + ".\n");
                 }
-                this.writeToConsole("\n--- program finished (code " + exitCode + ") ---\n\n");
+                this.writeToConsole("\n--- program finished with exit code " + exitCode + " ---\n\n");
                 this.setSelectedComponent(consoleTab);
             }
             case RAN_OFF_BOTTOM -> {

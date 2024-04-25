@@ -151,7 +151,7 @@ public class SVGIcon implements Icon {
 
     /**
      * Get the input to the transcoder, applying dynamic coloring in the process of doing so.
-     * A <code><style></code> element is inserted as a child of the root <code><svg></code>
+     * A <code>&lt;style&gt;</code> element is inserted as a child of the root <code>&lt;svg&gt;</code>
      * element and is used to inject CSS properties into elements with certain classes.
      *
      * @return The input to be used with the {@link SVGToBufferedImageTranscoder}.
