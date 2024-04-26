@@ -207,6 +207,14 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
         this.setCaretVisible(true);
     }
 
+    /**
+     * Comment or uncomment highlighted lines or line at cursor.
+     */
+    @Override
+    public void commentLines() {
+        // TODO
+    }
+
     /*
      * Methods to support Find / Replace feature
      *

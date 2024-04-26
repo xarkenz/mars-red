@@ -110,6 +110,8 @@ public interface MARSTextEditingArea {
 
     void setSelectionVisible(boolean vis);
 
+    void commentLines();
+
     void undo();
 
     void discardAllUndoableEdits();

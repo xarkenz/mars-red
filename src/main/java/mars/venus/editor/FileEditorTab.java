@@ -356,6 +356,11 @@ public class FileEditorTab extends JPanel implements Observer {
     }
 
     /**
+     * Comment or uncomment the selection, or line at cursor if nothing is selected.
+     */
+    public void commentLines() { textEditingArea.commentLines(); }
+
+    /**
      * Automatically update whether the Undo and Redo actions are enabled or disabled
      * based on the status of the {@link javax.swing.undo.UndoManager}.
      */

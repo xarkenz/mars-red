@@ -107,8 +107,9 @@ public class VenusUI extends JFrame {
     private EditPasteAction editPasteAction;
     private EditFindReplaceAction editFindReplaceAction;
     private EditSelectAllAction editSelectAllAction;
-    private RunAssembleAction runAssembleAction;
+    private EditCommentAction editCommentAction;
 
+    private RunAssembleAction runAssembleAction;
     private RunStartAction runStartAction;
     private RunStepForwardAction runStepForwardAction;
     private RunStepBackwardAction runStepBackwardAction;
@@ -327,6 +328,8 @@ public class VenusUI extends JFrame {
         editFindReplaceAction = new EditFindReplaceAction(this, "Find / Replace...", getSVGActionIcon("find.svg"), "Find and/or replace text in the current file", KeyEvent.VK_F, KeyStroke.getKeyStroke(KeyEvent.VK_F, tk.getMenuShortcutKeyMaskEx()));
         editSelectAllAction = new EditSelectAllAction(this, "Select All", getSVGActionIcon("select_all.svg"), "Select all text in the current file", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_A, tk.getMenuShortcutKeyMaskEx()));
 
+        editCommentAction = new EditCommentAction(this, "Comment Line", null, "Comment/uncomment line at cursor", KeyEvent.VK_SLASH, KeyStroke.getKeyStroke(KeyEvent.VK_SLASH, tk.getMenuShortcutKeyMaskEx()));
+
         runAssembleAction = new RunAssembleAction(this, "Assemble", getSVGActionIcon("assemble.svg"), "Assemble the current file and clear breakpoints", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0));
         runStartAction = new RunStartAction(this, "Start", getSVGActionIcon("start.svg"), "Run the current program", KeyEvent.VK_G, KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0));
         runStopAction = new RunStopAction(this, "Stop", getSVGActionIcon("stop.svg"), "Stop the currently running program", KeyEvent.VK_S, KeyStroke.getKeyStroke(KeyEvent.VK_F11, 0));
@@ -334,7 +337,7 @@ public class VenusUI extends JFrame {
         runStepForwardAction = new RunStepForwardAction(this, "Step Forward", getSVGActionIcon("step_forward.svg"), "Execute the next instruction", KeyEvent.VK_T, KeyStroke.getKeyStroke(KeyEvent.VK_F7, 0));
         runStepBackwardAction = new RunStepBackwardAction(this, "Step Backward", getSVGActionIcon("step_backward.svg"), "Undo the last step", KeyEvent.VK_B, KeyStroke.getKeyStroke(KeyEvent.VK_F8, 0));
         runResetAction = new RunResetAction(this, "Reset", getSVGActionIcon("reset.svg"), "Reset MIPS memory and registers", KeyEvent.VK_R, KeyStroke.getKeyStroke(KeyEvent.VK_F12, 0));
-        runClearBreakpointsAction = new RunClearBreakpointsAction(this, "Clear All Breakpoints", null, "Clears all execution breakpoints set since the last assemble.", KeyEvent.VK_K, KeyStroke.getKeyStroke(KeyEvent.VK_K, tk.getMenuShortcutKeyMaskEx()));
+        runClearBreakpointsAction = new RunClearBreakpointsAction(this, "Clear All Breakpoints", null, "Clear all execution breakpoints set since the last assemble.", KeyEvent.VK_K, KeyStroke.getKeyStroke(KeyEvent.VK_K, tk.getMenuShortcutKeyMaskEx()));
         runToggleBreakpointsAction = new RunToggleBreakpointsAction(this, "Toggle All Breakpoints", null, "Disable/enable all breakpoints without clearing (can also click Bkpt column header)", KeyEvent.VK_T, KeyStroke.getKeyStroke(KeyEvent.VK_T, tk.getMenuShortcutKeyMaskEx()));
 
         settingsLabelAction = new SettingsLabelAction(this, "Show symbol table", null, "Toggle visibility of Labels window (symbol table) in the Execute tab", null, null);
