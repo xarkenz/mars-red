@@ -3,8 +3,6 @@ package mars.util;
 import javax.swing.filechooser.FileFilter;
 import java.io.File;
 import java.io.IOException;
-import java.net.JarURLConnection;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,7 +51,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 public class FilenameFinder {
     private static final String JAR_EXTENSION = ".jar";
     private static final String FILE_URL = "file:";
-    private static final boolean NO_DIRECTORIES = false;
+    private static final boolean ALLOW_DIRECTORIES_IN_SEARCH = false;
     public static String MATCH_ALL_EXTENSIONS = "*";
 
     /**
@@ -112,7 +110,7 @@ public class FilenameFinder {
                     File[] files = directory.listFiles();
                     if (files != null) {
                         // Have array of File objects; convert to names and add to list
-                        FileFilter filter = getFileFilter(fileExtension, "", NO_DIRECTORIES);
+                        FileFilter filter = getFileFilter(fileExtension, "", ALLOW_DIRECTORIES_IN_SEARCH);
                         filenameList.addAll(Arrays.stream(files)
                             .filter(filter::accept)
                             .map(File::getName)
@@ -184,7 +182,7 @@ public class FilenameFinder {
         File directory = new File(directoryPath);
         File[] allFiles = directory.listFiles();
         if (allFiles != null) {
-            FileFilter filter = getFileFilter(fileExtension, "", NO_DIRECTORIES);
+            FileFilter filter = getFileFilter(fileExtension, "", ALLOW_DIRECTORIES_IN_SEARCH);
             for (File file : allFiles) {
                 if (filter.accept(file)) {
                     filenameList.add(file.getAbsolutePath());
@@ -237,7 +235,7 @@ public class FilenameFinder {
     public static List<String> findFilenames(List<String> nameList, String fileExtension) {
         fileExtension = checkFileExtension(fileExtension);
         List<String> filenameList = new ArrayList<>();
-        FileFilter filter = getFileFilter(fileExtension, "", NO_DIRECTORIES);
+        FileFilter filter = getFileFilter(fileExtension, "", ALLOW_DIRECTORIES_IN_SEARCH);
         for (String name : nameList) {
             File file = new File(name);
             if (filter.accept(file)) {

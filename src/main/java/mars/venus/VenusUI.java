@@ -21,7 +21,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.net.URL;
-import java.util.List;
 
 /*
 Copyright (c) 2003-2013,  Pete Sanderson and Kenneth Vollmar
@@ -178,6 +177,14 @@ public class VenusUI extends JFrame {
         }
         Image iconImage = Toolkit.getDefaultToolkit().getImage(iconImageURL);
         this.setIconImage(iconImage);
+
+        try {
+            Taskbar.getTaskbar().setIconImage(iconImage);
+        } catch (UnsupportedOperationException e) {
+            System.out.println("Could not set taskbar icon image: OS unsupported");
+        } catch (SecurityException e) {
+            System.out.println("Could not set taskbar icon image: no permission");
+        }
 
         // Everything in frame will be arranged on JPanel "center", which is only frame component.
         // "center" has BorderLayout and 2 major components:
