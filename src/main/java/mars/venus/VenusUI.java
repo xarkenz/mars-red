@@ -179,14 +179,11 @@ public class VenusUI extends JFrame {
         this.setIconImage(iconImage);
 
         try {
-            Class.forName( "com.apple.eawt.Application", false, null );
-            com.apple.eawt.Application.getApplication().setDockIconImage( iconImage );
-        }
-        catch (ClassNotFoundException exception) {
-            // Not on Mac, apple class not found
-        }
-        catch (IllegalAccessError error) {
-            System.err.println("Error setting icon on Mac, try running with the flag '--add-exports java.desktop/com.apple.eawt=ALL-UNNAMED'");
+            Taskbar.getTaskbar().setIconImage(iconImage);
+        } catch (UnsupportedOperationException e) {
+            System.out.println("Could not set taskbar icon image: OS unsupported");
+        } catch (SecurityException e) {
+            System.out.println("Could not set taskbar icon image: no permission");
         }
 
         // Everything in frame will be arranged on JPanel "center", which is only frame component.
