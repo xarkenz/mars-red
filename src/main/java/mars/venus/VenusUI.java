@@ -343,15 +343,7 @@ public class VenusUI extends JFrame {
     }
 
     private Icon getSVGActionIcon(String filename) {
-        URL url = this.getClass().getResource(Application.ACTION_ICONS_PATH + filename);
-
-        if (url != null) {
-            return new SVGIcon(url, ICON_SIZE, ICON_SIZE);
-        }
-        else {
-            System.err.println("Error: unable to load image \"" + Application.ACTION_ICONS_PATH + filename + "\"");
-            return null;
-        }
+        return SVGIcon.loadSVGActionIcon(filename, ICON_SIZE);
     }
 
     /**

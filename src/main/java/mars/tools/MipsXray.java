@@ -6,8 +6,7 @@ import mars.mips.hardware.AccessNotice;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.MemoryAccessNotice;
-import mars.mips.instructions.BasicInstruction;
-import mars.mips.instructions.BasicInstructionFormat;
+import mars.util.SVGIcon;
 import mars.venus.VenusUI;
 import mars.venus.actions.run.RunAssembleAction;
 import mars.venus.actions.run.RunStepBackwardAction;
@@ -17,21 +16,23 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import javax.imageio.ImageIO;
+import javax.swing.Timer;
 import javax.swing.*;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Observable;
-import java.util.Vector;
+import java.io.Serial;
+import java.util.*;
 
 public class MipsXray extends AbstractMarsToolAndApplication {
+    @Serial
     private static final long serialVersionUID = -1L;
     private static final String heading = "MIPS X-Ray - Animation of MIPS Datapath";
     private static final String version = " Version 2.0";
@@ -42,8 +43,6 @@ public class MipsXray extends AbstractMarsToolAndApplication {
     protected JLabel label;
     private final Container painel = this.getContentPane();
 
-    private GraphicsConfiguration gc;
-    private BufferedImage datapath;
     private String instructionBinary;
 
     private Action runAssembleAction, runStepAction, runBackstepAction;
@@ -99,51 +98,11 @@ public class MipsXray extends AbstractMarsToolAndApplication {
     }
 
     /**
-     * Implementation of the inherited abstract method to build the main
-     * display area of the GUI.  It will be placed in the CENTER area of a
-     * BorderLayout.  The title is in the NORTH area, and the controls are
-     * in the SOUTH area.
-     */
-    protected JComponent buildAnimationSequence() {
-        JPanel image = new JPanel(new GridBagLayout());
-        return image;
-    }
-
-    /**
      * Insert image in the panel and configure the parameters to run animation.
      */
     @Override
     protected JComponent buildMainDisplayArea() {
-        gui = Application.getGUI();
-        this.createActionObjects();
-        toolbar = this.setUpToolBar();
-
-        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        gc = ge.getDefaultScreenDevice().getDefaultConfiguration();
-        try {
-            BufferedImage im = ImageIO.read(getClass().getResource(Application.IMAGES_PATH + "datapath.png"));
-
-            int transparency = im.getColorModel().getTransparency();
-            datapath = gc.createCompatibleImage(im.getWidth(), im.getHeight(), transparency);
-
-            Graphics2D g2d = datapath.createGraphics();  // graphics context
-            g2d.drawImage(im, 0, 0, null);
-            g2d.dispose();
-        }
-        catch (IOException e) {
-            System.out.println("Load Image error for " + getClass().getResource(Application.IMAGES_PATH + "datapath.png") + ":\n" + e);
-            e.printStackTrace();
-        }
-        System.setProperty("sun.java2d.translaccel", "true");
-        ImageIcon icon = new ImageIcon(getClass().getResource(Application.IMAGES_PATH + "datapath.png"));
-        Image im = icon.getImage();
-        icon = new ImageIcon(im);
-
-        JLabel label = new JLabel(icon);
-        painel.add(label, BorderLayout.WEST);
-        painel.add(toolbar, BorderLayout.NORTH);
-        this.setResizable(false);
-        return (JComponent) painel;
+        return buildMainDisplayArea("datapath.png");
     }
 
     protected JComponent buildMainDisplayArea(String figure) {
@@ -152,23 +111,23 @@ public class MipsXray extends AbstractMarsToolAndApplication {
         toolbar = this.setUpToolBar();
 
         GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        gc = ge.getDefaultScreenDevice().getDefaultConfiguration();
+        GraphicsConfiguration gc = ge.getDefaultScreenDevice().getDefaultConfiguration();
         try {
-            BufferedImage im = ImageIO.read(getClass().getResource(Application.IMAGES_PATH + figure));
+            BufferedImage im = ImageIO.read(Objects.requireNonNull(getClass().getResource(Application.IMAGES_PATH + figure)));
 
             int transparency = im.getColorModel().getTransparency();
-            datapath = gc.createCompatibleImage(im.getWidth(), im.getHeight(), transparency);
+            BufferedImage datapath = gc.createCompatibleImage(im.getWidth(), im.getHeight(), transparency);
 
             Graphics2D g2d = datapath.createGraphics();  // graphics context
             g2d.drawImage(im, 0, 0, null);
             g2d.dispose();
         }
         catch (IOException e) {
-            System.out.println("Load Image error for " + getClass().getResource(Application.IMAGES_PATH + figure) + ":\n" + e);
-            e.printStackTrace();
+            System.err.println("Load Image error for " + getClass().getResource(Application.IMAGES_PATH + figure) + ":\n" + e);
+            e.printStackTrace(System.err);
         }
         System.setProperty("sun.java2d.translaccel", "true");
-        ImageIcon icon = new ImageIcon(getClass().getResource(Application.IMAGES_PATH + figure));
+        ImageIcon icon = new ImageIcon(Objects.requireNonNull(getClass().getResource(Application.IMAGES_PATH + figure)));
         Image im = icon.getImage();
         icon = new ImageIcon(im);
 
@@ -205,15 +164,12 @@ public class MipsXray extends AbstractMarsToolAndApplication {
         ProgramStatement stmt;
 
         try {
-            BasicInstruction instr = null;
             stmt = Memory.getInstance().getStatement(currentAdress);
             if (stmt == null) {
                 return;
             }
 
-            instr = (BasicInstruction) stmt.getInstruction();
             instructionBinary = stmt.getMachineStatement();
-            BasicInstructionFormat format = instr.getInstructionFormat();
 
             painel.removeAll();
             // Class panel that runs datapath animation
@@ -225,7 +181,7 @@ public class MipsXray extends AbstractMarsToolAndApplication {
             datapathAnimation.startAnimation(instructionBinary);
         }
         catch (AddressErrorException exception) {
-            exception.printStackTrace();
+            exception.printStackTrace(System.err);
         }
     }
 
@@ -257,17 +213,14 @@ public class MipsXray extends AbstractMarsToolAndApplication {
      * Setup actions in the menu bar.
      */
     private void createActionObjects() {
-        Toolkit tk = Toolkit.getDefaultToolkit();
-        Class<?> cs = this.getClass();
         try {
-            runAssembleAction = new RunAssembleAction(gui, "Assemble", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "Assemble22.png"))), "Assemble the current file and clear breakpoints", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0));
-
-            runStepAction = new RunStepForwardAction(gui, "Step", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "StepForward22.png"))), "Run one step at a time", KeyEvent.VK_T, KeyStroke.getKeyStroke(KeyEvent.VK_F7, 0));
-            runBackstepAction = new RunStepBackwardAction(gui, "Backstep", new ImageIcon(tk.getImage(cs.getResource(Application.IMAGES_PATH + "StepBack22.png"))), "Undo the last step", KeyEvent.VK_B, KeyStroke.getKeyStroke(KeyEvent.VK_F8, 0));
+            runAssembleAction = new RunAssembleAction(gui, "Assemble", SVGIcon.loadSVGActionIcon("assemble.svg", VenusUI.ICON_SIZE), "Assemble the current file and clear breakpoints", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0));
+            runStepAction = new RunStepForwardAction(gui, "Step", SVGIcon.loadSVGActionIcon("step_forward.svg", VenusUI.ICON_SIZE), "Run one step at a time", KeyEvent.VK_T, KeyStroke.getKeyStroke(KeyEvent.VK_F7, 0));
+            runBackstepAction = new RunStepBackwardAction(gui, "Backstep", SVGIcon.loadSVGActionIcon("step_backward.svg", VenusUI.ICON_SIZE), "Undo the last step", KeyEvent.VK_B, KeyStroke.getKeyStroke(KeyEvent.VK_F8, 0));
         }
         catch (Exception exception) {
-            System.out.println("Internal Error: images folder not found, or other null pointer exception while creating Action objects");
-            exception.printStackTrace();
+            System.err.println("Internal Error: images folder not found, or other null pointer exception while creating Action objects");
+            exception.printStackTrace(System.err);
             System.exit(0);
         }
     }
@@ -427,6 +380,7 @@ public class MipsXray extends AbstractMarsToolAndApplication {
      * and executes the animation of the selected instruction in memory.
      */
     private class DatapathAnimation extends JPanel implements MouseListener {
+        @Serial
         private static final long serialVersionUID = -2681757800180958534L;
 
         private static final int PERIOD = 5; // Velocity of frames in ms
@@ -489,7 +443,7 @@ public class MipsXray extends AbstractMarsToolAndApplication {
                 DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
                 builderFactory.setNamespaceAware(false);
                 DocumentBuilder documentBuilder = builderFactory.newDocumentBuilder();
-                Document document = documentBuilder.parse(getClass().getResource(filename).toString());
+                Document document = documentBuilder.parse(Objects.requireNonNull(getClass().getResource(filename)).toString());
                 Element root = document.getDocumentElement();
                 NodeList bitsList, mnemonic;
                 NodeList equivalenceList = root.getElementsByTagName(tagName);
@@ -503,7 +457,7 @@ public class MipsXray extends AbstractMarsToolAndApplication {
                 }
             }
             catch (Exception exception) {
-                exception.printStackTrace();
+                exception.printStackTrace(System.err);
             }
         }
 
@@ -515,7 +469,7 @@ public class MipsXray extends AbstractMarsToolAndApplication {
                 DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
                 builderFactory.setNamespaceAware(false);
                 DocumentBuilder documentBuilder = builderFactory.newDocumentBuilder();
-                Document document = documentBuilder.parse(getClass().getResource(filename).toString());
+                Document document = documentBuilder.parse(Objects.requireNonNull(getClass().getResource(filename)).toString());
                 Element root = document.getDocumentElement();
                 NodeList datapathMapList = root.getElementsByTagName(tagName);
                 for (int i = 0; i < datapathMapList.getLength(); i++) {
@@ -580,7 +534,7 @@ public class MipsXray extends AbstractMarsToolAndApplication {
                 traversedVertices.add(vertexList.get(0));
             }
             catch (Exception exception) {
-                exception.printStackTrace();
+                exception.printStackTrace(System.err);
             }
         }
 
@@ -1016,9 +970,7 @@ public class MipsXray extends AbstractMarsToolAndApplication {
         public void startAnimation(String binaryInstruction) {
             this.binaryInstruction = binaryInstruction;
             // Start the animation timer
-            Timer timer = new Timer(PERIOD, event -> {
-                repaint();
-            });
+            Timer timer = new Timer(PERIOD, event -> repaint());
             timer.start();
         }
 
@@ -1027,7 +979,7 @@ public class MipsXray extends AbstractMarsToolAndApplication {
          */
         private void initializeImage() {
             try {
-                BufferedImage image = ImageIO.read(getClass().getResource(Application.IMAGES_PATH + "datapath.png"));
+                BufferedImage image = ImageIO.read(Objects.requireNonNull(getClass().getResource(Application.IMAGES_PATH + "datapath.png")));
 
                 int transparency = image.getColorModel().getTransparency();
                 datapathImage = gc.createCompatibleImage(image.getWidth(), image.getHeight(), transparency);
