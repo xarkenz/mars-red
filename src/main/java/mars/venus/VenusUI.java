@@ -21,6 +21,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.net.URL;
+import java.util.List;
 
 /*
 Copyright (c) 2003-2013,  Pete Sanderson and Kenneth Vollmar
@@ -424,8 +425,8 @@ public class VenusUI extends JFrame {
         settingsMenu.add(createMenuItem(settingsPreferencesAction));
         menuBar.add(settingsMenu);
 
-        ToolAction[] toolActions = ToolManager.getToolActions();
-        if (toolActions.length > 0) {
+        List<ToolAction> toolActions = ToolManager.getToolActions();
+        if (!toolActions.isEmpty()) {
             JMenu toolsMenu = new JMenu("Tools");
             toolsMenu.setMnemonic(KeyEvent.VK_T);
             for (ToolAction toolAction : toolActions) {
