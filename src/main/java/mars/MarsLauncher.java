@@ -191,14 +191,7 @@ public class MarsLauncher {
      */
     private void launchGUI() {
         SwingUtilities.invokeLater(() -> {
-            // Designate the "themes" folder for theme style overrides
-            FlatLaf.registerCustomDefaultsSource("themes");
-            // Set up the look and feel
-            FlatLaf.setup(switch (Application.getSettings().lookAndFeelName.get()) {
-                case "FlatDarkLaf" -> new FlatDarkLaf();
-                case "FlatLightLaf" -> new FlatLightLaf();
-                default -> new FlatDarkLaf();
-            });
+            Application.setupLookAndFeel();
             // Initialize the GUI
             new VenusUI(Application.NAME + " " + Application.VERSION);
         });
@@ -569,6 +562,7 @@ public class MarsLauncher {
             Observer instructionCounter = new Observer() {
                 private int lastAddress = 0;
 
+                @Override
                 public void update(Observable o, Object obj) {
                     if (obj instanceof AccessNotice notice) {
                         if (!notice.accessIsFromMIPS()) {

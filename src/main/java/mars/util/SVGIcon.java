@@ -15,6 +15,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Objects;
 
 /**
  * An icon whose image is in the Scalable Vector Graphics format.
@@ -35,7 +36,8 @@ public class SVGIcon implements Icon {
     // as floats, and this is more convenient for the getter methods anyway.
     private int width;
     private int height;
-    private boolean needsTranscode;
+    private boolean wasModified;
+    private Color cachedForeground;
 
     /**
      * Create a new <code>SVGIcon</code> from a URI and initial dimensions.
@@ -47,6 +49,7 @@ public class SVGIcon implements Icon {
     public SVGIcon(URL url, int width, int height) {
         this.url = url;
         this.transcoder = new SVGToBufferedImageTranscoder();
+        this.cachedForeground = null;
         // This method call will generate the initial image for the icon
         this.setIconDimensions(width, height);
     }
@@ -81,7 +84,7 @@ public class SVGIcon implements Icon {
         this.width = width;
         this.height = height;
         // Since the width and height may have changed, regenerate the image upon next paint
-        this.needsTranscode = true;
+        this.wasModified = true;
     }
 
     /**
@@ -119,6 +122,18 @@ public class SVGIcon implements Icon {
         graphics2D.setComposite(composite);
     }
 
+    private boolean needsTranscode() {
+        Color foreground = UIManager.getColor("SVGIcon.foreground");
+
+        if (this.wasModified || !Objects.equals(foreground, this.cachedForeground)) {
+            this.wasModified = false;
+            this.cachedForeground = foreground;
+            return true;
+        }
+
+        return false;
+    }
+
     /**
      * Get the buffered icon image with the given scaling, generating it if necessary.
      * This is used by {@link #paintIcon(Component, Graphics, int, int)} to obtain the image
@@ -129,19 +144,19 @@ public class SVGIcon implements Icon {
      * @return The buffered icon image, or null if the image failed to load.
      */
     private BufferedImage getIconImage(float scaleX, float scaleY) {
-        // Regenerate the image if the size has changed since it was last generated
-        if (this.needsTranscode) {
+        // Regenerate the image if anything has changed since it was last generated
+        if (this.needsTranscode()) {
             // Set the target width and height for the transcoder
             this.transcoder.addTranscodingHint(ImageTranscoder.KEY_WIDTH, this.width * scaleX * SAMPLES_PER_PIXEL);
             this.transcoder.addTranscodingHint(ImageTranscoder.KEY_HEIGHT, this.height * scaleY * SAMPLES_PER_PIXEL);
             // Perform the transcode operation
             try {
                 this.transcoder.transcode(this.getTranscoderInput());
-                this.needsTranscode = false;
             }
             catch (IOException | TranscoderException exception) {
                 // TODO: Probably should handle this case differently
                 // For now, the needsTranscode flag will remain true in case the transcode works next time
+                this.wasModified = true;
                 exception.printStackTrace();
             }
         }

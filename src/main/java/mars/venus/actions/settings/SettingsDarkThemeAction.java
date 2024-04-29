@@ -54,6 +54,8 @@ public class SettingsDarkThemeAction extends VenusAction {
             Application.getSettings().lookAndFeelName.set("FlatLightLaf");
         }
 
-        JOptionPane.showMessageDialog(gui, "You must restart " + Application.NAME + " in order for this change to take effect.", "Restart Required", JOptionPane.INFORMATION_MESSAGE);
+        Application.setupLookAndFeel();
+
+        JOptionPane.showMessageDialog(gui, "For best results, you may want to restart " + Application.NAME + ".", "Restart Recommended", JOptionPane.INFORMATION_MESSAGE);
     }
 }

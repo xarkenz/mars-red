@@ -88,8 +88,8 @@ public class TextAreaPainter extends JComponent implements TabExpander {
     }
 
     /**
-     * Returns the syntax styles used to paint colorized text. Entry <i>n</i>
-     * will be used to paint tokens with id = <i>n</i>.
+     * Returns the syntax styles used to paint colorized text. Entry <var>n</var>
+     * will be used to paint tokens with id = <var>n</var>.
      *
      * @see Token
      */
@@ -651,5 +651,15 @@ public class TextAreaPainter extends JComponent implements TabExpander {
                 gfx.drawRect(caretX, y, caretWidth, height - 1);
             }
         }
+    }
+
+    @Override
+    public void updateUI() {
+        // TODO: handle null
+        setBackground(UIManager.getColor("Venus.Editor.background"));
+        setForeground(UIManager.getColor("Venus.Editor.foreground"));
+        caretColor = UIManager.getColor("Venus.Editor.caret");
+        selectionColor = UIManager.getColor("Venus.Editor.selectionBackground");
+        lineHighlightColor = UIManager.getColor("Venus.Editor.highlightedLine");
     }
 }

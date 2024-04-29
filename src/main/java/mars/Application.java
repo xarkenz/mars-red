@@ -1,5 +1,8 @@
 package mars;
 
+import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.FlatLaf;
+import com.formdev.flatlaf.FlatLightLaf;
 import mars.assembler.SymbolTable;
 import mars.mips.hardware.Memory;
 import mars.mips.instructions.InstructionSet;
@@ -7,6 +10,7 @@ import mars.settings.Settings;
 import mars.util.PropertiesFile;
 import mars.venus.VenusUI;
 
+import javax.swing.*;
 import java.util.*;
 
 /*
@@ -176,6 +180,28 @@ public class Application {
             initialized = true;
             debug = false;
             memory.clear(); // Will establish memory configuration from setting
+        }
+    }
+
+    /**
+     * Configure the look and feel of the GUI according to application settings,
+     * refreshing the appearance of the GUI if it is already created.
+     */
+    public static void setupLookAndFeel() {
+        // Set the UI scale
+        System.setProperty("flatlaf.uiScale", settings.uiScale.get() + "%");
+        // Designate the "themes" folder for theme style overrides
+        FlatLaf.registerCustomDefaultsSource("themes");
+        // Set up the look and feel
+        FlatLaf.setup(switch (settings.lookAndFeelName.get()) {
+            case "FlatDarkLaf" -> new FlatDarkLaf();
+            case "FlatLightLaf" -> new FlatLightLaf();
+            default -> new FlatDarkLaf();
+        });
+
+        // Refresh the GUI as best as possible if is already open
+        if (gui != null) {
+            SwingUtilities.updateComponentTreeUI(gui);
         }
     }
 

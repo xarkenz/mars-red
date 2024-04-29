@@ -482,7 +482,7 @@ public class JEditTextArea extends JComponent {
     public int _offsetToX(int line, int offset) {
         TokenMarker tokenMarker = getTokenMarker();
 
-        /* Use painter's cached info for speed */
+        // Use painter's cached info for speed
         FontMetrics fm = painter.getFontMetrics();
 
         getLineText(line, lineSegment);
@@ -490,13 +490,12 @@ public class JEditTextArea extends JComponent {
         int segmentOffset = lineSegment.offset;
         int x = horizontalOffset;
 
-        /* If syntax coloring is disabled, do simple translation */
+        // If syntax coloring is disabled, do simple translation
         if (tokenMarker == null) {
             lineSegment.count = offset;
             return x + Utilities.getTabbedTextWidth(lineSegment, fm, x, painter, 0);
         }
-        /* If syntax coloring is enabled, we have to do this because
-         * tokens can vary in width */
+        // If syntax coloring is enabled, we have to do this because tokens can vary in width
         else {
             Token tokens;
             if (painter.currentLineIndex == line && painter.currentLineTokens != null) {
@@ -1750,6 +1749,7 @@ public class JEditTextArea extends JComponent {
             else {
                 newEnd = selectionEnd;
             }
+
             select(newStart, newEnd);
         }
 
@@ -1793,6 +1793,7 @@ public class JEditTextArea extends JComponent {
             else {
                 newEnd = selectionEnd;
             }
+
             select(newStart, newEnd);
         }
 

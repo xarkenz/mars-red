@@ -281,6 +281,16 @@ public class Settings extends Observable {
     // INTEGER SETTINGS
 
     /**
+     * UI scale multiplier, as a percentage. 100 is at 1:1 scale.
+     */
+    public final IntegerSetting uiScale = new IntegerSetting(
+        this,
+        "UIScale",
+        100,
+        true
+    );
+
+    /**
      * State for sorting label window display.
      */
     public final IntegerSetting symbolTableSortState = new IntegerSetting(

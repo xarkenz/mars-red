@@ -70,6 +70,10 @@ public class VenusUI extends JFrame {
      * Time in milliseconds to show splash screen.
      */
     public static final int SPLASH_DURATION_MILLIS = 5000;
+    /**
+     * Filename of the icon used in the window title bar and taskbar.
+     */
+    public static final String WINDOW_ICON_NAME = "MarsPlanet.jpg";
 
     private final JMenuBar menu;
     private final MainPane mainPane;
@@ -169,21 +173,25 @@ public class VenusUI extends JFrame {
 
         Application.initialize();
 
-        // Image courtesy of NASA/JPL.
-        URL iconImageURL = this.getClass().getResource(Application.IMAGES_PATH + "RedMars16.gif");
+        // Image courtesy of NASA/JPL
+        URL iconImageURL = this.getClass().getResource(Application.IMAGES_PATH + WINDOW_ICON_NAME);
         if (iconImageURL == null) {
-            System.out.println("Internal Error: images folder or file not found");
-            System.exit(0);
+            System.err.println("Error: images folder or file not found");
         }
-        Image iconImage = Toolkit.getDefaultToolkit().getImage(iconImageURL);
-        this.setIconImage(iconImage);
+        else {
+            Image iconImage = Toolkit.getDefaultToolkit().getImage(iconImageURL);
+            this.setIconImage(iconImage);
 
-        try {
-            Taskbar.getTaskbar().setIconImage(iconImage);
-        } catch (UnsupportedOperationException e) {
-            System.out.println("Could not set taskbar icon image: OS unsupported");
-        } catch (SecurityException e) {
-            System.out.println("Could not set taskbar icon image: no permission");
+            // Mac requires a different method to set the taskbar icon
+            try {
+                Taskbar.getTaskbar().setIconImage(iconImage);
+            }
+            catch (UnsupportedOperationException exception) {
+                // The OS doesn't support setting the icon through this method
+            }
+            catch (SecurityException exception) {
+                System.err.println("Error: unable to set taskbar icon image: no permission");
+            }
         }
 
         // Everything in frame will be arranged on JPanel "center", which is only frame component.
