@@ -5,12 +5,11 @@ import mars.assembler.Directive;
 import mars.mips.instructions.BasicInstruction;
 import mars.mips.instructions.ExtendedInstruction;
 import mars.mips.instructions.Instruction;
-import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
+import mars.venus.actions.VenusAction;
 
 import javax.swing.*;
 import javax.swing.event.HyperlinkEvent;
-import javax.swing.event.HyperlinkListener;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLFrameHyperlinkEvent;
 import java.awt.*;
@@ -21,7 +20,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.*;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Vector;
 
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
@@ -127,6 +129,7 @@ public class HelpHelpAction extends VenusAction {
         JEditorPane helpDisplay;
         try {
             InputStream input = this.getClass().getResourceAsStream(Application.HELP_PATH + filename);
+            assert input != null;
             BufferedReader reader = new BufferedReader(new InputStreamReader(input));
             String line;
             StringBuilder text = new StringBuilder();
@@ -138,7 +141,22 @@ public class HelpHelpAction extends VenusAction {
             helpDisplay.setEditable(false);
             helpDisplay.setCaretPosition(0); // Assure top of document displayed
             helpScrollPane = new JScrollPane(helpDisplay, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-            helpDisplay.addHyperlinkListener(new HelpHyperlinkListener());
+            helpDisplay.addHyperlinkListener(event -> {
+                if (event.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+                    JEditorPane pane = (JEditorPane) event.getSource();
+                    if (event instanceof HTMLFrameHyperlinkEvent frameHyperlinkEvent) {
+                        HTMLDocument document = (HTMLDocument) pane.getDocument();
+                        document.processHTMLFrameHyperlinkEvent(frameHyperlinkEvent);
+                    }
+                    else {
+                        try {
+                            Desktop.getDesktop().browse(event.getURL().toURI());
+                        } catch (IOException | URISyntaxException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            });
         }
         catch (Exception exception) {
             helpScrollPane = new JScrollPane(new JLabel("Error (" + exception + "): " + filename + " contents could not be loaded."));
@@ -156,6 +174,7 @@ public class HelpHelpAction extends VenusAction {
         JEditorPane licenseDisplay;
         try {
             InputStream input = this.getClass().getResourceAsStream("/mars_license.txt");
+            assert input != null;
             BufferedReader reader = new BufferedReader(new InputStreamReader(input));
             String line;
             StringBuilder text = new StringBuilder("<pre>");
@@ -278,85 +297,5 @@ public class HelpHelpAction extends VenusAction {
         JList<String> examples = new JList<>(exampleList);
         examples.setFont(new Font("Monospaced", Font.PLAIN, 12));
         return new JScrollPane(examples, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-    }
-
-    /**
-     * Determines MARS response when user click on hyperlink in displayed help page.
-     * The response will be to pop up a simple dialog with the page contents.  It
-     * will not display URL, no navigation, nothing.  Just display the page and
-     * provide a Close button.
-     */
-    private class HelpHyperlinkListener implements HyperlinkListener {
-        private static final String CANNOT_DISPLAY_MESSAGE = "<html><title></title><body><strong>Unable to display requested document.</strong></body></html>";
-
-        private JDialog webpageDisplay;
-        private JTextField webpageURL;
-
-        @Override
-        public void hyperlinkUpdate(HyperlinkEvent event) {
-            if (event.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-                JEditorPane pane = (JEditorPane) event.getSource();
-                if (event instanceof HTMLFrameHyperlinkEvent frameHyperlinkEvent) {
-                    HTMLDocument document = (HTMLDocument) pane.getDocument();
-                    document.processHTMLFrameHyperlinkEvent(frameHyperlinkEvent);
-                }
-                else {
-                    webpageDisplay = new JDialog(gui, "Primitive HTML Viewer");
-                    webpageDisplay.setLayout(new BorderLayout());
-                    webpageDisplay.setLocation(gui.getSize().width / 6, gui.getSize().height / 6);
-                    JEditorPane webpagePane;
-                    try {
-                        webpagePane = new JEditorPane(event.getURL());
-                    }
-                    catch (IOException exception) {
-                        webpagePane = new JEditorPane("text/html", CANNOT_DISPLAY_MESSAGE);
-                    }
-                    webpagePane.addHyperlinkListener(hyperlinkEvent -> {
-                        if (hyperlinkEvent.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
-                            JEditorPane editorPane = (JEditorPane) hyperlinkEvent.getSource();
-                            if (hyperlinkEvent instanceof HTMLFrameHyperlinkEvent frameHyperlinkEvent) {
-                                HTMLDocument document = (HTMLDocument) editorPane.getDocument();
-                                document.processHTMLFrameHyperlinkEvent(frameHyperlinkEvent);
-                            }
-                            else {
-                                try {
-                                    editorPane.setPage(hyperlinkEvent.getURL());
-                                }
-                                catch (Throwable t) {
-                                    editorPane.setText(CANNOT_DISPLAY_MESSAGE);
-                                }
-                                webpageURL.setText(hyperlinkEvent.getURL().toString());
-                            }
-                        }
-                    });
-                    webpagePane.setPreferredSize(new Dimension(gui.getSize().width * 2 / 3, gui.getSize().height * 2 / 3));
-                    webpagePane.setEditable(false);
-                    webpagePane.setCaretPosition(0);
-                    JScrollPane webpageScrollPane = new JScrollPane(webpagePane, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-                    webpageURL = new JTextField(event.getURL().toString(), 50);
-                    webpageURL.setEditable(false);
-                    webpageURL.setBackground(Color.WHITE);
-                    JPanel urlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 4));
-                    urlPanel.add(new JLabel("URL: "));
-                    urlPanel.add(webpageURL);
-                    webpageDisplay.add(urlPanel, BorderLayout.NORTH);
-                    webpageDisplay.add(webpageScrollPane);
-                    JButton closeButton = new JButton("Close");
-                    closeButton.addActionListener(e1 -> {
-                        webpageDisplay.setVisible(false);
-                        webpageDisplay.dispose();
-                    });
-                    JPanel closePanel = new JPanel();
-                    closePanel.setLayout(new BoxLayout(closePanel, BoxLayout.LINE_AXIS));
-                    closePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 5));
-                    closePanel.add(Box.createHorizontalGlue());
-                    closePanel.add(closeButton);
-                    closePanel.add(Box.createHorizontalGlue());
-                    webpageDisplay.add(closePanel, BorderLayout.SOUTH);
-                    webpageDisplay.pack();
-                    webpageDisplay.setVisible(true);
-                }
-            }
-        }
     }
 }
