@@ -54,7 +54,7 @@ public class Application {
     private static final String CONFIG_PROPERTIES = "Config";
 
     /**
-     * Lock variable used at head of synchronized block to guard MIPS memory and registers
+     * Lock variable used at head of synchronized block to guard MIPS memory and registers.
      */
     public static final Object MEMORY_AND_REGISTERS_LOCK = new Object();
     /**
@@ -62,21 +62,21 @@ public class Application {
      */
     public static final String USER_INPUT_PREFIX = "**** user input : ";
     /**
-     * Path to folder that contains images
+     * Path to the resources folder that contains images.
      */
     public static final String IMAGES_PATH = "/images/";
     /**
-     * Path to folder that contains action icons
+     * Path to the resources folder that contains action icons.
      */
     public static final String ACTION_ICONS_PATH = "/icons/actions/";
     /**
-     * Path to folder that contains help text
+     * Path to the resources folder that contains help documentation.
      */
     public static final String HELP_PATH = "/help/";
     /**
-     * The current MARS Red version number. Can't wait for {@link #initialize()} call to get it.
+     * The current MARS Red version number.
      */
-    public static final String VERSION = "5.0-beta3";
+    public static final String VERSION = "5.0-beta4";
     /**
      * List of accepted file extensions for MIPS assembly source files.
      */

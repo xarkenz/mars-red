@@ -1,8 +1,5 @@
 package mars;
 
-import com.formdev.flatlaf.FlatDarkLaf;
-import com.formdev.flatlaf.FlatLaf;
-import com.formdev.flatlaf.FlatLightLaf;
 import mars.mips.dump.DumpFormat;
 import mars.mips.dump.DumpFormatManager;
 import mars.mips.hardware.*;

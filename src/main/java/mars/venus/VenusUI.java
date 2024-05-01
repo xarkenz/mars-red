@@ -283,6 +283,24 @@ public class VenusUI extends JFrame {
     }
 
     /**
+     * Load an SVG action icon from the action icons folder ({@link Application#ACTION_ICONS_PATH}).
+     *
+     * @param filename Name of the SVG icon to load.
+     * @return The loaded SVG icon, or null if the image does not exist.
+     */
+    public static Icon getSVGActionIcon(String filename) {
+        URL url = VenusUI.class.getResource(Application.ACTION_ICONS_PATH + filename);
+
+        if (url != null) {
+            return new SVGIcon(url, ICON_SIZE, ICON_SIZE);
+        }
+        else {
+            System.err.println("Error: unable to load image \"" + Application.ACTION_ICONS_PATH + filename + "\"");
+            return null;
+        }
+    }
+
+    /**
      * Action objects are used instead of action listeners because one can be easily shared between
      * a menu item and a toolbar button.  Does nice things like disable both if the action is
      * disabled, etc.
@@ -341,10 +359,6 @@ public class VenusUI extends JFrame {
         helpHelpAction = new HelpHelpAction(this, "Help...", getSVGActionIcon("help.svg"), "View help information", KeyEvent.VK_H, KeyStroke.getKeyStroke(KeyEvent.VK_H, tk.getMenuShortcutKeyMaskEx()));
         helpUpdateAction = new HelpUpdateAction(this, "Check for Updates...", getSVGActionIcon("update.svg"), "Check if a newer version is available", null, null);
         helpAboutAction = new HelpAboutAction(this, "About...", getSVGActionIcon("about.svg"), "Information about " + Application.NAME, null, null);
-    }
-
-    private Icon getSVGActionIcon(String filename) {
-        return SVGIcon.loadSVGActionIcon(filename, ICON_SIZE);
     }
 
     /**

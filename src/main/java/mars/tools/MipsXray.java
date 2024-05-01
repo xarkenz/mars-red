@@ -6,7 +6,6 @@ import mars.mips.hardware.AccessNotice;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.MemoryAccessNotice;
-import mars.util.SVGIcon;
 import mars.venus.VenusUI;
 import mars.venus.actions.run.RunAssembleAction;
 import mars.venus.actions.run.RunStepBackwardAction;
@@ -30,8 +29,8 @@ import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
 import java.io.IOException;
 import java.io.Serial;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.function.BiConsumer;
 
 public class MipsXray extends AbstractMarsToolAndApplication {
@@ -53,6 +52,7 @@ public class MipsXray extends AbstractMarsToolAndApplication {
     private VenusUI gui;
     private JToolBar toolbar;
 
+    @SuppressWarnings(value = "unused")
     public MipsXray(String title, String heading) {
         super(title, heading);
     }
@@ -60,6 +60,7 @@ public class MipsXray extends AbstractMarsToolAndApplication {
     /**
      * Simple constructor, likely used by the MipsXray menu mechanism
      */
+    @SuppressWarnings(value = "unused")
     public MipsXray() {
         super(heading + ", " + version, heading);
     }
@@ -92,8 +93,8 @@ public class MipsXray extends AbstractMarsToolAndApplication {
             To see the datapath of register bank and control units, click inside the functional unit.
 
             Version 2.0
-            Developed by M�rcio Roberto, Guilherme Sales, Fabr�cio Vivas, Fl�vio Cardeal and F�bio L�cio
-            Contact Marcio Roberto at marcio.rdaraujo@gmail.com with questions or comments.
+            Developed by Márcio Roberto, Guilherme Sales, Fabrício Vivas, Flávio Cardeal and Fábio Lúcio
+            Contact Márcio Roberto at marcio.rdaraujo@gmail.com with questions or comments.
             """;
         JButton help = new JButton("Help");
         help.addActionListener(event -> JOptionPane.showMessageDialog(window, helpContent));
@@ -151,18 +152,18 @@ public class MipsXray extends AbstractMarsToolAndApplication {
      */
     @Override
     protected void processMIPSUpdate(Observable resource, AccessNotice notice) {
-		if (!notice.accessIsFromMIPS()) {
-			return;
-		}
-		if (notice.getAccessType() != AccessNotice.READ) {
-			return;
-		}
+        if (!notice.accessIsFromMIPS()) {
+            return;
+        }
+        if (notice.getAccessType() != AccessNotice.READ) {
+            return;
+        }
         MemoryAccessNotice man = (MemoryAccessNotice) notice;
         int currentAdress = man.getAddress();
 
-		if (currentAdress == lastAddress) {
-			return;
-		}
+        if (currentAdress == lastAddress) {
+            return;
+        }
         lastAddress = currentAdress;
         ProgramStatement stmt;
 
@@ -200,12 +201,11 @@ public class MipsXray extends AbstractMarsToolAndApplication {
         JToolBar toolBar = new JToolBar();
         // Components to add menu bar in the plugin window.
         JButton assembleButton = new JButton(runAssembleAction);
-        assembleButton.setText("");
+        assembleButton.setHideActionText(true);
         JButton stepBackwardButton = new JButton(runBackstepAction);
-        stepBackwardButton.setText("");
-
+        stepBackwardButton.setHideActionText(true);
         JButton stepForwardButton = new JButton(runStepAction);
-        stepForwardButton.setText("");
+        stepForwardButton.setHideActionText(true);
         toolBar.add(assembleButton);
         toolBar.add(stepForwardButton);
 
@@ -216,16 +216,9 @@ public class MipsXray extends AbstractMarsToolAndApplication {
      * Setup actions in the menu bar.
      */
     private void createActionObjects() {
-        try {
-            runAssembleAction = new RunAssembleAction(gui, "Assemble", SVGIcon.loadSVGActionIcon("assemble.svg", VenusUI.ICON_SIZE), "Assemble the current file and clear breakpoints", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0));
-            runStepAction = new RunStepForwardAction(gui, "Step", SVGIcon.loadSVGActionIcon("step_forward.svg", VenusUI.ICON_SIZE), "Run one step at a time", KeyEvent.VK_T, KeyStroke.getKeyStroke(KeyEvent.VK_F7, 0));
-            runBackstepAction = new RunStepBackwardAction(gui, "Backstep", SVGIcon.loadSVGActionIcon("step_backward.svg", VenusUI.ICON_SIZE), "Undo the last step", KeyEvent.VK_B, KeyStroke.getKeyStroke(KeyEvent.VK_F8, 0));
-        }
-        catch (Exception exception) {
-            System.err.println("Internal Error: images folder not found, or other null pointer exception while creating Action objects");
-            exception.printStackTrace(System.err);
-            System.exit(0);
-        }
+        runAssembleAction = new RunAssembleAction(gui, "Assemble", VenusUI.getSVGActionIcon("assemble.svg"), "Assemble the current file and clear breakpoints", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0));
+        runStepAction = new RunStepForwardAction(gui, "Step", VenusUI.getSVGActionIcon("step_forward.svg"), "Run one step at a time", KeyEvent.VK_T, KeyStroke.getKeyStroke(KeyEvent.VK_F7, 0));
+        runBackstepAction = new RunStepBackwardAction(gui, "Backstep", VenusUI.getSVGActionIcon("step_backward.svg"), "Undo the last step", KeyEvent.VK_B, KeyStroke.getKeyStroke(KeyEvent.VK_F8, 0));
     }
 
     public static class Vertex {
@@ -261,20 +254,20 @@ public class MipsXray extends AbstractMarsToolAndApplication {
             this.isText = isText;
             this.color = new Color(0, 153, 0);
             if (isMovingHorizontally) {
-				if (init < end) {
-					direction = MOVING_LEFT;
-				}
-				else {
-					direction = MOVING_RIGHT;
-				}
+                if (init < end) {
+                    direction = MOVING_LEFT;
+                }
+                else {
+                    direction = MOVING_RIGHT;
+                }
             }
             else {
-				if (init < end) {
-					direction = MOVING_UP;
-				}
-				else {
-					direction = MOVING_DOWN;
-				}
+                if (init < end) {
+                    direction = MOVING_UP;
+                }
+                else {
+                    direction = MOVING_DOWN;
+                }
             }
             String[] targetVertex = listTargetVertex.split("#");
             this.targetVertices = new ArrayList<>();
@@ -287,10 +280,7 @@ public class MipsXray extends AbstractMarsToolAndApplication {
     }
 
     public enum DatapathUnit {
-        REGISTER,
-        CONTROL,
-        ALU_CONTROL,
-        ALU
+        REGISTER, CONTROL, ALU_CONTROL, ALU
     }
 
     /**
@@ -925,15 +915,15 @@ public class MipsXray extends AbstractMarsToolAndApplication {
         }
 
         static void drawImage(Graphics2D graphics2D, BufferedImage image, ImageObserver observer, int x, int y, Color color) {
-			if (image == null) {
-				graphics2D.setColor(color);
-				graphics2D.fillOval(x, y, 20, 20);
-				graphics2D.setColor(Color.black);
-				graphics2D.drawString("   ", x, y);
-			}
-			else {
-				graphics2D.drawImage(image, x, y, observer);
-			}
+            if (image == null) {
+                graphics2D.setColor(color);
+                graphics2D.fillOval(x, y, 20, 20);
+                graphics2D.setColor(Color.black);
+                graphics2D.drawString("   ", x, y);
+            }
+            else {
+                graphics2D.drawImage(image, x, y, observer);
+            }
         }
 
         /**
@@ -943,9 +933,9 @@ public class MipsXray extends AbstractMarsToolAndApplication {
             int size = vertex.end - vertex.init;
             int[] track = new int[size];
 
-			for (int i = 0; i < size; i++) {
-				track[i] = vertex.init + i;
-			}
+            for (int i = 0; i < size; i++) {
+                track[i] = vertex.init + i;
+            }
 
             if (vertex.isActive) {
                 vertex.isFirstInteraction = false;
@@ -955,9 +945,9 @@ public class MipsXray extends AbstractMarsToolAndApplication {
                         graphics2D.fillRect(track[i], vertex.oppositeAxis, 3, 3);
                     }
                 }
-				if (vertex.current == track[size - 1]) {
-					vertex.isActive = false;
-				}
+                if (vertex.current == track[size - 1]) {
+                    vertex.isActive = false;
+                }
                 vertex.current++;
             }
             else if (!vertex.isFirstInteraction) {
@@ -975,9 +965,9 @@ public class MipsXray extends AbstractMarsToolAndApplication {
             int size = vertex.init - vertex.end;
             int[] track = new int[size];
 
-			for (int i = 0; i < size; i++) {
-				track[i] = vertex.init - i;
-			}
+            for (int i = 0; i < size; i++) {
+                track[i] = vertex.init - i;
+            }
 
             if (vertex.isActive) {
                 vertex.isFirstInteraction = false;
@@ -987,9 +977,9 @@ public class MipsXray extends AbstractMarsToolAndApplication {
                         graphics2D.fillRect(track[i], vertex.oppositeAxis, 3, 3);
                     }
                 }
-				if (vertex.current == track[size - 1]) {
-					vertex.isActive = false;
-				}
+                if (vertex.current == track[size - 1]) {
+                    vertex.isActive = false;
+                }
 
                 vertex.current = vertex.current - 1;
             }
@@ -1011,16 +1001,16 @@ public class MipsXray extends AbstractMarsToolAndApplication {
             if (vertex.init > vertex.end) {
                 size = vertex.init - vertex.end;
                 track = new int[size];
-				for (int i = 0; i < size; i++) {
-					track[i] = vertex.init - i;
-				}
+                for (int i = 0; i < size; i++) {
+                    track[i] = vertex.init - i;
+                }
             }
             else {
                 size = vertex.end - vertex.init;
                 track = new int[size];
-				for (int i = 0; i < size; i++) {
-					track[i] = vertex.init + i;
-				}
+                for (int i = 0; i < size; i++) {
+                    track[i] = vertex.init + i;
+                }
             }
 
             if (vertex.isActive) {
@@ -1031,9 +1021,9 @@ public class MipsXray extends AbstractMarsToolAndApplication {
                         graphics2D.fillRect(vertex.oppositeAxis, track[i], 3, 3);
                     }
                 }
-				if (vertex.current == track[size - 1]) {
-					vertex.isActive = false;
-				}
+                if (vertex.current == track[size - 1]) {
+                    vertex.isActive = false;
+                }
                 vertex.current = vertex.current - 1;
             }
             else if (!vertex.isFirstInteraction) {
@@ -1051,9 +1041,9 @@ public class MipsXray extends AbstractMarsToolAndApplication {
             int size = vertex.end - vertex.init;
             int[] track = new int[size];
 
-			for (int i = 0; i < size; i++) {
-				track[i] = vertex.init + i;
-			}
+            for (int i = 0; i < size; i++) {
+                track[i] = vertex.init + i;
+            }
 
             if (vertex.isActive) {
                 vertex.isFirstInteraction = false;
@@ -1063,9 +1053,9 @@ public class MipsXray extends AbstractMarsToolAndApplication {
                         graphics2D.fillRect(vertex.oppositeAxis, track[i], 3, 3);
                     }
                 }
-				if (vertex.current == track[size - 1]) {
-					vertex.isActive = false;
-				}
+                if (vertex.current == track[size - 1]) {
+                    vertex.isActive = false;
+                }
                 vertex.current = vertex.current + 1;
             }
             else if (!vertex.isFirstInteraction) {
@@ -1089,32 +1079,32 @@ public class MipsXray extends AbstractMarsToolAndApplication {
                 actionInFunctionalBlock = new TextLayout(" ", font, frc);
             }
             if (vertex.name.equals("ALUVALUE")) {
-				if (opcode.equals("000000")) {
+                if (opcode.equals("000000")) {
                     // R-type instruction
-					actionInFunctionalBlock = new TextLayout(functionEquivalenceTable.get(binaryInstruction.substring(26, 32)), font, frc);
-				}
-				else {
+                    actionInFunctionalBlock = new TextLayout(functionEquivalenceTable.get(binaryInstruction.substring(26, 32)), font, frc);
+                }
+                else {
                     // Other instruction
-					actionInFunctionalBlock = new TextLayout(opcodeEquivalenceTable.get(opcode), font, frc);
-				}
+                    actionInFunctionalBlock = new TextLayout(opcodeEquivalenceTable.get(opcode), font, frc);
+                }
             }
 
-			if (binaryInstruction.substring(0, 6).matches("0001[0-1][0-1]") && vertex.name.equals("CP+4")) {
+            if (binaryInstruction.substring(0, 6).matches("0001[0-1][0-1]") && vertex.name.equals("CP+4")) {
                 // Branch code
-				actionInFunctionalBlock = new TextLayout("PC+OFFSET", font, frc);
-			}
+                actionInFunctionalBlock = new TextLayout("PC+OFFSET", font, frc);
+            }
 
             if (vertex.name.equals("WRITING")) {
-				if (!binaryInstruction.substring(0, 6).matches("100[0-1][0-1][0-1]")) {
-					actionInFunctionalBlock = new TextLayout(" ", font, frc);
-				}
+                if (!binaryInstruction.substring(0, 6).matches("100[0-1][0-1][0-1]")) {
+                    actionInFunctionalBlock = new TextLayout(" ", font, frc);
+                }
             }
             if (vertex.isActive) {
                 vertex.isFirstInteraction = false;
                 actionInFunctionalBlock.draw(graphics2D, vertex.oppositeAxis, vertex.current);
-				if (vertex.current == vertex.end) {
-					vertex.isActive = false;
-				}
+                if (vertex.current == vertex.end) {
+                    vertex.isActive = false;
+                }
                 vertex.current = vertex.current - 1;
             }
         }
@@ -1132,10 +1122,8 @@ public class MipsXray extends AbstractMarsToolAndApplication {
             setUpInstructionInfo(graphics2D);
             executeAnimation(graphics2D, traversedVertices, outputGraph, this::printTextDtoU);
         }
-        static void executeAnimation(Graphics2D graphics2D,
-                                     List<Vertex> traversedVertices,
-                                     Vector<Vector<Vertex>> outputGraph,
-                                     BiConsumer<Graphics2D, Vertex> onTextVertexMovingUp) {
+
+        static void executeAnimation(Graphics2D graphics2D, List<Vertex> traversedVertices, Vector<Vector<Vertex>> outputGraph, BiConsumer<Graphics2D, Vertex> onTextVertexMovingUp) {
             Vertex vertex;
             for (int i = 0; i < traversedVertices.size(); i++) {
                 vertex = traversedVertices.get(i);
@@ -1166,12 +1154,12 @@ public class MipsXray extends AbstractMarsToolAndApplication {
                 }
                 else {
                     if (vertex.direction == Vertex.MOVING_DOWN) {
-						if (vertex.isText) {
-							onTextVertexMovingUp.accept(graphics2D, vertex);
-						}
-						else {
-							printTrackDtoU(graphics2D, vertex);
-						}
+                        if (vertex.isText) {
+                            onTextVertexMovingUp.accept(graphics2D, vertex);
+                        }
+                        else {
+                            printTrackDtoU(graphics2D, vertex);
+                        }
                     }
                     else {
                         printTrackUtoD(graphics2D, vertex);
@@ -1221,15 +1209,19 @@ public class MipsXray extends AbstractMarsToolAndApplication {
         }
 
         @Override
-        public void mouseEntered(MouseEvent event) {}
+        public void mouseEntered(MouseEvent event) {
+        }
 
         @Override
-        public void mouseExited(MouseEvent event) {}
+        public void mouseExited(MouseEvent event) {
+        }
 
         @Override
-        public void mousePressed(MouseEvent event) {}
+        public void mousePressed(MouseEvent event) {
+        }
 
         @Override
-        public void mouseReleased(MouseEvent event) {}
+        public void mouseReleased(MouseEvent event) {
+        }
     }
 }
