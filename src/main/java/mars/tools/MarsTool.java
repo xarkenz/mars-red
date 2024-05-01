@@ -69,6 +69,14 @@ public interface MarsTool {
     }
 
     /**
+     * Return the tool menu order number. Tools in the tool menu list are sorted
+     * by this number, then alphabetically - to get your tool at the top, choose
+     * a lesser number. Likewise, to get your tool at the bottom, choose a
+     * greater number.
+     */
+    default int getToolMenuOrder() { return 0; }
+
+    /**
      * Performs tool functions.  It will be invoked when the tool is selected
      * from the Tools menu.
      */

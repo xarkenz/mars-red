@@ -80,9 +80,9 @@ public class ToolManager {
      * as a ZipFile, get the ZipEntry enumeration, find the class files in the tools
      * folder, then continue as before.
      */
-    public static ToolAction[] getToolActions() {
+    public static List<ToolAction> getToolActions() {
         if (toolActions == null) {
-            toolActions = new ArrayList<>();
+            List<MarsTool> marsTools = new ArrayList<>();
 
             // Add any tools stored externally, as listed in Config.properties file.
             // This needs some work, because mars.Globals.getExternalTools() returns
@@ -109,16 +109,21 @@ public class ToolManager {
                         continue;
                     }
                     // Obtain an instance of the class
-                    MarsTool tool = (MarsTool) loadedClass.getDeclaredConstructor().newInstance();
-                    // Create an action for the tool and add it to the list
-                    toolActions.add(new ToolAction(tool));
+                    marsTools.add((MarsTool) loadedClass.getDeclaredConstructor().newInstance());
                 }
                 catch (Exception exception) {
                     System.err.println(ToolManager.class.getSimpleName() + ": " + exception);
                 }
             }
+
+            toolActions = marsTools.stream()
+                    .sorted(Comparator
+                            .comparing(MarsTool::getToolMenuOrder)
+                            .thenComparing(MarsTool::getName))
+                    .map(ToolAction::new)
+                    .toList();
         }
 
-        return toolActions.toArray(ToolAction[]::new);
+        return toolActions;
     }
 }

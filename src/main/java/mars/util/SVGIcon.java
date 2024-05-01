@@ -1,5 +1,6 @@
 package mars.util;
 
+import mars.Application;
 import org.apache.batik.anim.dom.SAXSVGDocumentFactory;
 import org.apache.batik.anim.dom.SVGOMDocument;
 import org.apache.batik.anim.dom.SVGOMStyleElement;
@@ -52,6 +53,25 @@ public class SVGIcon implements Icon {
         this.cachedForeground = null;
         // This method call will generate the initial image for the icon
         this.setIconDimensions(width, height);
+    }
+
+    /**
+     * Load an SVG action icon from the /icons/actions/ folder.
+     *
+     * @param filename name of the SVG icon to load
+     * @param iconSize pixel width and height of the icon
+     * @return the loaded SVG icon, or null if the image does not exist
+     */
+    public static Icon loadSVGActionIcon(String filename, int iconSize) {
+        URL url = SVGIcon.class.getResource(Application.ACTION_ICONS_PATH + filename);
+
+        if (url != null) {
+            return new SVGIcon(url, iconSize, iconSize);
+        }
+        else {
+            System.err.println("Error: unable to load image \"" + Application.ACTION_ICONS_PATH + filename + "\"");
+            return null;
+        }
     }
 
     /**
@@ -157,7 +177,7 @@ public class SVGIcon implements Icon {
                 // TODO: Probably should handle this case differently
                 // For now, the needsTranscode flag will remain true in case the transcode works next time
                 this.wasModified = true;
-                exception.printStackTrace();
+                exception.printStackTrace(System.err);
             }
         }
 

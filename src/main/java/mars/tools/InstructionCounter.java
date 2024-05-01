@@ -222,8 +222,7 @@ public class InstructionCounter extends AbstractMarsToolAndApplication {
 			}
         }
         catch (AddressErrorException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         }
         updateDisplay();
     }
