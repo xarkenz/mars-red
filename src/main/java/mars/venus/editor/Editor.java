@@ -170,7 +170,7 @@ public class Editor {
      * @return true if succeeded, else false.
      */
     public boolean saveAs() {
-        return gui.getMainPane().getEditTab().saveAsCurrentFile();
+        return gui.getMainPane().getEditTab().saveAsCurrentFile() != null;
     }
 
     /**

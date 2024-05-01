@@ -4,6 +4,7 @@ import mars.Application;
 import mars.Program;
 import mars.ProcessingException;
 import mars.mips.hardware.RegisterFile;
+import mars.util.DynamicTabbedPane;
 import mars.util.FilenameFinder;
 import mars.venus.VenusUI;
 import mars.venus.execute.ProgramStatus;
@@ -55,7 +56,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Pete Sanderson
  */
-public class EditTab extends JTabbedPane {
+public class EditTab extends DynamicTabbedPane {
     private final VenusUI gui;
     private final Editor editor;
     private boolean isOpeningFiles;
@@ -238,7 +239,7 @@ public class EditTab extends JTabbedPane {
         String name = this.editor.getNextDefaultFilename();
         // This is kind of goofy, but it's fine since a File doesn't have to represent anything.
         newTab.setFile(new File(name));
-        this.addTab(name, newTab);
+        this.addTab(name, null, newTab, name);
 
         RegisterFile.resetRegisters();
         this.gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
@@ -298,7 +299,7 @@ public class EditTab extends JTabbedPane {
             return true;
         }
         else if (this.resolveUnsavedChanges()) {
-            this.remove(currentTab);
+            this.closeFile(currentTab);
             this.gui.getMainPane().getExecuteTab().clear();
             this.gui.getMainPane().setSelectedComponent(this);
             return true;
@@ -332,20 +333,20 @@ public class EditTab extends JTabbedPane {
                                 this.setSelectedComponent(tab);
                                 boolean saved = this.saveCurrentFile();
                                 if (saved) {
-                                    this.remove(tab);
+                                    this.closeFile(tab);
                                 }
                                 else {
                                     closedAll = false;
                                 }
                             }
                             else {
-                                this.remove(tab);
+                                this.closeFile(tab);
                             }
                         }
                     }
                     case JOptionPane.NO_OPTION -> {
                         for (FileEditorTab tab : tabs) {
-                            this.remove(tab);
+                            this.closeFile(tab);
                         }
                     }
                     default -> {
@@ -355,7 +356,7 @@ public class EditTab extends JTabbedPane {
             }
             else {
                 for (FileEditorTab tab : tabs) {
-                    this.remove(tab);
+                    this.closeFile(tab);
                 }
             }
         }
@@ -424,25 +425,14 @@ public class EditTab extends JTabbedPane {
      * Pops up a dialog box to do the "Save As" operation.
      * The user will be asked to confirm before any file is overwritten.
      *
-     * @return true if the file was actually saved, false if canceled.
+     * @return The file object if the file was actually saved, null if canceled.
      */
-    public boolean saveAsCurrentFile() {
-        FileEditorTab currentTab = this.getCurrentEditorTab();
-
-        File file = this.saveAsFile(currentTab);
-        if (file == null) {
-            return false;
-        }
-
-        this.editor.setCurrentSaveDirectory(file.getParent());
-        currentTab.setFile(file);
-        currentTab.setFileStatus(FileStatus.NOT_EDITED);
-        this.updateTitleAndMenuState(currentTab);
-        return true;
+    public File saveAsCurrentFile() {
+        return this.saveAsFile(this.getCurrentEditorTab());
     }
 
     /**
-     * Pops up a dialog box to do the "Save As" operation for the given edit pane.
+     * Pops up a dialog box to do the "Save As" operation for the given editor tab.
      * The user will be asked to confirm before any file is overwritten.
      *
      * @param tab The tab for the file to save (does nothing if null).
@@ -519,6 +509,12 @@ public class EditTab extends JTabbedPane {
             return null;
         }
 
+        this.editor.setCurrentSaveDirectory(file.getParent());
+        tab.setFile(file);
+        tab.setFileStatus(FileStatus.NOT_EDITED);
+        this.updateTitleAndMenuState(tab);
+        this.saveWorkspaceState();
+
         return file;
     }
 
@@ -556,21 +552,19 @@ public class EditTab extends JTabbedPane {
      *
      * @param tab The tab to remove.
      */
-    public void remove(FileEditorTab tab) {
+    public void closeFile(FileEditorTab tab) {
         super.remove(tab);
 
         tab = this.getCurrentEditorTab(); // Is now next tab or null
         if (tab == null) {
             this.editor.setTitle("", FileStatus.NO_FILE);
             this.gui.setMenuState(FileStatus.NO_FILE);
+            // When last file is closed, menu is unable to respond to mnemonics
+            // and accelerators.  Let's have it request focus so it may do so.
+            this.gui.haveMenuRequestFocus();
         }
         else {
             this.updateTitleAndMenuState(tab);
-        }
-        // When last file is closed, menu is unable to respond to mnemonics
-        // and accelerators.  Let's have it request focus so it may do so.
-        if (this.getTabCount() <= 0) {
-            this.gui.haveMenuRequestFocus();
         }
     }
 
