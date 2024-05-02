@@ -59,7 +59,6 @@ public class FileEditorTab extends JPanel implements Observer {
     private final EditTab editTab;
     private final MARSTextEditingArea textEditingArea;
     private final JLabel caretPositionLabel;
-    private final JCheckBox showLineNumbers;
     private final JLabel lineNumbers;
 
     private FileStatus fileStatus;
@@ -72,63 +71,33 @@ public class FileEditorTab extends JPanel implements Observer {
         super(new BorderLayout());
         this.gui = gui;
         this.editTab = editTab;
-        // We want to be notified of editor font changes! See update() below.
-        Application.getSettings().addObserver(this);
         this.fileStatus = FileStatus.NO_FILE;
         this.file = null;
         this.lineNumbers = new JLabel();
+
+        // We want to be notified of editor font changes! See update() below.
+        Application.getSettings().addObserver(this);
 
         this.textEditingArea = new JEditBasedTextArea(this, Application.getSettings(), lineNumbers);
         // Text editing area is responsible for its own scrolling
         this.add(this.textEditingArea.getOuterComponent(), BorderLayout.CENTER);
 
-        // If source code is modified, will set flag to trigger/request file save
         this.textEditingArea.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent event) {
-                // IF statement added DPS 9-Aug-2011
-                // This method is triggered when file contents added to document
-                // upon opening, even though not edited by user.  The IF
-                // statement will sense this situation and immediately return.
-                if (FileEditorTab.this.editTab.isOpeningFiles()) {
-                    setFileStatus(FileStatus.NOT_EDITED);
-                }
-                else {
-                    // End of 9-Aug-2011 modification.
-                    if (getFileStatus() == FileStatus.NEW_NOT_EDITED) {
-                        setFileStatus(FileStatus.NEW_EDITED);
-                    }
-                    if (getFileStatus() == FileStatus.NOT_EDITED) {
-                        setFileStatus(FileStatus.EDITED);
-                    }
-                    FileEditorTab.this.gui.getEditor().setTitle(file.getName(), fileStatus);
-
-                    // Clear the Execute tab since the file has been edited
-                    FileEditorTab.this.gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
-                    FileEditorTab.this.gui.getMainPane().getExecuteTab().clear(); // DPS 9-Aug-2011
-                }
-
-                if (showingLineNumbers()) {
-                    lineNumbers.setText(getLineNumbersList(textEditingArea.getDocument()));
-                }
+                handleEditEvent();
             }
 
             @Override
             public void removeUpdate(DocumentEvent event) {
-                this.insertUpdate(event);
+                handleEditEvent();
             }
 
             @Override
             public void changedUpdate(DocumentEvent event) {
-                this.insertUpdate(event);
+                handleEditEvent();
             }
         });
-
-        // TODO: This option should be in the editor settings??? -Sean Clarke
-        showLineNumbers = new JCheckBox("Show line numbers");
-        showLineNumbers.setToolTipText("When checked, line numbers are displayed on the left-hand side of the editor.");
-        showLineNumbers.setEnabled(false);
-        showLineNumbers.setSelected(Application.getSettings().displayEditorLineNumbers.get());
 
         this.setSourceCode("", false);
 
@@ -136,33 +105,48 @@ public class FileEditorTab extends JPanel implements Observer {
         lineNumbers.setForeground(UIManager.getColor("Venus.Editor.lineNumbers.foreground"));
         lineNumbers.setBackground(UIManager.getColor("Venus.Editor.lineNumbers.background"));
         lineNumbers.setVerticalAlignment(JLabel.TOP);
-        lineNumbers.setText("");
-        lineNumbers.setVisible(true);
+        lineNumbers.setText(null);
+        lineNumbers.setVisible(Application.getSettings().displayEditorLineNumbers.get());
 
-        // Listener fires when "Show Line Numbers" check box is clicked.
-        showLineNumbers.addItemListener(event -> {
-            if (showLineNumbers.isSelected()) {
-                lineNumbers.setText(getLineNumbersList(textEditingArea.getDocument()));
-                lineNumbers.setVisible(true);
-            }
-            else {
-                lineNumbers.setText("");
-                lineNumbers.setVisible(false);
-            }
-            textEditingArea.revalidate(); // added 16 Jan 2012 to assure label redrawn.
-            Application.getSettings().displayEditorLineNumbers.set(showLineNumbers.isSelected());
-            // Needed because caret disappears when checkbox clicked
-            textEditingArea.setCaretVisible(true);
-            textEditingArea.requestFocusInWindow();
-        });
-
-        JPanel editInfo = new JPanel(new BorderLayout());
+        Box statusBar = Box.createHorizontalBox();
         caretPositionLabel = new JLabel();
         caretPositionLabel.setToolTipText("Tracks the current position of the text editing cursor.");
-        displayCaretPosition(new Point());
-        editInfo.add(caretPositionLabel, BorderLayout.WEST);
-        editInfo.add(showLineNumbers, BorderLayout.CENTER);
-        this.add(editInfo, BorderLayout.SOUTH);
+        displayCaretPosition(new Point(1, 1));
+        statusBar.add(Box.createHorizontalGlue());
+        statusBar.add(caretPositionLabel);
+        statusBar.setBorder(BorderFactory.createEmptyBorder(0, 6, 0, 6));
+        this.add(statusBar, BorderLayout.SOUTH);
+    }
+
+    /**
+     * If source code is modified, will set flag to trigger/request file save.
+     */
+    private void handleEditEvent() {
+        // IF statement added DPS 9-Aug-2011
+        // This method is triggered when file contents added to document
+        // upon opening, even though not edited by user.  The IF
+        // statement will sense this situation and immediately return.
+        if (this.editTab.isOpeningFiles()) {
+            this.setFileStatus(FileStatus.NOT_EDITED);
+        }
+        else {
+            // End of 9-Aug-2011 modification.
+            if (this.getFileStatus() == FileStatus.NEW_NOT_EDITED) {
+                this.setFileStatus(FileStatus.NEW_EDITED);
+            }
+            if (this.getFileStatus() == FileStatus.NOT_EDITED) {
+                this.setFileStatus(FileStatus.EDITED);
+            }
+            this.gui.getEditor().setTitle(this.file.getName(), this.fileStatus);
+
+            // Clear the Execute tab since the file has been edited
+            this.gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
+            this.gui.getMainPane().getExecuteTab().clear(); // DPS 9-Aug-2011
+        }
+
+        if (Application.getSettings().displayEditorLineNumbers.get()) {
+            this.lineNumbers.setText(this.getLineNumbersList(this.textEditingArea.getDocument()));
+        }
     }
 
     /**
@@ -174,8 +158,8 @@ public class FileEditorTab extends JPanel implements Observer {
     public void setSourceCode(String sourceCode, boolean editable) {
         this.textEditingArea.setSourceCode(sourceCode, editable);
 
-        if (showingLineNumbers()) {
-            lineNumbers.setText(getLineNumbersList(this.textEditingArea.getDocument()));
+        if (Application.getSettings().displayEditorLineNumbers.get()) {
+            this.lineNumbers.setText(this.getLineNumbersList(this.textEditingArea.getDocument()));
         }
     }
 
@@ -193,8 +177,8 @@ public class FileEditorTab extends JPanel implements Observer {
 
     /**
      * Form string with source code line numbers.
-     * Resulting string is HTML, for which JLabel will happily honor <br> to do
-     * multiline label (it ignores '\n').  The line number list is a JLabel with
+     * Resulting string is HTML, for which JLabel will happily honor <code>&lt;br&gt;</code> to do
+     * multiline label (it ignores <code>\n</code>).  The line number list is a {@link JLabel} with
      * one line number per line.
      */
     public String getLineNumbersList(Document document) {
@@ -380,24 +364,6 @@ public class FileEditorTab extends JPanel implements Observer {
     }
 
     /**
-     * get editor's line number display status
-     *
-     * @return true if editor is current displaying line numbers, false otherwise.
-     */
-    public boolean showingLineNumbers() {
-        return showLineNumbers.isSelected();
-    }
-
-    /**
-     * enable or disable checkbox that controls display of line numbers
-     *
-     * @param enable True to enable box, false to disable.
-     */
-    public void setShowLineNumbersEnabled(boolean enable) {
-        showLineNumbers.setEnabled(enable);
-    }
-
-    /**
      * Update the caret position label on the editor's border to
      * display the current line and column.  The position is given
      * as text stream offset and will be converted into line and column.
@@ -409,12 +375,12 @@ public class FileEditorTab extends JPanel implements Observer {
     }
 
     /**
-     * Display cursor coordinates
+     * Update the status bar display for the caret position.
      *
-     * @param p Point object with x-y (column, line number) coordinates of cursor
+     * @param position Position of the caret (x = column, y = row).
      */
-    public void displayCaretPosition(Point p) {
-        caretPositionLabel.setText("Line: " + p.y + " Column: " + p.x);
+    public void displayCaretPosition(Point position) {
+        caretPositionLabel.setText("Line " + position.y + ":" + position.x);
     }
 
     /**
@@ -577,6 +543,14 @@ public class FileEditorTab extends JPanel implements Observer {
         // pixel height is not the same then the numbers will not line up with
         // the source lines.
         lineNumbers.setFont(textEditingArea.getFont().deriveFont(Font.PLAIN));
+        if (Application.getSettings().displayEditorLineNumbers.get()) {
+            lineNumbers.setText(getLineNumbersList(textEditingArea.getDocument()));
+            lineNumbers.setVisible(true);
+        }
+        else {
+            lineNumbers.setText(null);
+            lineNumbers.setVisible(false);
+        }
         lineNumbers.revalidate();
     }
 }

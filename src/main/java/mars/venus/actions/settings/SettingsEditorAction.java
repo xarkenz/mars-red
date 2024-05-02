@@ -64,18 +64,20 @@ public class SettingsEditorAction extends VenusAction {
         editorDialog.setVisible(true);
     }
 
-    private static final String SAMPLE_TOOL_TIP_TEXT = "Current setting; modify using buttons to the right";
-    private static final String FOREGROUND_TOOL_TIP_TEXT = "Click to select text color.";
-    private static final String BOLD_TOOL_TIP_TEXT = "Toggle text bold style.";
-    private static final String ITALIC_TOOL_TIP_TEXT = "Toggle text italic style.";
-    private static final String DEFAULT_TOOL_TIP_TEXT = "When enabled, configuration is disabled and the editor defaults are used.";
+    private static final String SYNTAX_SAMPLE_TIP = "Current setting; modify using buttons to the right";
+    private static final String TEXT_FOREGROUND_TIP = "Click to select text color.";
+    private static final String TEXT_BOLD_TIP = "Toggle text bold style.";
+    private static final String TEXT_ITALIC_TIP = "Toggle text italic style.";
+    private static final String USE_DEFAULT_STYLE_TIP = "When enabled, configuration is disabled and the editor defaults are used.";
 
-    private static final String TAB_SIZE_TOOL_TIP_TEXT = "Current tab size in spaces.";
-    private static final String BLINK_SPINNER_TOOL_TIP_TEXT = "Current blinking rate in milliseconds.";
-    private static final String BLINK_SAMPLE_TOOL_TIP_TEXT = "Displays current blinking rate.";
-    private static final String CURRENT_LINE_HIGHLIGHT_TOOL_TIP_TEXT = "When enabled, the current line being edited is highlighted.";
-    private static final String AUTO_INDENT_TOOL_TIP_TEXT = "When enabled, the current indentation level is preserved when starting a new line.";
-    private static final String[] POPUP_GUIDANCE_TOOL_TIP_TEXT = {
+    private static final String TAB_SIZE_TIP = "Current tab size in spaces.";
+    private static final String CARET_BLINK_RATE_TIP = "Current blinking rate in milliseconds.";
+    private static final String CARET_SAMPLE_TIP = "Displays current blinking rate.";
+    private static final String HIGHLIGHT_CURRENT_LINE_TIP = "When enabled, the current line being edited is highlighted.";
+    private static final String AUTO_INDENT_TIP = "When enabled, the current indentation level is preserved when starting a new line.";
+    private static final String SHOW_LINE_NUMBERS_TIP = "When enabled, line numbers are displayed on the left-hand side of the editor.";
+
+    private static final String[] INSTRUCTION_GUIDANCE_TIPS = {
         "Turns off instruction and directive guide popup while typing.",
         "Generates instruction guide popup after first letter of potential instruction is typed.",
         "Generates instruction guide popup after second letter of potential instruction is typed.",
@@ -95,20 +97,23 @@ public class SettingsEditorAction extends VenusAction {
         private JSlider tabSizeSelector;
         private JSpinner tabSizeSpinSelector;
         private JSpinner blinkRateSpinSelector;
-        private JCheckBox lineHighlightCheck;
-        private JCheckBox autoIndentCheck;
-        private Caret blinkCaret;
+        private JCheckBox lineHighlightCheckBox;
+        private JCheckBox autoIndentCheckBox;
+        private JCheckBox showLineNumbersCheckBox;
         private JTextField blinkSample;
-        private JRadioButton[] popupGuidanceOptions;
+        private Caret blinkSampleCaret;
+        private JRadioButton[] instructionGuidanceOptions;
+
         // Flag to indicate whether any syntax style buttons have been clicked
         // since dialog created or most recent "apply".
         private boolean syntaxStylesHaveChanged = false;
 
         private int initialEditorTabSize;
         private int initialCaretBlinkRate;
-        private int initialPopupGuidance;
+        private int initialInstructionGuidance;
         private boolean initialLineHighlighting;
         private boolean initialAutoIndent;
+        private boolean initialShowLineNumbers;
 
         public EditorFontDialog(Frame owner, String title, boolean modality, Font font) {
             super(owner, title, modality, font);
@@ -168,10 +173,11 @@ public class SettingsEditorAction extends VenusAction {
         // User has clicked "Apply" or "OK" button.
         @Override
         protected void apply(Font font) {
-            Application.getSettings().highlightCurrentEditorLine.set(lineHighlightCheck.isSelected());
-            Application.getSettings().autoIndentEnabled.set(autoIndentCheck.isSelected());
-            Application.getSettings().caretBlinkRate.set((Integer) blinkRateSpinSelector.getValue());
             Application.getSettings().editorTabSize.set(tabSizeSelector.getValue());
+            Application.getSettings().caretBlinkRate.set((Integer) blinkRateSpinSelector.getValue());
+            Application.getSettings().autoIndentEnabled.set(autoIndentCheckBox.isSelected());
+            Application.getSettings().highlightCurrentEditorLine.set(lineHighlightCheckBox.isSelected());
+            Application.getSettings().displayEditorLineNumbers.set(showLineNumbersCheckBox.isSelected());
 
             if (syntaxStylesHaveChanged) {
                 for (int row = 0; row < syntaxStyleIndices.length; row++) {
@@ -185,8 +191,8 @@ public class SettingsEditorAction extends VenusAction {
 
             Application.getSettings().setEditorFont(font);
 
-            for (int item = 0; item < popupGuidanceOptions.length; item++) {
-                if (popupGuidanceOptions[item].isSelected()) {
+            for (int item = 0; item < instructionGuidanceOptions.length; item++) {
+                if (instructionGuidanceOptions[item].isSelected()) {
                     Application.getSettings().editorPopupPrefixLength.set(item);
                     Application.getSettings().popupInstructionGuidance.set(item > 0);
                     break;
@@ -205,89 +211,92 @@ public class SettingsEditorAction extends VenusAction {
 
         // Perform reset on miscellaneous editor settings
         private void resetOtherSettings() {
-            tabSizeSelector.setValue(initialEditorTabSize);
             tabSizeSpinSelector.setValue(initialEditorTabSize);
-            lineHighlightCheck.setSelected(initialLineHighlighting);
-            autoIndentCheck.setSelected(initialAutoIndent);
+            tabSizeSelector.setValue(initialEditorTabSize);
             blinkRateSpinSelector.setValue(initialCaretBlinkRate);
-            blinkCaret.setBlinkRate(initialCaretBlinkRate);
-            popupGuidanceOptions[initialPopupGuidance].setSelected(true);
+            blinkSampleCaret.setBlinkRate(initialCaretBlinkRate);
+            autoIndentCheckBox.setSelected(initialAutoIndent);
+            lineHighlightCheckBox.setSelected(initialLineHighlighting);
+            showLineNumbersCheckBox.setSelected(initialShowLineNumbers);
+            instructionGuidanceOptions[initialInstructionGuidance].setSelected(true);
         }
 
         // Miscellaneous editor settings (cursor blinking, line highlighting, tab size, etc)
         private JPanel buildOtherSettingsPanel() {
             JPanel otherSettingsPanel = new JPanel();
 
-            // Tab size
             initialEditorTabSize = Application.getSettings().editorTabSize.get();
             tabSizeSelector = new JSlider(Editor.MIN_TAB_SIZE, Editor.MAX_TAB_SIZE, initialEditorTabSize);
             tabSizeSelector.setToolTipText("Use slider to select tab size in spaces from " + Editor.MIN_TAB_SIZE + " to " + Editor.MAX_TAB_SIZE + ".");
             tabSizeSelector.addChangeListener(event -> tabSizeSpinSelector.setValue(tabSizeSelector.getValue()));
             SpinnerNumberModel tabSizeSpinnerModel = new SpinnerNumberModel(initialEditorTabSize, Editor.MIN_TAB_SIZE, Editor.MAX_TAB_SIZE, 1);
             tabSizeSpinSelector = new JSpinner(tabSizeSpinnerModel);
-            tabSizeSpinSelector.setToolTipText(TAB_SIZE_TOOL_TIP_TEXT);
+            tabSizeSpinSelector.setToolTipText(TAB_SIZE_TIP);
             tabSizeSpinSelector.addChangeListener(event -> tabSizeSelector.setValue((Integer) tabSizeSpinSelector.getValue()));
-
-            // Highlighting of current line
-            initialLineHighlighting = Application.getSettings().highlightCurrentEditorLine.get();
-            lineHighlightCheck = new JCheckBox("Highlight the line currently being edited");
-            lineHighlightCheck.setSelected(initialLineHighlighting);
-            lineHighlightCheck.setToolTipText(CURRENT_LINE_HIGHLIGHT_TOOL_TIP_TEXT);
-
-            // Auto-indent
-            initialAutoIndent = Application.getSettings().autoIndentEnabled.get();
-            autoIndentCheck = new JCheckBox("Enable automatic indentation");
-            autoIndentCheck.setSelected(initialAutoIndent);
-            autoIndentCheck.setToolTipText(AUTO_INDENT_TOOL_TIP_TEXT);
-
-            // Cursor blink rate
-            initialCaretBlinkRate = Application.getSettings().caretBlinkRate.get();
-            blinkSample = new JTextField();
-            blinkSample.setCaretPosition(0);
-            blinkSample.setToolTipText(BLINK_SAMPLE_TOOL_TIP_TEXT);
-            blinkSample.setEnabled(false);
-            blinkCaret = blinkSample.getCaret();
-            blinkCaret.setBlinkRate(initialCaretBlinkRate);
-            blinkCaret.setVisible(true);
-            SpinnerNumberModel blinkRateSpinnerModel = new SpinnerNumberModel(initialCaretBlinkRate, Editor.MIN_BLINK_RATE, Editor.MAX_BLINK_RATE, 100);
-            blinkRateSpinSelector = new JSpinner(blinkRateSpinnerModel);
-            blinkRateSpinSelector.setToolTipText(BLINK_SPINNER_TOOL_TIP_TEXT);
-            blinkRateSpinSelector.addChangeListener(event -> {
-                blinkCaret.setBlinkRate((Integer) blinkRateSpinSelector.getValue());
-                blinkSample.requestFocus();
-                blinkCaret.setVisible(true);
-            });
 
             JPanel tabPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 6));
             tabPanel.add(new JLabel("Tab size (spaces):"));
             tabPanel.add(tabSizeSelector);
             tabPanel.add(tabSizeSpinSelector);
 
+            initialCaretBlinkRate = Application.getSettings().caretBlinkRate.get();
+            blinkSample = new JTextField();
+            blinkSample.setCaretPosition(0);
+            blinkSample.setToolTipText(CARET_SAMPLE_TIP);
+            blinkSample.setEnabled(false);
+            blinkSampleCaret = blinkSample.getCaret();
+            blinkSampleCaret.setBlinkRate(initialCaretBlinkRate);
+            blinkSampleCaret.setVisible(true);
+            SpinnerNumberModel blinkRateSpinnerModel = new SpinnerNumberModel(initialCaretBlinkRate, Editor.MIN_BLINK_RATE, Editor.MAX_BLINK_RATE, 100);
+            blinkRateSpinSelector = new JSpinner(blinkRateSpinnerModel);
+            blinkRateSpinSelector.setToolTipText(CARET_BLINK_RATE_TIP);
+            blinkRateSpinSelector.addChangeListener(event -> {
+                blinkSampleCaret.setBlinkRate((Integer) blinkRateSpinSelector.getValue());
+                blinkSample.requestFocus();
+                blinkSampleCaret.setVisible(true);
+            });
+
             JPanel blinkPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 6));
             blinkPanel.add(new JLabel("Cursor blink rate (ms):"));
             blinkPanel.add(blinkRateSpinSelector);
             blinkPanel.add(blinkSample);
 
+            initialAutoIndent = Application.getSettings().autoIndentEnabled.get();
+            autoIndentCheckBox = new JCheckBox("Enable automatic indentation");
+            autoIndentCheckBox.setSelected(initialAutoIndent);
+            autoIndentCheckBox.setToolTipText(AUTO_INDENT_TIP);
+
+            initialLineHighlighting = Application.getSettings().highlightCurrentEditorLine.get();
+            lineHighlightCheckBox = new JCheckBox("Highlight the line currently being edited");
+            lineHighlightCheckBox.setSelected(initialLineHighlighting);
+            lineHighlightCheckBox.setToolTipText(HIGHLIGHT_CURRENT_LINE_TIP);
+
+            initialShowLineNumbers = Application.getSettings().displayEditorLineNumbers.get();
+            showLineNumbersCheckBox = new JCheckBox("Show line numbers");
+            showLineNumbersCheckBox.setSelected(initialShowLineNumbers);
+            showLineNumbersCheckBox.setToolTipText(SHOW_LINE_NUMBERS_TIP);
+
             otherSettingsPanel.setLayout(new GridLayout(1, 2));
-            JPanel leftColumnSettingsPanel = new JPanel(new GridLayout(4, 1));
+            JPanel leftColumnSettingsPanel = new JPanel(new GridLayout(5, 1));
             leftColumnSettingsPanel.add(tabPanel);
             leftColumnSettingsPanel.add(blinkPanel);
-            leftColumnSettingsPanel.add(lineHighlightCheck);
-            leftColumnSettingsPanel.add(autoIndentCheck);
+            leftColumnSettingsPanel.add(lineHighlightCheckBox);
+            leftColumnSettingsPanel.add(autoIndentCheckBox);
+            leftColumnSettingsPanel.add(showLineNumbersCheckBox);
 
             // Combine instruction guide off/on and instruction prefix length into radio buttons
-            popupGuidanceOptions = new JRadioButton[]{new JRadioButton("Do not display instruction guidance"), new JRadioButton("Display instruction guidance after 1 letter typed"), new JRadioButton("Display instruction guidance after 2 letters typed"),};
-            JPanel rightColumnSettingsPanel = new JPanel(new GridLayout(popupGuidanceOptions.length, 1));
+            instructionGuidanceOptions = new JRadioButton[]{new JRadioButton("Do not display instruction guidance"), new JRadioButton("Display instruction guidance after 1 letter typed"), new JRadioButton("Display instruction guidance after 2 letters typed"),};
+            JPanel rightColumnSettingsPanel = new JPanel(new GridLayout(instructionGuidanceOptions.length, 1));
             rightColumnSettingsPanel.setBorder(createTitledBorder("Instruction Guidance"));
             ButtonGroup popupGuidanceButtons = new ButtonGroup();
-            for (int index = 0; index < popupGuidanceOptions.length; index++) {
-                popupGuidanceOptions[index].setSelected(false);
-                popupGuidanceOptions[index].setToolTipText(POPUP_GUIDANCE_TOOL_TIP_TEXT[index]);
-                popupGuidanceButtons.add(popupGuidanceOptions[index]);
-                rightColumnSettingsPanel.add(popupGuidanceOptions[index]);
+            for (int index = 0; index < instructionGuidanceOptions.length; index++) {
+                instructionGuidanceOptions[index].setSelected(false);
+                instructionGuidanceOptions[index].setToolTipText(INSTRUCTION_GUIDANCE_TIPS[index]);
+                popupGuidanceButtons.add(instructionGuidanceOptions[index]);
+                rightColumnSettingsPanel.add(instructionGuidanceOptions[index]);
             }
-            initialPopupGuidance = Application.getSettings().popupInstructionGuidance.get() ? Application.getSettings().editorPopupPrefixLength.get() : 0;
-            popupGuidanceOptions[initialPopupGuidance].setSelected(true);
+            initialInstructionGuidance = Application.getSettings().popupInstructionGuidance.get() ? Application.getSettings().editorPopupPrefixLength.get() : 0;
+            instructionGuidanceOptions[initialInstructionGuidance].setSelected(true);
 
             otherSettingsPanel.add(leftColumnSettingsPanel);
             otherSettingsPanel.add(rightColumnSettingsPanel);
@@ -330,22 +339,22 @@ public class SettingsEditorAction extends VenusAction {
                 syntaxSamples[row].setOpaque(true);
                 syntaxSamples[row].setHorizontalAlignment(SwingConstants.CENTER);
                 syntaxSamples[row].setBackground(UIManager.getColor("Venus.Editor.background"));
-                syntaxSamples[row].setToolTipText(SAMPLE_TOOL_TIP_TEXT);
+                syntaxSamples[row].setToolTipText(SYNTAX_SAMPLE_TIP);
                 foregroundButtons[row] = new ColorSelectButton();
                 foregroundButtons[row].addActionListener(new ForegroundChanger(row));
-                foregroundButtons[row].setToolTipText(FOREGROUND_TOOL_TIP_TEXT);
+                foregroundButtons[row].setToolTipText(TEXT_FOREGROUND_TIP);
                 BoldItalicChanger boldItalicChanger = new BoldItalicChanger(row);
                 useBold[row] = new JToggleButton("B", false);
                 useBold[row].setFont(boldFont);
                 useBold[row].addActionListener(boldItalicChanger);
-                useBold[row].setToolTipText(BOLD_TOOL_TIP_TEXT);
+                useBold[row].setToolTipText(TEXT_BOLD_TIP);
                 useItalic[row] = new JToggleButton("I", false);
                 useItalic[row].setFont(italicFont);
                 useItalic[row].addActionListener(boldItalicChanger);
-                useItalic[row].setToolTipText(ITALIC_TOOL_TIP_TEXT);
+                useItalic[row].setToolTipText(TEXT_ITALIC_TIP);
                 useDefault[row] = new JCheckBox();
                 useDefault[row].addItemListener(new DefaultChanger(row));
-                useDefault[row].setToolTipText(DEFAULT_TOOL_TIP_TEXT);
+                useDefault[row].setToolTipText(USE_DEFAULT_STYLE_TIP);
             }
             initializeSyntaxStyleChangeables();
             // Build a grid

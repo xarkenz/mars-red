@@ -37,14 +37,14 @@ public class TextAreaDefaults {
     public SyntaxStyle[] styles;
     public Color backgroundColor;
     public Color foregroundColor;
-    public Color caretColor;
-    public Color selectionColor;
-    public Color lineHighlightColor;
+    public Color caretForeground;
+    public Color selectionBackground;
     public boolean lineHighlightVisible;
-    public Color bracketHighlightColor;
+    public Color lineHighlightColor;
     public boolean bracketHighlightVisible;
-    public Color eolMarkerColor;
+    public Color bracketHighlightColor;
     public boolean eolMarkerVisible;
+    public Color eolMarkerColor;
     public boolean paintInvalid;
 
     public JPopupMenu popup;
@@ -69,15 +69,15 @@ public class TextAreaDefaults {
         styles = SyntaxUtilities.getCurrentSyntaxStyles(settings);
         backgroundColor = UIManager.getColor("Venus.Editor.background");
         foregroundColor = UIManager.getColor("Venus.Editor.foreground");
-        caretColor = UIManager.getColor("Venus.Editor.caretForeground");
-        selectionColor = UIManager.getColor("Venus.Editor.selectionBackground");
-        lineHighlightColor = UIManager.getColor("Venus.Editor.highlightedLine");
+        caretForeground = UIManager.getColor("Venus.Editor.caretForeground");
+        selectionBackground = UIManager.getColor("Venus.Editor.selectionBackground");
         lineHighlightVisible = settings.highlightCurrentEditorLine.get();
-        bracketHighlightColor = caretColor;
+        lineHighlightColor = UIManager.getColor("Venus.Editor.highlightedLine");
         bracketHighlightVisible = false; // assembly language doesn't need this.
-        eolMarkerColor = new Color(0x009999);
+        bracketHighlightColor = caretForeground;
         eolMarkerVisible = false;
-        paintInvalid = false;
+        eolMarkerColor = new Color(0x009999);
+        paintInvalid = true;
         document = new SyntaxDocument();
     }
 }

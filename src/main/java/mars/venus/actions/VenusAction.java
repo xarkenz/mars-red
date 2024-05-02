@@ -54,6 +54,13 @@ public abstract class VenusAction extends AbstractAction {
     public abstract void actionPerformed(ActionEvent event);
 
     /**
+     * @return The GUI instance this action was created for.
+     */
+    public VenusUI getGui() {
+        return this.gui;
+    }
+
+    /**
      * @return The name assigned to the action.
      */
     public String getName() {

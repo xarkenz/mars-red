@@ -234,7 +234,6 @@ public class EditTab extends DynamicTabbedPane {
     public void newFile() {
         FileEditorTab newTab = new FileEditorTab(gui, this);
         newTab.setSourceCode("", true);
-        newTab.setShowLineNumbersEnabled(true);
         newTab.setFileStatus(FileStatus.NEW_NOT_EDITED);
         String name = this.editor.getNextDefaultFilename();
         // This is kind of goofy, but it's fine since a File doesn't have to represent anything.
@@ -736,7 +735,6 @@ public class EditTab extends DynamicTabbedPane {
                     // text area contents. That should not be seen as undoable by the Undo
                     // action, so let's get rid of it.
                     fileEditorTab.discardAllUndoableEdits();
-                    fileEditorTab.setShowLineNumbersEnabled(true);
                     fileEditorTab.setFileStatus(FileStatus.NOT_EDITED);
 
                     addTab(file.getName(), null, fileEditorTab, file.getPath());

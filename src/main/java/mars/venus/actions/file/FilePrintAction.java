@@ -1,5 +1,6 @@
 package mars.venus.actions.file;
 
+import mars.Application;
 import mars.venus.editor.FileEditorTab;
 import mars.util.HardcopyWriter;
 import mars.venus.actions.VenusAction;
@@ -70,6 +71,7 @@ public class FilePrintAction extends VenusAction {
         catch (HardcopyWriter.PrintCanceledException exception) {
             return;
         }
+        boolean printLineNumbers = Application.getSettings().displayEditorLineNumbers.get();
         BufferedReader input = new BufferedReader(new StringReader(currentTab.getSource()));
         int lineNumberDigits = Integer.toString(currentTab.getSourceLineCount()).length();
         int lineNumber = 0;
@@ -77,7 +79,7 @@ public class FilePrintAction extends VenusAction {
             String line = input.readLine();
             while (line != null) {
                 StringBuilder formattedLine = new StringBuilder();
-                if (currentTab.showingLineNumbers()) {
+                if (printLineNumbers) {
                     lineNumber++;
                     formattedLine.append(lineNumber).append(": ");
                     while (formattedLine.length() < lineNumberDigits) {
