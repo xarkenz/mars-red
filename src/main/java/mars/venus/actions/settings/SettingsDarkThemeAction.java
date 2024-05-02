@@ -56,6 +56,7 @@ public class SettingsDarkThemeAction extends VenusAction {
 
         Application.setupLookAndFeel();
 
-        JOptionPane.showMessageDialog(gui, "For best results, you may want to restart " + Application.NAME + ".", "Restart Recommended", JOptionPane.INFORMATION_MESSAGE);
+        // For now, the UI seems to update properly, so this message isn't really necessary
+        // JOptionPane.showMessageDialog(gui, "For best results, you may want to restart " + Application.NAME + ".", "Restart Recommended", JOptionPane.INFORMATION_MESSAGE);
     }
 }

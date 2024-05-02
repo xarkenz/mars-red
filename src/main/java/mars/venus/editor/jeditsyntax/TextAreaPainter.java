@@ -658,7 +658,7 @@ public class TextAreaPainter extends JComponent implements TabExpander {
         // TODO: handle null
         setBackground(UIManager.getColor("Venus.Editor.background"));
         setForeground(UIManager.getColor("Venus.Editor.foreground"));
-        caretColor = UIManager.getColor("Venus.Editor.caret");
+        caretColor = UIManager.getColor("Venus.Editor.caretForeground");
         selectionColor = UIManager.getColor("Venus.Editor.selectionBackground");
         lineHighlightColor = UIManager.getColor("Venus.Editor.highlightedLine");
     }

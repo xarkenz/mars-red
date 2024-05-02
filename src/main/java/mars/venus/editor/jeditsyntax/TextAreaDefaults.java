@@ -69,7 +69,7 @@ public class TextAreaDefaults {
         styles = SyntaxUtilities.getCurrentSyntaxStyles(settings);
         backgroundColor = UIManager.getColor("Venus.Editor.background");
         foregroundColor = UIManager.getColor("Venus.Editor.foreground");
-        caretColor = UIManager.getColor("Venus.Editor.caret");
+        caretColor = UIManager.getColor("Venus.Editor.caretForeground");
         selectionColor = UIManager.getColor("Venus.Editor.selectionBackground");
         lineHighlightColor = UIManager.getColor("Venus.Editor.highlightedLine");
         lineHighlightVisible = settings.highlightCurrentEditorLine.get();
