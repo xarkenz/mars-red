@@ -210,7 +210,7 @@ public class FileEditorTab extends JPanel implements Observer {
      * BufferedReader on StringReader seems to work better.
      */
     public int getSourceLineCount() {
-        BufferedReader reader = new BufferedReader(new StringReader(textEditingArea.getText()));
+        BufferedReader reader = new BufferedReader(new StringReader(this.getSource()));
         int lineNums = 0;
         try {
             while (reader.readLine() != null) {
@@ -229,16 +229,7 @@ public class FileEditorTab extends JPanel implements Observer {
      * @return String containing source code.
      */
     public String getSource() {
-        return textEditingArea.getText();
-    }
-
-    /**
-     * Set the file status of this tab.
-     *
-     * @param fileStatus The file status.
-     */
-    public void setFileStatus(FileStatus fileStatus) {
-        this.fileStatus = fileStatus;
+        return this.textEditingArea.getText();
     }
 
     /**
@@ -248,6 +239,15 @@ public class FileEditorTab extends JPanel implements Observer {
      */
     public FileStatus getFileStatus() {
         return this.fileStatus;
+    }
+
+    /**
+     * Set the file status of this tab.
+     *
+     * @param fileStatus The file status.
+     */
+    public void setFileStatus(FileStatus fileStatus) {
+        this.fileStatus = fileStatus;
     }
 
     /**
@@ -295,7 +295,7 @@ public class FileEditorTab extends JPanel implements Observer {
      * @return The undo manager object.
      */
     public UndoManager getUndoManager() {
-        return textEditingArea.getUndoManager();
+        return this.textEditingArea.getUndoManager();
     }
 
     // Note: these are invoked only when copy/cut/paste are used from the
@@ -311,61 +311,63 @@ public class FileEditorTab extends JPanel implements Observer {
      * Copy the currently selected text to the clipboard.
      */
     public void copyText() {
-        textEditingArea.copy();
-        textEditingArea.setCaretVisible(true);
-        textEditingArea.setSelectionVisible(true);
+        this.textEditingArea.copy();
+        this.textEditingArea.setCaretVisible(true);
+        this.textEditingArea.setSelectionVisible(true);
     }
 
     /**
      * Cut the currently selected text to the clipboard.
      */
     public void cutText() {
-        textEditingArea.cut();
-        textEditingArea.setCaretVisible(true);
+        this.textEditingArea.cut();
+        this.textEditingArea.setCaretVisible(true);
     }
 
     /**
      * Paste the current clipboard contents at the cursor position.
      */
     public void pasteText() {
-        textEditingArea.paste();
-        textEditingArea.setCaretVisible(true);
+        this.textEditingArea.paste();
+        this.textEditingArea.setCaretVisible(true);
     }
 
     /**
      * Select all text.
      */
     public void selectAllText() {
-        textEditingArea.selectAll();
-        textEditingArea.setCaretVisible(true);
-        textEditingArea.setSelectionVisible(true);
+        this.textEditingArea.selectAll();
+        this.textEditingArea.setCaretVisible(true);
+        this.textEditingArea.setSelectionVisible(true);
     }
 
     /**
      * Undo the previous edit.
      */
     public void undo() {
-        textEditingArea.undo();
+        this.textEditingArea.undo();
     }
 
     /**
      * Redo the previously undone edit.
      */
     public void redo() {
-        textEditingArea.redo();
+        this.textEditingArea.redo();
     }
 
     /**
      * Comment or uncomment the selection, or line at cursor if nothing is selected.
      */
-    public void commentLines() { textEditingArea.commentLines(); }
+    public void commentLines() {
+        this.textEditingArea.commentLines();
+    }
 
     /**
      * Automatically update whether the Undo and Redo actions are enabled or disabled
      * based on the status of the {@link javax.swing.undo.UndoManager}.
      */
     public void updateUndoRedoActions() {
-        gui.updateUndoRedoActions();
+        this.gui.updateUndoRedoActions();
     }
 
     /**
@@ -373,34 +375,36 @@ public class FileEditorTab extends JPanel implements Observer {
      * display the current line and column.  The position is given
      * as text stream offset and will be converted into line and column.
      *
-     * @param pos Offset into the text stream of caret.
+     * @param offset Offset into the text stream of caret.
      */
-    public void displayCaretPosition(int pos) {
-        displayCaretPosition(convertStreamPositionToLineColumn(pos));
+    public void displayCaretPosition(int offset) {
+        this.displayCaretPosition(this.convertStreamPositionToLineColumn(offset));
     }
 
     /**
      * Update the status bar display for the caret position.
      *
-     * @param position Position of the caret (x = column, y = row).
+     * @param position Position of the caret (x = column, y = line).
      */
     public void displayCaretPosition(Point position) {
-        caretPositionLabel.setText("Line " + position.y + ":" + position.x);
+        this.caretPositionLabel.setText("Line " + position.y + ":" + position.x);
     }
 
     /**
-     * Given byte stream position in text being edited, calculate its column and line
-     * number coordinates.
+     * Given character stream offset in text being edited, calculate its column and line number coordinates.
      *
-     * @param position Position of character.
-     * @return The column and line number coordinate as a Point.
+     * @param offset Position of character.
+     * @return The column and line number position (x = column, y = line).
      */
-    public Point convertStreamPositionToLineColumn(int position) {
-        String textStream = textEditingArea.getText();
+    public Point convertStreamPositionToLineColumn(int offset) {
+        String source = this.getSource();
         int line = 1;
         int column = 1;
-        for (int i = 0; i < position; i++) {
-            if (textStream.charAt(i) == '\n') {
+        for (int index = 0; index < offset; index++) {
+            if (index >= source.length()) {
+                return new Point(-1, -1);
+            }
+            if (source.charAt(index) == '\n') {
                 line++;
                 column = 1;
             }
@@ -420,15 +424,14 @@ public class FileEditorTab extends JPanel implements Observer {
      * @return corresponding stream position.  Returns -1 if there is no corresponding position.
      */
     public int convertLineColumnToStreamPosition(int line, int column) {
-        String textStream = textEditingArea.getText();
-        int textLength = textStream.length();
+        String source = this.getSource();
         int textLine = 1;
         int textColumn = 1;
-        for (int i = 0; i < textLength; i++) {
+        for (int index = 0; index < source.length(); index++) {
             if (textLine == line && textColumn == column) {
-                return i;
+                return index;
             }
-            if (textStream.charAt(i) == '\n') {
+            if (source.charAt(index) == '\n') {
                 textLine++;
                 textColumn = 1;
             }
@@ -463,20 +466,20 @@ public class FileEditorTab extends JPanel implements Observer {
             return;
         }
 
-        int lineStartPosition = convertLineColumnToStreamPosition(line, 1);
-        int lineEndPosition = convertLineColumnToStreamPosition(line + 1, 1) - 1;
+        int lineStartPosition = this.convertLineColumnToStreamPosition(line, 1);
+        int lineEndPosition = this.convertLineColumnToStreamPosition(line + 1, 1) - 1;
 
         if (lineEndPosition < 0) { // DPS 19 Sept 2012.  Happens if "line" is last line of file.
-            lineEndPosition = textEditingArea.getText().length() - 1;
+            lineEndPosition = this.getSource().length() - 1;
         }
         if (lineStartPosition >= 0) {
-            textEditingArea.select(lineStartPosition, lineEndPosition);
-            textEditingArea.setSelectionVisible(true);
+            this.textEditingArea.select(lineStartPosition, lineEndPosition);
+            this.textEditingArea.setSelectionVisible(true);
 
             if (column > 0) {
                 // Made one attempt at setting cursor; didn't work but here's the attempt
                 // (imagine using it in the one-parameter overloaded method above)
-                textEditingArea.setCaretPosition(lineStartPosition + column - 1);
+                this.textEditingArea.setCaretPosition(lineStartPosition + column - 1);
             }
         }
     }
@@ -491,7 +494,7 @@ public class FileEditorTab extends JPanel implements Observer {
      * @return TEXT_FOUND or TEXT_NOT_FOUND, depending on the result.
      */
     public int doFindText(String find, boolean caseSensitive) {
-        return textEditingArea.doFindText(find, caseSensitive);
+        return this.textEditingArea.doFindText(find, caseSensitive);
     }
 
     /**
@@ -511,7 +514,7 @@ public class FileEditorTab extends JPanel implements Observer {
      *     successful and there is at least one additional match.
      */
     public int doReplace(String find, String replace, boolean caseSensitive) {
-        return textEditingArea.doReplace(find, replace, caseSensitive);
+        return this.textEditingArea.doReplace(find, replace, caseSensitive);
     }
 
     /**
@@ -525,7 +528,7 @@ public class FileEditorTab extends JPanel implements Observer {
      * @return the number of occurrences that were matched and replaced.
      */
     public int doReplaceAll(String find, String replace, boolean caseSensitive) {
-        return textEditingArea.doReplaceAll(find, replace, caseSensitive);
+        return this.textEditingArea.doReplaceAll(find, replace, caseSensitive);
     }
 
     /**
@@ -533,12 +536,12 @@ public class FileEditorTab extends JPanel implements Observer {
      */
     @Override
     public void update(Observable fontChanger, Object arg) {
-        textEditingArea.setFont(Application.getSettings().getEditorFont());
-        textEditingArea.setLineHighlightEnabled(Application.getSettings().highlightCurrentEditorLine.get());
-        textEditingArea.setCaretBlinkRate(Application.getSettings().caretBlinkRate.get());
-        textEditingArea.setTabSize(Application.getSettings().editorTabSize.get());
-        textEditingArea.updateSyntaxStyles(Application.getSettings());
-        textEditingArea.revalidate();
+        this.textEditingArea.setFont(Application.getSettings().getEditorFont());
+        this.textEditingArea.setLineHighlightEnabled(Application.getSettings().highlightCurrentEditorLine.get());
+        this.textEditingArea.setCaretBlinkRate(Application.getSettings().caretBlinkRate.get());
+        this.textEditingArea.setTabSize(Application.getSettings().editorTabSize.get());
+        this.textEditingArea.updateSyntaxStyles(Application.getSettings());
+        this.textEditingArea.revalidate();
         // We want line numbers to be displayed same size but always PLAIN style.
         // Easiest way to get same pixel height as source code is to set to same
         // font family as the source code! It can get a bit complicated otherwise
@@ -547,15 +550,15 @@ public class FileEditorTab extends JPanel implements Observer {
         // in the editor form a separate column from the source code and if the
         // pixel height is not the same then the numbers will not line up with
         // the source lines.
-        lineNumbers.setFont(textEditingArea.getFont().deriveFont(Font.PLAIN));
+        this.lineNumbers.setFont(this.textEditingArea.getFont().deriveFont(Font.PLAIN));
         if (Application.getSettings().displayEditorLineNumbers.get()) {
-            lineNumbers.setText(getLineNumbersList(textEditingArea.getDocument()));
-            lineNumbers.setVisible(true);
+            this.lineNumbers.setText(getLineNumbersList(this.textEditingArea.getDocument()));
+            this.lineNumbers.setVisible(true);
         }
         else {
-            lineNumbers.setText(null);
-            lineNumbers.setVisible(false);
+            this.lineNumbers.setText(null);
+            this.lineNumbers.setVisible(false);
         }
-        lineNumbers.revalidate();
+        this.lineNumbers.revalidate();
     }
 }

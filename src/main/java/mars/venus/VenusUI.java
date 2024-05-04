@@ -9,7 +9,6 @@ import mars.venus.actions.help.*;
 import mars.venus.actions.run.*;
 import mars.venus.actions.settings.*;
 import mars.venus.editor.Editor;
-import mars.venus.editor.FileEditorTab;
 import mars.venus.editor.FileStatus;
 import mars.venus.execute.ProgramStatus;
 import mars.venus.execute.RunSpeedPanel;
@@ -76,14 +75,13 @@ public class VenusUI extends JFrame {
      */
     public static final String WINDOW_ICON_NAME = "MarsPlanet.jpg";
 
+    private final String baseTitle;
+
     private final JMenuBar menu;
     private final MainPane mainPane;
     private final RegistersPane registersPane;
     private final MessagesPane messagesPane;
     private final Editor editor;
-
-    private final String baseTitle;
-    private FileStatus menuState;
 
     // The "action" objects, which include action listeners.  One of each will be created then
     // shared between a menu item and its corresponding toolbar button.  This is a very cool
@@ -149,15 +147,14 @@ public class VenusUI extends JFrame {
      */
     public VenusUI(String title) {
         super(title);
+        Application.setGUI(this);
 
         // Launch splash screen, which will show this window after it finishes
         SplashScreen splashScreen = new SplashScreen(this, SPLASH_DURATION_MILLIS);
         splashScreen.showSplash();
 
         this.baseTitle = title;
-        this.menuState = FileStatus.NO_FILE;
         this.editor = new Editor(this);
-        Application.setGUI(this);
 
         double screenWidth = Toolkit.getDefaultToolkit().getScreenSize().getWidth();
         double screenHeight = Toolkit.getDefaultToolkit().getScreenSize().getHeight();
@@ -240,8 +237,6 @@ public class VenusUI extends JFrame {
 
         this.getContentPane().add(center);
 
-        editCommentAction.registerShortcut(mainPane.getEditTab());
-
         this.addWindowListener(new WindowAdapter() {
             @Override
             public void windowOpened(WindowEvent event) {
@@ -271,7 +266,7 @@ public class VenusUI extends JFrame {
         this.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 
         // Initialize menu state
-        this.setMenuState(FileStatus.NO_FILE);
+        this.updateMenuState(FileStatus.NO_FILE);
         // Restore previous session
         this.getMainPane().getEditTab().loadWorkspaceState();
     }
@@ -309,27 +304,27 @@ public class VenusUI extends JFrame {
      * disabled, etc.
      */
     private void createActionObjects() {
-        Toolkit tk = this.getToolkit();
+        int menuShortcutMask = this.getToolkit().getMenuShortcutKeyMaskEx();
 
-        fileNewAction = new FileNewAction(this, "New", getSVGActionIcon("new.svg"), "Create a new file for editing", KeyEvent.VK_N, KeyStroke.getKeyStroke(KeyEvent.VK_N, tk.getMenuShortcutKeyMaskEx()));
-        fileOpenAction = new FileOpenAction(this, "Open...", getSVGActionIcon("open.svg"), "Open a file for editing", KeyEvent.VK_O, KeyStroke.getKeyStroke(KeyEvent.VK_O, tk.getMenuShortcutKeyMaskEx()));
-        fileCloseAction = new FileCloseAction(this, "Close", getSVGActionIcon("close.svg"), "Close the current file", KeyEvent.VK_C, KeyStroke.getKeyStroke(KeyEvent.VK_W, tk.getMenuShortcutKeyMaskEx()));
-        fileCloseAllAction = new FileCloseAllAction(this, "Close All", getSVGActionIcon("close_all.svg"), "Close all open files", KeyEvent.VK_L, KeyStroke.getKeyStroke(KeyEvent.VK_W, tk.getMenuShortcutKeyMaskEx() | KeyEvent.SHIFT_DOWN_MASK));
-        fileSaveAction = new FileSaveAction(this, "Save", getSVGActionIcon("save.svg"), "Save the current file", KeyEvent.VK_S, KeyStroke.getKeyStroke(KeyEvent.VK_S, tk.getMenuShortcutKeyMaskEx()));
-        fileSaveAsAction = new FileSaveAsAction(this, "Save As...", getSVGActionIcon("save_as.svg"), "Save current file with different name", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_S, tk.getMenuShortcutKeyMaskEx() | KeyEvent.SHIFT_DOWN_MASK));
+        fileNewAction = new FileNewAction(this, "New", getSVGActionIcon("new.svg"), "Create a new file for editing", KeyEvent.VK_N, KeyStroke.getKeyStroke(KeyEvent.VK_N, menuShortcutMask));
+        fileOpenAction = new FileOpenAction(this, "Open...", getSVGActionIcon("open.svg"), "Open a file for editing", KeyEvent.VK_O, KeyStroke.getKeyStroke(KeyEvent.VK_O, menuShortcutMask));
+        fileCloseAction = new FileCloseAction(this, "Close", getSVGActionIcon("close.svg"), "Close the current file", KeyEvent.VK_C, KeyStroke.getKeyStroke(KeyEvent.VK_W, menuShortcutMask));
+        fileCloseAllAction = new FileCloseAllAction(this, "Close All", getSVGActionIcon("close_all.svg"), "Close all open files", KeyEvent.VK_L, KeyStroke.getKeyStroke(KeyEvent.VK_W, menuShortcutMask | KeyEvent.SHIFT_DOWN_MASK));
+        fileSaveAction = new FileSaveAction(this, "Save", getSVGActionIcon("save.svg"), "Save the current file", KeyEvent.VK_S, KeyStroke.getKeyStroke(KeyEvent.VK_S, menuShortcutMask));
+        fileSaveAsAction = new FileSaveAsAction(this, "Save As...", getSVGActionIcon("save_as.svg"), "Save current file with different name", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_S, menuShortcutMask | KeyEvent.SHIFT_DOWN_MASK));
         fileSaveAllAction = new FileSaveAllAction(this, "Save All", getSVGActionIcon("save_all.svg"), "Save all open files", KeyEvent.VK_V, null);
-        fileDumpMemoryAction = new FileDumpMemoryAction(this, "Dump Memory...", getSVGActionIcon("dump_memory.svg"), "Dump machine code or data in an available format", KeyEvent.VK_D, KeyStroke.getKeyStroke(KeyEvent.VK_D, tk.getMenuShortcutKeyMaskEx()));
-        filePrintAction = new FilePrintAction(this, "Print...", getSVGActionIcon("print.svg"), "Print current file", KeyEvent.VK_P, KeyStroke.getKeyStroke(KeyEvent.VK_P, tk.getMenuShortcutKeyMaskEx()));
+        fileDumpMemoryAction = new FileDumpMemoryAction(this, "Dump Memory...", getSVGActionIcon("dump_memory.svg"), "Dump machine code or data in an available format", KeyEvent.VK_D, KeyStroke.getKeyStroke(KeyEvent.VK_D, menuShortcutMask));
+        filePrintAction = new FilePrintAction(this, "Print...", getSVGActionIcon("print.svg"), "Print current file", KeyEvent.VK_P, KeyStroke.getKeyStroke(KeyEvent.VK_P, menuShortcutMask));
         fileExitAction = new FileExitAction(this, "Exit", getSVGActionIcon("exit.svg"), "Exit " + Application.NAME, KeyEvent.VK_X, null);
 
-        editUndoAction = new EditUndoAction(this, "Undo", getSVGActionIcon("undo.svg"), "Undo last edit", KeyEvent.VK_U, KeyStroke.getKeyStroke(KeyEvent.VK_Z, tk.getMenuShortcutKeyMaskEx()));
-        editRedoAction = new EditRedoAction(this, "Redo", getSVGActionIcon("redo.svg"), "Redo last edit", KeyEvent.VK_R, KeyStroke.getKeyStroke(KeyEvent.VK_Y, tk.getMenuShortcutKeyMaskEx()));
-        editCutAction = new EditCutAction(this, "Cut", getSVGActionIcon("cut.svg"), "Cut", KeyEvent.VK_C, KeyStroke.getKeyStroke(KeyEvent.VK_X, tk.getMenuShortcutKeyMaskEx()));
-        editCopyAction = new EditCopyAction(this, "Copy", getSVGActionIcon("copy.svg"), "Copy", KeyEvent.VK_O, KeyStroke.getKeyStroke(KeyEvent.VK_C, tk.getMenuShortcutKeyMaskEx()));
-        editPasteAction = new EditPasteAction(this, "Paste", getSVGActionIcon("paste.svg"), "Paste", KeyEvent.VK_P, KeyStroke.getKeyStroke(KeyEvent.VK_V, tk.getMenuShortcutKeyMaskEx()));
-        editFindReplaceAction = new EditFindReplaceAction(this, "Find / Replace...", getSVGActionIcon("find.svg"), "Find and/or replace text in the current file", KeyEvent.VK_F, KeyStroke.getKeyStroke(KeyEvent.VK_F, tk.getMenuShortcutKeyMaskEx()));
-        editSelectAllAction = new EditSelectAllAction(this, "Select All", getSVGActionIcon("select_all.svg"), "Select all text in the current file", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_A, tk.getMenuShortcutKeyMaskEx()));
-        editCommentAction = new EditCommentAction(this, "Comment Line", null, "Toggle Line Comment", KeyEvent.VK_SLASH, KeyStroke.getKeyStroke(KeyEvent.VK_SLASH, tk.getMenuShortcutKeyMaskEx()));
+        editUndoAction = new EditUndoAction(this, "Undo", getSVGActionIcon("undo.svg"), "Undo last edit", KeyEvent.VK_U, KeyStroke.getKeyStroke(KeyEvent.VK_Z, menuShortcutMask));
+        editRedoAction = new EditRedoAction(this, "Redo", getSVGActionIcon("redo.svg"), "Redo last edit", KeyEvent.VK_R, KeyStroke.getKeyStroke(KeyEvent.VK_Y, menuShortcutMask));
+        editCutAction = new EditCutAction(this, "Cut", getSVGActionIcon("cut.svg"), "Cut", KeyEvent.VK_C, KeyStroke.getKeyStroke(KeyEvent.VK_X, menuShortcutMask));
+        editCopyAction = new EditCopyAction(this, "Copy", getSVGActionIcon("copy.svg"), "Copy", KeyEvent.VK_O, KeyStroke.getKeyStroke(KeyEvent.VK_C, menuShortcutMask));
+        editPasteAction = new EditPasteAction(this, "Paste", getSVGActionIcon("paste.svg"), "Paste", KeyEvent.VK_P, KeyStroke.getKeyStroke(KeyEvent.VK_V, menuShortcutMask));
+        editFindReplaceAction = new EditFindReplaceAction(this, "Find / Replace...", getSVGActionIcon("find.svg"), "Find and/or replace text in the current file", KeyEvent.VK_F, KeyStroke.getKeyStroke(KeyEvent.VK_F, menuShortcutMask));
+        editSelectAllAction = new EditSelectAllAction(this, "Select All", getSVGActionIcon("select_all.svg"), "Select all text in the current file", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_A, menuShortcutMask));
+        editCommentAction = new EditCommentAction(this, "Comment Selected Lines", getSVGActionIcon("comment.svg"), "Toggle whether the currently selected lines are commented out", KeyEvent.VK_SLASH, KeyStroke.getKeyStroke(KeyEvent.VK_SLASH, menuShortcutMask));
 
         runAssembleAction = new RunAssembleAction(this, "Assemble", getSVGActionIcon("assemble.svg"), "Assemble the current file and clear breakpoints", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0));
         runStartAction = new RunStartAction(this, "Start", getSVGActionIcon("start.svg"), "Run the current program", KeyEvent.VK_G, KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0));
@@ -338,8 +333,8 @@ public class VenusUI extends JFrame {
         runStepForwardAction = new RunStepForwardAction(this, "Step Forward", getSVGActionIcon("step_forward.svg"), "Execute the next instruction", KeyEvent.VK_T, KeyStroke.getKeyStroke(KeyEvent.VK_F7, 0));
         runStepBackwardAction = new RunStepBackwardAction(this, "Step Backward", getSVGActionIcon("step_backward.svg"), "Undo the last step", KeyEvent.VK_B, KeyStroke.getKeyStroke(KeyEvent.VK_F8, 0));
         runResetAction = new RunResetAction(this, "Reset", getSVGActionIcon("reset.svg"), "Reset MIPS memory and registers", KeyEvent.VK_R, KeyStroke.getKeyStroke(KeyEvent.VK_F12, 0));
-        runClearBreakpointsAction = new RunClearBreakpointsAction(this, "Clear All Breakpoints", null, "Clear all execution breakpoints set since the last assemble.", KeyEvent.VK_K, KeyStroke.getKeyStroke(KeyEvent.VK_K, tk.getMenuShortcutKeyMaskEx()));
-        runToggleBreakpointsAction = new RunToggleBreakpointsAction(this, "Toggle All Breakpoints", null, "Disable/enable all breakpoints without clearing (can also click Bkpt column header)", KeyEvent.VK_T, KeyStroke.getKeyStroke(KeyEvent.VK_T, tk.getMenuShortcutKeyMaskEx()));
+        runClearBreakpointsAction = new RunClearBreakpointsAction(this, "Clear All Breakpoints", null, "Clear all execution breakpoints set since the last assemble.", KeyEvent.VK_K, KeyStroke.getKeyStroke(KeyEvent.VK_K, menuShortcutMask));
+        runToggleBreakpointsAction = new RunToggleBreakpointsAction(this, "Toggle All Breakpoints", null, "Disable/enable all breakpoints without clearing (can also click Bkpt column header)", KeyEvent.VK_T, KeyStroke.getKeyStroke(KeyEvent.VK_T, menuShortcutMask));
 
         settingsLabelAction = new SettingsLabelAction(this, "Show symbol table", null, "Toggle visibility of Labels window (symbol table) in the Execute tab", null, null);
         settingsPopupInputAction = new SettingsPopupInputAction(this, "Use dialog for user input", null, "If set, use popup dialog for input syscalls (5, 6, 7, 8, 12) instead of console input", null, null);
@@ -360,7 +355,7 @@ public class VenusUI extends JFrame {
         settingsMemoryConfigurationAction = new SettingsMemoryConfigurationAction(this, "Memory Configuration...", null, "View and modify memory segment base addresses for simulated MIPS", null, null);
         settingsPreferencesAction = new SettingsPreferencesAction(this, "Preferences...", null, "", null, null);
 
-        helpHelpAction = new HelpHelpAction(this, "Help...", getSVGActionIcon("help.svg"), "View help information", KeyEvent.VK_H, KeyStroke.getKeyStroke(KeyEvent.VK_H, tk.getMenuShortcutKeyMaskEx()));
+        helpHelpAction = new HelpHelpAction(this, "Help...", getSVGActionIcon("help.svg"), "View help information", KeyEvent.VK_H, KeyStroke.getKeyStroke(KeyEvent.VK_H, menuShortcutMask));
         helpUpdateAction = new HelpUpdateAction(this, "Check for Updates...", getSVGActionIcon("update.svg"), "Check if a newer version is available", null, null);
         helpAboutAction = new HelpAboutAction(this, "About...", getSVGActionIcon("about.svg"), "Information about " + Application.NAME, null, null);
     }
@@ -401,6 +396,7 @@ public class VenusUI extends JFrame {
         editMenu.add(createMenuItem(editFindReplaceAction));
         editMenu.addSeparator();
         editMenu.add(createMenuItem(editSelectAllAction));
+        editMenu.add(createMenuItem(editCommentAction));
         menuBar.add(editMenu);
 
         JMenu runMenu = new JMenu("Run");
@@ -440,7 +436,7 @@ public class VenusUI extends JFrame {
         settingsMenu.add(createMenuItem(settingsHighlightingAction));
         settingsMenu.add(createMenuItem(settingsExceptionHandlerAction));
         settingsMenu.add(createMenuItem(settingsMemoryConfigurationAction));
-        settingsMenu.add(createMenuItem(settingsPreferencesAction));
+//        settingsMenu.add(createMenuItem(settingsPreferencesAction));
         menuBar.add(settingsMenu);
 
         List<ToolAction> toolActions = ToolManager.getToolActions();
@@ -487,7 +483,7 @@ public class VenusUI extends JFrame {
      * shared between toolbar icon and corresponding menu item).
      */
     // TODO: Make the toolbar setup customizable -Sean Clarke
-    JToolBar setupToolBar() {
+    private JToolBar setupToolBar() {
         JToolBar toolBar = new JToolBar();
         toolBar.setFloatable(false);
         toolBar.setRollover(true);
@@ -528,14 +524,12 @@ public class VenusUI extends JFrame {
      *
      * @param status The file status used to determine menu state (usually the current tab's status).
      */
-    public void setMenuState(FileStatus status) {
-        menuState = status;
+    public void updateMenuState(FileStatus status) {
         switch (status) {
-            case NO_FILE -> this.setMenuStateInitial();
-            case NEW_NOT_EDITED -> this.setMenuStateEditingNew();
-            case NEW_EDITED -> this.setMenuStateEditingNew();
+            case NO_FILE -> this.setMenuStateNoFile();
+            case NEW_NOT_EDITED, NEW_EDITED -> this.setMenuStateNew();
             case NOT_EDITED -> this.setMenuStateNotEdited();
-            case EDITED -> this.setMenuStateEditing();
+            case EDITED -> this.setMenuStateEdited();
         }
     }
 
@@ -544,24 +538,16 @@ public class VenusUI extends JFrame {
      *
      * @param status The program status used to determine menu state.
      */
-    public void setMenuState(ProgramStatus status) {
+    public void updateMenuState(ProgramStatus status) {
         switch (status) {
-            case NOT_ASSEMBLED -> {
-                FileEditorTab currentEditorTab = this.getMainPane().getEditTab().getCurrentEditorTab();
-                if (currentEditorTab != null) {
-                    this.setMenuState(currentEditorTab.getFileStatus());
-                }
-                else {
-                    this.setMenuState(FileStatus.NO_FILE);
-                }
-            }
+            case NOT_ASSEMBLED -> this.updateMenuState(this.getMainPane().getEditTab().getCurrentFileStatus());
             case NOT_STARTED, PAUSED -> this.setMenuStateRunnable();
             case RUNNING -> this.setMenuStateRunning();
             case TERMINATED -> this.setMenuStateTerminated();
         }
     }
 
-    private void setMenuStateInitial() {
+    private void setMenuStateNoFile() {
         fileNewAction.setEnabled(true);
         fileOpenAction.setEnabled(true);
         fileCloseAction.setEnabled(false);
@@ -632,7 +618,7 @@ public class VenusUI extends JFrame {
         }
     }
 
-    private void setMenuStateEditing() {
+    private void setMenuStateEdited() {
         fileNewAction.setEnabled(true);
         fileOpenAction.setEnabled(true);
         fileCloseAction.setEnabled(true);
@@ -666,7 +652,7 @@ public class VenusUI extends JFrame {
     /**
      * Use this when "File -> New" is used
      */
-    void setMenuStateEditingNew() {
+    void setMenuStateNew() {
         fileNewAction.setEnabled(true);
         fileOpenAction.setEnabled(true);
         fileCloseAction.setEnabled(true);
@@ -820,15 +806,6 @@ public class VenusUI extends JFrame {
         else {
             setTitle(baseTitle);
         }
-    }
-
-    /**
-     * Get the current menu state, which reflects the state of the current file editor tab.
-     *
-     * @return The current menu state.
-     */
-    public FileStatus getMenuState() {
-        return menuState;
     }
 
     /**

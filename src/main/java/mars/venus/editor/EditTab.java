@@ -167,6 +167,22 @@ public class EditTab extends DynamicTabbedPane {
     }
 
     /**
+     * Get the file status of the currently selected editor tab, or {@link FileStatus#NO_FILE}
+     * if there are no editor tabs open.
+     *
+     * @return The current file status.
+     */
+    public FileStatus getCurrentFileStatus() {
+        FileEditorTab tab = this.getCurrentEditorTab();
+        if (tab != null) {
+            return tab.getFileStatus();
+        }
+        else {
+            return FileStatus.NO_FILE;
+        }
+    }
+
+    /**
      * Determine whether files are currently being opened in new tabs.
      *
      * @return true if files are currently being opened, false otherwise.
@@ -557,7 +573,7 @@ public class EditTab extends DynamicTabbedPane {
         tab = this.getCurrentEditorTab(); // Is now next tab or null
         if (tab == null) {
             this.editor.setTitle("", FileStatus.NO_FILE);
-            this.gui.setMenuState(FileStatus.NO_FILE);
+            this.gui.updateMenuState(FileStatus.NO_FILE);
             // When last file is closed, menu is unable to respond to mnemonics
             // and accelerators.  Let's have it request focus so it may do so.
             this.gui.haveMenuRequestFocus();
@@ -572,7 +588,7 @@ public class EditTab extends DynamicTabbedPane {
      * and also to update the MARS menu state (controls which actions are enabled).
      */
     private void updateTitleAndMenuState(FileEditorTab tab) {
-        this.gui.setMenuState(tab.getFileStatus());
+        this.gui.updateMenuState(tab.getFileStatus());
         this.updateTitle(tab);
     }
 

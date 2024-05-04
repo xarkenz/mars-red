@@ -214,7 +214,7 @@ public class Simulator {
      * Invokes {@link SimulatorListener#simulatorStarted(SimulatorStartEvent)} for all listeners.
      */
     private void dispatchStartEvent(int maxSteps, int programCounter) {
-        Application.getGUI().setMenuState(ProgramStatus.RUNNING);
+        Application.getGUI().updateMenuState(ProgramStatus.RUNNING);
 
         final SimulatorStartEvent event = new SimulatorStartEvent(maxSteps, programCounter);
         for (SimulatorListener listener : threadListeners) {

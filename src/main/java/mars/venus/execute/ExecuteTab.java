@@ -169,7 +169,7 @@ public class ExecuteTab extends JDesktopPane {
      */
     public void setProgramStatus(ProgramStatus status) {
         this.programStatus = status;
-        this.gui.setMenuState(status);
+        this.gui.updateMenuState(status);
     }
 
     /**
