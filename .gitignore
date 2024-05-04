@@ -78,3 +78,4 @@ fabric.properties
 
 # Project exclude paths
 /target/
+.idea/**/discord.xml
