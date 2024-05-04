@@ -213,14 +213,24 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
      */
     @Override
     public void commentLines() {
-        int startLine, endLine;
-        if (sourceCode.getSelectedText() == null) {
-            startLine = endLine = sourceCode.getCaretLine();
-        }
-        else {
+        int startLine, endLine, caretLine;
+        boolean caretAtSelectionStart = sourceCode.biasLeft;
+        boolean hasSelection = sourceCode.getSelectedText() != null;
+        int startSelectionOffset, endSelectionOffset, caretPositionOffset;
+        if (hasSelection) {
             startLine = sourceCode.getSelectionStartLine();
             endLine = sourceCode.getSelectionEndLine();
+            caretLine = sourceCode.getCaretLine();
+            startSelectionOffset = sourceCode.getSelectionStart() - sourceCode.getLineStartOffset(startLine);
+            endSelectionOffset = sourceCode.getSelectionEnd() - sourceCode.getLineStartOffset(endLine);
+            caretPositionOffset = sourceCode.getCaretPosition() - sourceCode.getLineStartOffset(caretLine);
         }
+        else {
+            startLine = endLine = caretLine = sourceCode.getCaretLine();
+            startSelectionOffset = endSelectionOffset = caretPositionOffset = sourceCode.getCaretPosition() - sourceCode.getLineStartOffset(startLine);
+        }
+
+        // Decide whether to comment or uncomment
         boolean areAllLinesCommented = true;
         for (int i = startLine; i <= endLine; i++) {
             String text = sourceCode.getLineText(i);
@@ -229,12 +239,23 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
                 break;
             }
         }
+
+        // Perform the action
+        int startLineTextDiff = 0, endLineTextDiff = 0, caretLineTextDiff = 0;
         if (areAllLinesCommented) {
             // Uncomment selection
             for (int i = startLine; i <= endLine; i++) {
                 String commentedLine = sourceCode.getLineText(i);
                 String uncommentedLine = commentedLine.replaceFirst("# ?", "");
                 replaceLine(i, uncommentedLine);
+                
+                int textDiff = uncommentedLine.length() - commentedLine.length();
+                if (i == startLine)
+                    startLineTextDiff = textDiff;
+                if (i == endLine)
+                    endLineTextDiff = textDiff;
+                if (i == caretLine)
+                    caretLineTextDiff = textDiff;
             }
         }
         else {
@@ -247,7 +268,37 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
                 else
                     commentedLine = uncommentedLine.replaceFirst("(\\S)", "# $1");
                 replaceLine(i, commentedLine);
+
+                int textDiff = commentedLine.length() - uncommentedLine.length();
+                if (i == startLine)
+                    startLineTextDiff = textDiff;
+                if (i == endLine)
+                    endLineTextDiff = textDiff;
+                if (i == caretLine)
+                    caretLineTextDiff = textDiff;
             }
+        }
+
+        // Replace selection or caret position
+        int finalStartPos = sourceCode.getLineStartOffset(startLine) + startSelectionOffset + startLineTextDiff;
+        int finalEndPos = sourceCode.getLineStartOffset(endLine) + endSelectionOffset + endLineTextDiff;
+        int finalCaretPos = sourceCode.getLineStartOffset(caretLine) + caretPositionOffset + caretLineTextDiff;
+        if (hasSelection) {
+            if (caretAtSelectionStart) {
+                sourceCode.select(
+                        finalEndPos,
+                        finalStartPos
+                );
+            }
+            else {
+                sourceCode.select(
+                        finalStartPos,
+                        finalEndPos
+                );
+            }
+        }
+        else {
+            sourceCode.setCaretPosition(finalCaretPos);
         }
     }
 
