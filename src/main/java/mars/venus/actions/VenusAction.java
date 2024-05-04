@@ -38,10 +38,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public abstract class VenusAction extends AbstractAction {
     protected VenusUI gui;
+    protected KeyStroke shortcut;
 
     protected VenusAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(name, icon);
         this.gui = gui;
+        this.shortcut = accel;
         putValue(SHORT_DESCRIPTION, description);
         putValue(MNEMONIC_KEY, mnemonic);
         putValue(ACCELERATOR_KEY, accel);
@@ -54,11 +56,26 @@ public abstract class VenusAction extends AbstractAction {
     public abstract void actionPerformed(ActionEvent event);
 
     /**
+     * Register this action as a key shortcut when the component is in focus.
+     *
+     * @param component the component to register the key shortcut on
+     */
+    public void registerShortcut(JComponent component) {
+        component.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(this.getShortcut(), this.getName());
+        component.getActionMap().put(this.getName(), this);
+    }
+
+    /**
      * @return The GUI instance this action was created for.
      */
     public VenusUI getGui() {
         return this.gui;
     }
+
+    /**
+     * @return The key shortcut to execute this action.
+     */
+    public KeyStroke getShortcut() { return this.shortcut; }
 
     /**
      * @return The name assigned to the action.

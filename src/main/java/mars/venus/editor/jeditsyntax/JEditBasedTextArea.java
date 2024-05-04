@@ -6,6 +6,7 @@ import mars.venus.editor.MARSTextEditingArea;
 import mars.venus.editor.jeditsyntax.tokenmarker.MIPSTokenMarker;
 
 import javax.swing.*;
+import javax.swing.text.BadLocationException;
 import javax.swing.undo.CannotRedoException;
 import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.CompoundEdit;
@@ -181,8 +182,8 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
             this.undoManager.undo();
         }
         catch (CannotUndoException ex) {
-            System.out.println("Unable to undo: " + ex);
-            ex.printStackTrace();
+            System.err.println("Unable to undo: " + ex);
+            ex.printStackTrace(System.err);
         }
         unredoing = false;
         this.setCaretVisible(true);
@@ -200,8 +201,8 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
             this.undoManager.redo();
         }
         catch (CannotRedoException ex) {
-            System.out.println("Unable to redo: " + ex);
-            ex.printStackTrace();
+            System.err.println("Unable to redo: " + ex);
+            ex.printStackTrace(System.err);
         }
         unredoing = false;
         this.setCaretVisible(true);
@@ -212,7 +213,60 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
      */
     @Override
     public void commentLines() {
-        // TODO
+        int startLine, endLine;
+        if (sourceCode.getSelectedText() == null) {
+            startLine = endLine = sourceCode.getCaretLine();
+        }
+        else {
+            startLine = sourceCode.getSelectionStartLine();
+            endLine = sourceCode.getSelectionEndLine();
+        }
+        boolean areAllLinesCommented = true;
+        for (int i = startLine; i <= endLine; i++) {
+            String text = sourceCode.getLineText(i);
+            if (!text.isBlank() && !text.trim().startsWith("#")) {
+                areAllLinesCommented = false;
+                break;
+            }
+        }
+        if (areAllLinesCommented) {
+            // Uncomment selection
+            for (int i = startLine; i <= endLine; i++) {
+                String commentedLine = sourceCode.getLineText(i);
+                String uncommentedLine = commentedLine.replaceFirst("# ?", "");
+                replaceLine(i, uncommentedLine);
+            }
+        }
+        else {
+            // Comment selection
+            for (int i = startLine; i <= endLine; i++) {
+                String uncommentedLine = sourceCode.getLineText(i);
+                String commentedLine;
+                if (uncommentedLine.isBlank())
+                    commentedLine = uncommentedLine;
+                else
+                    commentedLine = uncommentedLine.replaceFirst("(\\S)", "# $1");
+                replaceLine(i, commentedLine);
+            }
+        }
+    }
+
+    /**
+     * Replace a line in the document with text.
+     *
+     * @param lineNumber line number to replace
+     * @param text       text to replace the line with
+     */
+    public void replaceLine(int lineNumber, String text) {
+        int startOffset = sourceCode.getLineStartOffset(lineNumber);
+        int endOffset = sourceCode.getLineEndOffset(lineNumber);
+        int lineLength = endOffset - startOffset - 1;
+        try {
+            sourceCode.getDocument().remove(startOffset, lineLength);
+            sourceCode.getDocument().insertString(startOffset, text, null);
+        } catch (BadLocationException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /*

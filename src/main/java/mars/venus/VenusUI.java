@@ -229,7 +229,7 @@ public class VenusUI extends JFrame {
         menu = this.setUpMenuBar();
         this.setJMenuBar(menu);
 
-        JToolBar toolbar = this.setUpToolBar();
+        JToolBar toolbar = this.setupToolBar();
 
         JPanel jp = new JPanel(new FlowLayout(FlowLayout.LEFT));
         jp.add(toolbar);
@@ -239,6 +239,8 @@ public class VenusUI extends JFrame {
         center.add(horizonSplitter);
 
         this.getContentPane().add(center);
+
+        editCommentAction.registerShortcut(mainPane.getEditTab());
 
         this.addWindowListener(new WindowAdapter() {
             @Override
@@ -327,8 +329,7 @@ public class VenusUI extends JFrame {
         editPasteAction = new EditPasteAction(this, "Paste", getSVGActionIcon("paste.svg"), "Paste", KeyEvent.VK_P, KeyStroke.getKeyStroke(KeyEvent.VK_V, tk.getMenuShortcutKeyMaskEx()));
         editFindReplaceAction = new EditFindReplaceAction(this, "Find / Replace...", getSVGActionIcon("find.svg"), "Find and/or replace text in the current file", KeyEvent.VK_F, KeyStroke.getKeyStroke(KeyEvent.VK_F, tk.getMenuShortcutKeyMaskEx()));
         editSelectAllAction = new EditSelectAllAction(this, "Select All", getSVGActionIcon("select_all.svg"), "Select all text in the current file", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_A, tk.getMenuShortcutKeyMaskEx()));
-
-        editCommentAction = new EditCommentAction(this, "Comment Line", null, "Comment/uncomment line at cursor", KeyEvent.VK_SLASH, KeyStroke.getKeyStroke(KeyEvent.VK_SLASH, tk.getMenuShortcutKeyMaskEx()));
+        editCommentAction = new EditCommentAction(this, "Comment Line", null, "Toggle Line Comment", KeyEvent.VK_SLASH, KeyStroke.getKeyStroke(KeyEvent.VK_SLASH, tk.getMenuShortcutKeyMaskEx()));
 
         runAssembleAction = new RunAssembleAction(this, "Assemble", getSVGActionIcon("assemble.svg"), "Assemble the current file and clear breakpoints", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0));
         runStartAction = new RunStartAction(this, "Start", getSVGActionIcon("start.svg"), "Run the current program", KeyEvent.VK_G, KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0));
@@ -486,7 +487,7 @@ public class VenusUI extends JFrame {
      * shared between toolbar icon and corresponding menu item).
      */
     // TODO: Make the toolbar setup customizable -Sean Clarke
-    JToolBar setUpToolBar() {
+    JToolBar setupToolBar() {
         JToolBar toolBar = new JToolBar();
         toolBar.setFloatable(false);
         toolBar.setRollover(true);
@@ -577,6 +578,7 @@ public class VenusUI extends JFrame {
         editPasteAction.setEnabled(false);
         editFindReplaceAction.setEnabled(false);
         editSelectAllAction.setEnabled(false);
+        editCommentAction.setEnabled(false);
         settingsDelayedBranchingAction.setEnabled(true); // added 25 June 2007
         settingsMemoryConfigurationAction.setEnabled(true); // added 21 July 2009
         runAssembleAction.setEnabled(false);
@@ -612,6 +614,7 @@ public class VenusUI extends JFrame {
         editPasteAction.setEnabled(true);
         editFindReplaceAction.setEnabled(true);
         editSelectAllAction.setEnabled(true);
+        editCommentAction.setEnabled(true);
         settingsDelayedBranchingAction.setEnabled(true);
         settingsMemoryConfigurationAction.setEnabled(true);
         runAssembleAction.setEnabled(true);
@@ -646,6 +649,7 @@ public class VenusUI extends JFrame {
         editPasteAction.setEnabled(true);
         editFindReplaceAction.setEnabled(true);
         editSelectAllAction.setEnabled(true);
+        editCommentAction.setEnabled(true);
         settingsDelayedBranchingAction.setEnabled(true); // added 25 June 2007
         settingsMemoryConfigurationAction.setEnabled(true); // added 21 July 2009
         runAssembleAction.setEnabled(true);
@@ -679,6 +683,7 @@ public class VenusUI extends JFrame {
         editPasteAction.setEnabled(true);
         editFindReplaceAction.setEnabled(true);
         editSelectAllAction.setEnabled(true);
+        editCommentAction.setEnabled(true);
         settingsDelayedBranchingAction.setEnabled(true); // added 25 June 2007
         settingsMemoryConfigurationAction.setEnabled(true); // added 21 July 2009
         runAssembleAction.setEnabled(false);
@@ -712,6 +717,7 @@ public class VenusUI extends JFrame {
         editPasteAction.setEnabled(true);
         editFindReplaceAction.setEnabled(true);
         editSelectAllAction.setEnabled(true);
+        editCommentAction.setEnabled(true);
         settingsDelayedBranchingAction.setEnabled(true); // added 25 June 2007
         settingsMemoryConfigurationAction.setEnabled(true); // added 21 July 2009
         runAssembleAction.setEnabled(true);
@@ -745,6 +751,7 @@ public class VenusUI extends JFrame {
         editPasteAction.setEnabled(false);
         editFindReplaceAction.setEnabled(false);
         editSelectAllAction.setEnabled(false);
+        editCommentAction.setEnabled(false);
         settingsDelayedBranchingAction.setEnabled(false); // added 25 June 2007
         settingsMemoryConfigurationAction.setEnabled(false); // added 21 July 2009
         runAssembleAction.setEnabled(false);
@@ -777,6 +784,7 @@ public class VenusUI extends JFrame {
         editPasteAction.setEnabled(true);
         editFindReplaceAction.setEnabled(true);
         editSelectAllAction.setEnabled(true);
+        editCommentAction.setEnabled(true);
         settingsDelayedBranchingAction.setEnabled(true); // added 25 June 2007
         settingsMemoryConfigurationAction.setEnabled(true); // added 21 July 2009
         runAssembleAction.setEnabled(true);
