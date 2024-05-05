@@ -181,7 +181,7 @@ public class VenusUI extends JFrame {
             Image iconImage = Toolkit.getDefaultToolkit().getImage(iconImageURL);
             this.setIconImage(iconImage);
 
-            // Mac requires a different method to set the taskbar icon
+            // MacOS requires a different method to set the taskbar icon
             try {
                 Taskbar.getTaskbar().setIconImage(iconImage);
             }
@@ -241,7 +241,7 @@ public class VenusUI extends JFrame {
             @Override
             public void windowOpened(WindowEvent event) {
                 // Maximize the application window
-                VenusUI.this.setExtendedState(JFrame.MAXIMIZED_BOTH);
+                VenusUI.this.setExtendedState(MAXIMIZED_BOTH);
                 splashScreen.toFront();
             }
 
@@ -263,7 +263,7 @@ public class VenusUI extends JFrame {
         // The following will handle the windowClosing event properly in the
         // situation where user Cancels out of "save edits?" dialog.  By default,
         // the GUI frame will be hidden but I want it to do nothing.
-        this.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+        this.setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 
         // Initialize menu state
         this.updateMenuState(FileStatus.NO_FILE);

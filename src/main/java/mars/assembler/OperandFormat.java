@@ -126,15 +126,7 @@ public class OperandFormat {
             // end 2-July-2010 addition
 
             if ((expectedType == TokenType.REGISTER_NAME || expectedType == TokenType.REGISTER_NUMBER) && candidateType == TokenType.REGISTER_NAME) {
-                if (Application.getSettings().bareMachineEnabled.get()) {
-                    // On 10-Aug-2010, I noticed this cannot happen since the IDE provides no access
-                    // to this setting, whose default value is false.
-                    generateMessage(candidateToken, "Use register number instead of name.  See Settings.", errors);
-                    return false;
-                }
-                else {
-                    continue;
-                }
+                continue;
             }
             if (expectedType == TokenType.REGISTER_NAME && candidateType == TokenType.REGISTER_NUMBER) {
                 continue;

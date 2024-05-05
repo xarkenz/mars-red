@@ -75,17 +75,6 @@ public class Settings extends Observable {
         true
     );
     /**
-     * Flag to determine whether or not program being assembled is limited to
-     * using register numbers instead of names. NOTE: Its default value is
-     * false and the IDE provides no means to change it!
-     */
-    public final BooleanSetting bareMachineEnabled = new BooleanSetting(
-        this,
-        "BareMachine",
-        false,
-        true
-    );
-    /**
      * Flag to determine whether or not a file is immediately and automatically assembled
      * upon opening. Handy when using an external editor.
      */
@@ -257,7 +246,6 @@ public class Settings extends Observable {
 
     public final BooleanSetting[] booleanSettings = {
         extendedAssemblerEnabled,
-        bareMachineEnabled,
         assembleOnOpenEnabled,
         assembleAllEnabled,
         labelWindowVisible,

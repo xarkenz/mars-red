@@ -77,7 +77,7 @@ public class TextAreaDefaults {
         bracketHighlightColor = caretForeground;
         eolMarkerVisible = false;
         eolMarkerColor = new Color(0x009999);
-        paintInvalid = true;
+        paintInvalid = false;
         document = new SyntaxDocument();
     }
 }

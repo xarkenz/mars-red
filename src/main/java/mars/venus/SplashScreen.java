@@ -71,7 +71,7 @@ public class SplashScreen extends JWindow {
             + "<h2>MIPS Assembler and Runtime Simulator</h2>"
             + "<h3>Version " + Application.VERSION + "</h3>"
             + "<p><b>Copyright © " + Application.COPYRIGHT_YEARS + " " + Application.COPYRIGHT_HOLDERS + "</b></p>"
-            + "<p><b>Modified by Sean Clarke</b></p>"
+            + "<p><b>Modified by Sean Clarke and others</b></p>"
             + "</center></html>", JLabel.CENTER);
         contentPane.add(content, BorderLayout.CENTER);
     }
