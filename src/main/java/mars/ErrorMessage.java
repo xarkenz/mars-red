@@ -213,7 +213,7 @@ public class ErrorMessage {
     private ArrayList<Integer> parseMacroHistory(String string) {
         Pattern pattern = Pattern.compile("<\\d+>");
         Matcher matcher = pattern.matcher(string);
-        String verify = string.trim();
+        String verify = string.strip();
         ArrayList<Integer> macroHistory = new ArrayList<>();
         while (matcher.find()) {
             String match = matcher.group();
@@ -225,7 +225,7 @@ public class ErrorMessage {
                 catch (NumberFormatException e) {
                     break;
                 }
-                verify = verify.substring(match.length()).trim();
+                verify = verify.substring(match.length()).strip();
             }
             else {
                 break;

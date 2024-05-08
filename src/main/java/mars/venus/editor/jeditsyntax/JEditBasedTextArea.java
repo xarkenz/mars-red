@@ -234,7 +234,7 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
         boolean areAllLinesCommented = true;
         for (int i = startLine; i <= endLine; i++) {
             String text = this.getLineText(i);
-            if (!text.isBlank() && !text.trim().startsWith("#")) {
+            if (!text.isBlank() && !text.strip().startsWith("#")) {
                 areAllLinesCommented = false;
                 break;
             }

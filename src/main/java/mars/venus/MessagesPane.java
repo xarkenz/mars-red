@@ -123,8 +123,8 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
                             text = text.substring(0, separatorPosition);
                         }
                         String[] stringTokens = text.split("\\s"); // tokenize with whitespace delimiter
-                        String lineToken = ErrorList.LINE_PREFIX.trim();
-                        String columnToken = ErrorList.POSITION_PREFIX.trim();
+                        String lineToken = ErrorList.LINE_PREFIX.strip();
+                        String columnToken = ErrorList.POSITION_PREFIX.strip();
                         String lineString = "";
                         String columnString = "";
                         for (int i = 0; i < stringTokens.length; i++) {
@@ -154,7 +154,7 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
                         int fileNameEnd = text.indexOf(ErrorList.LINE_PREFIX);
                         String fileName = "";
                         if (fileNameStart < fileNameEnd && fileNameStart >= ErrorList.FILENAME_PREFIX.length()) {
-                            fileName = text.substring(fileNameStart, fileNameEnd).trim();
+                            fileName = text.substring(fileNameStart, fileNameEnd).strip();
                         }
                         if (!fileName.isEmpty()) {
                             selectEditorTextLine(fileName, line, column);

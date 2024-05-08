@@ -465,7 +465,7 @@ public class Assembler {
                     }
 
                     // Recursively parse lines of expanded macro
-                    List<ProgramStatement> statements = parseLine(tokenList2, "<" + (i - macro.getFromLine() + macro.getOriginalFromLine()) + "> " + substituted.trim(), sourceLineNumber, extendedAssemblerEnabled);
+                    List<ProgramStatement> statements = parseLine(tokenList2, "<" + (i - macro.getFromLine() + macro.getOriginalFromLine()) + "> " + substituted.strip(), sourceLineNumber, extendedAssemblerEnabled);
                     if (statements != null) {
                         parsedStatements.addAll(statements);
                     }
