@@ -3,7 +3,6 @@ package mars.venus;
 import mars.Application;
 import mars.mips.hardware.Coprocessor0;
 import mars.mips.hardware.Register;
-import mars.simulator.SimulatorFinishEvent;
 import mars.util.Binary;
 
 import javax.swing.*;
@@ -66,8 +65,8 @@ public class Coprocessor0Window extends RegistersDisplayTab {
     /**
      * Constructor which sets up a fresh window with a table that contains the register values.
      */
-    public Coprocessor0Window() {
-        super();
+    public Coprocessor0Window(VenusUI gui) {
+        super(gui);
         table = new RegistersTable(new RegisterTableModel(setupWindow()), HEADER_TIPS, REGISTER_TIPS);
         table.setupColumn(NAME_COLUMN, 50, SwingConstants.LEFT);
         table.setupColumn(NUMBER_COLUMN, 25, SwingConstants.LEFT);
@@ -106,7 +105,7 @@ public class Coprocessor0Window extends RegistersDisplayTab {
     public void clearWindow() {
         clearHighlighting();
         Coprocessor0.resetRegisters();
-        updateRegisters(Application.getGUI().getMainPane().getExecuteTab().getValueDisplayBase());
+        updateRegisters(gui.getMainPane().getExecuteTab().getValueDisplayBase());
     }
 
     /**
@@ -128,7 +127,7 @@ public class Coprocessor0Window extends RegistersDisplayTab {
      * @param value  The new value.
      */
     public void updateRegisterValue(int number, int value, int base) {
-        ((RegisterTableModel) table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(value, base), rowGivenRegisterNumber[number], 2);
+        ((RegisterTableModel) table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(value, base), rowGivenRegisterNumber[number], VALUE_COLUMN);
     }
 
     /**
@@ -151,16 +150,7 @@ public class Coprocessor0Window extends RegistersDisplayTab {
         Coprocessor0.deleteRegistersObserver(this);
     }
 
-    @Override
-    public void simulatorFinished(SimulatorFinishEvent event) {
-        super.simulatorFinished(event);
-        // Bring Coprocessor 0 to the front if terminated due to exception
-        if (event.exception() != null) {
-            Application.getGUI().getRegistersPane().setSelectedComponent(this);
-        }
-    }
-
-    private static class RegisterTableModel extends AbstractTableModel {
+    private class RegisterTableModel extends AbstractTableModel {
         private static final String[] COLUMN_NAMES = {"Name", "Number", "Value"};
 
         private final Object[][] data;
@@ -216,11 +206,10 @@ public class Coprocessor0Window extends RegistersDisplayTab {
         public void setValueAt(Object value, int row, int col) {
             int intValue;
             try {
-                intValue = Binary.stringToInt(value.toString());
+                intValue = Binary.decodeInteger(value.toString());
             }
             catch (NumberFormatException exception) {
-                data[row][col] = "INVALID";
-                fireTableCellUpdated(row, col);
+                setDisplayAndModelValueAt("INVALID", row, col);
                 return;
             }
             // Assures that if changed during MIPS program execution, the update will
@@ -228,15 +217,14 @@ public class Coprocessor0Window extends RegistersDisplayTab {
             synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
                 Coprocessor0.updateRegister(Coprocessor0.getRegisters()[row].getNumber(), intValue);
             }
-            int valueBase = Application.getGUI().getMainPane().getExecuteTab().getValueDisplayBase();
-            data[row][col] = NumberDisplayBaseChooser.formatNumber(intValue, valueBase);
-            fireTableCellUpdated(row, col);
+            int valueBase = gui.getMainPane().getExecuteTab().getValueDisplayBase();
+            setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(intValue, valueBase), row, col);
         }
 
         /**
          * Update cell contents in table model.  Does not affect MIPS register.
          */
-        private void setDisplayAndModelValueAt(Object value, int row, int col) {
+        public void setDisplayAndModelValueAt(Object value, int row, int col) {
             data[row][col] = value;
             fireTableCellUpdated(row, col);
         }

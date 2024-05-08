@@ -42,6 +42,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Abstract class for a font selection dialog.
  */
 public abstract class AbstractFontSettingDialog extends JDialog {
+    protected VenusUI gui;
     JComboBox<String> fontFamilySelector;
     JComboBox<EditorFont.Style> fontStyleSelector;
     JSlider fontSizeSelector;
@@ -59,8 +60,9 @@ public abstract class AbstractFontSettingDialog extends JDialog {
      * Create a new font chooser.  Has pertinent JDialog parameters.
      * Will do everything except make it visible.
      */
-    public AbstractFontSettingDialog(Frame owner, String title, boolean modality, Font currentFont) {
-        super(owner, title, modality);
+    public AbstractFontSettingDialog(VenusUI gui, String title, boolean modality, Font currentFont) {
+        super(gui, title, modality);
+        this.gui = gui;
         this.currentFont = currentFont;
         this.defaultButton = null;
         JPanel content = new JPanel(new BorderLayout());
@@ -76,7 +78,7 @@ public abstract class AbstractFontSettingDialog extends JDialog {
             }
         });
         this.pack();
-        this.setLocationRelativeTo(owner);
+        this.setLocationRelativeTo(this.gui);
         if (this.defaultButton != null) {
             this.defaultButton.getRootPane().setDefaultButton(this.defaultButton);
         }

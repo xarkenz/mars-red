@@ -1,8 +1,10 @@
 package mars.settings;
 
-import mars.util.EditorFont;
+import mars.util.Binary;
 
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -11,27 +13,25 @@ import java.util.Objects;
 public class FontSetting {
     private final Settings settings;
     private final String key;
-    private String family;
-    private String style;
-    private String size;
+    private Font defaultValue;
+    private Font value;
     private final boolean notifies;
 
     // Package-private visibility; the constructor usage should be restricted to Settings.
-    // The initial values will almost always be overridden immediately, but they serve as
+    // The default value will almost always be overridden immediately, but it serves as
     // a backup in case both Preferences and the defaults file fail to load.
-    FontSetting(Settings settings, String key, String initialFamily, String initialStyle, String initialSize, boolean notifies) {
+    FontSetting(Settings settings, String key, Font defaultValue, boolean notifies) {
         this.settings = settings;
         this.key = key;
-        this.family = initialFamily;
-        this.style = initialStyle;
-        this.size = initialSize;
+        this.defaultValue = defaultValue;
+        this.value = defaultValue;
         this.notifies = notifies;
     }
 
     /**
-     * Get the string key used to identify this setting in {@link java.util.prefs.Preferences}.
+     * Get the key used to identify this setting in {@link java.util.prefs.Preferences}.
      *
-     * @return The key for this setting.
+     * @return The string key for this setting.
      */
     public String getKey() {
         return this.key;
@@ -40,38 +40,131 @@ public class FontSetting {
     /**
      * Get the value currently stored in this setting.
      *
-     * @return The value for this setting, as a font.
+     * @return The font value for this setting.
      */
     public Font get() {
-        return EditorFont.createFontFromStringValues(this.family, this.style, this.size);
+        return this.value;
     }
 
     /**
      * Set the value of this setting, updating persistent storage.
      *
-     * @param font The new font value for this setting.
+     * @param value The new font value for this setting.
      */
-    public void set(Font font) {
-        String family = font.getFamily();
-        String style = EditorFont.getStyle(font.getStyle()).getName();
-        String size = EditorFont.sizeIntToSizeString(font.getSize());
-        this.set(family, style, size);
-    }
-
-    /**
-     * Set the value of this setting, updating persistent storage.
-     *
-     * @param family The new font family value for this setting.
-     * @param style  The new font style value for this setting.
-     * @param size   The new font size value for this setting.
-     */
-    public void set(String family, String style, String size) {
-        if (!Objects.equals(family, this.family) || !Objects.equals(style, this.style) || !Objects.equals(size, this.size)) {
+    public void set(Font value) {
+        if (!Objects.equals(value, this.value)) {
+            this.value = value;
             // Value has changed, write it to persistent storage
-            settings.saveFontSetting(this.key, family, style, size, this.notifies);
-            this.family = family;
-            this.style = style;
-            this.size = size;
+            this.settings.saveStringSetting(this.key, FontSetting.encode(this.value), this.notifies);
         }
+    }
+
+    /**
+     * Get the default value for this setting.
+     *
+     * @return The default font value for this setting.
+     */
+    public Font getDefault() {
+        return this.defaultValue;
+    }
+
+    /**
+     * Set the default value for this setting without updating the current value.
+     *
+     * @param value The new font string value for this setting.
+     */
+    public void setDefault(Font value) {
+        this.defaultValue = value;
+    }
+
+    /**
+     * Set the value of this setting without updating persistent storage.
+     *
+     * @param value The new font value for this setting.
+     */
+    public void setNonPersistent(Font value) {
+        this.value = value;
+    }
+
+    /**
+     * Encode a {@link Font} object as a string with the form <code>Name</code> or <code>Name;Attributes</code>,
+     * where <code>Attributes</code> is a comma-separated list of optional attributes:
+     * <ul>
+     * <li><code>Bold</code>: Will be present if the bold style flag is set.
+     * <li><code>Italic</code>: Will be present if the italic style flag is set.
+     * <li><code>Size=N</code>: Specifies the font point size <code>N</code>.
+     * </ul>
+     *
+     * @param font The font to encode as a string.
+     * @return The encoded form of the given font, or null if the font is null.
+     * @see FontSetting#decode(String)
+     */
+    public static String encode(Font font) {
+        if (font == null) {
+            return null;
+        }
+
+        List<String> attributes = new ArrayList<>();
+        if (font.isBold()) {
+            attributes.add("Bold");
+        }
+        if (font.isItalic()) {
+            attributes.add("Italic");
+        }
+        attributes.add("Size=" + font.getSize());
+
+        return font.getName() + ";" + String.join(",", attributes);
+    }
+
+    /**
+     * Decode a {@link Font} object from a string with the form <code>Name</code> or <code>Name;Attributes</code>,
+     * where <code>Attributes</code> is a comma-separated list of optional attributes:
+     * <ul>
+     * <li><code>Bold</code>: If present, sets the bold style flag.
+     * <li><code>Italic</code>: If present, sets the italic style flag.
+     * <li><code>Size=N</code>: Sets the font point size to <code>N</code>. If not present, defaults to 12.
+     * </ul>
+     *
+     * @param string The string to decode as a font.
+     * @return The font decoded from the given string.
+     * @see FontSetting#encode(Font)
+     */
+    public static Font decode(String string) {
+        String name = Font.DIALOG;
+        int style = Font.PLAIN;
+        int size = 12;
+
+        if (string == null) {
+            return new Font(name, style, size);
+        }
+
+        int separator = string.indexOf(';');
+        String parsedName = ((separator >= 0) ? string.substring(0, separator) : string).strip();
+        if (!parsedName.isEmpty()) {
+            name = parsedName;
+        }
+
+        if (separator >= 0) {
+            for (String attribute : string.substring(separator + 1).split(",")) {
+                attribute = attribute.strip().toLowerCase();
+
+                if (attribute.equals("bold")) {
+                    style |= Font.BOLD;
+                }
+                else if (attribute.equals("italic")) {
+                    style |= Font.ITALIC;
+                }
+                else if (attribute.startsWith("size=")) {
+                    try {
+                        size = Integer.parseUnsignedInt(attribute.substring(5).strip());
+                    }
+                    catch (NumberFormatException exception) {
+                        // Keep size at default
+                    }
+                }
+            }
+        }
+
+        return new Font(name, style, size);
     }
 }

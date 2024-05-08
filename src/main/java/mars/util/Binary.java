@@ -2,8 +2,6 @@ package mars.util;
 
 import mars.Application;
 
-import java.util.Arrays;
-
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
 
@@ -40,9 +38,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class Binary {
     // Using int value 0-15 as index, yields equivalent hex digit as char.
-    private static final char[] hexDigits = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-    // Use this to produce String equivalent of unsigned int value (add it to int value, result is long)
-    private static final long UNSIGNED_BASE = 0x7FFFFFFFL + 0x7FFFFFFFL + 2L; //0xFFFFFFFF+1
+    private static final String HEX_DIGITS = "0123456789abcdef";
 
     /**
      * Translate int value into a String consisting of '1's and '0's.
@@ -53,10 +49,8 @@ public class Binary {
      */
     public static String intToBinaryString(int value, int length) {
         char[] result = new char[length];
-        int index = length - 1;
-        for (int i = 0; i < length; i++) {
-            result[index] = (bitValue(value, i) == 1) ? '1' : '0';
-            index--;
+        for (int index = 0; index < length; index++) {
+            result[length - 1 - index] = (bitValue(value, index) == 1) ? '1' : '0';
         }
         return new String(result);
     }
@@ -73,45 +67,17 @@ public class Binary {
     }
 
     /**
-     * Translate long value into a String consisting of '1's and '0's.
-     *
-     * @param value  The long value to convert.
-     * @param length The number of bit positions, starting at least significant, to process.
-     * @return String consisting of '1' and '0' characters corresponding to the requested binary sequence.
-     */
-    public static String longToBinaryString(long value, int length) {
-        char[] result = new char[length];
-        int index = length - 1;
-        for (int i = 0; i < length; i++) {
-            result[index] = (bitValue(value, i) == 1) ? '1' : '0';
-            index--;
-        }
-        return new String(result);
-    }
-
-    /**
-     * Translate long value into a String consisting of '1's and '0's.  Assumes all 64 bits are
-     * to be translated.
-     *
-     * @param value The long value to convert.
-     * @return String consisting of '1' and '0' characters corresponding to the requested binary sequence.
-     */
-    public static String longToBinaryString(long value) {
-        return longToBinaryString(value, Long.SIZE);
-    }
-
-    /**
      * Translate String consisting of '1's and '0's into an int value having that binary representation.
      * The String is assumed to be at most 32 characters long.  No error checking is performed.
      * String position 0 has most-significant bit, position length-1 has least-significant.
      *
-     * @param value The String value to convert.
+     * @param string The String value to convert.
      * @return int whose binary value corresponds to decoded String.
      */
-    public static int binaryStringToInt(String value) {
-        int result = value.charAt(0) - '0';
-        for (int i = 1; i < value.length(); i++) {
-            result = (result << 1) | (value.charAt(i) - '0');
+    public static int binaryStringToInt(String string) {
+        int result = 0;
+        for (int bit = 0; bit < string.length(); bit++) {
+            result = (result << 1) | (string.charAt(bit) - '0');
         }
         return result;
     }
@@ -121,13 +87,13 @@ public class Binary {
      * The String is assumed to be at most 64 characters long.  No error checking is performed.
      * String position 0 has most-significant bit, position length-1 has least-significant.
      *
-     * @param value The String value to convert.
+     * @param string The String value to convert.
      * @return long whose binary value corresponds to decoded String.
      */
-    public static long binaryStringToLong(String value) {
-        long result = value.charAt(0) - '0';
-        for (int i = 1; i < value.length(); i++) {
-            result = (result << 1) | (value.charAt(i) - '0');
+    public static long binaryStringToLong(String string) {
+        long result = 0;
+        for (int bit = 0; bit < string.length(); bit++) {
+            result = (result << 1) | (string.charAt(bit) - '0');
         }
         return result;
     }
@@ -138,31 +104,27 @@ public class Binary {
      * String position 0 has most-significant bit, position length-1 has least-significant.
      *
      * @param value The String value to convert.
-     * @return String containing '0', '1', ...'F' characters which form hexadecimal
-     *     equivalent of decoded String.
+     * @return String containing '0', '1', ...'F' characters which form hexadecimal equivalent of decoded String.
      */
     public static String binaryStringToHexString(String value) {
-        int digits = (value.length() + 3) / 4;
-        char[] hexChars = new char[digits + 2];
-        int position, result, pow, rep;
-        hexChars[0] = '0';
-        hexChars[1] = 'x';
-        position = value.length() - 1;
+        int digits = (value.length() + 3) >> 2;
+        char[] hexString = new char[digits + 2];
+        hexString[0] = '0';
+        hexString[1] = 'x';
+        int index = value.length() - 1;
         for (int digit = 0; digit < digits; digit++) {
-            result = 0;
-            pow = 1;
-            rep = 0;
-            while (rep < 4 && position >= 0) {
-                if (value.charAt(position) == '1') {
-                    result = result + pow;
+            int result = 0;
+            int bitValue = 1;
+            for (int bit = 0; bit < 4 && index >= 0; bit++) {
+                if (value.charAt(index) == '1') {
+                    result += bitValue;
                 }
-                pow *= 2;
-                position--;
-                rep++;
+                bitValue <<= 1;
+                index--;
             }
-            hexChars[digits - digit + 1] = hexDigits[result];
+            hexString[digits - digit + 1] = HEX_DIGITS.charAt(result);
         }
-        return new String(hexChars);
+        return new String(hexString);
     }
 
     /**
@@ -203,27 +165,17 @@ public class Binary {
     }
 
     /**
-     * Translate String consisting of '1's and '0's into char equivalent of the corresponding
-     * hexadecimal digit.  String limited to length 4.
-     * String position 0 has most-significant bit, position length-1 has least-significant.
+     * Returns a 6 character string representing the 16-bit hexadecimal equivalent of the
+     * given integer value.  First two characters are "0x".  It assumes value will "fit"
+     * in 16 bits.  If non-negative, prepend leading zeroes to that string as necessary
+     * to make it always four hexadecimal digits.  If negative, chop off the first
+     * four 'f' digits so result is always four hexadecimal digits
      *
-     * @param value The String value to convert.
-     * @return char '0', '1', ...'F' which form hexadecimal equivalent of decoded String.
-     *     If string length > 4, returns '0'.
+     * @param value The int value to convert.
+     * @return String containing '0', '1', ...'f' which form hexadecimal equivalent of int.
      */
-    public static char binaryStringToHexDigit(String value) {
-        if (value.length() > 4) {
-            return '0';
-        }
-        int result = 0;
-        int pow = 1;
-        for (int i = value.length() - 1; i >= 0; i--) {
-            if (value.charAt(i) == '1') {
-                result = result + pow;
-            }
-            pow *= 2;
-        }
-        return hexDigits[result];
+    public static String intToHalfHexString(int value) {
+        return "0x%04x".formatted(value & 0xFFFF);
     }
 
     /**
@@ -232,39 +184,10 @@ public class Binary {
      * to that string as necessary to make it always eight hexadecimal digits.
      *
      * @param value The int value to convert.
-     * @return String containing '0', '1', ...'F' which form hexadecimal equivalent of int.
+     * @return String containing '0', '1', ...'f' which form hexadecimal equivalent of int.
      */
     public static String intToHexString(int value) {
-        StringBuilder hexString = new StringBuilder(Integer.toHexString(value));
-        while (hexString.length() < 8) {
-            hexString.insert(0, '0');
-        }
-
-        hexString.insert(0, "0x");
-        return hexString.toString();
-    }
-
-    /**
-     * Returns a 6 character string representing the 16-bit hexadecimal equivalent of the
-     * given integer value.  First two characters are "0x".  It assumes value will "fit"
-     * in 16 bits.  If non-negative, prepend leading zeroes to that string as necessary
-     * to make it always four hexadecimal digits.  If negative, chop off the first
-     * four 'f' digits so result is always four hexadecimal digits
-     *
-     * @param value The int value to convert.
-     * @return String containing '0', '1', ...'F' which form hexadecimal equivalent of int.
-     */
-    public static String intToHalfHexString(int value) {
-        StringBuilder hexString = new StringBuilder(Integer.toHexString(value));
-        if (hexString.length() > 4) {
-            hexString.delete(4, hexString.length());
-        }
-        while (hexString.length() < 4) {
-            hexString.insert(0, '0');
-        }
-
-        hexString.insert(0, "0x");
-        return hexString.toString();
+        return "0x%08x".formatted(value);
     }
 
     /**
@@ -275,20 +198,8 @@ public class Binary {
      * @param value The long value to convert.
      * @return String containing '0', '1', ...'F' which form hexadecimal equivalent of long.
      */
-
     public static String longToHexString(long value) {
-        return binaryStringToHexString(longToBinaryString(value));
-    }
-
-    /**
-     * Produce String equivalent of integer value interpreting it as an unsigned integer.
-     * For instance,  -1 (0xffffffff) produces "4294967295" instead of "-1".
-     *
-     * @param d The int value to interpret.
-     * @return String which forms unsigned 32 bit equivalent of int.
-     */
-    public static String unsignedIntToIntString(int d) {
-        return (d >= 0) ? Integer.toString(d) : Long.toString(UNSIGNED_BASE + d);
+        return "0x%016x".formatted(value);
     }
 
     /**
@@ -297,124 +208,76 @@ public class Binary {
      * character, it will be assigned a default character (defined in config.properties)
      * for a placeholder.
      *
-     * @param d The int value to interpret
+     * @param value The int value to interpret
      * @return String that represents ASCII equivalent
      */
-    public static String intToAscii(int d) {
+    public static String intToAscii(int value) {
         StringBuilder result = new StringBuilder(8);
-        for (int i = 3; i >= 0; i--) {
-            int byteValue = getByte(d, i);
+        for (int byteIndex = 3; byteIndex >= 0; byteIndex--) {
+            int byteValue = getByte(value, byteIndex);
             result.append((byteValue < Application.ASCII_TABLE.length) ? Application.ASCII_TABLE[byteValue] : Application.ASCII_NON_PRINT);
         }
         return result.toString();
     }
 
     /**
-     * Attempt to validate given string whose characters represent a 32 bit integer.
-     * Integer.decode() is insufficient because it will not allow incorporation of
-     * hex two's complement (i.e. 0x80...0 through 0xff...f).  Allows
-     * optional negative (-) sign but no embedded spaces.
+     * Convert the given string to a 32 bit integer, accounting for radix prefixes.
+     * Allows optional negative (-) sign, but no spaces. May be unsigned.
      *
-     * @param string candidate string
-     * @return returns int value represented by given string
-     * @throws NumberFormatException if string cannot be translated into an int
+     * @param string The string to decode.
+     * @return Integer value represented by given string.
+     * @throws NumberFormatException Thrown if string cannot be translated into an integer.
+     * @see Integer#decode(String)
      */
-    public static int stringToInt(String string) throws NumberFormatException {
-        int result;
-        // First, use Integer.decode().  This will validate most, but it flags
-        // valid hex two's complement values as exceptions.  We'll catch those and
-        // do our own validation.
+    public static int decodeInteger(String string) throws NumberFormatException {
         try {
-            result = Integer.decode(string);
+            // First, try Integer.decode(), which works for most formats, but gives up
+            // if the string represents a signed negative integer in unsigned form
+            return Integer.decode(string);
         }
-        catch (NumberFormatException nfe) {
-            // Multistep process toward validation of hex two's complement. 3-step test:
-            //   (1) exactly 10 characters long,
-            //   (2) starts with Ox or 0X,
-            //   (3) last 8 characters are valid hex digits.
-            string = string.toLowerCase();
-            if (string.length() == 10 && string.startsWith("0x")) {
-                StringBuilder bitString = new StringBuilder();
-                int index;
-                // while testing characters, build bit string to set up for binaryStringToInt
-                for (int i = 2; i < 10; i++) {
-                    index = Arrays.binarySearch(hexDigits, string.charAt(i));
-                    if (index < 0) {
-                        throw new NumberFormatException();
-                    }
-                    bitString.append(intToBinaryString(index, 4));
-                }
-                result = binaryStringToInt(bitString.toString());
+        catch (NumberFormatException exception) {
+            // Didn't decode properly, so perform further checks
+            if (string.startsWith("0x") || string.startsWith("0X")) {
+                // Try parsing it as an unsigned hexadecimal integer
+                // If that doesn't work, the NumberFormatException propagates up to the caller
+                return Integer.parseUnsignedInt(string.substring(2), 16);
             }
-            // The following "else" composed by Jose Baiocchi Paredes, Oct 2009.  This new code
-            // will correctly translate a string representing an unsigned decimal (not hex)
-            // value whose signed value is negative.  This is the decimal equivalent of the
-            // "then" case just above.  The method was not used in this context until Release 3.6
-            // when background highlighting of the Data Segment was added.  Caused exceptions
-            // under certain conditions.
-            else if (!string.startsWith("0x")) {
-                result = 0;
-                for (int i = 0; i < string.length(); i++) {
-                    char c = string.charAt(i);
-                    if ('0' <= c && c <= '9') {
-                        result *= 10;
-                        result += c - '0';
-                    }
-                    else {
-                        throw new NumberFormatException();
-                    }
-                }
-            }
-            // End of the Jose Paredes code
             else {
-                throw new NumberFormatException();
+                // Try parsing it as an unsigned decimal integer
+                // If that doesn't work, the NumberFormatException propagates up to the caller
+                return Integer.parseUnsignedInt(string, 10);
             }
         }
-        return result;
     }
 
     /**
-     * Attempt to validate given string whose characters represent a 64 bit long.
-     * Long.decode() is insufficient because it will not allow incorporation of
-     * hex two's complement (i.e. 0x80...0 through 0xff...f).  Allows
-     * optional negative (-) sign but no embedded spaces.
+     * Convert the given string to a 64 bit integer, accounting for radix prefixes.
+     * Allows optional negative (-) sign, but no spaces. May be unsigned.
      *
-     * @param string candidate string
-     * @return returns long value represented by given string
-     * @throws NumberFormatException if string cannot be translated into a long
+     * @param string The string to decode.
+     * @return Integer value represented by given string.
+     * @throws NumberFormatException Thrown if string cannot be translated into an integer.
+     * @see Long#decode(String)
      */
-    public static long stringToLong(String string) throws NumberFormatException {
-        long result;
-        // First, use Long.decode().  This will validate most, but it flags
-        // valid hex two's complement values as exceptions.  We'll catch those and
-        // do our own validation.
+    public static long decodeLong(String string) throws NumberFormatException {
         try {
-            result = Long.decode(string);
+            // First, try Long.decode(), which works for most formats, but gives up
+            // if the string represents a signed negative integer in unsigned form
+            return Long.decode(string);
         }
-        catch (NumberFormatException nfe) {
-            // Multistep process toward validation of hex two's complement. 3-step test:
-            //   (1) exactly 18 characters long,
-            //   (2) starts with Ox or 0X,
-            //   (3) last 16 characters are valid hex digits.
-            string = string.toLowerCase();
-            if (string.length() == 18 && string.startsWith("0x")) {
-                StringBuilder bitString = new StringBuilder();
-                int index;
-                // while testing characters, build bit string to set up for binaryStringToInt
-                for (int i = 2; i < 18; i++) {
-                    index = Arrays.binarySearch(hexDigits, string.charAt(i));
-                    if (index < 0) {
-                        throw new NumberFormatException();
-                    }
-                    bitString.append(intToBinaryString(index, 4));
-                }
-                result = binaryStringToLong(bitString.toString());
+        catch (NumberFormatException exception) {
+            // Didn't decode properly, so perform further checks
+            if (string.startsWith("0x") || string.startsWith("0X")) {
+                // Try parsing it as an unsigned hexadecimal integer
+                // If that doesn't work, the NumberFormatException propagates up to the caller
+                return Long.parseUnsignedLong(string.substring(2), 16);
             }
             else {
-                throw new NumberFormatException();
+                // Try parsing it as an unsigned decimal integer
+                // If that doesn't work, the NumberFormatException propagates up to the caller
+                return Long.parseUnsignedLong(string, 10);
             }
         }
-        return result;
     }
 
     /**
@@ -537,32 +400,29 @@ public class Binary {
      */
     public static boolean isHex(String string) {
         try {
-            // don't care about return value, just whether it threw exception.
+            // Don't care about return value, just whether it threw exception.
             // If value is EITHER a valid int OR a valid long, continue.
             try {
-                Binary.stringToInt(string);
+                Binary.decodeInteger(string);
             }
-            catch (NumberFormatException nfe) {
-                try {
-                    Binary.stringToLong(string);
-                }
-                catch (NumberFormatException e) {
-                    return false; // both failed; it is neither valid int nor long
-                }
+            catch (NumberFormatException exception) {
+                Binary.decodeLong(string);
             }
 
-            if ((string.charAt(0) == '-') && // sign is optional but if present can only be -
-                (string.charAt(1) == '0') && (Character.toUpperCase(string.charAt(1)) == 'X')) {
-                return true; // Form is Sign 0x.... and the entire string is parseable as a number
+            // Sign is optional but if present can only be -
+            if (string.charAt(0) == '-' && string.charAt(1) == '0' && Character.toUpperCase(string.charAt(1)) == 'X') {
+                // Form is Sign 0x HexDigits and the entire string is parseable as a number
+                return true;
             }
-            else if ((string.charAt(0) == '0') && (Character.toUpperCase(string.charAt(1)) == 'X')) {
-                return true; // Form is 0x.... and the entire string is parseable as a number
+            else if (string.charAt(0) == '0' && Character.toUpperCase(string.charAt(1)) == 'X') {
+                // Form is 0x HexDigits and the entire string is parseable as a number
+                return true;
             }
             else {
                 return false;
             }
         }
-        catch (StringIndexOutOfBoundsException e) {
+        catch (StringIndexOutOfBoundsException | NumberFormatException exception) {
             return false;
         }
     }
@@ -581,28 +441,37 @@ public class Binary {
      */
     public static boolean isOctal(String string) {
         try {
-            // We don't care what value Binary.stringToInt(v) returns, just whether it threw exception
-            Binary.stringToInt(string);
+            // Don't care about return value, just whether it threw exception.
+            // If value is EITHER a valid int OR a valid long, continue.
+            try {
+                Binary.decodeInteger(string);
+            }
+            catch (NumberFormatException exception) {
+                Binary.decodeLong(string);
+            }
 
             // Don't mistake "0" or a string that starts "0x" for an octal string
             if (isHex(string)) {
                 return false; // String starts with "0" but continues "0x", so not octal
             }
 
+            // Sign is optional but if present can only be -
+            // Has to have more digits than the leading zero
             // The condition originally had string.length() > 1, but I think 2 was the intent.
             // - Sean Clarke 03/2024
-            if (string.charAt(0) == '-' && // Sign is optional but if present can only be -
-                string.charAt(1) == '0' && string.length() > 2) // Has to have more digits than the leading zero
-            {
-                return true; // Form is Sign 0 OctalDigits
+            if (string.charAt(0) == '-' && string.charAt(1) == '0' && string.length() > 2) {
+                // Form is Sign 0 OctalDigits
+                return true;
+            }
+            else if (string.charAt(0) == '0' && string.length() > 1) {
+                // Form is 0 OctalDigits
+                return true;
             }
             else {
-                // Form is 0 OctalDigits
-                // Has to have more digits than the leading zero
-                return string.charAt(0) == '0' && string.length() > 1;
+                return false;
             }
         }
-        catch (StringIndexOutOfBoundsException | NumberFormatException e) {
+        catch (StringIndexOutOfBoundsException | NumberFormatException exception) {
             return false;
         }
     }

@@ -84,7 +84,7 @@ public class Coprocessor0 {
         for (Register register : registers) {
             if (register.getNumber() == number) {
                 int previousValue = register.setValue(value);
-                if (Application.getSettings().getBackSteppingEnabled()) {
+                if (Application.isBackSteppingEnabled()) {
                     return Application.program.getBackStepper().addCoprocessor1Restore(number, previousValue);
                 }
                 else {

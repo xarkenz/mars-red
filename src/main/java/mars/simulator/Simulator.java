@@ -471,7 +471,7 @@ public class Simulator {
                         instruction.getSimulationCode().simulate(statement);
 
                         // IF statement added 7/26/06 (explanation above)
-                        if (Application.getSettings().getBackSteppingEnabled()) {
+                        if (Application.isBackSteppingEnabled()) {
                             Application.program.getBackStepper().addDoNothing(this.programCounter);
                         }
                     }
@@ -533,7 +533,7 @@ public class Simulator {
                 }
 
                 // Update GUI and delay the next step if the program is not running at unlimited speed
-                if (Application.getGUI() != null || Application.runSpeedPanelExists) { // OR added by DPS 24 July 2008 to enable speed control by stand-alone tool
+                if (Application.getGUI() != null) {
                     if (RunSpeedPanel.getInstance().getRunSpeed() < RunSpeedPanel.UNLIMITED_SPEED) {
                         // Schedule a GUI update
                         this.simulator.dispatchStepEvent();

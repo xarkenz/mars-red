@@ -37,7 +37,7 @@ public class Token {
     /**
      * Comment 1 token id. This can be used to mark a comment.
      */
-    public static final byte COMMENT1 = 1;
+    public static final byte COMMENT = 1;
 
     /**
      * Comment 2 token id. This can be used to mark a comment.
@@ -48,13 +48,13 @@ public class Token {
      * Literal 1 token id. This can be used to mark a string
      * literal (eg, C mode uses this to mark "..." literals)
      */
-    public static final byte LITERAL1 = 3;
+    public static final byte STRING_LITERAL = 3;
 
     /**
      * Literal 2 token id. This can be used to mark an object
      * literal (eg, Java mode uses this to mark true, false, etc)
      */
-    public static final byte LITERAL2 = 4;
+    public static final byte CHAR_LITERAL = 4;
 
     /**
      * Label token id. This can be used to mark labels
@@ -67,20 +67,20 @@ public class Token {
      * keyword. This should be used for general language
      * constructs.
      */
-    public static final byte KEYWORD1 = 6;
+    public static final byte INSTRUCTION = 6;
 
     /**
      * Keyword 2 token id. This can be used to mark a
      * keyword. This should be used for preprocessor
      * commands, or variables.
      */
-    public static final byte KEYWORD2 = 7;
+    public static final byte DIRECTIVE = 7;
 
     /**
      * Keyword 3 token id. This can be used to mark a
      * keyword. This should be used for data types.
      */
-    public static final byte KEYWORD3 = 8;
+    public static final byte REGISTER = 8;
 
     /**
      * Operator token id. This can be used to mark an
@@ -99,7 +99,7 @@ public class Token {
     /**
      * Macro parameter token.  Added for MARS 4.3.
      */
-    public static final byte MACRO_ARG = 11;
+    public static final byte MACRO_ARGUMENT = 11;
 
     /**
      * The total number of defined token ids.

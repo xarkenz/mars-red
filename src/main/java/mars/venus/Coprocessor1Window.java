@@ -93,8 +93,8 @@ public class Coprocessor1Window extends RegistersDisplayTab {
     /**
      * Constructor which sets up a fresh window with a table that contains the register values.
      */
-    public Coprocessor1Window() {
-        super();
+    public Coprocessor1Window(VenusUI gui) {
+        super(gui);
         // Display registers in table contained in scroll pane.
         this.setLayout(new BorderLayout()); // table display will occupy entire width if widened
         table = new RegistersTable(new RegisterTableModel(setupWindow()), HEADER_TIPS, REGISTER_TIPS);
@@ -152,7 +152,7 @@ public class Coprocessor1Window extends RegistersDisplayTab {
                 try {
                     longValue = Coprocessor1.getLongFromRegisterPair(register.getName());
                 }
-                catch (InvalidRegisterAccessException e) {
+                catch (InvalidRegisterAccessException exception) {
                     // Cannot happen since row must be even
                 }
                 tableData[register.getNumber()][2] = NumberDisplayBaseChooser.formatDoubleNumber(longValue, NumberDisplayBaseChooser.getBase(Application.getSettings().displayValuesInHex.get()));
@@ -170,7 +170,7 @@ public class Coprocessor1Window extends RegistersDisplayTab {
     public void clearWindow() {
         clearHighlighting();
         Coprocessor1.resetRegisters();
-        updateRegisters(Application.getGUI().getMainPane().getExecuteTab().getValueDisplayBase());
+        updateRegisters(gui.getMainPane().getExecuteTab().getValueDisplayBase());
         Coprocessor1.clearConditionFlags();
         updateConditionFlagDisplay();
     }
@@ -245,7 +245,7 @@ public class Coprocessor1Window extends RegistersDisplayTab {
         Coprocessor1.deleteRegistersObserver(this);
     }
 
-    private static class RegisterTableModel extends AbstractTableModel {
+    private class RegisterTableModel extends AbstractTableModel {
         private static final String[] COLUMN_NAMES = {"Name", "Single", "Double"};
 
         private final Object[][] data;
@@ -299,63 +299,64 @@ public class Coprocessor1Window extends RegistersDisplayTab {
          */
         @Override
         public void setValueAt(Object value, int row, int col) {
-            int valueBase = Application.getGUI().getMainPane().getExecuteTab().getValueDisplayBase();
+            int valueBase = gui.getMainPane().getExecuteTab().getValueDisplayBase();
             String stringValue = value.toString();
             try {
                 if (col == FLOAT_COLUMN) {
                     if (Binary.isHex(stringValue)) {
                         // Avoid using Float.intBitsToFloat() b/c it may not preserve NaN value.
-                        int intValue = Binary.stringToInt(stringValue);
-                        //  Assures that if changed during MIPS program execution, the update will
-                        //  occur only between MIPS instructions.
+                        int intValue = Binary.decodeInteger(stringValue);
+                        // Assures that if changed during MIPS program execution, the update will
+                        // occur only between MIPS instructions.
                         synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
                             Coprocessor1.updateRegister(row, intValue);
                         }
                         data[row][col] = NumberDisplayBaseChooser.formatFloatNumber(intValue, valueBase);
                     }
                     else {
+                        // Is not hex, so must be decimal
                         float floatValue = Float.parseFloat(stringValue);
-                        //  Assures that if changed during MIPS program execution, the update will
-                        //  occur only between MIPS instructions.
+                        // Assures that if changed during MIPS program execution, the update will
+                        // occur only between MIPS instructions.
                         synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
                             Coprocessor1.setRegisterToFloat(row, floatValue);
                         }
                         data[row][col] = NumberDisplayBaseChooser.formatNumber(floatValue, valueBase);
                     }
-                    // have to update corresponding double display
-                    int dReg = row - (row % 2);
-                    setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatDoubleNumber(Coprocessor1.getLongFromRegisterPair(dReg), valueBase), dReg, DOUBLE_COLUMN);
+                    // Update corresponding double display
+                    int register = row - (row % 2);
+                    setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatDoubleNumber(Coprocessor1.getLongFromRegisterPair(register), valueBase), register, DOUBLE_COLUMN);
                 }
                 else if (col == DOUBLE_COLUMN) {
                     if (Binary.isHex(stringValue)) {
-                        long longValue = Binary.stringToLong(stringValue);
-                        //  Assures that if changed during MIPS program execution, the update will
-                        //  occur only between MIPS instructions.
+                        long longValue = Binary.decodeLong(stringValue);
+                        // Assures that if changed during MIPS program execution, the update will
+                        // occur only between MIPS instructions.
                         synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
                             Coprocessor1.setRegisterPairToLong(row, longValue);
                         }
                         setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatDoubleNumber(longValue, valueBase), row, col);
                     }
                     else {
-                        // is not hex, so must be decimal
+                        // Is not hex, so must be decimal
                         double doubleValue = Double.parseDouble(stringValue);
-                        //  Assures that if changed during MIPS program execution, the update will
-                        //  occur only between MIPS instructions.
+                        // Assures that if changed during MIPS program execution, the update will
+                        // occur only between MIPS instructions.
                         synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
                             Coprocessor1.setRegisterPairToDouble(row, doubleValue);
                         }
                         setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(doubleValue, valueBase), row, col);
                     }
-                    // have to update corresponding float display
+                    // Update corresponding float display
                     setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(Coprocessor1.getValue(row), valueBase), row, FLOAT_COLUMN);
                     setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(Coprocessor1.getValue(row + 1), valueBase), row + 1, FLOAT_COLUMN);
                 }
             }
-            catch (NumberFormatException nfe) {
+            catch (NumberFormatException exception) {
                 data[row][col] = "INVALID";
                 fireTableCellUpdated(row, col);
             }
-            catch (InvalidRegisterAccessException e) {
+            catch (InvalidRegisterAccessException exception) {
                 // Should not occur; code below will re-display original value
                 fireTableCellUpdated(row, col);
             }
@@ -364,7 +365,7 @@ public class Coprocessor1Window extends RegistersDisplayTab {
         /**
          * Update cell contents in table model.  Does not affect MIPS register.
          */
-        private void setDisplayAndModelValueAt(Object value, int row, int col) {
+        public void setDisplayAndModelValueAt(Object value, int row, int col) {
             data[row][col] = value;
             fireTableCellUpdated(row, col);
         }

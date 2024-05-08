@@ -46,9 +46,9 @@ public class BooleanSetting {
      */
     public void set(boolean value) {
         if (value != this.value) {
-            // Value has changed, write it to persistent storage
-            settings.saveBooleanSetting(this.key, value, this.notifies);
             this.value = value;
+            // Value has changed, write it to persistent storage
+            this.settings.saveBooleanSetting(this.key, this.value, this.notifies);
         }
     }
 
@@ -71,8 +71,7 @@ public class BooleanSetting {
     }
 
     /**
-     * Temporarily set the value of this setting. The new value will NOT be written to persistent
-     * storage. Currently, this is used only when running MARS from the command line.
+     * Set the value of this setting without updating persistent storage.
      *
      * @param value The new boolean value for this setting.
      */

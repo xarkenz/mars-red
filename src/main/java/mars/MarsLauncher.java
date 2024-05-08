@@ -190,7 +190,7 @@ public class MarsLauncher {
         SwingUtilities.invokeLater(() -> {
             Application.setupLookAndFeel();
             // Initialize the GUI
-            new VenusUI(Application.NAME + " " + Application.VERSION);
+            new VenusUI(Application.getSettings(), Application.NAME + " " + Application.VERSION);
         });
     }
 
@@ -210,8 +210,8 @@ public class MarsLauncher {
                 try {
                     String[] memoryRange = checkMemoryAddressRange(triple[0]);
                     segmentInfo = new Integer[2];
-                    segmentInfo[0] = Binary.stringToInt(memoryRange[0]); // Low end of range
-                    segmentInfo[1] = Binary.stringToInt(memoryRange[1]); // High end of range
+                    segmentInfo[0] = Binary.decodeInteger(memoryRange[0]); // Low end of range
+                    segmentInfo[1] = Binary.decodeInteger(memoryRange[1]); // High end of range
                 }
                 catch (NumberFormatException | NullPointerException exception) {
                     segmentInfo = null;
@@ -543,7 +543,7 @@ public class MarsLauncher {
             memoryRange[1] = arg.substring(arg.indexOf(RANGE_SEPARATOR) + 1);
             // NOTE: I will use homegrown decoder, because Integer.decode will throw
             // exception on address higher than 0x7FFFFFFF (e.g. sign bit is 1).
-            if (Binary.stringToInt(memoryRange[0]) > Binary.stringToInt(memoryRange[1]) || !Memory.wordAligned(Binary.stringToInt(memoryRange[0])) || !Memory.wordAligned(Binary.stringToInt(memoryRange[1]))) {
+            if (Binary.decodeInteger(memoryRange[0]) > Binary.decodeInteger(memoryRange[1]) || !Memory.wordAligned(Binary.decodeInteger(memoryRange[0])) || !Memory.wordAligned(Binary.decodeInteger(memoryRange[1]))) {
                 throw new NumberFormatException();
             }
         }
@@ -614,26 +614,29 @@ public class MarsLauncher {
             }
             else {
                 // floating point register
-                float fvalue = Coprocessor1.getFloatFromRegister(regName);
-                int ivalue = Coprocessor1.getIntFromRegister(regName);
-                double dvalue = Double.NaN;
-                long lvalue = 0;
-                boolean hasDouble = false;
+                float floatValue = Coprocessor1.getFloatFromRegister(regName);
+                int intValue = Coprocessor1.getIntFromRegister(regName);
+                double doubleValue;
+                long longValue;
+                boolean hasDouble;
                 try {
-                    dvalue = Coprocessor1.getDoubleFromRegisterPair(regName);
-                    lvalue = Coprocessor1.getLongFromRegisterPair(regName);
+                    doubleValue = Coprocessor1.getDoubleFromRegisterPair(regName);
+                    longValue = Coprocessor1.getLongFromRegisterPair(regName);
                     hasDouble = true;
                 }
                 catch (InvalidRegisterAccessException ignored) {
+                    doubleValue = Double.NaN;
+                    longValue = 0;
+                    hasDouble = false;
                 }
                 if (verbose) {
                     out.print(regName + "\t");
                 }
                 if (displayFormat == HEXADECIMAL) {
                     // display float (and double, if applicable) in hex
-                    out.print(Binary.binaryStringToHexString(Binary.intToBinaryString(ivalue)));
+                    out.print(Binary.intToHexString(intValue));
                     if (hasDouble) {
-                        out.println("\t" + Binary.binaryStringToHexString(Binary.longToBinaryString(lvalue)));
+                        out.println("\t" + Binary.longToHexString(longValue));
                     }
                     else {
                         out.println();
@@ -641,18 +644,18 @@ public class MarsLauncher {
                 }
                 else if (displayFormat == DECIMAL) {
                     // display float (and double, if applicable) in decimal
-                    out.print(fvalue);
+                    out.print(floatValue);
                     if (hasDouble) {
-                        out.println("\t" + dvalue);
+                        out.println("\t" + doubleValue);
                     }
                     else {
                         out.println();
                     }
                 }
                 else { // displayFormat == ASCII
-                    out.print(Binary.intToAscii(ivalue));
+                    out.print(Binary.intToAscii(intValue));
                     if (hasDouble) {
-                        out.println("\t" + Binary.intToAscii(Binary.highOrderLongToInt(lvalue)) + Binary.intToAscii(Binary.lowOrderLongToInt(lvalue)));
+                        out.println("\t" + Binary.intToAscii(Binary.highOrderLongToInt(longValue)) + Binary.intToAscii(Binary.lowOrderLongToInt(longValue)));
                     }
                     else {
                         out.println();
@@ -684,8 +687,8 @@ public class MarsLauncher {
         int addressStart = 0, addressEnd = 0;
         while (memIter.hasNext()) {
             try { // This will succeed; error would have been caught during command arg parse
-                addressStart = Binary.stringToInt(memIter.next());
-                addressEnd = Binary.stringToInt(memIter.next());
+                addressStart = Binary.decodeInteger(memIter.next());
+                addressEnd = Binary.decodeInteger(memIter.next());
             }
             catch (NumberFormatException ignored) {
             }

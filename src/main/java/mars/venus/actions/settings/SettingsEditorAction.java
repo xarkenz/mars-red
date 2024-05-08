@@ -1,6 +1,5 @@
 package mars.venus.actions.settings;
 
-import mars.Application;
 import mars.venus.*;
 import mars.venus.actions.VenusAction;
 import mars.venus.editor.Editor;
@@ -60,7 +59,7 @@ public class SettingsEditorAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        JDialog editorDialog = new EditorFontDialog(gui, "Text Editor Settings", true, Application.getSettings().getEditorFont());
+        JDialog editorDialog = new EditorFontDialog(this.gui, "Text Editor Settings", true);
         editorDialog.setVisible(true);
     }
 
@@ -115,8 +114,8 @@ public class SettingsEditorAction extends VenusAction {
         private boolean initialAutoIndent;
         private boolean initialShowLineNumbers;
 
-        public EditorFontDialog(Frame owner, String title, boolean modality, Font font) {
-            super(owner, title, modality, font);
+        public EditorFontDialog(VenusUI gui, String title, boolean modality) {
+            super(gui, title, modality, gui.getSettings().editorFont.get());
         }
 
         // Build the main dialog here
@@ -173,31 +172,35 @@ public class SettingsEditorAction extends VenusAction {
         // User has clicked "Apply" or "OK" button.
         @Override
         protected void apply(Font font) {
-            Application.getSettings().editorTabSize.set(tabSizeSelector.getValue());
-            Application.getSettings().caretBlinkRate.set((Integer) blinkRateSpinSelector.getValue());
-            Application.getSettings().autoIndentEnabled.set(autoIndentCheckBox.isSelected());
-            Application.getSettings().highlightCurrentEditorLine.set(lineHighlightCheckBox.isSelected());
-            Application.getSettings().displayEditorLineNumbers.set(showLineNumbersCheckBox.isSelected());
+            this.gui.getSettings().editorTabSize.set(tabSizeSelector.getValue());
+            this.gui.getSettings().caretBlinkRate.set((Integer) blinkRateSpinSelector.getValue());
+            this.gui.getSettings().autoIndentEnabled.set(autoIndentCheckBox.isSelected());
+            this.gui.getSettings().highlightCurrentEditorLine.set(lineHighlightCheckBox.isSelected());
+            this.gui.getSettings().displayEditorLineNumbers.set(showLineNumbersCheckBox.isSelected());
 
             if (syntaxStylesHaveChanged) {
                 for (int row = 0; row < syntaxStyleIndices.length; row++) {
-                    Application.getSettings().setEditorSyntaxStyleByPosition(
-                        syntaxStyleIndices[row],
-                        new SyntaxStyle(syntaxSamples[row].getForeground(), useItalic[row].isSelected(), useBold[row].isSelected())
-                    );
+                    this.gui.getSettings().setSyntaxStyle(syntaxStyleIndices[row], new SyntaxStyle(
+                        syntaxSamples[row].getForeground(),
+                        useItalic[row].isSelected(),
+                        useBold[row].isSelected()
+                    ));
                 }
                 syntaxStylesHaveChanged = false;
             }
 
-            Application.getSettings().setEditorFont(font);
+            this.gui.getSettings().editorFont.set(font);
 
             for (int item = 0; item < instructionGuidanceOptions.length; item++) {
                 if (instructionGuidanceOptions[item].isSelected()) {
-                    Application.getSettings().editorPopupPrefixLength.set(item);
-                    Application.getSettings().popupInstructionGuidance.set(item > 0);
+                    this.gui.getSettings().editorPopupPrefixLength.set(item);
+                    this.gui.getSettings().popupInstructionGuidance.set(item > 0);
                     break;
                 }
             }
+
+            // Update the interface according to the new settings
+            this.gui.getSettings().dispatchChangedEvent();
         }
 
         // User has clicked the "Revert" button.  Put everything back to initial state.
@@ -225,7 +228,7 @@ public class SettingsEditorAction extends VenusAction {
         private JPanel buildOtherSettingsPanel() {
             JPanel otherSettingsPanel = new JPanel();
 
-            initialEditorTabSize = Application.getSettings().editorTabSize.get();
+            initialEditorTabSize = this.gui.getSettings().editorTabSize.get();
             tabSizeSelector = new JSlider(Editor.MIN_TAB_SIZE, Editor.MAX_TAB_SIZE, initialEditorTabSize);
             tabSizeSelector.setToolTipText("Use slider to select tab size in spaces from " + Editor.MIN_TAB_SIZE + " to " + Editor.MAX_TAB_SIZE + ".");
             tabSizeSelector.addChangeListener(event -> tabSizeSpinSelector.setValue(tabSizeSelector.getValue()));
@@ -239,7 +242,7 @@ public class SettingsEditorAction extends VenusAction {
             tabPanel.add(tabSizeSelector);
             tabPanel.add(tabSizeSpinSelector);
 
-            initialCaretBlinkRate = Application.getSettings().caretBlinkRate.get();
+            initialCaretBlinkRate = this.gui.getSettings().caretBlinkRate.get();
             blinkSample = new JTextField();
             blinkSample.setCaretPosition(0);
             blinkSample.setToolTipText(CARET_SAMPLE_TIP);
@@ -261,17 +264,17 @@ public class SettingsEditorAction extends VenusAction {
             blinkPanel.add(blinkRateSpinSelector);
             blinkPanel.add(blinkSample);
 
-            initialAutoIndent = Application.getSettings().autoIndentEnabled.get();
+            initialAutoIndent = this.gui.getSettings().autoIndentEnabled.get();
             autoIndentCheckBox = new JCheckBox("Enable automatic indentation");
             autoIndentCheckBox.setSelected(initialAutoIndent);
             autoIndentCheckBox.setToolTipText(AUTO_INDENT_TIP);
 
-            initialLineHighlighting = Application.getSettings().highlightCurrentEditorLine.get();
+            initialLineHighlighting = this.gui.getSettings().highlightCurrentEditorLine.get();
             lineHighlightCheckBox = new JCheckBox("Highlight the line currently being edited");
             lineHighlightCheckBox.setSelected(initialLineHighlighting);
             lineHighlightCheckBox.setToolTipText(HIGHLIGHT_CURRENT_LINE_TIP);
 
-            initialShowLineNumbers = Application.getSettings().displayEditorLineNumbers.get();
+            initialShowLineNumbers = this.gui.getSettings().displayEditorLineNumbers.get();
             showLineNumbersCheckBox = new JCheckBox("Show line numbers");
             showLineNumbersCheckBox.setSelected(initialShowLineNumbers);
             showLineNumbersCheckBox.setToolTipText(SHOW_LINE_NUMBERS_TIP);
@@ -295,7 +298,7 @@ public class SettingsEditorAction extends VenusAction {
                 popupGuidanceButtons.add(instructionGuidanceOptions[index]);
                 rightColumnSettingsPanel.add(instructionGuidanceOptions[index]);
             }
-            initialInstructionGuidance = Application.getSettings().popupInstructionGuidance.get() ? Application.getSettings().editorPopupPrefixLength.get() : 0;
+            initialInstructionGuidance = this.gui.getSettings().popupInstructionGuidance.get() ? this.gui.getSettings().editorPopupPrefixLength.get() : 0;
             instructionGuidanceOptions[initialInstructionGuidance].setSelected(true);
 
             otherSettingsPanel.add(leftColumnSettingsPanel);
@@ -307,7 +310,7 @@ public class SettingsEditorAction extends VenusAction {
         private JPanel buildSyntaxStylePanel() {
             JPanel syntaxStylePanel = new JPanel();
             defaultStyles = SyntaxUtilities.getDefaultSyntaxStyles();
-            initialStyles = SyntaxUtilities.getCurrentSyntaxStyles(Application.getSettings());
+            initialStyles = SyntaxUtilities.getCurrentSyntaxStyles(this.gui.getSettings());
             String[] descriptions = MIPSTokenMarker.getTokenDescriptions();
             String[] examples = MIPSTokenMarker.getTokenExamples();
             syntaxStylesHaveChanged = false;
@@ -330,7 +333,7 @@ public class SettingsEditorAction extends VenusAction {
             useItalic = new JToggleButton[count];
             useDefault = new JCheckBox[count];
             Font genericFont = new JLabel().getFont();
-            previewFont = new Font(Application.getSettings().getEditorFont().getName(), Font.PLAIN, genericFont.getSize());
+            previewFont = this.gui.getSettings().editorFont.get().deriveFont(Font.PLAIN, genericFont.getSize());
             Font boldFont = new Font(Font.SERIF, Font.BOLD, genericFont.getSize());
             Font italicFont = new Font(Font.SERIF, Font.ITALIC, genericFont.getSize());
             // Set all the fixed features.  Changeable features set/reset in initializeSyntaxStyleChangeables

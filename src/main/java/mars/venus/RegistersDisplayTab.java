@@ -1,6 +1,5 @@
 package mars.venus;
 
-import mars.Application;
 import mars.mips.hardware.AccessNotice;
 import mars.mips.hardware.Register;
 import mars.mips.hardware.RegisterAccessNotice;
@@ -12,7 +11,11 @@ import java.util.Observable;
 import java.util.Observer;
 
 public abstract class RegistersDisplayTab extends JPanel implements SimulatorListener, Observer {
-    public RegistersDisplayTab() {
+    protected final VenusUI gui;
+
+    public RegistersDisplayTab(VenusUI gui) {
+        this.gui = gui;
+
         Simulator.getInstance().addGUIListener(this);
     }
 
@@ -40,7 +43,7 @@ public abstract class RegistersDisplayTab extends JPanel implements SimulatorLis
      * Update register display using current number base (10 or 16).
      */
     public void updateRegisters() {
-        this.updateRegisters(Application.getGUI().getMainPane().getExecuteTab().getValueDisplayBase());
+        this.updateRegisters(gui.getMainPane().getExecuteTab().getValueDisplayBase());
     }
 
     /**
@@ -103,7 +106,7 @@ public abstract class RegistersDisplayTab extends JPanel implements SimulatorLis
                 if (RunSpeedPanel.getInstance().getRunSpeed() != RunSpeedPanel.UNLIMITED_SPEED) {
                     this.getTable().setUpdating(true);
                     this.highlightRegister((Register) observable);
-                    Application.getGUI().getRegistersPane().setSelectedComponent(this);
+                    gui.getRegistersPane().setSelectedComponent(this);
                 }
                 else {
                     this.getTable().setUpdating(false);

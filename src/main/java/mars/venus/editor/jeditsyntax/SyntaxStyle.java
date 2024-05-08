@@ -58,7 +58,7 @@ public class SyntaxStyle {
      * @return String containing hex-coded color value.
      */
     public String getColorAsHexString() {
-        return Binary.intToHexString(color.getRed() << 16 | color.getGreen() << 8 | color.getBlue());
+        return Binary.intToHexString(color.getRGB() & 0xFFFFFF);
     }
 
     /**

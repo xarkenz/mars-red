@@ -1,7 +1,5 @@
 package mars.venus.execute;
 
-import mars.Application;
-
 import javax.swing.*;
 import java.awt.*;
 	
@@ -47,7 +45,7 @@ public class RunSpeedPanel extends JPanel {
      * will not attempt to update register and memory contents as each instruction
      * is executed.  This is the only possible value for command-line use of Mars.
      */
-    public static final double UNLIMITED_SPEED = 1000;
+    public static final double UNLIMITED_SPEED = Double.POSITIVE_INFINITY;
 
     private static final int SPEED_INDEX_MIN = 0;
     private static final int SPEED_INDEX_MAX = 40;
@@ -71,11 +69,10 @@ public class RunSpeedPanel extends JPanel {
      * @return The run speed panel.
      */
     public static RunSpeedPanel getInstance() {
-        if (instance == null) {
-            instance = new RunSpeedPanel();
-            Application.runSpeedPanelExists = true; // DPS 24 July 2008 (needed for standalone tools)
+        if (RunSpeedPanel.instance == null) {
+            RunSpeedPanel.instance = new RunSpeedPanel();
         }
-        return instance;
+        return RunSpeedPanel.instance;
     }
 
     /**
@@ -88,7 +85,7 @@ public class RunSpeedPanel extends JPanel {
             + ((int) RUN_SPEED_TABLE[SPEED_INDEX_INTERACTION_LIMIT])
             + " instructions per second or less, the interface is updated after each instruction.");
 
-        final JLabel sliderLabel = new JLabel(getLabelForIndex(runSpeedIndex));
+        final JLabel sliderLabel = new JLabel(getLabelForIndex(this.runSpeedIndex));
         sliderLabel.setHorizontalAlignment(JLabel.CENTER);
         sliderLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         this.add(sliderLabel, BorderLayout.NORTH);
@@ -100,13 +97,13 @@ public class RunSpeedPanel extends JPanel {
             // Revise label as user slides and update current index when sliding stops
             JSlider source = (JSlider) event.getSource();
             if (!source.getValueIsAdjusting()) {
-                runSpeedIndex = source.getValue();
+                this.runSpeedIndex = source.getValue();
             }
             else {
                 sliderLabel.setText(getLabelForIndex(source.getValue()));
             }
         });
-        this.add(runSpeedSlider, BorderLayout.SOUTH);
+        this.add(runSpeedSlider, BorderLayout.CENTER);
     }
 
     /**
@@ -116,13 +113,13 @@ public class RunSpeedPanel extends JPanel {
      * @return Run speed setting in instructions/second.
      */
     public double getRunSpeed() {
-        return RUN_SPEED_TABLE[runSpeedIndex];
+        return RUN_SPEED_TABLE[this.runSpeedIndex];
     }
 
     /**
      * Set label wording depending on current speed setting.
      */
-    private String getLabelForIndex(int index) {
+    private static String getLabelForIndex(int index) {
         StringBuilder result = new StringBuilder("Run speed: ");
         if (index <= SPEED_INDEX_INTERACTION_LIMIT) {
             if (RUN_SPEED_TABLE[index] < 1) {

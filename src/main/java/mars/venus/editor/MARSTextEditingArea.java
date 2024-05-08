@@ -122,7 +122,7 @@ public interface MARSTextEditingArea {
 
     void setTabSize(int chars);
 
-    void updateSyntaxStyles(Settings settings);
+    void updateSyntaxStyles();
 
     Component getOuterComponent();
 }

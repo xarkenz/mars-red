@@ -1,5 +1,8 @@
 package mars.venus;
 
+import mars.simulator.SimulatorFinishEvent;
+import mars.simulator.SimulatorListener;
+
 import javax.swing.*;
 
 /*
@@ -33,11 +36,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * Contains tabbed areas in the UI to display register contents.
  *
- * @author Sanderson
- * @version August 2005
+ * @author Pete Sanderson, August 2005
  */
-public class RegistersPane extends JTabbedPane {
-    private final VenusUI gui;
+public class RegistersPane extends JTabbedPane implements SimulatorListener {
     private final RegistersWindow registersTab;
     private final Coprocessor1Window coprocessor1Tab;
     private final Coprocessor0Window coprocessor0Tab;
@@ -47,16 +48,15 @@ public class RegistersPane extends JTabbedPane {
      */
     public RegistersPane(VenusUI gui) {
         super();
-        this.gui = gui;
-        this.registersTab = new RegistersWindow();
-        this.coprocessor1Tab = new Coprocessor1Window();
-        this.coprocessor0Tab = new Coprocessor0Window();
-        registersTab.setVisible(true);
-        coprocessor1Tab.setVisible(true);
-        coprocessor0Tab.setVisible(true);
-        this.addTab("Registers", null, registersTab, "General-purpose registers");
-        this.addTab("Coprocessor 1", null, coprocessor1Tab, "CP1: floating-point unit (FPU)");
-        this.addTab("Coprocessor 0", null, coprocessor0Tab, "CP0: System Control Coprocessor (used for exceptions and interrupts)");
+        this.registersTab = new RegistersWindow(gui);
+        this.coprocessor1Tab = new Coprocessor1Window(gui);
+        this.coprocessor0Tab = new Coprocessor0Window(gui);
+        this.registersTab.setVisible(true);
+        this.coprocessor1Tab.setVisible(true);
+        this.coprocessor0Tab.setVisible(true);
+        this.addTab("Registers", null, this.registersTab, "Built-in CPU registers");
+        this.addTab("Coprocessor 1", null, this.coprocessor1Tab, "CP1: floating-point unit (FPU)");
+        this.addTab("Coprocessor 0", null, this.coprocessor0Tab, "CP0: System Control Coprocessor (used for exceptions and interrupts)");
     }
 
     /**
@@ -65,24 +65,31 @@ public class RegistersPane extends JTabbedPane {
      * @return integer register window
      */
     public RegistersWindow getRegistersWindow() {
-        return registersTab;
+        return this.registersTab;
     }
 
     /**
-     * Return component containing coprocessor 1 (floating point) register set.
+     * Return component containing Coprocessor 1 (floating point) register set.
      *
      * @return floating point register window
      */
     public Coprocessor1Window getCoprocessor1Window() {
-        return coprocessor1Tab;
+        return this.coprocessor1Tab;
     }
 
     /**
-     * Return component containing coprocessor 0 (exceptions) register set.
+     * Return component containing Coprocessor 0 (exceptions) register set.
      *
      * @return exceptions register window
      */
     public Coprocessor0Window getCoprocessor0Window() {
-        return coprocessor0Tab;
+        return this.coprocessor0Tab;
+    }
+
+    @Override
+    public void simulatorFinished(SimulatorFinishEvent event) {
+        if (event.reason() == SimulatorFinishEvent.Reason.EXCEPTION) {
+            this.setSelectedComponent(this.coprocessor0Tab);
+        }
     }
 }

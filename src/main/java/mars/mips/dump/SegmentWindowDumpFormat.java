@@ -92,7 +92,7 @@ public class SegmentWindowDumpFormat extends AbstractDumpFormat {
             try {
                 for (int address = firstAddress; address <= lastAddress; address += Memory.WORD_LENGTH_BYTES) {
                     if (offset % 8 == 0) {
-                        string = new StringBuilder(((hexAddresses) ? Binary.intToHexString(address) : Binary.unsignedIntToIntString(address)) + "    ");
+                        string = new StringBuilder(((hexAddresses) ? Binary.intToHexString(address) : Integer.toUnsignedString(address)) + "    ");
                     }
                     offset++;
                     Integer wordOrNull = Application.memory.getRawWordOrNull(address);
@@ -123,7 +123,7 @@ public class SegmentWindowDumpFormat extends AbstractDumpFormat {
         out.println();
         try {
             for (int address = firstAddress; address <= lastAddress; address += Memory.WORD_LENGTH_BYTES) {
-                String string = ((hexAddresses) ? Binary.intToHexString(address) : Binary.unsignedIntToIntString(address)) + "  ";
+                String string = ((hexAddresses) ? Binary.intToHexString(address) : Integer.toUnsignedString(address)) + "  ";
                 Integer temp = Application.memory.getRawWordOrNull(address);
                 if (temp == null) {
                     break;

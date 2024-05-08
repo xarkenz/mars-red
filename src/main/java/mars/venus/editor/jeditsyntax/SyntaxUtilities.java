@@ -97,18 +97,18 @@ public class SyntaxUtilities {
         SyntaxStyle[] styles = new SyntaxStyle[Token.ID_COUNT];
 
         // All need to be assigned even if not used by language (no gaps in array)
-        styles[Token.NULL] = new SyntaxStyle(Objects.requireNonNullElse(UIManager.getColor("Venus.Editor.foreground"), Color.black), false, false);
-        styles[Token.COMMENT1] = new SyntaxStyle(new Color(0x666666), false, false);
+        styles[Token.NULL] = new SyntaxStyle(Objects.requireNonNullElse(UIManager.getColor("Venus.Editor.foreground"), Color.BLACK), false, false);
+        styles[Token.COMMENT] = new SyntaxStyle(new Color(0x666666), false, false);
         styles[Token.COMMENT2] = new SyntaxStyle(new Color(0x666666), false, false);
-        styles[Token.KEYWORD1] = new SyntaxStyle(new Color(0xF27541), false, false);
-        styles[Token.KEYWORD2] = new SyntaxStyle(new Color(0x5A81FD), false, false);
-        styles[Token.KEYWORD3] = new SyntaxStyle(new Color(0xE9AA4B), false, false);
-        styles[Token.LITERAL1] = new SyntaxStyle(new Color(0x3C9862), false, false);
-        styles[Token.LITERAL2] = new SyntaxStyle(new Color(0x3C9862), false, false);
+        styles[Token.INSTRUCTION] = new SyntaxStyle(new Color(0xF27541), false, false);
+        styles[Token.DIRECTIVE] = new SyntaxStyle(new Color(0x5A81FD), false, false);
+        styles[Token.REGISTER] = new SyntaxStyle(new Color(0xE9AA4B), false, false);
+        styles[Token.STRING_LITERAL] = new SyntaxStyle(new Color(0x3C9862), false, false);
+        styles[Token.CHAR_LITERAL] = new SyntaxStyle(new Color(0x3C9862), false, false);
         styles[Token.LABEL] = new SyntaxStyle(new Color(0x2DB7AE), false, true);
         styles[Token.OPERATOR] = new SyntaxStyle(Color.black, false, true);
         styles[Token.INVALID] = new SyntaxStyle(new Color(0xFF3F3F), false, false);
-        styles[Token.MACRO_ARG] = new SyntaxStyle(new Color(0xDE8ACA), false, false);
+        styles[Token.MACRO_ARGUMENT] = new SyntaxStyle(new Color(0xDE8ACA), false, false);
 
         return styles;
     }
@@ -123,18 +123,18 @@ public class SyntaxUtilities {
     public static SyntaxStyle[] getCurrentSyntaxStyles(Settings settings) {
         SyntaxStyle[] styles = new SyntaxStyle[Token.ID_COUNT];
 
-        styles[Token.NULL] = settings.getEditorSyntaxStyleByPosition(Token.NULL);
-        styles[Token.COMMENT1] = settings.getEditorSyntaxStyleByPosition(Token.COMMENT1);
-        styles[Token.COMMENT2] = settings.getEditorSyntaxStyleByPosition(Token.COMMENT2);
-        styles[Token.KEYWORD1] = settings.getEditorSyntaxStyleByPosition(Token.KEYWORD1);
-        styles[Token.KEYWORD2] = settings.getEditorSyntaxStyleByPosition(Token.KEYWORD2);
-        styles[Token.KEYWORD3] = settings.getEditorSyntaxStyleByPosition(Token.KEYWORD3);
-        styles[Token.LITERAL1] = settings.getEditorSyntaxStyleByPosition(Token.LITERAL1);
-        styles[Token.LITERAL2] = settings.getEditorSyntaxStyleByPosition(Token.LITERAL2);
-        styles[Token.LABEL] = settings.getEditorSyntaxStyleByPosition(Token.LABEL);
-        styles[Token.OPERATOR] = settings.getEditorSyntaxStyleByPosition(Token.OPERATOR);
-        styles[Token.INVALID] = settings.getEditorSyntaxStyleByPosition(Token.INVALID);
-        styles[Token.MACRO_ARG] = settings.getEditorSyntaxStyleByPosition(Token.MACRO_ARG);
+        styles[Token.NULL] = settings.getSyntaxStyle(Token.NULL);
+        styles[Token.COMMENT] = settings.getSyntaxStyle(Token.COMMENT);
+        styles[Token.COMMENT2] = settings.getSyntaxStyle(Token.COMMENT2);
+        styles[Token.INSTRUCTION] = settings.getSyntaxStyle(Token.INSTRUCTION);
+        styles[Token.DIRECTIVE] = settings.getSyntaxStyle(Token.DIRECTIVE);
+        styles[Token.REGISTER] = settings.getSyntaxStyle(Token.REGISTER);
+        styles[Token.STRING_LITERAL] = settings.getSyntaxStyle(Token.STRING_LITERAL);
+        styles[Token.CHAR_LITERAL] = settings.getSyntaxStyle(Token.CHAR_LITERAL);
+        styles[Token.LABEL] = settings.getSyntaxStyle(Token.LABEL);
+        styles[Token.OPERATOR] = settings.getSyntaxStyle(Token.OPERATOR);
+        styles[Token.INVALID] = settings.getSyntaxStyle(Token.INVALID);
+        styles[Token.MACRO_ARGUMENT] = settings.getSyntaxStyle(Token.MACRO_ARGUMENT);
 
         return styles;
     }

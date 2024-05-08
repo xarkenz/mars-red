@@ -466,7 +466,7 @@ public class Memory extends Observable {
             throw new AddressErrorException("store address out of range ", Exceptions.ADDRESS_EXCEPTION_STORE, address);
         }
         notifyAnyObservers(AccessNotice.WRITE, address, WORD_LENGTH_BYTES, value);
-        if (Application.getSettings().getBackSteppingEnabled()) {
+        if (Application.isBackSteppingEnabled()) {
             Application.program.getBackStepper().addMemoryRestoreRawWord(address, oldValue);
         }
         return oldValue;
@@ -485,7 +485,7 @@ public class Memory extends Observable {
         if (address % WORD_LENGTH_BYTES != 0) {
             throw new AddressErrorException("store address not aligned on word boundary ", Exceptions.ADDRESS_EXCEPTION_STORE, address);
         }
-        if (Application.getSettings().getBackSteppingEnabled()) {
+        if (Application.isBackSteppingEnabled()) {
             return Application.program.getBackStepper().addMemoryRestoreWord(address, set(address, value, WORD_LENGTH_BYTES));
         }
         else {
@@ -506,7 +506,7 @@ public class Memory extends Observable {
         if (address % 2 != 0) {
             throw new AddressErrorException("store address not aligned on halfword boundary ", Exceptions.ADDRESS_EXCEPTION_STORE, address);
         }
-        if (Application.getSettings().getBackSteppingEnabled()) {
+        if (Application.isBackSteppingEnabled()) {
             return Application.program.getBackStepper().addMemoryRestoreHalf(address, set(address, value, 2));
         }
         else {
@@ -522,7 +522,7 @@ public class Memory extends Observable {
      * @return old value that was replaced by setByte operation.
      */
     public int setByte(int address, int value) throws AddressErrorException {
-        if (Application.getSettings().getBackSteppingEnabled()) {
+        if (Application.isBackSteppingEnabled()) {
             return Application.program.getBackStepper().addMemoryRestoreByte(address, set(address, value, 1));
         }
         else {

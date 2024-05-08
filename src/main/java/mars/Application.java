@@ -49,10 +49,25 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class Application {
     /**
+     * The name of the application.
+     */
+    public static final String NAME = "MARS Red";
+    /**
+     * The current MARS Red version number.
+     */
+    public static final String VERSION = "5.0-beta5";
+    /**
+     * MARS copyright years.
+     */
+    public static final String COPYRIGHT_YEARS = "2003-2014";
+    /**
+     * MARS copyright holders.
+     */
+    public static final String COPYRIGHT_HOLDERS = "Pete Sanderson and Kenneth Vollmar";
+    /**
      * Name of properties file used to hold internal configurations.
      */
     private static final String CONFIG_PROPERTIES = "Config";
-
     /**
      * Lock variable used at head of synchronized block to guard MIPS memory and registers.
      */
@@ -74,10 +89,6 @@ public class Application {
      */
     public static final String HELP_PATH = "/help/";
     /**
-     * The current MARS Red version number.
-     */
-    public static final String VERSION = "5.0-beta5";
-    /**
      * List of accepted file extensions for MIPS assembly source files.
      */
     public static final ArrayList<String> FILE_EXTENSIONS = getFileExtensions();
@@ -94,18 +105,6 @@ public class Application {
      */
     public static final int MAXIMUM_BACKSTEPS = getBackstepLimit();
     /**
-     * The name of the application.
-     */
-    public static final String NAME = "MARS Red";
-    /**
-     * MARS copyright years.
-     */
-    public static final String COPYRIGHT_YEARS = "2003-2014";
-    /**
-     * MARS copyright holders.
-     */
-    public static final String COPYRIGHT_HOLDERS = "Pete Sanderson and Kenneth Vollmar";
-    /**
      * Placeholder for non-printable ASCII codes
      */
     public static final String ASCII_NON_PRINT = getAsciiNonPrint();
@@ -118,10 +117,6 @@ public class Application {
      * MARS exit code -- useful with SYSCALL 17 when running from command line (not GUI).
      */
     public static int exitCode = 0;
-    /**
-     * Flag that indicates whether the RunSpeedPanel has been created.
-     */
-    public static boolean runSpeedPanelExists = false;
     /**
      * Flag to determine whether or not to produce internal debugging information.
      */
@@ -290,26 +285,6 @@ public class Application {
     }
 
     /**
-     * Get list of MarsTools that reside outside the MARS distribution.
-     * Currently this is done by adding the tool's path name to the list
-     * of values for the ExternalTools property. Use ";" as delimiter!
-     *
-     * @return ArrayList.  Each item is file path to .class file
-     * of a class that implements MarsTool.  If none, returns empty list.
-     */
-    public static ArrayList<String> getExternalTools() {
-        ArrayList<String> toolsList = new ArrayList<>();
-        String tools = getPropertyEntry(CONFIG_PROPERTIES, "ExternalTools");
-        if (tools != null) {
-            StringTokenizer st = new StringTokenizer(tools, ";");
-            while (st.hasMoreTokens()) {
-                toolsList.add(st.nextToken());
-            }
-        }
-        return toolsList;
-    }
-
-    /**
      * Read and return property file value (if any) for requested property.
      *
      * @param propertiesFile name of properties file (do NOT include filename extension,
@@ -319,5 +294,16 @@ public class Application {
      */
     public static String getPropertyEntry(String propertiesFile, String propertyName) {
         return PropertiesFile.loadPropertiesFromFile(propertiesFile).getProperty(propertyName);
+    }
+
+    /**
+     * Return whether backstepping is permitted at this time.  Backstepping is ability to undo execution
+     * steps one at a time.  Available only in the IDE.  This is not a persistent setting and is not under
+     * MARS user control.
+     *
+     * @return true if backstepping is permitted, false otherwise.
+     */
+    public static boolean isBackSteppingEnabled() {
+        return program != null && program.getBackStepper() != null && program.getBackStepper().isEnabled();
     }
 }

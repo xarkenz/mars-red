@@ -4,8 +4,8 @@ import mars.Application;
 
 import java.awt.*;
 import java.util.Arrays;
-	
-	/*
+
+/*
 Copyright (c) 2003-2009,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
@@ -79,11 +79,11 @@ public class EditorFont {
     public static final int DEFAULT_SIZE = 12;
 
     /**
-     * Names of fonts in 3 categories that are common to major Java platforms: Win, Mac, Linux.
+     * Names of fonts in 3 categories that are common to major Java platforms: Windows, MacOS, Linux.
      * <ul>
-     *     <li>Monospace: Courier New and Lucida Sans Typewriter</li>
-     *     <li>Serif: Georgia, Times New Roman</li>
-     *     <li>Sans Serif: Ariel, Verdana</li>
+     * <li>Monospace: Courier New and Lucida Sans Typewriter
+     * <li>Serif: Georgia, Times New Roman
+     * <li>Sans Serif: Arial, Verdana
      * </ul>
      * This is according to lists published by www.codestyle.org.
      */
@@ -205,19 +205,6 @@ public class EditorFont {
     /**
      * Handy utility to produce a string that substitutes spaces for all tab characters
      * in the given string.  The number of spaces generated is based on the position of
-     * the tab character and the editor's current tab size setting.
-     *
-     * @param string The original string
-     * @return New string in which spaces are substituted for tabs
-     * @throws NullPointerException if string is null
-     */
-    public static String substituteSpacesForTabs(String string) {
-        return substituteSpacesForTabs(string, Application.getSettings().editorTabSize.get());
-    }
-
-    /**
-     * Handy utility to produce a string that substitutes spaces for all tab characters
-     * in the given string.  The number of spaces generated is based on the position of
      * the tab character and the specified tab size.
      *
      * @param string  The original string
@@ -226,16 +213,17 @@ public class EditorFont {
      * @throws NullPointerException if string is null
      */
     public static String substituteSpacesForTabs(String string, int tabSize) {
-        if (string.indexOf('\t') == -1) {
+        if (string.indexOf('\t') < 0) {
             return string;
         }
-        StringBuilder result = new StringBuilder(string);
-        for (int i = 0; i < result.length(); i++) {
-            if (result.charAt(i) == '\t') {
-                char[] substitute = new char[tabSize - (i % tabSize)];
-                Arrays.fill(substitute, ' ');
-                result.replace(i, i + 1, new String(substitute));
-                i += substitute.length - 1;
+        StringBuilder result = new StringBuilder();
+        for (int index = 0; index < string.length(); index++) {
+            char ch = string.charAt(index);
+            if (ch == '\t') {
+                result.append(" ".repeat(Math.max(0, tabSize - (index % tabSize))));
+            }
+            else {
+                result.append(ch);
             }
         }
         return result.toString();
@@ -244,7 +232,7 @@ public class EditorFont {
     private static String[] actualCommonFamilies() {
         String[] result = new String[ALL_COMMON_FAMILIES.length];
         String[] availableFamilies = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
-        Arrays.sort(availableFamilies); // not sure if necessary; is the list already alphabetical?
+        Arrays.sort(availableFamilies); // Not sure if necessary; is the list already alphabetical?
         int foundCount = 0;
         for (String family : ALL_COMMON_FAMILIES) {
             if (Arrays.binarySearch(availableFamilies, family) >= 0) {
@@ -253,9 +241,7 @@ public class EditorFont {
         }
         // If not all are found, create a new array with only the ones that are.
         if (foundCount < result.length) {
-            String[] trimmedResult = new String[foundCount];
-            System.arraycopy(result, 0, trimmedResult, 0, foundCount);
-            return trimmedResult;
+            return Arrays.copyOfRange(result, 0, foundCount);
         }
         else {
             return result;

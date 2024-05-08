@@ -9,7 +9,6 @@ import mars.venus.execute.ExecuteTab;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.io.File;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -52,16 +51,15 @@ public class MainPane extends JTabbedPane {
     /**
      * Constructor for the MainPane class.
      */
-    public MainPane(VenusUI mainUI, Editor editor) {
+    public MainPane(VenusUI gui, Editor editor) {
         super();
-        this.editTab = new EditTab(mainUI, editor);
-        this.executeTab = new ExecuteTab(mainUI);
+        this.editTab = new EditTab(gui, editor);
+        this.executeTab = new ExecuteTab(gui);
 
-        // TODO: Maybe new icons designed for the top tabs could look decent? -Sean Clarke
         this.setTabPlacement(JTabbedPane.TOP);
         this.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
-        this.addTab("Edit", null, editTab, "Text editor for writing MIPS programs.");
-        this.addTab("Execute", null, executeTab, "View and control assembly language program execution. Enabled upon successful assemble.");
+        this.addTab("Edit", null, this.editTab, "Text editor for writing MIPS programs.");
+        this.addTab("Execute", null, this.executeTab, "View and control assembly language program execution. Enabled upon successful assemble.");
 
         // Listener has one specific purpose: when Execute tab is selected for the
         // first time, set the bounds of its internal frames by invoking the
@@ -71,25 +69,24 @@ public class MainPane extends JTabbedPane {
         this.addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent event) {
-                if (MainPane.this.getSelectedComponent() == executeTab) {
-                    executeTab.setWindowBounds();
+                if (MainPane.this.getSelectedComponent() == MainPane.this.executeTab) {
+                    MainPane.this.executeTab.setWindowBounds();
                     MainPane.this.removeChangeListener(this);
                 }
             }
         });
 
         // Enable file drag and drop functionality
-        new FileDrop(this, editTab::openFiles);
+        new FileDrop(this, this.editTab::openFiles);
     }
 
     /**
-     * Returns current edit pane.  Implementation changed for MARS 4.0 support
-     * for multiple panes, but specification is same.
+     * Returns the current editor tab selected in the "Edit" tab.
      *
-     * @return the editor pane
+     * @return The current editor tab.
      */
     public FileEditorTab getCurrentEditorTab() {
-        return editTab.getCurrentEditorTab();
+        return this.editTab.getCurrentEditorTab();
     }
 
     /**
@@ -98,7 +95,7 @@ public class MainPane extends JTabbedPane {
      * @return The component for the "Edit" tab.
      */
     public EditTab getEditTab() {
-        return editTab;
+        return this.editTab;
     }
 
     /**
@@ -107,6 +104,6 @@ public class MainPane extends JTabbedPane {
      * @return The component for the "Execute" tab.
      */
     public ExecuteTab getExecuteTab() {
-        return executeTab;
+        return this.executeTab;
     }
 }

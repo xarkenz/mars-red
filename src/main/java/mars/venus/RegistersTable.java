@@ -1,7 +1,6 @@
 package mars.venus;
 
 import mars.Application;
-import mars.mips.hardware.Register;
 import mars.settings.Settings;
 
 import javax.swing.*;
@@ -141,9 +140,9 @@ public class RegistersTable extends JTable {
             Settings settings = Application.getSettings();
 
             this.setHorizontalAlignment(alignment);
-            if (settings.highlightDataSegment.get() && isUpdating && row == highlightedRow) {
-                this.setBackground(settings.getColorSettingByPosition(Settings.REGISTER_HIGHLIGHT_BACKGROUND));
-                this.setForeground(settings.getColorSettingByPosition(Settings.REGISTER_HIGHLIGHT_FOREGROUND));
+            if (settings.highlightRegisters.get() && isUpdating && row == highlightedRow) {
+                this.setBackground(settings.registerHighlightBackground.get());
+                this.setForeground(settings.registerHighlightForeground.get());
             }
             else {
                 this.setBackground(null);

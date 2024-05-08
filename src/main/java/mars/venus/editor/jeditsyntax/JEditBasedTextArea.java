@@ -25,17 +25,17 @@ import java.awt.*;
  */
 public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditingArea {
     private final FileEditorTab fileEditorTab;
+    private final Settings settings;
     private final UndoManager undoManager;
     private boolean isCompoundEdit = false;
     private CompoundEdit compoundEdit;
-    private final JEditBasedTextArea sourceCode;
 
     public JEditBasedTextArea(FileEditorTab fileEditorTab, Settings settings, JComponent lineNumbers) {
         super(settings, lineNumbers);
         this.fileEditorTab = fileEditorTab;
+        this.settings = settings;
         this.undoManager = new UndoManager();
         this.compoundEdit = new CompoundEdit();
-        this.sourceCode = this;
 
         // Needed to support unlimited undo/redo capability
         this.getDocument().addUndoableEditListener(event -> {
@@ -49,7 +49,7 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
             }
         });
 
-        this.setFont(settings.getEditorFont());
+        this.setFont(this.settings.editorFont.get());
         this.setTokenMarker(new MIPSTokenMarker());
 
         this.addCaretListener(event -> {
@@ -104,15 +104,15 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
      */
     @Override
     public void setTabSize(int chars) {
-        painter.setTabSize(chars);
+        this.painter.setTabSize(chars);
     }
 
     /**
      * Update the syntax style table, which is obtained from {@link SyntaxUtilities}.
      */
     @Override
-    public void updateSyntaxStyles(Settings settings) {
-        painter.setStyles(SyntaxUtilities.getCurrentSyntaxStyles(settings));
+    public void updateSyntaxStyles() {
+        this.painter.setStyles(SyntaxUtilities.getCurrentSyntaxStyles(this.settings));
     }
 
     @Override
@@ -214,26 +214,26 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
     @Override
     public void commentLines() {
         int startLine, endLine, caretLine;
-        boolean caretAtSelectionStart = sourceCode.biasLeft;
-        boolean hasSelection = sourceCode.getSelectedText() != null;
+        boolean caretAtSelectionStart = this.biasLeft;
+        boolean hasSelection = this.getSelectedText() != null;
         int startSelectionOffset, endSelectionOffset, caretPositionOffset;
         if (hasSelection) {
-            startLine = sourceCode.getSelectionStartLine();
-            endLine = sourceCode.getSelectionEndLine();
-            caretLine = sourceCode.getCaretLine();
-            startSelectionOffset = sourceCode.getSelectionStart() - sourceCode.getLineStartOffset(startLine);
-            endSelectionOffset = sourceCode.getSelectionEnd() - sourceCode.getLineStartOffset(endLine);
-            caretPositionOffset = sourceCode.getCaretPosition() - sourceCode.getLineStartOffset(caretLine);
+            startLine = this.getSelectionStartLine();
+            endLine = this.getSelectionEndLine();
+            caretLine = this.getCaretLine();
+            startSelectionOffset = this.getSelectionStart() - this.getLineStartOffset(startLine);
+            endSelectionOffset = this.getSelectionEnd() - this.getLineStartOffset(endLine);
+            caretPositionOffset = this.getCaretPosition() - this.getLineStartOffset(caretLine);
         }
         else {
-            startLine = endLine = caretLine = sourceCode.getCaretLine();
-            startSelectionOffset = endSelectionOffset = caretPositionOffset = sourceCode.getCaretPosition() - sourceCode.getLineStartOffset(startLine);
+            startLine = endLine = caretLine = this.getCaretLine();
+            startSelectionOffset = endSelectionOffset = caretPositionOffset = this.getCaretPosition() - this.getLineStartOffset(startLine);
         }
 
         // Decide whether to comment or uncomment
         boolean areAllLinesCommented = true;
         for (int i = startLine; i <= endLine; i++) {
-            String text = sourceCode.getLineText(i);
+            String text = this.getLineText(i);
             if (!text.isBlank() && !text.trim().startsWith("#")) {
                 areAllLinesCommented = false;
                 break;
@@ -245,7 +245,7 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
         if (areAllLinesCommented) {
             // Uncomment selection
             for (int i = startLine; i <= endLine; i++) {
-                String commentedLine = sourceCode.getLineText(i);
+                String commentedLine = this.getLineText(i);
                 String uncommentedLine = commentedLine.replaceFirst("# ?", "");
                 replaceLine(i, uncommentedLine);
                 
@@ -261,7 +261,7 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
         else {
             // Comment selection
             for (int i = startLine; i <= endLine; i++) {
-                String uncommentedLine = sourceCode.getLineText(i);
+                String uncommentedLine = this.getLineText(i);
                 String commentedLine;
                 if (uncommentedLine.isBlank())
                     commentedLine = uncommentedLine;
@@ -280,25 +280,25 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
         }
 
         // Replace selection or caret position
-        int finalStartPos = sourceCode.getLineStartOffset(startLine) + startSelectionOffset + startLineTextDiff;
-        int finalEndPos = sourceCode.getLineStartOffset(endLine) + endSelectionOffset + endLineTextDiff;
-        int finalCaretPos = sourceCode.getLineStartOffset(caretLine) + caretPositionOffset + caretLineTextDiff;
+        int finalStartPos = this.getLineStartOffset(startLine) + startSelectionOffset + startLineTextDiff;
+        int finalEndPos = this.getLineStartOffset(endLine) + endSelectionOffset + endLineTextDiff;
+        int finalCaretPos = this.getLineStartOffset(caretLine) + caretPositionOffset + caretLineTextDiff;
         if (hasSelection) {
             if (caretAtSelectionStart) {
-                sourceCode.select(
+                this.select(
                         finalEndPos,
                         finalStartPos
                 );
             }
             else {
-                sourceCode.select(
+                this.select(
                         finalStartPos,
                         finalEndPos
                 );
             }
         }
         else {
-            sourceCode.setCaretPosition(finalCaretPos);
+            this.setCaretPosition(finalCaretPos);
         }
     }
 
@@ -309,14 +309,15 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
      * @param text       text to replace the line with
      */
     public void replaceLine(int lineNumber, String text) {
-        int startOffset = sourceCode.getLineStartOffset(lineNumber);
-        int endOffset = sourceCode.getLineEndOffset(lineNumber);
+        int startOffset = this.getLineStartOffset(lineNumber);
+        int endOffset = this.getLineEndOffset(lineNumber);
         int lineLength = endOffset - startOffset - 1;
         try {
-            sourceCode.getDocument().remove(startOffset, lineLength);
-            sourceCode.getDocument().insertString(startOffset, text, null);
-        } catch (BadLocationException e) {
-            throw new RuntimeException(e);
+            this.getDocument().remove(startOffset, lineLength);
+            this.getDocument().insertString(startOffset, text, null);
+        }
+        catch (BadLocationException exception) {
+            throw new RuntimeException(exception);
         }
     }
 
@@ -338,15 +339,15 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
      * @return TEXT_FOUND or TEXT_NOT_FOUND, depending on the result.
      */
     public int doFindText(String text, boolean caseSensitive) {
-        int foundIndex = nextIndex(sourceCode.getText(), text, sourceCode.getCaretPosition(), caseSensitive);
+        int foundIndex = nextIndex(this.getText(), text, this.getCaretPosition(), caseSensitive);
         if (foundIndex >= 0) {
             // Ensure the found text will appear highlighted once selected
-            sourceCode.requestFocusInWindow();
+            this.requestFocusInWindow();
             // Select the found text
-            sourceCode.setSelectionStart(foundIndex);
-            sourceCode.setSelectionEnd(foundIndex + text.length());
+            this.setSelectionStart(foundIndex);
+            this.setSelectionEnd(foundIndex + text.length());
             // Need to repeat start due to quirk in JEditTextArea implementation of setSelectionStart
-            sourceCode.setSelectionStart(foundIndex);
+            this.setSelectionStart(foundIndex);
             return TEXT_FOUND;
         }
         else {
@@ -405,27 +406,27 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
     public int doReplace(String text, String replace, boolean caseSensitive) {
         // Will perform a "find" and return, unless positioned at the end of
         // a selected "find" result.
-        if (text == null || !text.equals(sourceCode.getSelectedText()) || sourceCode.getSelectionEnd() != sourceCode.getCaretPosition()) {
+        if (text == null || !text.equals(this.getSelectedText()) || this.getSelectionEnd() != this.getCaretPosition()) {
             return doFindText(text, caseSensitive);
         }
         // We are positioned at end of selected "find".  Replace and find next.
-        int foundIndex = sourceCode.getSelectionStart();
+        int foundIndex = this.getSelectionStart();
         // Ensure the found text will appear highlighted once selected
-        sourceCode.requestFocusInWindow();
+        this.requestFocusInWindow();
         // Select the found text
-        sourceCode.setSelectionStart(foundIndex);
-        sourceCode.setSelectionEnd(foundIndex + text.length());
+        this.setSelectionStart(foundIndex);
+        this.setSelectionEnd(foundIndex + text.length());
         // Need to repeat start due to quirk in JEditTextArea implementation of setSelectionStart
-        sourceCode.setSelectionStart(foundIndex);
+        this.setSelectionStart(foundIndex);
 
         isCompoundEdit = true;
         compoundEdit = new CompoundEdit();
-        sourceCode.replaceSelection(replace);
+        this.replaceSelection(replace);
         compoundEdit.end();
         undoManager.addEdit(compoundEdit);
         fileEditorTab.updateUndoRedoActions();
         isCompoundEdit = false;
-        sourceCode.setCaretPosition(foundIndex + replace.length());
+        this.setCaretPosition(foundIndex + replace.length());
 
         if (doFindText(text, caseSensitive) == TEXT_NOT_FOUND) {
             return TEXT_REPLACED_NOT_FOUND_NEXT;
@@ -452,7 +453,7 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
         compoundEdit = null; // new one will be created upon first replacement
         isCompoundEdit = true; // undo manager's action listener needs this
         while (nextIndex >= 0) {
-            nextIndex = nextIndex(sourceCode.getText(), find, findIndex, caseSensitive);
+            nextIndex = nextIndex(this.getText(), find, findIndex, caseSensitive);
             if (nextIndex >= 0) {
                 // nextIndex() will wrap around, which causes infinite loop if
                 // find string is a substring of replacement string.  This
@@ -460,15 +461,15 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
                 if (nextIndex < findIndex) {
                     break;
                 }
-                sourceCode.grabFocus();
-                sourceCode.setSelectionStart(nextIndex); // Position cursor at word start
-                sourceCode.setSelectionEnd(nextIndex + find.length()); //select found text
+                this.grabFocus();
+                this.setSelectionStart(nextIndex); // Position cursor at word start
+                this.setSelectionEnd(nextIndex + find.length()); //select found text
                 // Need to repeat start due to quirk in JEditTextArea implementation of setSelectionStart.
-                sourceCode.setSelectionStart(nextIndex);
+                this.setSelectionStart(nextIndex);
                 if (compoundEdit == null) {
                     compoundEdit = new CompoundEdit();
                 }
-                sourceCode.replaceSelection(replace);
+                this.replaceSelection(replace);
                 findIndex = nextIndex + replace.length(); // set for next search
                 replaceCount++;
             }

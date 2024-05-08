@@ -1,6 +1,7 @@
 package mars.venus.editor;
 
 import mars.Application;
+import mars.settings.Settings;
 import mars.venus.VenusUI;
 import mars.venus.editor.jeditsyntax.JEditBasedTextArea;
 import mars.venus.execute.ProgramStatus;
@@ -15,8 +16,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.Observable;
-import java.util.Observer;
 
 /*
 Copyright (c) 2003-2011,  Pete Sanderson and Kenneth Vollmar
@@ -54,7 +53,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Sanderson and Bumgarner
  */
-public class FileEditorTab extends JPanel implements Observer {
+public class FileEditorTab extends JPanel {
     private final VenusUI gui;
     private final EditTab editTab;
     private final MARSTextEditingArea textEditingArea;
@@ -71,14 +70,11 @@ public class FileEditorTab extends JPanel implements Observer {
         super(new BorderLayout());
         this.gui = gui;
         this.editTab = editTab;
+        this.lineNumbers = new JLabel();
         this.fileStatus = FileStatus.NO_FILE;
         this.file = null;
-        this.lineNumbers = new JLabel();
 
-        // We want to be notified of editor font changes! See update() below.
-        Application.getSettings().addObserver(this);
-
-        this.textEditingArea = new JEditBasedTextArea(this, Application.getSettings(), lineNumbers);
+        this.textEditingArea = new JEditBasedTextArea(this, this.gui.getSettings(), this.lineNumbers);
         // Text editing area is responsible for its own scrolling
         this.add(this.textEditingArea.getOuterComponent(), BorderLayout.CENTER);
 
@@ -101,21 +97,48 @@ public class FileEditorTab extends JPanel implements Observer {
 
         this.setSourceCode("", false);
 
-        lineNumbers.setFont(textEditingArea.getFont().deriveFont(Font.PLAIN));
-        lineNumbers.setForeground(UIManager.getColor("Venus.Editor.lineNumbers.foreground"));
-        lineNumbers.setBackground(UIManager.getColor("Venus.Editor.lineNumbers.background"));
-        lineNumbers.setVerticalAlignment(JLabel.TOP);
-        lineNumbers.setText(null);
-        lineNumbers.setVisible(Application.getSettings().displayEditorLineNumbers.get());
+        this.lineNumbers.setFont(this.textEditingArea.getFont().deriveFont(Font.PLAIN));
+        this.lineNumbers.setForeground(UIManager.getColor("Venus.Editor.lineNumbers.foreground"));
+        this.lineNumbers.setBackground(UIManager.getColor("Venus.Editor.lineNumbers.background"));
+        this.lineNumbers.setVerticalAlignment(JLabel.TOP);
+        this.lineNumbers.setText(null);
+        this.lineNumbers.setVisible(this.gui.getSettings().displayEditorLineNumbers.get());
 
         Box statusBar = Box.createHorizontalBox();
-        caretPositionLabel = new JLabel();
-        caretPositionLabel.setToolTipText("Tracks the current position of the text editing cursor.");
+        this.caretPositionLabel = new JLabel();
+        this.caretPositionLabel.setToolTipText("Tracks the current position of the text editing cursor.");
         displayCaretPosition(new Point(1, 1));
         statusBar.add(Box.createHorizontalGlue());
-        statusBar.add(caretPositionLabel);
+        statusBar.add(this.caretPositionLabel);
         statusBar.setBorder(BorderFactory.createEmptyBorder(0, 6, 0, 6));
         this.add(statusBar, BorderLayout.SOUTH);
+
+        this.gui.getSettings().addListener(() -> {
+            this.textEditingArea.setFont(this.gui.getSettings().editorFont.get());
+            this.textEditingArea.setLineHighlightEnabled(this.gui.getSettings().highlightCurrentEditorLine.get());
+            this.textEditingArea.setCaretBlinkRate(this.gui.getSettings().caretBlinkRate.get());
+            this.textEditingArea.setTabSize(this.gui.getSettings().editorTabSize.get());
+            this.textEditingArea.updateSyntaxStyles();
+            this.textEditingArea.revalidate();
+            // We want line numbers to be displayed same size but always PLAIN style.
+            // Easiest way to get same pixel height as source code is to set to same
+            // font family as the source code! It can get a bit complicated otherwise
+            // because different fonts will render the same font size in different
+            // pixel heights.  This is a factor because the line numbers as displayed
+            // in the editor form a separate column from the source code and if the
+            // pixel height is not the same then the numbers will not line up with
+            // the source lines.
+            this.lineNumbers.setFont(this.gui.getSettings().editorFont.get().deriveFont(Font.PLAIN));
+            if (this.gui.getSettings().displayEditorLineNumbers.get()) {
+                this.lineNumbers.setText(getLineNumbersList(this.textEditingArea.getDocument()));
+                this.lineNumbers.setVisible(true);
+            }
+            else {
+                this.lineNumbers.setText(null);
+                this.lineNumbers.setVisible(false);
+            }
+            this.lineNumbers.revalidate();
+        });
     }
 
     /**
@@ -145,7 +168,7 @@ public class FileEditorTab extends JPanel implements Observer {
         }
 
         if (Application.getSettings().displayEditorLineNumbers.get()) {
-            this.lineNumbers.setText(this.getLineNumbersList(this.textEditingArea.getDocument()));
+            this.lineNumbers.setText(getLineNumbersList(this.textEditingArea.getDocument()));
         }
     }
 
@@ -159,7 +182,7 @@ public class FileEditorTab extends JPanel implements Observer {
         this.textEditingArea.setSourceCode(sourceCode, editable);
 
         if (Application.getSettings().displayEditorLineNumbers.get()) {
-            this.lineNumbers.setText(this.getLineNumbersList(this.textEditingArea.getDocument()));
+            this.lineNumbers.setText(getLineNumbersList(this.textEditingArea.getDocument()));
         }
     }
 
@@ -181,7 +204,7 @@ public class FileEditorTab extends JPanel implements Observer {
      * multiline label (it ignores <code>\n</code>).  The line number list is a {@link JLabel} with
      * one line number per line.
      */
-    public String getLineNumbersList(Document document) {
+    public static String getLineNumbersList(Document document) {
         int lineCount = document.getDefaultRootElement().getElementCount();
         int digits = Integer.toString(lineCount).length();
 
@@ -529,36 +552,5 @@ public class FileEditorTab extends JPanel implements Observer {
      */
     public int doReplaceAll(String find, String replace, boolean caseSensitive) {
         return this.textEditingArea.doReplaceAll(find, replace, caseSensitive);
-    }
-
-    /**
-     * Update, if source code is visible, when font setting changes.
-     */
-    @Override
-    public void update(Observable fontChanger, Object arg) {
-        this.textEditingArea.setFont(Application.getSettings().getEditorFont());
-        this.textEditingArea.setLineHighlightEnabled(Application.getSettings().highlightCurrentEditorLine.get());
-        this.textEditingArea.setCaretBlinkRate(Application.getSettings().caretBlinkRate.get());
-        this.textEditingArea.setTabSize(Application.getSettings().editorTabSize.get());
-        this.textEditingArea.updateSyntaxStyles(Application.getSettings());
-        this.textEditingArea.revalidate();
-        // We want line numbers to be displayed same size but always PLAIN style.
-        // Easiest way to get same pixel height as source code is to set to same
-        // font family as the source code! It can get a bit complicated otherwise
-        // because different fonts will render the same font size in different
-        // pixel heights.  This is a factor because the line numbers as displayed
-        // in the editor form a separate column from the source code and if the
-        // pixel height is not the same then the numbers will not line up with
-        // the source lines.
-        this.lineNumbers.setFont(this.textEditingArea.getFont().deriveFont(Font.PLAIN));
-        if (Application.getSettings().displayEditorLineNumbers.get()) {
-            this.lineNumbers.setText(getLineNumbersList(this.textEditingArea.getDocument()));
-            this.lineNumbers.setVisible(true);
-        }
-        else {
-            this.lineNumbers.setText(null);
-            this.lineNumbers.setVisible(false);
-        }
-        this.lineNumbers.revalidate();
     }
 }

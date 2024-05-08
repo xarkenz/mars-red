@@ -63,7 +63,7 @@ public class KeywordMap {
             return Token.NULL;
         }
         if (text.array[offset] == '%') {
-            return Token.MACRO_ARG; // added 12/12 M. Sekhavat
+            return Token.MACRO_ARGUMENT; // added 12/12 M. Sekhavat
         }
         KeywordNode node = buckets[getSegmentMapKey(text, offset, length)];
         while (node != null) {

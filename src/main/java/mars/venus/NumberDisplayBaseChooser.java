@@ -60,25 +60,25 @@ public class NumberDisplayBaseChooser extends JCheckBox {
     public NumberDisplayBaseChooser(String text, boolean displayInHex) {
         super(text, displayInHex);
         base = getBase(displayInHex);
-        addItemListener(e -> {
-            NumberDisplayBaseChooser choose = (NumberDisplayBaseChooser) e.getItem();
-            if (e.getStateChange() == ItemEvent.SELECTED) {
-                choose.setBase(NumberDisplayBaseChooser.HEXADECIMAL);
+        addItemListener(event -> {
+            NumberDisplayBaseChooser chooser = (NumberDisplayBaseChooser) event.getItem();
+            if (event.getStateChange() == ItemEvent.SELECTED) {
+                chooser.setBase(NumberDisplayBaseChooser.HEXADECIMAL);
             }
             else {
-                choose.setBase(NumberDisplayBaseChooser.DECIMAL);
+                chooser.setBase(NumberDisplayBaseChooser.DECIMAL);
             }
             // Better to use notify, but I am tired...
             if (settingMenuItem != null) {
-                settingMenuItem.setSelected(choose.isSelected());
+                settingMenuItem.setSelected(chooser.isSelected());
                 ActionListener[] listeners = settingMenuItem.getActionListeners();
-                ActionEvent event = new ActionEvent(settingMenuItem, 0, "chooser");
+                ActionEvent actionEvent = new ActionEvent(settingMenuItem, 0, "chooser");
                 for (ActionListener listener : listeners) {
-                    listener.actionPerformed(event);
+                    listener.actionPerformed(actionEvent);
                 }
             }
             // Better to use notify, but I am tired...
-            Application.getGUI().getMainPane().getExecuteTab().numberDisplayBaseChanged(choose);
+            Application.getGUI().getMainPane().getExecuteTab().numberDisplayBaseChanged(chooser);
         });
     }
 
@@ -120,7 +120,7 @@ public class NumberDisplayBaseChooser extends JCheckBox {
             return Binary.intToHexString(value);
         }
         else {
-            return Binary.unsignedIntToIntString(value);
+            return Integer.toUnsignedString(value);
         }
     }
 

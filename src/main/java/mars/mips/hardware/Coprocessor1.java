@@ -323,7 +323,7 @@ public class Coprocessor1 {
             return 0;
         }
 
-        if (Application.getSettings().getBackSteppingEnabled()) {
+        if (Application.isBackSteppingEnabled()) {
             return Application.program.getBackStepper().addCoprocessor1Restore(number, previousValue);
         }
         else {
@@ -381,7 +381,7 @@ public class Coprocessor1 {
         }
         try {
             // Check for register number 0-31
-            return registers[Binary.stringToInt(name.substring(2))]; // KENV 1/6/05
+            return registers[Binary.decodeInteger(name.substring(2))]; // KENV 1/6/05
         }
         catch (Exception e) {
             // Handles both NumberFormat and ArrayIndexOutOfBounds
@@ -430,7 +430,7 @@ public class Coprocessor1 {
         if (flag >= 0 && flag < conditionFlagCount) {
             old = getConditionFlag(flag);
             condition.setValue(Binary.setBit(condition.getValue(), flag));
-            if (Application.getSettings().getBackSteppingEnabled()) {
+            if (Application.isBackSteppingEnabled()) {
                 if (old == 0) {
                     Application.program.getBackStepper().addConditionFlagClear(flag);
                 }
@@ -453,7 +453,7 @@ public class Coprocessor1 {
         if (flag >= 0 && flag < conditionFlagCount) {
             old = getConditionFlag(flag);
             condition.setValue(Binary.clearBit(condition.getValue(), flag));
-            if (Application.getSettings().getBackSteppingEnabled()) {
+            if (Application.isBackSteppingEnabled()) {
                 if (old == 0) {
                     Application.program.getBackStepper().addConditionFlagClear(flag);
                 }

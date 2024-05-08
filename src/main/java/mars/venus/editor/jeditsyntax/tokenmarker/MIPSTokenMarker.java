@@ -47,15 +47,15 @@ public class MIPSTokenMarker extends TokenMarker {
     public static String[] getTokenDescriptions() {
         if (tokenDescriptions == null) {
             tokenDescriptions = new String[Token.ID_COUNT];
-            tokenDescriptions[Token.COMMENT1] = "Comment";
-            tokenDescriptions[Token.LITERAL1] = "String literal";
-            tokenDescriptions[Token.LITERAL2] = "Character literal";
+            tokenDescriptions[Token.COMMENT] = "Comment";
+            tokenDescriptions[Token.STRING_LITERAL] = "String literal";
+            tokenDescriptions[Token.CHAR_LITERAL] = "Character literal";
             tokenDescriptions[Token.LABEL] = "Label";
-            tokenDescriptions[Token.KEYWORD1] = "Instruction mnemonic";
-            tokenDescriptions[Token.KEYWORD2] = "Assembler directive";
-            tokenDescriptions[Token.KEYWORD3] = "Register";
+            tokenDescriptions[Token.INSTRUCTION] = "Instruction mnemonic";
+            tokenDescriptions[Token.DIRECTIVE] = "Assembler directive";
+            tokenDescriptions[Token.REGISTER] = "Register";
             tokenDescriptions[Token.INVALID] = "Invalid";
-            tokenDescriptions[Token.MACRO_ARG] = "Macro parameter";
+            tokenDescriptions[Token.MACRO_ARGUMENT] = "Macro argument";
         }
         return tokenDescriptions;
     }
@@ -63,15 +63,15 @@ public class MIPSTokenMarker extends TokenMarker {
     public static String[] getTokenExamples() {
         if (tokenExamples == null) {
             tokenExamples = new String[Token.ID_COUNT];
-            tokenExamples[Token.COMMENT1] = "# comment";
-            tokenExamples[Token.LITERAL1] = "\"string\"";
-            tokenExamples[Token.LITERAL2] = "'\\n'";
+            tokenExamples[Token.COMMENT] = "# comment";
+            tokenExamples[Token.STRING_LITERAL] = "\"string\"";
+            tokenExamples[Token.CHAR_LITERAL] = "'\\n'";
             tokenExamples[Token.LABEL] = "main:";
-            tokenExamples[Token.KEYWORD1] = "lui";
-            tokenExamples[Token.KEYWORD2] = ".text";
-            tokenExamples[Token.KEYWORD3] = "$zero";
+            tokenExamples[Token.INSTRUCTION] = "lui";
+            tokenExamples[Token.DIRECTIVE] = ".text";
+            tokenExamples[Token.REGISTER] = "$zero";
             tokenExamples[Token.INVALID] = "\"bad";
-            tokenExamples[Token.MACRO_ARG] = "%arg";
+            tokenExamples[Token.MACRO_ARGUMENT] = "%arg";
         }
         return tokenExamples;
     }
@@ -106,7 +106,7 @@ public class MIPSTokenMarker extends TokenMarker {
                             }
                             else {
                                 addToken(offset - lastOffset, token);
-                                token = Token.LITERAL1;
+                                token = Token.STRING_LITERAL;
                                 lastOffset = lastKeyword = offset;
                             }
                         }
@@ -117,7 +117,7 @@ public class MIPSTokenMarker extends TokenMarker {
                             }
                             else {
                                 addToken(offset - lastOffset, token);
-                                token = Token.LITERAL2;
+                                token = Token.CHAR_LITERAL;
                                 lastOffset = lastKeyword = offset;
                             }
                         }
@@ -147,7 +147,7 @@ public class MIPSTokenMarker extends TokenMarker {
                             doKeyword(line, offset);
                             if (endOffset - offset >= 1) {
                                 addToken(offset - lastOffset, token);
-                                addToken(endOffset - offset, Token.COMMENT1);
+                                addToken(endOffset - offset, Token.COMMENT);
                                 lastOffset = lastKeyword = endOffset;
                                 break loop;
                             }
@@ -161,7 +161,7 @@ public class MIPSTokenMarker extends TokenMarker {
                         }
                     }
                 }
-                case Token.LITERAL1 -> {
+                case Token.STRING_LITERAL -> {
                     if (backslash) {
                         backslash = false;
                     }
@@ -171,12 +171,12 @@ public class MIPSTokenMarker extends TokenMarker {
                         lastOffset = lastKeyword = offset + 1;
                     }
                 }
-                case Token.LITERAL2 -> {
+                case Token.CHAR_LITERAL -> {
                     if (backslash) {
                         backslash = false;
                     }
                     else if (c == '\'') {
-                        addToken(offset - lastOffset + 1, Token.LITERAL1);
+                        addToken(offset - lastOffset + 1, Token.STRING_LITERAL);
                         token = Token.NULL;
                         lastOffset = lastKeyword = offset + 1;
                     }
@@ -192,11 +192,11 @@ public class MIPSTokenMarker extends TokenMarker {
         }
 
         switch (token) {
-            case Token.LITERAL1, Token.LITERAL2 -> {
+            case Token.STRING_LITERAL, Token.CHAR_LITERAL -> {
                 addToken(endOffset - lastOffset, Token.INVALID);
                 token = Token.NULL;
             }
-            case Token.KEYWORD2 -> {
+            case Token.DIRECTIVE -> {
                 addToken(endOffset - lastOffset, token);
                 if (!backslash) {
                     token = Token.NULL;
@@ -221,7 +221,7 @@ public class MIPSTokenMarker extends TokenMarker {
     @Override
     public ArrayList<PopupHelpItem> getTokenExactMatchHelp(Token token, String tokenText) {
         ArrayList<PopupHelpItem> helpItems = null;
-        if (token != null && token.id == Token.KEYWORD1) {
+        if (token != null && token.id == Token.INSTRUCTION) {
             ArrayList<Instruction> instructionMatches = Application.instructionSet.matchOperator(tokenText);
             if (!instructionMatches.isEmpty()) {
                 int realMatches = 0;
@@ -237,7 +237,7 @@ public class MIPSTokenMarker extends TokenMarker {
                 }
             }
         }
-        if (token != null && token.id == Token.KEYWORD2) {
+        if (token != null && token.id == Token.DIRECTIVE) {
             Directive dir = Directive.matchDirective(tokenText);
             if (dir != null) {
                 helpItems = new ArrayList<>();
@@ -265,7 +265,7 @@ public class MIPSTokenMarker extends TokenMarker {
         }
 
         // CASE:  if current token is a comment, turn off the text.
-        if (token != null && token.id == Token.COMMENT1) {
+        if (token != null && token.id == Token.COMMENT) {
             return null;
         }
 
@@ -278,7 +278,7 @@ public class MIPSTokenMarker extends TokenMarker {
         int offset = 0;
         boolean moreThanOneKeyword = false;
         while (tokens.id != Token.END) {
-            if (tokens.id == Token.KEYWORD1 || tokens.id == Token.KEYWORD2) {
+            if (tokens.id == Token.INSTRUCTION || tokens.id == Token.DIRECTIVE) {
                 if (keywordTokenText != null) {
                     moreThanOneKeyword = true;
                     break;
@@ -293,9 +293,9 @@ public class MIPSTokenMarker extends TokenMarker {
         // CASE:  Current token is valid KEYWORD1 (MIPS instruction).  If this line contains a previous KEYWORD1 or KEYWORD2
         //        token, then we ignore this one and do exact match on the first one.  If it does not, there may be longer
         //        instructions for which this is a prefix, so do a prefix match on current token.
-        if (token != null && token.id == Token.KEYWORD1) {
+        if (token != null && token.id == Token.INSTRUCTION) {
             if (moreThanOneKeyword) {
-                return (keywordType == Token.KEYWORD1) ? getTextFromInstructionMatch(keywordTokenText, true) : getTextFromDirectiveMatch(keywordTokenText, true);
+                return (keywordType == Token.INSTRUCTION) ? getTextFromInstructionMatch(keywordTokenText, true) : getTextFromDirectiveMatch(keywordTokenText, true);
             }
             else {
                 return getTextFromInstructionMatch(tokenText, false);
@@ -305,9 +305,9 @@ public class MIPSTokenMarker extends TokenMarker {
         // CASE:  Current token is valid KEYWORD2 (MIPS directive).  If this line contains a previous KEYWORD1 or KEYWORD2
         //        token, then we ignore this one and do exact match on the first one.  If it does not, there may be longer
         //        directives for which this is a prefix, so do a prefix match on current token.
-        if (token != null && token.id == Token.KEYWORD2) {
+        if (token != null && token.id == Token.DIRECTIVE) {
             if (moreThanOneKeyword) {
-                return (keywordType == Token.KEYWORD1) ? getTextFromInstructionMatch(keywordTokenText, true) : getTextFromDirectiveMatch(keywordTokenText, true);
+                return (keywordType == Token.INSTRUCTION) ? getTextFromInstructionMatch(keywordTokenText, true) : getTextFromDirectiveMatch(keywordTokenText, true);
             }
             else {
                 return getTextFromDirectiveMatch(tokenText, false);
@@ -317,10 +317,10 @@ public class MIPSTokenMarker extends TokenMarker {
         // CASE: line already contains KEYWORD1 or KEYWORD2 and current token is something other
         //       than KEYWORD1 or KEYWORD2. Generate text based on exact match of that token.
         if (keywordTokenText != null) {
-            if (keywordType == Token.KEYWORD1) {
+            if (keywordType == Token.INSTRUCTION) {
                 return getTextFromInstructionMatch(keywordTokenText, true);
             }
-            if (keywordType == Token.KEYWORD2) {
+            if (keywordType == Token.DIRECTIVE) {
                 return getTextFromDirectiveMatch(keywordTokenText, true);
             }
         }
@@ -449,21 +449,21 @@ public class MIPSTokenMarker extends TokenMarker {
             keywords = new KeywordMap(false);
             // Add instruction mnemonics
             for (Instruction instruction : Application.instructionSet.getAllInstructions()) {
-                keywords.add(instruction.getMnemonic(), Token.KEYWORD1);
+                keywords.add(instruction.getMnemonic(), Token.INSTRUCTION);
             }
             // Add assembler directives
             for (Directive directive : Directive.values()) {
-                keywords.add(directive.getName(), Token.KEYWORD2);
+                keywords.add(directive.getName(), Token.DIRECTIVE);
             }
             // Add integer register file
             for (Register register : RegisterFile.getRegisters()) {
-                keywords.add(register.getName(), Token.KEYWORD3);
+                keywords.add(register.getName(), Token.REGISTER);
                 // Also recognize $0, $1, $2, etc.
-                keywords.add("$" + register.getNumber(), Token.KEYWORD3);
+                keywords.add("$" + register.getNumber(), Token.REGISTER);
             }
             // Add Coprocessor 1 (floating point) register file
             for (Register register : Coprocessor1.getRegisters()) {
-                keywords.add(register.getName(), Token.KEYWORD3);
+                keywords.add(register.getName(), Token.REGISTER);
             }
             // Note: Coprocessor 0 registers referenced only by number: $8, $12, $13, $14. These are already in the map
         }

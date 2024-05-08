@@ -228,7 +228,7 @@ public class ExtendedInstruction extends Instruction {
                 int addr = 0;
                 int add = instruction.charAt(index + 4) - 48; // extract the digit following P
                 try {
-                    addr = Binary.stringToInt(label) + add; // KENV 1/6/05
+                    addr = Binary.decodeInteger(label) + add; // KENV 1/6/05
                 }
                 catch (NumberFormatException e) {
                     // this won't happen...
@@ -245,7 +245,7 @@ public class ExtendedInstruction extends Instruction {
                 String label = tokens.get(op).getValue();
                 int addr = 0;
                 try {
-                    addr = Binary.stringToInt(label); // KENV 1/6/05
+                    addr = Binary.decodeInteger(label); // KENV 1/6/05
                 }
                 catch (NumberFormatException e) {
                     // this won't happen...
@@ -262,7 +262,7 @@ public class ExtendedInstruction extends Instruction {
                 int addr = 0;
                 int add = instruction.charAt(index + 4) - 48; // digit that follows P
                 try {
-                    addr = Binary.stringToInt(label) + add; // KENV 1/6/05
+                    addr = Binary.decodeInteger(label) + add; // KENV 1/6/05
                 }
                 catch (NumberFormatException e) {
                     // this won't happen...
@@ -276,7 +276,7 @@ public class ExtendedInstruction extends Instruction {
                 String label = tokens.get(op).getValue();
                 int addr = 0;
                 try {
-                    addr = Binary.stringToInt(label); // KENV 1/6/05
+                    addr = Binary.decodeInteger(label); // KENV 1/6/05
                 }
                 catch (NumberFormatException e) {
                     // this won't happen...
@@ -295,7 +295,7 @@ public class ExtendedInstruction extends Instruction {
                 int val = 0;
                 int add = instruction.charAt(index + 5) - '0'; // amount to add: 1,2,3,4 (any single digit)
                 try {
-                    val = Binary.stringToInt(value) + add; // KENV 1/6/05
+                    val = Binary.decodeInteger(value) + add; // KENV 1/6/05
                 }
                 catch (NumberFormatException e) {
                     // this won't happen...
@@ -309,7 +309,7 @@ public class ExtendedInstruction extends Instruction {
                 int val = 0;
                 int add = instruction.charAt(index + 4) - '0'; // amount to add: 1,2,3,4 (any single digit)
                 try {
-                    val = Binary.stringToInt(value) + add; // KENV 1/6/05
+                    val = Binary.decodeInteger(value) + add; // KENV 1/6/05
                 }
                 catch (NumberFormatException e) {
                     // this won't happen...
@@ -325,7 +325,7 @@ public class ExtendedInstruction extends Instruction {
                 String value = tokens.get(op).getValue();
                 int val = 0;
                 try {
-                    val = Binary.stringToInt(value); // KENV 1/6/05
+                    val = Binary.decodeInteger(value); // KENV 1/6/05
                 }
                 catch (NumberFormatException e) {
                     // this won't happen...
@@ -341,7 +341,7 @@ public class ExtendedInstruction extends Instruction {
                 int val = 0;
                 int add = instruction.charAt(index + 4) - '0'; // P is followed by 1,2,3,4(any single digit OK)
                 try {
-                    val = Binary.stringToInt(value) + add; // KENV 1/6/05
+                    val = Binary.decodeInteger(value) + add; // KENV 1/6/05
                 }
                 catch (NumberFormatException e) {
                     // this won't happen...
@@ -358,7 +358,7 @@ public class ExtendedInstruction extends Instruction {
                 String value = tokens.get(op).getValue();
                 int val = 0;
                 try {
-                    val = Binary.stringToInt(value); // KENV 1/6/05
+                    val = Binary.decodeInteger(value); // KENV 1/6/05
                 }
                 catch (NumberFormatException e) {
                     // this won't happen...
@@ -376,7 +376,7 @@ public class ExtendedInstruction extends Instruction {
                 String value = tokens.get(op).getValue(); // has to be token 2 position
                 int val = 0;
                 try {
-                    val = Binary.stringToInt(value); // KENV 1/6/05
+                    val = Binary.decodeInteger(value); // KENV 1/6/05
                 }
                 catch (NumberFormatException e) {
                     // this won't happen...
@@ -390,7 +390,7 @@ public class ExtendedInstruction extends Instruction {
             String label = tokens.get(2).getValue(); // has to be token 2 position
             int addr = 0;
             try {
-                addr = Binary.stringToInt(label); // KENV 1/6/05
+                addr = Binary.decodeInteger(label); // KENV 1/6/05
             }
             catch (NumberFormatException e) {
                 // this won't happen...
@@ -408,7 +408,7 @@ public class ExtendedInstruction extends Instruction {
             int addr = 0;
             int add = instruction.charAt(index + 5) - 48; // extract digit following P
             try {
-                addr = Binary.stringToInt(label) + Binary.stringToInt(addend) + add; // KENV 1/6/05
+                addr = Binary.decodeInteger(label) + Binary.decodeInteger(addend) + add; // KENV 1/6/05
             }
             catch (NumberFormatException e) {
                 // this won't happen...
@@ -427,7 +427,7 @@ public class ExtendedInstruction extends Instruction {
             String addend = tokens.get(4).getValue(); // 4 is only possible token position
             int addr = 0;
             try {
-                addr = Binary.stringToInt(label) + Binary.stringToInt(addend); // KENV 1/6/05
+                addr = Binary.decodeInteger(label) + Binary.decodeInteger(addend); // KENV 1/6/05
             }
             catch (NumberFormatException e) {
                 // this won't happen...
@@ -446,7 +446,7 @@ public class ExtendedInstruction extends Instruction {
             String addend = tokens.get(4).getValue(); // 4 is only possible token position
             int addr = 0;
             try {
-                addr = Binary.stringToInt(label) + Binary.stringToInt(addend); // KENV 1/6/05
+                addr = Binary.decodeInteger(label) + Binary.decodeInteger(addend); // KENV 1/6/05
             }
             catch (NumberFormatException e) {
                 // this won't happen...
@@ -462,7 +462,7 @@ public class ExtendedInstruction extends Instruction {
             int addr = 0;
             int add = instruction.charAt(index + 4) - 48; // extract digit following P
             try {
-                addr = Binary.stringToInt(label) + Binary.stringToInt(addend) + add; // KENV 1/6/05
+                addr = Binary.decodeInteger(label) + Binary.decodeInteger(addend) + add; // KENV 1/6/05
             }
             catch (NumberFormatException e) {
                 // this won't happen...
@@ -477,7 +477,7 @@ public class ExtendedInstruction extends Instruction {
             String addend = tokens.get(4).getValue(); // 4 is only possible token position
             int addr = 0;
             try {
-                addr = Binary.stringToInt(label) + Binary.stringToInt(addend); // KENV 1/6/05
+                addr = Binary.decodeInteger(label) + Binary.decodeInteger(addend); // KENV 1/6/05
             }
             catch (NumberFormatException e) {
                 // this won't happen...
@@ -527,7 +527,7 @@ public class ExtendedInstruction extends Instruction {
             String value = tokens.get(tokens.size() - 1).getValue();
             int val = 0;
             try {
-                val = Binary.stringToInt(value); // KENV 1/6/05
+                val = Binary.decodeInteger(value); // KENV 1/6/05
             }
             catch (NumberFormatException e) {
                 // this won't happen...
@@ -544,7 +544,7 @@ public class ExtendedInstruction extends Instruction {
             int address = -1;
             try {
                 // DPS 2-Aug-2010: was Integer.parseInt(value) but croaked on hex
-                address = Binary.stringToInt(value);
+                address = Binary.decodeInteger(value);
             }
             catch (NumberFormatException e) {
                 // this won't happen...

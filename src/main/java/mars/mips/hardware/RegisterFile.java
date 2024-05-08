@@ -111,7 +111,7 @@ public class RegisterFile {
             return 0;
         }
 
-        if (Application.getSettings().getBackSteppingEnabled()) {
+        if (Application.isBackSteppingEnabled()) {
             return Application.program.getBackStepper().addRegisterFileRestore(number, previousValue);
         }
         else {
@@ -168,7 +168,7 @@ public class RegisterFile {
         }
         try {
             // Check for register number 0-31
-            return registers[Binary.stringToInt(name.substring(1))]; // KENV 1/6/05
+            return registers[Binary.decodeInteger(name.substring(1))]; // KENV 1/6/05
         }
         catch (Exception e) {
             // Handles both NumberFormat and ArrayIndexOutOfBounds
@@ -222,7 +222,7 @@ public class RegisterFile {
      */
     public static int setProgramCounter(int value) {
         int previousValue = registers[PROGRAM_COUNTER].setValue(value);
-        if (Application.getSettings().getBackSteppingEnabled()) {
+        if (Application.isBackSteppingEnabled()) {
             Application.program.getBackStepper().addPCRestore(previousValue);
         }
         return previousValue;

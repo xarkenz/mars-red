@@ -1,6 +1,7 @@
 package mars.venus;
 
 import mars.Application;
+import mars.settings.Settings;
 import mars.util.SVGIcon;
 import mars.venus.actions.ToolAction;
 import mars.venus.actions.edit.*;
@@ -62,7 +63,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class VenusUI extends JFrame {
     /**
-     * Width and height in user pixels of icons in the tool bar and menus
+     * Width and height in user pixels of icons in the tool bar and menus.
      */
     // TODO: Make this configurable
     public static final int ICON_SIZE = 24;
@@ -77,7 +78,7 @@ public class VenusUI extends JFrame {
 
     private final String baseTitle;
 
-    private final JMenuBar menu;
+    private final Settings settings;
     private final MainPane mainPane;
     private final RegistersPane registersPane;
     private final MessagesPane messagesPane;
@@ -145,7 +146,7 @@ public class VenusUI extends JFrame {
      *
      * @param title Name of the window to be created.
      */
-    public VenusUI(String title) {
+    public VenusUI(Settings settings, String title) {
         super(title);
         Application.setGUI(this);
 
@@ -153,6 +154,7 @@ public class VenusUI extends JFrame {
         SplashScreen splashScreen = new SplashScreen(this, SPLASH_DURATION_MILLIS);
         splashScreen.showSplash();
 
+        this.settings = settings;
         this.baseTitle = title;
         this.editor = new Editor(this);
 
@@ -210,10 +212,12 @@ public class VenusUI extends JFrame {
         registersPane = new RegistersPane(this);
         registersPane.setPreferredSize(registersPanePreferredSize);
 
-        mainPane = new MainPane(this, editor);
+        mainPane = new MainPane(this, this.editor);
         mainPane.setPreferredSize(mainPanePreferredSize);
+
         messagesPane = new MessagesPane();
         messagesPane.setPreferredSize(messagesPanePreferredSize);
+
         JSplitPane splitter = new JSplitPane(JSplitPane.VERTICAL_SPLIT, mainPane, messagesPane);
         splitter.setOneTouchExpandable(true);
         splitter.resetToPreferredSizes();
@@ -223,8 +227,7 @@ public class VenusUI extends JFrame {
 
         // due to dependencies, do not set up menu/toolbar until now.
         this.createActionObjects();
-        menu = this.setUpMenuBar();
-        this.setJMenuBar(menu);
+        this.createMenuBar();
 
         JToolBar toolbar = this.setupToolBar();
 
@@ -248,14 +251,14 @@ public class VenusUI extends JFrame {
             @Override
             public void windowClosing(WindowEvent event) {
                 // Don't save the workspace state after closing all files, unless the exit fails
-                mainPane.getEditTab().setWorkspaceStateSavingEnabled(false);
+                VenusUI.this.mainPane.getEditTab().setWorkspaceStateSavingEnabled(false);
 
                 // Check for unsaved changes before closing the application
-                if (editor.closeAll()) {
+                if (VenusUI.this.editor.closeAll()) {
                     System.exit(0);
                 }
                 else {
-                    mainPane.getEditTab().setWorkspaceStateSavingEnabled(true);
+                    VenusUI.this.mainPane.getEditTab().setWorkspaceStateSavingEnabled(true);
                 }
             }
         });
@@ -364,7 +367,7 @@ public class VenusUI extends JFrame {
      * Build the menus and connect them to action objects (which serve as action listeners
      * shared between menu item and corresponding toolbar icon).
      */
-    private JMenuBar setUpMenuBar() {
+    private void createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
 
         JMenu fileMenu = new JMenu("File");
@@ -415,22 +418,22 @@ public class VenusUI extends JFrame {
 
         JMenu settingsMenu = new JMenu("Settings");
         settingsMenu.setMnemonic(KeyEvent.VK_S);
-        settingsMenu.add(createMenuCheckBox(settingsLabelAction, Application.getSettings().labelWindowVisible.get()));
-        settingsMenu.add(createMenuBaseChooser(settingsAddressDisplayBaseAction, Application.getSettings().displayAddressesInHex.get(), mainPane.getExecuteTab().getAddressDisplayBaseChooser()));
-        settingsMenu.add(createMenuBaseChooser(settingsValueDisplayBaseAction, Application.getSettings().displayValuesInHex.get(), mainPane.getExecuteTab().getValueDisplayBaseChooser()));
+        settingsMenu.add(createMenuCheckBox(settingsLabelAction, this.settings.labelWindowVisible.get()));
+        settingsMenu.add(createMenuBaseChooser(settingsAddressDisplayBaseAction, this.settings.displayAddressesInHex.get(), mainPane.getExecuteTab().getAddressDisplayBaseChooser()));
+        settingsMenu.add(createMenuBaseChooser(settingsValueDisplayBaseAction, this.settings.displayValuesInHex.get(), mainPane.getExecuteTab().getValueDisplayBaseChooser()));
         settingsMenu.addSeparator();
-        settingsMenu.add(createMenuCheckBox(settingsAssembleOnOpenAction, Application.getSettings().assembleOnOpenEnabled.get()));
-        settingsMenu.add(createMenuCheckBox(settingsAssembleAllAction, Application.getSettings().assembleAllEnabled.get()));
-        settingsMenu.add(createMenuCheckBox(settingsWarningsAreErrorsAction, Application.getSettings().warningsAreErrors.get()));
-        settingsMenu.add(createMenuCheckBox(settingsStartAtMainAction, Application.getSettings().startAtMain.get()));
-        settingsMenu.add(createMenuCheckBox(settingsExtendedAction, Application.getSettings().extendedAssemblerEnabled.get()));
+        settingsMenu.add(createMenuCheckBox(settingsAssembleOnOpenAction, this.settings.assembleOnOpenEnabled.get()));
+        settingsMenu.add(createMenuCheckBox(settingsAssembleAllAction, this.settings.assembleAllEnabled.get()));
+        settingsMenu.add(createMenuCheckBox(settingsWarningsAreErrorsAction, this.settings.warningsAreErrors.get()));
+        settingsMenu.add(createMenuCheckBox(settingsStartAtMainAction, this.settings.startAtMain.get()));
+        settingsMenu.add(createMenuCheckBox(settingsExtendedAction, this.settings.extendedAssemblerEnabled.get()));
         settingsMenu.addSeparator();
-        settingsMenu.add(createMenuCheckBox(settingsProgramArgumentsAction, Application.getSettings().useProgramArguments.get()));
-        settingsMenu.add(createMenuCheckBox(settingsPopupInputAction, Application.getSettings().popupSyscallInput.get()));
-        settingsMenu.add(createMenuCheckBox(settingsDelayedBranchingAction, Application.getSettings().delayedBranchingEnabled.get()));
-        settingsMenu.add(createMenuCheckBox(settingsSelfModifyingCodeAction, Application.getSettings().selfModifyingCodeEnabled.get()));
+        settingsMenu.add(createMenuCheckBox(settingsProgramArgumentsAction, this.settings.useProgramArguments.get()));
+        settingsMenu.add(createMenuCheckBox(settingsPopupInputAction, this.settings.popupSyscallInput.get()));
+        settingsMenu.add(createMenuCheckBox(settingsDelayedBranchingAction, this.settings.delayedBranchingEnabled.get()));
+        settingsMenu.add(createMenuCheckBox(settingsSelfModifyingCodeAction, this.settings.selfModifyingCodeEnabled.get()));
         settingsMenu.addSeparator();
-        settingsMenu.add(createMenuCheckBox(settingsDarkThemeAction, Application.getSettings().lookAndFeelName.get().equals("FlatDarkLaf")));
+        settingsMenu.add(createMenuCheckBox(settingsDarkThemeAction, this.settings.lookAndFeelName.get().equals("FlatDarkLaf")));
         settingsMenu.addSeparator();
         settingsMenu.add(createMenuItem(settingsEditorAction));
         settingsMenu.add(createMenuItem(settingsHighlightingAction));
@@ -456,7 +459,7 @@ public class VenusUI extends JFrame {
         helpMenu.add(createMenuItem(helpAboutAction));
         menuBar.add(helpMenu);
 
-        return menuBar;
+        this.setJMenuBar(menuBar);
     }
 
     private JMenuItem createMenuItem(Action action) {
@@ -576,6 +579,10 @@ public class VenusUI extends JFrame {
         runPauseAction.setEnabled(false);
         runClearBreakpointsAction.setEnabled(false);
         runToggleBreakpointsAction.setEnabled(false);
+        // When last file is closed, menu is unable to respond to mnemonics
+        // and accelerators.  Let's have it request focus so it may do so.
+        // TODO: necessary?
+        this.getJMenuBar().requestFocus();
     }
 
     /*
@@ -606,7 +613,7 @@ public class VenusUI extends JFrame {
         runAssembleAction.setEnabled(true);
         // If assemble-all, allow previous Run menu settings to remain.
         // Otherwise, clear them out.  DPS 9-Aug-2011
-        if (!Application.getSettings().assembleAllEnabled.get()) {
+        if (!this.settings.assembleAllEnabled.get()) {
             runStartAction.setEnabled(false);
             runStepForwardAction.setEnabled(false);
             runStepBackwardAction.setEnabled(false);
@@ -709,7 +716,7 @@ public class VenusUI extends JFrame {
         runAssembleAction.setEnabled(true);
         runStartAction.setEnabled(true);
         runStepForwardAction.setEnabled(true);
-        runStepBackwardAction.setEnabled(Application.getSettings().getBackSteppingEnabled() && !Application.program.getBackStepper().isEmpty());
+        runStepBackwardAction.setEnabled(Application.isBackSteppingEnabled() && !Application.program.getBackStepper().isEmpty());
         runResetAction.setEnabled(true);
         runStopAction.setEnabled(false);
         runPauseAction.setEnabled(false);
@@ -776,7 +783,7 @@ public class VenusUI extends JFrame {
         runAssembleAction.setEnabled(true);
         runStartAction.setEnabled(false);
         runStepForwardAction.setEnabled(false);
-        runStepBackwardAction.setEnabled(Application.getSettings().getBackSteppingEnabled() && !Application.program.getBackStepper().isEmpty());
+        runStepBackwardAction.setEnabled(Application.isBackSteppingEnabled() && !Application.program.getBackStepper().isEmpty());
         runResetAction.setEnabled(true);
         runStopAction.setEnabled(false);
         runPauseAction.setEnabled(false);
@@ -801,11 +808,15 @@ public class VenusUI extends JFrame {
      */
     public void setTitleContent(String content) {
         if (content != null) {
-            setTitle(content + " - " + baseTitle);
+            this.setTitle(content + " - " + this.baseTitle);
         }
         else {
-            setTitle(baseTitle);
+            this.setTitle(this.baseTitle);
         }
+    }
+
+    public Settings getSettings() {
+        return this.settings;
     }
 
     /**
@@ -814,7 +825,7 @@ public class VenusUI extends JFrame {
      * @return Editor for the GUI.
      */
     public Editor getEditor() {
-        return editor;
+        return this.editor;
     }
 
     /**
@@ -823,7 +834,7 @@ public class VenusUI extends JFrame {
      * @return MainPane for the GUI.
      */
     public MainPane getMainPane() {
-        return mainPane;
+        return this.mainPane;
     }
 
     /**
@@ -832,7 +843,7 @@ public class VenusUI extends JFrame {
      * @return MessagesPane for the GUI.
      */
     public MessagesPane getMessagesPane() {
-        return messagesPane;
+        return this.messagesPane;
     }
 
     /**
@@ -841,7 +852,7 @@ public class VenusUI extends JFrame {
      * @return RegistersPane for the GUI.
      */
     public RegistersPane getRegistersPane() {
-        return registersPane;
+        return this.registersPane;
     }
 
     /**
@@ -851,26 +862,7 @@ public class VenusUI extends JFrame {
      * @return The object for the Run->Assemble operation.
      */
     public RunAssembleAction getRunAssembleAction() {
-        return runAssembleAction;
-    }
-
-    /**
-     * Have the menu request keyboard focus.
-     *
-     * @author DPS 5-4-10
-     */
-    public void haveMenuRequestFocus() {
-        this.menu.requestFocus();
-    }
-
-    /**
-     * Send keyboard event to menu for possible processing.
-     *
-     * @param event KeyEvent for menu component to consider for processing.
-     * @author DPS 5-4-10
-     */
-    public void dispatchEventToMenu(KeyEvent event) {
-        this.menu.dispatchEvent(event);
+        return this.runAssembleAction;
     }
 
     /**

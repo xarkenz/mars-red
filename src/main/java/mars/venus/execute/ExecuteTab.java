@@ -1,6 +1,5 @@
 package mars.venus.execute;
 
-import mars.Application;
 import mars.venus.*;
 
 import javax.swing.*;
@@ -58,25 +57,25 @@ public class ExecuteTab extends JDesktopPane {
         this.gui = gui;
         // Although these are displayed in Data Segment, they apply to all three internal
         // windows within the Execute pane.  So they will be housed here.
-        addressDisplayBase = new NumberDisplayBaseChooser("Hexadecimal Addresses", Application.getSettings().displayAddressesInHex.get());
-        valueDisplayBase = new NumberDisplayBaseChooser("Hexadecimal Values", Application.getSettings().displayValuesInHex.get());
-        addressDisplayBase.setToolTipText("If checked, displays all memory addresses in hexadecimal.  Otherwise, decimal.");
-        valueDisplayBase.setToolTipText("If checked, displays all memory and register contents in hexadecimal.  Otherwise, decimal.");
-        textSegment = new TextSegmentWindow();
-        labelValues = new SymbolTableWindow();
-        dataSegment = new DataSegmentWindow(new NumberDisplayBaseChooser[] { addressDisplayBase, valueDisplayBase });
-        labelWindowVisible = Application.getSettings().labelWindowVisible.get();
-        programStatus = ProgramStatus.NOT_ASSEMBLED;
+        this.addressDisplayBase = new NumberDisplayBaseChooser("Hexadecimal Addresses", this.gui.getSettings().displayAddressesInHex.get());
+        this.valueDisplayBase = new NumberDisplayBaseChooser("Hexadecimal Values", this.gui.getSettings().displayValuesInHex.get());
+        this.addressDisplayBase.setToolTipText("If checked, displays all memory addresses in hexadecimal.  Otherwise, decimal.");
+        this.valueDisplayBase.setToolTipText("If checked, displays all memory and register contents in hexadecimal.  Otherwise, decimal.");
+        this.textSegment = new TextSegmentWindow(this.gui);
+        this.labelValues = new SymbolTableWindow(this.gui);
+        this.dataSegment = new DataSegmentWindow(this.gui, new NumberDisplayBaseChooser[] { this.addressDisplayBase, this.valueDisplayBase });
+        this.labelWindowVisible = this.gui.getSettings().labelWindowVisible.get();
+        this.programStatus = ProgramStatus.NOT_ASSEMBLED;
 
-        this.add(textSegment); // these 3 LOC moved up.  DPS 3-Sept-2014
-        this.add(dataSegment);
-        this.add(labelValues);
-        textSegment.pack(); // these 3 LOC added.  DPS 3-Sept-2014
-        dataSegment.pack();
-        labelValues.pack();
-        textSegment.setVisible(true);
-        dataSegment.setVisible(true);
-        labelValues.setVisible(labelWindowVisible);
+        this.add(this.textSegment); // these 3 LOC moved up.  DPS 3-Sept-2014
+        this.add(this.dataSegment);
+        this.add(this.labelValues);
+        this.textSegment.pack(); // these 3 LOC added.  DPS 3-Sept-2014
+        this.dataSegment.pack();
+        this.labelValues.pack();
+        this.textSegment.setVisible(true);
+        this.dataSegment.setVisible(true);
+        this.labelValues.setVisible(this.labelWindowVisible);
     }
 
     /**
@@ -96,18 +95,18 @@ public class ExecuteTab extends JDesktopPane {
         int fullWidth = this.getSize().width - this.getInsets().left - this.getInsets().right;
         int fullHeight = this.getSize().height - this.getInsets().top - this.getInsets().bottom;
         int halfHeight = fullHeight / 2;
-        Dimension textDim = new Dimension((int) (fullWidth * .75), halfHeight);
+        Dimension textDim = new Dimension((int) (fullWidth * 0.75), halfHeight);
         Dimension dataDim = new Dimension(fullWidth, halfHeight);
-        Dimension labelDim = new Dimension((int) (fullWidth * .25), halfHeight);
+        Dimension labelDim = new Dimension((int) (fullWidth * 0.25), halfHeight);
         Dimension textFullDim = new Dimension(fullWidth, halfHeight);
-        dataSegment.setBounds(0, textDim.height + 1, dataDim.width, dataDim.height);
-        if (labelWindowVisible) {
-            textSegment.setBounds(0, 0, textDim.width, textDim.height);
-            labelValues.setBounds(textDim.width + 1, 0, labelDim.width, labelDim.height);
+        this.dataSegment.setBounds(0, textDim.height + 1, dataDim.width, dataDim.height);
+        if (this.labelWindowVisible) {
+            this.textSegment.setBounds(0, 0, textDim.width, textDim.height);
+            this.labelValues.setBounds(textDim.width + 1, 0, labelDim.width, labelDim.height);
         }
         else {
-            textSegment.setBounds(0, 0, textFullDim.width, textFullDim.height);
-            labelValues.setBounds(0, 0, 0, 0);
+            this.textSegment.setBounds(0, 0, textFullDim.width, textFullDim.height);
+            this.labelValues.setBounds(0, 0, 0, 0);
         }
     }
 
@@ -115,22 +114,22 @@ public class ExecuteTab extends JDesktopPane {
      * Show or hide the label window (symbol table).  If visible, it is displayed
      * to the right of the text segment and the latter is shrunk accordingly.
      *
-     * @param visibility set to true or false
+     * @param visible set to true or false
      */
-    public void setSymbolTableWindowVisibility(boolean visibility) {
-        if (!visibility && labelWindowVisible) {
-            labelWindowVisible = false;
-            textSegment.setVisible(false);
-            labelValues.setVisible(false);
+    public void setSymbolTableWindowVisibile(boolean visible) {
+        if (!visible && this.labelWindowVisible) {
+            this.labelWindowVisible = false;
+            this.textSegment.setVisible(false);
+            this.labelValues.setVisible(false);
             this.setWindowBounds();
-            textSegment.setVisible(true);
+            this.textSegment.setVisible(true);
         }
-        else if (visibility && !labelWindowVisible) {
-            labelWindowVisible = true;
-            textSegment.setVisible(false);
+        else if (visible && !this.labelWindowVisible) {
+            this.labelWindowVisible = true;
+            this.textSegment.setVisible(false);
             this.setWindowBounds();
-            textSegment.setVisible(true);
-            labelValues.setVisible(true);
+            this.textSegment.setVisible(true);
+            this.labelValues.setVisible(true);
         }
     }
 
@@ -143,13 +142,13 @@ public class ExecuteTab extends JDesktopPane {
         this.getTextSegmentWindow().clearWindow();
         this.getDataSegmentWindow().clearWindow();
         this.getLabelsWindow().clearWindow();
-        gui.getRegistersPane().getRegistersWindow().clearWindow();
-        gui.getRegistersPane().getCoprocessor1Window().clearWindow();
-        gui.getRegistersPane().getCoprocessor0Window().clearWindow();
+        this.gui.getRegistersPane().getRegistersWindow().clearWindow();
+        this.gui.getRegistersPane().getCoprocessor1Window().clearWindow();
+        this.gui.getRegistersPane().getCoprocessor0Window().clearWindow();
         // Seems to be required in order to display cleared Execute tab contents...
-        if (gui.getMainPane().getSelectedComponent() == this) {
-            gui.getMainPane().setSelectedComponent(gui.getMainPane().getEditTab());
-            gui.getMainPane().setSelectedComponent(this);
+        if (this.gui.getMainPane().getSelectedComponent() == this) {
+            this.gui.getMainPane().setSelectedComponent(this.gui.getMainPane().getEditTab());
+            this.gui.getMainPane().setSelectedComponent(this);
         }
     }
 
@@ -176,35 +175,35 @@ public class ExecuteTab extends JDesktopPane {
      * Access the text segment window.
      */
     public TextSegmentWindow getTextSegmentWindow() {
-        return textSegment;
+        return this.textSegment;
     }
 
     /**
      * Access the data segment window.
      */
     public DataSegmentWindow getDataSegmentWindow() {
-        return dataSegment;
+        return this.dataSegment;
     }
 
     /**
      * Access the label values window.
      */
     public SymbolTableWindow getLabelsWindow() {
-        return labelValues;
+        return this.labelValues;
     }
 
     /**
      * Retrieve the number system base for displaying values (mem/register contents)
      */
     public int getValueDisplayBase() {
-        return valueDisplayBase.getBase();
+        return this.valueDisplayBase.getBase();
     }
 
     /**
      * Retrieve the number system base for displaying memory addresses
      */
     public int getAddressDisplayBase() {
-        return addressDisplayBase.getBase();
+        return this.addressDisplayBase.getBase();
     }
 
     /**
@@ -213,7 +212,7 @@ public class ExecuteTab extends JDesktopPane {
      * @return the chooser
      */
     public NumberDisplayBaseChooser getValueDisplayBaseChooser() {
-        return valueDisplayBase;
+        return this.valueDisplayBase;
     }
 
     /**
@@ -222,7 +221,7 @@ public class ExecuteTab extends JDesktopPane {
      * @return the chooser
      */
     public NumberDisplayBaseChooser getAddressDisplayBaseChooser() {
-        return addressDisplayBase;
+        return this.addressDisplayBase;
     }
 
     /**
@@ -232,20 +231,20 @@ public class ExecuteTab extends JDesktopPane {
      * @param chooser the GUI object manipulated by the user to change number base
      */
     public void numberDisplayBaseChanged(NumberDisplayBaseChooser chooser) {
-        if (chooser == valueDisplayBase) {
+        if (chooser == this.valueDisplayBase) {
             // Have all internal windows update their value columns
-            gui.getRegistersPane().getRegistersWindow().updateRegisters();
-            gui.getRegistersPane().getCoprocessor0Window().updateRegisters();
-            gui.getRegistersPane().getCoprocessor1Window().updateRegisters();
-            dataSegment.updateValues();
-            textSegment.updateBasicStatements();
+            this.gui.getRegistersPane().getRegistersWindow().updateRegisters();
+            this.gui.getRegistersPane().getCoprocessor0Window().updateRegisters();
+            this.gui.getRegistersPane().getCoprocessor1Window().updateRegisters();
+            this.dataSegment.updateValues();
+            this.textSegment.updateBasicStatements();
         }
         else { // chooser == addressDisplayBase
             // Have all internal windows update their address columns
-            dataSegment.updateDataAddresses();
-            labelValues.updateLabelAddresses();
-            textSegment.updateCodeAddresses();
-            textSegment.updateBasicStatements();
+            this.dataSegment.updateDataAddresses();
+            this.labelValues.updateLabelAddresses();
+            this.textSegment.updateCodeAddresses();
+            this.textSegment.updateBasicStatements();
         }
     }
 }

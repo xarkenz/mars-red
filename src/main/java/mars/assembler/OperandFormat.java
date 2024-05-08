@@ -2,7 +2,6 @@ package mars.assembler;
 
 import mars.ErrorList;
 import mars.ErrorMessage;
-import mars.Application;
 import mars.mips.instructions.Instruction;
 import mars.util.Binary;
 
@@ -140,7 +139,7 @@ public class OperandFormat {
                 continue;
             }
             if (candidateType == TokenType.INTEGER_16U || candidateType == TokenType.INTEGER_16) {
-                int candidateValue = Binary.stringToInt(candidateToken.getValue());
+                int candidateValue = Binary.decodeInteger(candidateToken.getValue());
                 if (expectedType == TokenType.INTEGER_16 && candidateType == TokenType.INTEGER_16U
                     && candidateValue >= DataTypes.MIN_HALF_VALUE && candidateValue <= DataTypes.MAX_HALF_VALUE)
                 {

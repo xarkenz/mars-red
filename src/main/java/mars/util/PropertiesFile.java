@@ -3,7 +3,7 @@ package mars.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
-	
+
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
 

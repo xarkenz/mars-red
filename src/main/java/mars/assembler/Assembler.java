@@ -679,14 +679,14 @@ public class Assembler {
             this.autoAlign = true;
             this.dataAddress.setAddressSpace((direct == Directive.DATA) ? this.dataAddress.USER : this.dataAddress.KERNEL);
             if (tokens.size() > 1 && TokenType.isIntegerTokenType(tokens.get(1).getType())) {
-                this.dataAddress.set(Binary.stringToInt(tokens.get(1).getValue())); // KENV 1/6/05
+                this.dataAddress.set(Binary.decodeInteger(tokens.get(1).getValue())); // KENV 1/6/05
             }
         }
         else if (direct == Directive.TEXT || direct == Directive.KTEXT) {
             this.inDataSegment = false;
             this.textAddress.setAddressSpace((direct == Directive.TEXT) ? this.textAddress.USER : this.textAddress.KERNEL);
             if (tokens.size() > 1 && TokenType.isIntegerTokenType(tokens.get(1).getType())) {
-                this.textAddress.set(Binary.stringToInt(tokens.get(1).getValue())); // KENV 1/6/05
+                this.textAddress.set(Binary.decodeInteger(tokens.get(1).getValue())); // KENV 1/6/05
             }
         }
         else if (direct == Directive.WORD || direct == Directive.HALF || direct == Directive.BYTE || direct == Directive.FLOAT || direct == Directive.DOUBLE) {
@@ -708,11 +708,11 @@ public class Assembler {
                     errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" requires one operand"));
                     return;
                 }
-                if (!TokenType.isIntegerTokenType(tokens.get(1).getType()) || Binary.stringToInt(tokens.get(1).getValue()) < 0) {
+                if (!TokenType.isIntegerTokenType(tokens.get(1).getType()) || Binary.decodeInteger(tokens.get(1).getValue()) < 0) {
                     errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" requires a non-negative integer"));
                     return;
                 }
-                int value = Binary.stringToInt(tokens.get(1).getValue()); // KENV 1/6/05
+                int value = Binary.decodeInteger(tokens.get(1).getValue()); // KENV 1/6/05
                 if (value == 0) {
                     this.autoAlign = false;
                 }
@@ -727,11 +727,11 @@ public class Assembler {
                     errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" requires one operand"));
                     return;
                 }
-                if (!TokenType.isIntegerTokenType(tokens.get(1).getType()) || Binary.stringToInt(tokens.get(1).getValue()) < 0) {
+                if (!TokenType.isIntegerTokenType(tokens.get(1).getType()) || Binary.decodeInteger(tokens.get(1).getValue()) < 0) {
                     errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" requires a non-negative integer"));
                     return;
                 }
-                int value = Binary.stringToInt(tokens.get(1).getValue()); // KENV 1/6/05
+                int value = Binary.decodeInteger(tokens.get(1).getValue()); // KENV 1/6/05
                 this.dataAddress.increment(value);
             }
         }
@@ -740,11 +740,11 @@ public class Assembler {
                 errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" directive requires two operands (label and size)."));
                 return;
             }
-            if (!TokenType.isIntegerTokenType(tokens.get(2).getType()) || Binary.stringToInt(tokens.get(2).getValue()) < 0) {
+            if (!TokenType.isIntegerTokenType(tokens.get(2).getType()) || Binary.decodeInteger(tokens.get(2).getValue()) < 0) {
                 errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" requires a non-negative integer size"));
                 return;
             }
-            int size = Binary.stringToInt(tokens.get(2).getValue());
+            int size = Binary.decodeInteger(tokens.get(2).getValue());
             // If label already in global symtab, do nothing. If not, add it right now.
             if (Application.globalSymbolTable.getAddress(tokens.get(1).getValue()) == SymbolTable.NOT_FOUND) {
                 Application.globalSymbolTable.addSymbol(tokens.get(1), this.externAddress, Symbol.DATA_SYMBOL, errors);
@@ -871,7 +871,7 @@ public class Assembler {
                 errors.add(new ErrorMessage(fileCurrentlyBeingAssembled, valueToken.getSourceLine(), valueToken.getStartPos(), "malformed expression"));
                 return;
             }
-            int repetitions = Binary.stringToInt(repetitionsToken.getValue()); // KENV 1/6/05
+            int repetitions = Binary.decodeInteger(repetitionsToken.getValue()); // KENV 1/6/05
             if (repetitions <= 0) {
                 errors.add(new ErrorMessage(fileCurrentlyBeingAssembled, repetitionsToken.getSourceLine(), repetitionsToken.getStartPos(), "repetition factor must be positive"));
                 return;
@@ -912,7 +912,7 @@ public class Assembler {
     private void storeInteger(Token token, Directive directive, ErrorList errors) {
         int lengthInBytes = DataTypes.getLengthInBytes(directive);
         if (TokenType.isIntegerTokenType(token.getType())) {
-            int value = Binary.stringToInt(token.getValue());
+            int value = Binary.decodeInteger(token.getValue());
             int fullvalue = value;
             // DPS 4-Jan-2013.  Overriding 6-Jan-2005 KENV changes.
             // If value is out of range for the directive, will simply truncate

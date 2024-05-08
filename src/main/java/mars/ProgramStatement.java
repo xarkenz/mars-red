@@ -250,7 +250,7 @@ public class ProgramStatement {
                 this.operands[this.numOperands++] = address;
             }
             else if (tokenType == TokenType.INTEGER_5 || tokenType == TokenType.INTEGER_16 || tokenType == TokenType.INTEGER_16U || tokenType == TokenType.INTEGER_32) {
-                int tempNumeric = Binary.stringToInt(tokenValue);
+                int tempNumeric = Binary.decodeInteger(tokenValue);
 
                 /* **************************************************************************
                  *  MODIFICATION AND COMMENT, DPS 3-July-2008

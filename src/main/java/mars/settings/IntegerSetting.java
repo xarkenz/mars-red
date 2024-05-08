@@ -46,9 +46,9 @@ public class IntegerSetting {
      */
     public void set(int value) {
         if (value != this.value) {
-            // Value has changed, write it to persistent storage
-            settings.saveIntegerSetting(this.key, value, this.notifies);
             this.value = value;
+            // Value has changed, write it to persistent storage
+            this.settings.saveIntegerSetting(this.key, this.value, this.notifies);
         }
     }
 
@@ -71,8 +71,7 @@ public class IntegerSetting {
     }
 
     /**
-     * Temporarily set the value of this setting. The new value will NOT be written to persistent
-     * storage. Currently, this is used only when running MARS from the command line.
+     * Set the value of this setting without updating persistent storage.
      *
      * @param value The new integer value for this setting.
      */

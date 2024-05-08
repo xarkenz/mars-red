@@ -95,8 +95,8 @@ public class RegistersWindow extends RegistersDisplayTab {
     /**
      * Constructor which sets up a fresh window with a table that contains the register values.
      */
-    public RegistersWindow() {
-        super();
+    public RegistersWindow(VenusUI gui) {
+        super(gui);
         table = new RegistersTable(new RegisterTableModel(setupWindow()), HEADER_TIPS, REGISTER_TIPS);
         table.setupColumn(NAME_COLUMN, 25, SwingConstants.LEFT);
         table.setupColumn(NUMBER_COLUMN, 25, SwingConstants.LEFT);
@@ -145,7 +145,7 @@ public class RegistersWindow extends RegistersDisplayTab {
     public void clearWindow() {
         clearHighlighting();
         RegisterFile.resetRegisters();
-        updateRegisters(Application.getGUI().getMainPane().getExecuteTab().getValueDisplayBase());
+        updateRegisters(gui.getMainPane().getExecuteTab().getValueDisplayBase());
     }
 
     /**
@@ -158,9 +158,9 @@ public class RegistersWindow extends RegistersDisplayTab {
         for (Register register : RegisterFile.getRegisters()) {
             updateRegisterValue(register.getNumber(), register.getValue(), base);
         }
-        updateRegisterUnsignedValue(32, RegisterFile.getProgramCounter(), base);
-        updateRegisterValue(33, RegisterFile.getValue(33), base);
-        updateRegisterValue(34, RegisterFile.getValue(34), base);
+        updateRegisterUnsignedValue(RegisterFile.PROGRAM_COUNTER, RegisterFile.getProgramCounter(), base);
+        updateRegisterValue(RegisterFile.HIGH_ORDER, RegisterFile.getValue(RegisterFile.HIGH_ORDER), base);
+        updateRegisterValue(RegisterFile.LOW_ORDER, RegisterFile.getValue(RegisterFile.LOW_ORDER), base);
     }
 
     /**
@@ -170,7 +170,7 @@ public class RegistersWindow extends RegistersDisplayTab {
      * @param value  The new value.
      */
     public void updateRegisterValue(int number, int value, int base) {
-        ((RegisterTableModel) table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(value, base), number, 2);
+        ((RegisterTableModel) table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(value, base), number, VALUE_COLUMN);
     }
 
     /**
@@ -179,8 +179,8 @@ public class RegistersWindow extends RegistersDisplayTab {
      * @param number The number of the register to update.
      * @param value  The new value.
      */
-    private void updateRegisterUnsignedValue(int number, int value, int base) {
-        ((RegisterTableModel) table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatUnsignedInteger(value, base), number, 2);
+    public void updateRegisterUnsignedValue(int number, int value, int base) {
+        ((RegisterTableModel) table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatUnsignedInteger(value, base), number, VALUE_COLUMN);
     }
 
     /**
@@ -203,7 +203,7 @@ public class RegistersWindow extends RegistersDisplayTab {
         RegisterFile.deleteRegistersObserver(this);
     }
 
-    private static class RegisterTableModel extends AbstractTableModel {
+    private class RegisterTableModel extends AbstractTableModel {
         private static final String[] COLUMN_NAMES = {"Name", "Number", "Value"};
 
         private final Object[][] data;
@@ -241,14 +241,14 @@ public class RegistersWindow extends RegistersDisplayTab {
         }
 
         /**
-         * All register values are editable except $zero (0), $pc (32), $ra (31).
+         * All register values are editable except $zero (0), $ra (31), pc (32).
          */
         @Override
         public boolean isCellEditable(int row, int col) {
             // Note that the data/cell address is constant,
             // no matter where the cell appears onscreen.
-            // these registers are not editable: $zero (0), $pc (32), $ra (31)
-            return col == VALUE_COLUMN && row != 0 && row != 32 && row != 31;
+            // These registers are not editable: $zero (0), $ra (31), pc (32)
+            return col == VALUE_COLUMN && row != 0 && row != RegisterFile.RETURN_ADDRESS && row != RegisterFile.PROGRAM_COUNTER;
         }
 
         /**
@@ -260,11 +260,10 @@ public class RegistersWindow extends RegistersDisplayTab {
         public void setValueAt(Object value, int row, int col) {
             int intValue;
             try {
-                intValue = Binary.stringToInt(value.toString());
+                intValue = Binary.decodeInteger(value.toString());
             }
-            catch (NumberFormatException nfe) {
-                data[row][col] = "INVALID";
-                fireTableCellUpdated(row, col);
+            catch (NumberFormatException exception) {
+                setDisplayAndModelValueAt("INVALID", row, col);
                 return;
             }
             // Assures that if changed during MIPS program execution, the update will
@@ -272,15 +271,14 @@ public class RegistersWindow extends RegistersDisplayTab {
             synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
                 RegisterFile.updateRegister(row, intValue);
             }
-            int valueBase = Application.getGUI().getMainPane().getExecuteTab().getValueDisplayBase();
-            data[row][col] = NumberDisplayBaseChooser.formatNumber(intValue, valueBase);
-            fireTableCellUpdated(row, col);
+            int valueBase = gui.getMainPane().getExecuteTab().getValueDisplayBase();
+            setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(intValue, valueBase), row, col);
         }
 
         /**
          * Update cell contents in table model.  Does not affect MIPS register.
          */
-        private void setDisplayAndModelValueAt(Object value, int row, int col) {
+        public void setDisplayAndModelValueAt(Object value, int row, int col) {
             data[row][col] = value;
             fireTableCellUpdated(row, col);
         }

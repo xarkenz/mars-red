@@ -3,7 +3,6 @@ package mars.venus.editor;
 import mars.Application;
 import mars.Program;
 import mars.ProcessingException;
-import mars.mips.hardware.RegisterFile;
 import mars.util.DynamicTabbedPane;
 import mars.util.FilenameFinder;
 import mars.venus.VenusUI;
@@ -85,7 +84,7 @@ public class EditTab extends DynamicTabbedPane {
             if (currentTab != null) {
                 // New IF statement to permit free traversal of edit panes w/o invalidating
                 // assembly if assemble-all is selected.  DPS 9-Aug-2011
-                if (Application.getSettings().assembleAllEnabled.get()) {
+                if (this.gui.getSettings().assembleAllEnabled.get()) {
                     this.updateTitle(currentTab);
                 }
                 else {
@@ -237,7 +236,7 @@ public class EditTab extends DynamicTabbedPane {
     public void loadWorkspaceState() {
         String filesString = Application.getSettings().previouslyOpenFiles.get();
         List<File> files = Arrays.stream(filesString.split(";"))
-            .map(String::trim)
+            .map(String::strip)
             .map(File::new)
             .toList();
         this.openFiles(files);
@@ -248,7 +247,7 @@ public class EditTab extends DynamicTabbedPane {
      * the New operation from the File menu.
      */
     public void newFile() {
-        FileEditorTab newTab = new FileEditorTab(gui, this);
+        FileEditorTab newTab = new FileEditorTab(this.gui, this);
         newTab.setSourceCode("", true);
         newTab.setFileStatus(FileStatus.NEW_NOT_EDITED);
         String name = this.editor.getNextDefaultFilename();
@@ -256,7 +255,6 @@ public class EditTab extends DynamicTabbedPane {
         newTab.setFile(new File(name));
         this.addTab(name, null, newTab, name);
 
-        RegisterFile.resetRegisters();
         this.gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
         this.gui.getMainPane().getExecuteTab().clear();
 
@@ -309,7 +307,7 @@ public class EditTab extends DynamicTabbedPane {
      * @return true if file was closed, false otherwise.
      */
     public boolean closeCurrentFile() {
-        FileEditorTab currentTab = getCurrentEditorTab();
+        FileEditorTab currentTab = this.getCurrentEditorTab();
         if (currentTab == null) {
             return true;
         }
@@ -574,9 +572,6 @@ public class EditTab extends DynamicTabbedPane {
         if (tab == null) {
             this.editor.setTitle("", FileStatus.NO_FILE);
             this.gui.updateMenuState(FileStatus.NO_FILE);
-            // When last file is closed, menu is unable to respond to mnemonics
-            // and accelerators.  Let's have it request focus so it may do so.
-            this.gui.haveMenuRequestFocus();
         }
         else {
             this.updateTitleAndMenuState(tab);
@@ -639,20 +634,20 @@ public class EditTab extends DynamicTabbedPane {
         private final PropertyChangeListener listenForUserAddedFileFilter;
 
         public FileOpener() {
-            fileChooser = new JFileChooser();
-            listenForUserAddedFileFilter = new ChoosableFileFilterChangeListener();
-            fileChooser.addPropertyChangeListener(listenForUserAddedFileFilter);
-            fileChooser.setMultiSelectionEnabled(true);
+            this.fileChooser = new JFileChooser();
+            this.listenForUserAddedFileFilter = new ChoosableFileFilterChangeListener();
+            this.fileChooser.addPropertyChangeListener(this.listenForUserAddedFileFilter);
+            this.fileChooser.setMultiSelectionEnabled(true);
 
             FileFilter asmFilter = FilenameFinder.getFileFilter(Application.FILE_EXTENSIONS, "Assembly Files", true);
-            fileFilters = new ArrayList<>();
+            this.fileFilters = new ArrayList<>();
             // Note: add sequence is significant - last one added becomes default.
-            fileFilters.add(fileChooser.getAcceptAllFileFilter());
-            fileFilters.add(asmFilter);
-            fileFilterCount = 0; // This will trigger fileChooser file filter load in next line
+            this.fileFilters.add(this.fileChooser.getAcceptAllFileFilter());
+            this.fileFilters.add(asmFilter);
+            this.fileFilterCount = 0; // This will trigger fileChooser file filter load in next line
             this.setChoosableFileFilters();
             // Note: above note seems to not be true anymore, so force the assembly filter to be default.
-            fileChooser.setFileFilter(asmFilter);
+            this.fileChooser.setFileFilter(asmFilter);
         }
 
         /**
@@ -667,7 +662,7 @@ public class EditTab extends DynamicTabbedPane {
             this.setChoosableFileFilters();
             // Set the current directory to the parent directory of the current file being edited,
             // or the working directory for MARS if that fails
-            FileEditorTab currentTab = getCurrentEditorTab();
+            FileEditorTab currentTab = EditTab.this.getCurrentEditorTab();
             File currentDirectory = null;
             if (currentTab != null) {
                 currentDirectory = currentTab.getFile().getParentFile();
@@ -675,23 +670,23 @@ public class EditTab extends DynamicTabbedPane {
             if (currentDirectory == null) {
                 currentDirectory = new File(System.getProperty("user.dir"));
             }
-            fileChooser.setCurrentDirectory(currentDirectory);
+            this.fileChooser.setCurrentDirectory(currentDirectory);
             // Set default to previous file opened, if any.  This is useful in conjunction
             // with option to assemble file automatically upon opening.  File likely to have
             // been edited externally.
-            if (Application.getSettings().assembleOnOpenEnabled.get() && mostRecentlyOpenedFile != null) {
-                fileChooser.setSelectedFile(mostRecentlyOpenedFile);
+            if (EditTab.this.gui.getSettings().assembleOnOpenEnabled.get() && EditTab.this.mostRecentlyOpenedFile != null) {
+                this.fileChooser.setSelectedFile(EditTab.this.mostRecentlyOpenedFile);
             }
 
-            if (fileChooser.showOpenDialog(gui) == JFileChooser.APPROVE_OPTION) {
-                List<File> unopenedFiles = this.openFiles(List.of(fileChooser.getSelectedFiles()));
+            if (this.fileChooser.showOpenDialog(EditTab.this.gui) == JFileChooser.APPROVE_OPTION) {
+                List<File> unopenedFiles = this.openFiles(List.of(this.fileChooser.getSelectedFiles()));
                 if (!unopenedFiles.isEmpty()) {
                     return unopenedFiles;
                 }
 
-                if (Application.getSettings().assembleOnOpenEnabled.get()) {
+                if (EditTab.this.gui.getSettings().assembleOnOpenEnabled.get()) {
                     // Send this file right through to the assembler by firing Run->Assemble
-                    gui.getRunAssembleAction().actionPerformed(null);
+                    EditTab.this.gui.getRunAssembleAction().actionPerformed(null);
                 }
             }
 
@@ -707,7 +702,8 @@ public class EditTab extends DynamicTabbedPane {
         public List<File> openFiles(List<File> files) {
             List<File> unopenedFiles = new ArrayList<>();
             FileEditorTab firstTabOpened = null;
-            isOpeningFiles = true; // DPS 9-Aug-2011
+
+            EditTab.this.isOpeningFiles = true; // DPS 9-Aug-2011
 
             for (File file : files) {
                 try {
@@ -718,11 +714,11 @@ public class EditTab extends DynamicTabbedPane {
                 }
 
                 // Don't bother reopening the file if it's already open
-                if (getEditorTab(file) != null) {
+                if (EditTab.this.getEditorTab(file) != null) {
                     continue;
                 }
 
-                FileEditorTab fileEditorTab = new FileEditorTab(gui, EditTab.this);
+                FileEditorTab fileEditorTab = new FileEditorTab(EditTab.this.gui, EditTab.this);
                 fileEditorTab.setFile(file);
 
                 if (file.canRead()) {
@@ -753,7 +749,7 @@ public class EditTab extends DynamicTabbedPane {
                     fileEditorTab.discardAllUndoableEdits();
                     fileEditorTab.setFileStatus(FileStatus.NOT_EDITED);
 
-                    addTab(file.getName(), null, fileEditorTab, file.getPath());
+                    EditTab.this.addTab(file.getName(), null, fileEditorTab, file.getPath());
 
                     if (firstTabOpened == null) {
                         firstTabOpened = fileEditorTab;
@@ -761,26 +757,26 @@ public class EditTab extends DynamicTabbedPane {
                 }
             }
 
-            isOpeningFiles = false;
-            gui.getMainPane().setSelectedComponent(EditTab.this);
-            gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
+            EditTab.this.isOpeningFiles = false;
+            EditTab.this.gui.getMainPane().setSelectedComponent(EditTab.this);
+            EditTab.this.gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
 
             if (firstTabOpened != null) {
                 // At least one file was opened successfully
                 // Treat the first opened tab as the "primary" one in the group
-                setSelectedComponent(firstTabOpened);
+                EditTab.this.setSelectedComponent(firstTabOpened);
                 // If assemble-all, then allow opening of any file w/o invalidating assembly
                 // DPS 9-Aug-2011
-                if (!Application.getSettings().assembleAllEnabled.get()) {
+                if (!EditTab.this.gui.getSettings().assembleAllEnabled.get()) {
                     updateTitleAndMenuState(firstTabOpened);
-                    gui.getMainPane().getExecuteTab().clear();
+                    EditTab.this.gui.getMainPane().getExecuteTab().clear();
                 }
                 firstTabOpened.requestTextAreaFocus();
-                mostRecentlyOpenedFile = firstTabOpened.getFile();
+                EditTab.this.mostRecentlyOpenedFile = firstTabOpened.getFile();
             }
 
             // Save the updated workspace with the newly opened files
-            saveWorkspaceState();
+            EditTab.this.saveWorkspaceState();
 
             return unopenedFiles;
         }
@@ -806,25 +802,25 @@ public class EditTab extends DynamicTabbedPane {
         private void setChoosableFileFilters() {
             // See if a new filter has been added to the master list.  If so,
             // regenerate the fileChooser list from the master list.
-            if (fileFilterCount < fileFilters.size() || fileFilters.size() != fileChooser.getChoosableFileFilters().length) {
-                fileFilterCount = fileFilters.size();
+            if (this.fileFilterCount < this.fileFilters.size() || this.fileFilters.size() != this.fileChooser.getChoosableFileFilters().length) {
+                this.fileFilterCount = this.fileFilters.size();
                 // First, "deactivate" the listener, because our addChoosableFileFilter
                 // calls would otherwise activate it!  We want it to be triggered only
                 // by MARS user action.
                 boolean activeListener = false;
-                if (fileChooser.getPropertyChangeListeners().length > 0) {
-                    fileChooser.removePropertyChangeListener(listenForUserAddedFileFilter);
+                if (this.fileChooser.getPropertyChangeListeners().length > 0) {
+                    this.fileChooser.removePropertyChangeListener(this.listenForUserAddedFileFilter);
                     activeListener = true; // We'll note this for re-activation later
                 }
                 // Clear out the list and populate from our own ArrayList
                 // Last one added becomes the default
-                fileChooser.resetChoosableFileFilters();
-                for (FileFilter fileFilter : fileFilters) {
-                    fileChooser.addChoosableFileFilter(fileFilter);
+                this.fileChooser.resetChoosableFileFilters();
+                for (FileFilter fileFilter : this.fileFilters) {
+                    this.fileChooser.addChoosableFileFilter(fileFilter);
                 }
                 // Restore listener
                 if (activeListener) {
-                    fileChooser.addPropertyChangeListener(listenForUserAddedFileFilter);
+                    this.fileChooser.addPropertyChangeListener(this.listenForUserAddedFileFilter);
                 }
             }
         }
@@ -843,9 +839,9 @@ public class EditTab extends DynamicTabbedPane {
             public void propertyChange(PropertyChangeEvent event) {
                 if (JFileChooser.CHOOSABLE_FILE_FILTER_CHANGED_PROPERTY.equals(event.getPropertyName())) {
                     FileFilter[] newFilters = (FileFilter[]) event.getNewValue();
-                    if (newFilters.length > fileFilters.size()) {
-                        // new filter added, so add to end of master list.
-                        fileFilters.add(newFilters[newFilters.length - 1]);
+                    if (newFilters.length > FileOpener.this.fileFilters.size()) {
+                        // New filter added, so add to end of master list
+                        FileOpener.this.fileFilters.add(newFilters[newFilters.length - 1]);
                     }
                 }
             }

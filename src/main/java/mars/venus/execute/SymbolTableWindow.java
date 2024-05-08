@@ -8,6 +8,7 @@ import mars.mips.hardware.Memory;
 import mars.util.Binary;
 import mars.venus.MonoRightCellRenderer;
 import mars.venus.NumberDisplayBaseChooser;
+import mars.venus.VenusUI;
 import mars.venus.actions.run.RunAssembleAction;
 
 import javax.swing.*;
@@ -59,10 +60,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @author Sanderson and Team JSpim
  */
 public class SymbolTableWindow extends JInternalFrame {
+    private final VenusUI gui;
     private final JPanel labelPanel;
     private final JCheckBox dataLabels;
     private final JCheckBox textLabels;
-    private final ArrayList<SymbolTableDisplay> symbolTableDisplays;
+    private final List<SymbolTableDisplay> symbolTableDisplays;
 
     private static final int LABEL_COLUMN = 0;
     private static final int ADDRESS_COLUMN = 1;
@@ -136,62 +138,64 @@ public class SymbolTableWindow extends JInternalFrame {
     /**
      * Constructor for the symbol table window.
      */
-    public SymbolTableWindow() {
+    public SymbolTableWindow(VenusUI gui) {
         super("Symbol Table", true, false, true, false);
         this.setFrameIcon(null);
 
-        sortState = Application.getSettings().symbolTableSortState.get();
-        if (sortState < 0 || SORT_STATE_TRANSITIONS.length <= sortState) {
-            sortState = 0;
+        this.gui = gui;
+        this.sortState = this.gui.getSettings().symbolTableSortState.get();
+        if (this.sortState < 0 || this.sortState >= SORT_STATE_TRANSITIONS.length) {
+            this.sortState = 0;
         }
-        symbolTableDisplays = new ArrayList<>();
+        this.symbolTableDisplays = new ArrayList<>();
 
-        labelPanel = new JPanel(new BorderLayout());
-        this.getContentPane().add(labelPanel, BorderLayout.CENTER);
-        dataLabels = new JCheckBox("Data Segment", true);
-        textLabels = new JCheckBox("Text Segment", true);
-        ItemListener labelListener = event -> {
-            for (SymbolTableDisplay labelsForSymbolTable : symbolTableDisplays) {
+        this.labelPanel = new JPanel(new BorderLayout());
+        this.getContentPane().add(this.labelPanel, BorderLayout.CENTER);
+
+        this.dataLabels = new JCheckBox("Data Segment", true);
+        this.textLabels = new JCheckBox("Text Segment", true);
+        ItemListener labelListener = (event) -> {
+            for (SymbolTableDisplay labelsForSymbolTable : this.symbolTableDisplays) {
                 labelsForSymbolTable.generateLabelTable();
             }
         };
-        dataLabels.addItemListener(labelListener);
-        textLabels.addItemListener(labelListener);
-        dataLabels.setToolTipText("If checked, will display labels defined in the data segment.");
-        textLabels.setToolTipText("If checked, will display labels defined in the text segment.");
+        this.dataLabels.addItemListener(labelListener);
+        this.textLabels.addItemListener(labelListener);
+        this.dataLabels.setToolTipText("If checked, will display labels defined in the data segment.");
+        this.textLabels.setToolTipText("If checked, will display labels defined in the text segment.");
 
-        JPanel features = new JPanel();
-        features.add(dataLabels);
-        features.add(textLabels);
-        features.setBorder(BorderFactory.createLineBorder(UIManager.getColor("Table.gridColor"), 1));
-        this.getContentPane().add(features, BorderLayout.SOUTH);
+        JPanel optionsPane = new JPanel();
+        optionsPane.add(this.dataLabels);
+        optionsPane.add(this.textLabels);
+        optionsPane.setBorder(BorderFactory.createLineBorder(UIManager.getColor("Table.gridColor"), 1));
+        this.getContentPane().add(optionsPane, BorderLayout.SOUTH);
     }
 
     /**
      * Initialize table of labels (symbol table).
      */
     public void setupTable() {
-        labelPanel.removeAll();
-        labelPanel.add(generateLabelScrollPane(), BorderLayout.CENTER);
+        this.clearWindow();
+        this.labelPanel.add(this.generateLabelScrollPane(), BorderLayout.CENTER);
     }
 
     /**
      * Clear the window.
      */
     public void clearWindow() {
-        labelPanel.removeAll();
+        this.labelPanel.removeAll();
     }
 
     private JScrollPane generateLabelScrollPane() {
-        symbolTableDisplays.clear();
+        this.symbolTableDisplays.clear();
         SymbolTableDisplay globalSymbolTableDisplay = new SymbolTableDisplay(null);
-        symbolTableDisplays.add(globalSymbolTableDisplay);
+        this.symbolTableDisplays.add(globalSymbolTableDisplay);
         for (Program program : RunAssembleAction.getProgramsToAssemble()) {
-            symbolTableDisplays.add(new SymbolTableDisplay(program));
+            this.symbolTableDisplays.add(new SymbolTableDisplay(program));
         }
 
         Box allSymbolTables = Box.createVerticalBox();
-        for (SymbolTableDisplay symbolTableDisplay : symbolTableDisplays) {
+        for (SymbolTableDisplay symbolTableDisplay : this.symbolTableDisplays) {
             if (symbolTableDisplay.hasSymbols()) {
                 JTable table = symbolTableDisplay.generateLabelTable();
                 // The following is selfish on my part.  Column re-ordering doesn't work correctly when
@@ -221,8 +225,8 @@ public class SymbolTableWindow extends JInternalFrame {
 
         JPanel sortPanel = new JPanel(new GridLayout(1, COLUMN_NAMES.length));
         for (int column = 0; column < COLUMN_NAMES.length; column++) {
-            JButton columnSortButton = new JButton(columnSortActions[column]);
-            columnSortButton.setText(COLUMN_SORT_BUTTON_LABELS[sortState][column]);
+            JButton columnSortButton = new JButton(this.columnSortActions[column]);
+            columnSortButton.setText(COLUMN_SORT_BUTTON_LABELS[this.sortState][column]);
             columnSortButton.setToolTipText(COLUMN_TOOL_TIPS[column]);
             columnSortButton.setBackground(UIManager.getColor("TableHeader.background"));
             columnSortButton.setBorder(BorderFactory.createCompoundBorder(
@@ -244,7 +248,7 @@ public class SymbolTableWindow extends JInternalFrame {
      * (e.g. between base 16 hex and base 10 dec).
      */
     public void updateLabelAddresses() {
-        for (SymbolTableDisplay symbolTableDisplay : symbolTableDisplays) {
+        for (SymbolTableDisplay symbolTableDisplay : this.symbolTableDisplays) {
             symbolTableDisplay.updateLabelAddresses();
         }
     }
@@ -263,16 +267,17 @@ public class SymbolTableWindow extends JInternalFrame {
         /**
          * Set the sort state according to which button was pressed.
          *
-         * @param event the event to be processed
+         * @param event The event to be processed.
          */
         @Override
         public void actionPerformed(ActionEvent event) {
-            sortState = SORT_STATE_TRANSITIONS[sortState][this.column];
-            Application.getSettings().symbolTableSortState.set(sortState);
+            SymbolTableWindow window = SymbolTableWindow.this;
+            window.sortState = SORT_STATE_TRANSITIONS[window.sortState][this.column];
+            window.gui.getSettings().symbolTableSortState.set(window.sortState);
             // Refresh the window
-            setupTable();
-            Application.getGUI().getMainPane().getExecuteTab().setSymbolTableWindowVisibility(false);
-            Application.getGUI().getMainPane().getExecuteTab().setSymbolTableWindowVisibility(true);
+            window.setupTable();
+            window.gui.getMainPane().getExecuteTab().setSymbolTableWindowVisibile(false);
+            window.gui.getMainPane().getExecuteTab().setSymbolTableWindowVisibile(true);
         }
     }
 
@@ -280,10 +285,9 @@ public class SymbolTableWindow extends JInternalFrame {
      * Private listener class to sense clicks on a table entry's
      * Label or Address.  This will trigger action by Text or Data
      * segment to scroll to the corresponding label/address.
-     * Suggested by Ken Vollmar, implemented by Pete Sanderson
-     * July 2007.
+     * Suggested by Ken Vollmar, implemented by Pete Sanderson July 2007.
      */
-    private static class LabelDisplayMouseListener extends MouseAdapter {
+    private class LabelDisplayMouseListener extends MouseAdapter {
         @Override
         public void mouseClicked(MouseEvent event) {
             JTable table = (JTable) event.getSource();
@@ -296,17 +300,17 @@ public class SymbolTableWindow extends JInternalFrame {
             }
             int address = 0;
             try {
-                address = Binary.stringToInt(data.toString());
+                address = Binary.decodeInteger(data.toString());
             }
             catch (NumberFormatException exception) {
                 // Cannot happen because address is generated internally
             }
             // Scroll to this address, either in Text Segment display or Data Segment display
             if (Memory.inTextSegment(address) || Memory.inKernelTextSegment(address)) {
-                Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().selectStepAtAddress(address);
+                SymbolTableWindow.this.gui.getMainPane().getExecuteTab().getTextSegmentWindow().selectStepAtAddress(address);
             }
             else {
-                Application.getGUI().getMainPane().getExecuteTab().getDataSegmentWindow().selectCellForAddress(address);
+                SymbolTableWindow.this.gui.getMainPane().getExecuteTab().getDataSegmentWindow().selectCellForAddress(address);
             }
         }
     }
@@ -348,53 +352,55 @@ public class SymbolTableWindow extends JInternalFrame {
          * Builds the table containing labels and addresses for this symbol table.
          */
         private JTable generateLabelTable() {
-            SymbolTable symbolTable = (program == null) ? Application.globalSymbolTable : program.getLocalSymbolTable();
-            int addressBase = Application.getGUI().getMainPane().getExecuteTab().getAddressDisplayBase();
-            if (textLabels.isSelected() && dataLabels.isSelected()) {
-                symbols = symbolTable.getAllSymbols();
+            SymbolTable symbolTable = (this.program == null) ? Application.globalSymbolTable : this.program.getLocalSymbolTable();
+            int addressBase = SymbolTableWindow.this.gui.getMainPane().getExecuteTab().getAddressDisplayBase();
+
+            if (SymbolTableWindow.this.textLabels.isSelected() && SymbolTableWindow.this.dataLabels.isSelected()) {
+                this.symbols = symbolTable.getAllSymbols();
             }
-            else if (textLabels.isSelected() && !dataLabels.isSelected()) {
-                symbols = symbolTable.getTextSymbols();
+            else if (SymbolTableWindow.this.textLabels.isSelected()) {
+                this.symbols = symbolTable.getTextSymbols();
             }
-            else if (!textLabels.isSelected() && dataLabels.isSelected()) {
-                symbols = symbolTable.getDataSymbols();
+            else if (SymbolTableWindow.this.dataLabels.isSelected()) {
+                this.symbols = symbolTable.getDataSymbols();
             }
             else {
-                // eh, don't wanna deal with null checks
-                symbols = new Symbol[0];
+                // Eh, don't wanna deal with null checks
+                this.symbols = new Symbol[0];
             }
-            Arrays.sort(symbols, TABLE_SORTING_COMPARATORS.get(sortState)); // DPS 25 Dec 2008
-            labelData = new Object[symbols.length][2];
+            Arrays.sort(this.symbols, TABLE_SORTING_COMPARATORS.get(SymbolTableWindow.this.sortState)); // DPS 25 Dec 2008
 
             // Set up the label table
-            for (int row = 0; row < symbols.length; row++) {
-                labelData[row][LABEL_COLUMN] = symbols[row].getName();
-                labelData[row][ADDRESS_COLUMN] = NumberDisplayBaseChooser.formatNumber(symbols[row].getAddress(), addressBase);
+            this.labelData = new Object[this.symbols.length][COLUMN_NAMES.length];
+            for (int row = 0; row < this.symbols.length; row++) {
+                this.labelData[row][LABEL_COLUMN] = this.symbols[row].getName();
+                this.labelData[row][ADDRESS_COLUMN] = NumberDisplayBaseChooser.formatNumber(this.symbols[row].getAddress(), addressBase);
             }
-            LabelTableModel model = new LabelTableModel(labelData, COLUMN_NAMES);
-            if (labelTable == null) {
-                labelTable = new MyTippedJTable(model);
+
+            LabelTableModel model = new LabelTableModel(this.labelData, COLUMN_NAMES);
+            if (this.labelTable == null) {
+                this.labelTable = new LabelTable(model);
             }
             else {
-                labelTable.setModel(model);
+                this.labelTable.setModel(model);
             }
-            labelTable.setFont(MonoRightCellRenderer.MONOSPACED_PLAIN_12POINT);
-            labelTable.getColumnModel().getColumn(ADDRESS_COLUMN).setCellRenderer(new MonoRightCellRenderer());
-            return labelTable;
+
+            this.labelTable.setFont(MonoRightCellRenderer.MONOSPACED_PLAIN_12POINT);
+            this.labelTable.getColumnModel().getColumn(ADDRESS_COLUMN).setCellRenderer(new MonoRightCellRenderer());
+
+            return this.labelTable;
         }
 
         public void updateLabelAddresses() {
-            if (labelPanel.getComponentCount() == 0) {
-                return; // ignore if no content to change
+            if (this.labelData == null || SymbolTableWindow.this.labelPanel.getComponentCount() == 0) {
+                // No content to change, ignore
+                return;
             }
-            int addressBase = Application.getGUI().getMainPane().getExecuteTab().getAddressDisplayBase();
-            int address;
-            String formattedAddress;
-            int numSymbols = (labelData == null) ? 0 : labelData.length;
-            for (int i = 0; i < numSymbols; i++) {
-                address = symbols[i].getAddress();
-                formattedAddress = NumberDisplayBaseChooser.formatNumber(address, addressBase);
-                labelTable.getModel().setValueAt(formattedAddress, i, ADDRESS_COLUMN);
+
+            int addressBase = SymbolTableWindow.this.gui.getMainPane().getExecuteTab().getAddressDisplayBase();
+            for (int row = 0; row < this.labelData.length; row++) {
+                String formattedAddress = NumberDisplayBaseChooser.formatNumber(this.symbols[row].getAddress(), addressBase);
+                this.labelTable.getModel().setValueAt(formattedAddress, row, ADDRESS_COLUMN);
             }
         }
     }
@@ -403,37 +409,31 @@ public class SymbolTableWindow extends JInternalFrame {
      * Class representing label table data.
      */
     private static class LabelTableModel extends AbstractTableModel {
-        private final String[] columns;
+        private final String[] columnNames;
         private final Object[][] data;
 
-        public LabelTableModel(Object[][] data, String[] columns) {
+        public LabelTableModel(Object[][] data, String[] columnNames) {
             this.data = data;
-            this.columns = columns;
+            this.columnNames = columnNames;
         }
 
         @Override
         public int getColumnCount() {
-            return columns.length;
+            return this.columnNames.length;
         }
 
         @Override
         public int getRowCount() {
-            return data.length;
+            return this.data.length;
         }
 
         @Override
-        public String getColumnName(int col) {
-            return columns[col];
-        }
-
-        @Override
-        public Object getValueAt(int row, int col) {
-            return data[row][col];
+        public String getColumnName(int column) {
+            return this.columnNames[column];
         }
 
         /**
-         * JTable uses this method to determine the default renderer/
-         * editor for each cell.
+         * JTable uses this method to determine the default renderer/editor for each cell.
          */
         @Override
         public Class<?> getColumnClass(int col) {
@@ -441,32 +441,37 @@ public class SymbolTableWindow extends JInternalFrame {
         }
 
         @Override
-        public void setValueAt(Object value, int row, int col) {
-            data[row][col] = value;
-            fireTableCellUpdated(row, col);
+        public Object getValueAt(int row, int column) {
+            return this.data[row][column];
+        }
+
+        @Override
+        public void setValueAt(Object value, int row, int column) {
+            this.data[row][column] = value;
+            this.fireTableCellUpdated(row, column);
         }
     }
 
     // JTable subclass to provide custom tool tips for each of the
     // label table column headers. From Sun's JTable tutorial.
     // http://java.sun.com/docs/books/tutorial/uiswing/components/table.html
-    private class MyTippedJTable extends JTable {
-        public MyTippedJTable(LabelTableModel model) {
+    private class LabelTable extends JTable {
+        public LabelTable(LabelTableModel model) {
             super(model);
         }
 
         // Implement table header tool tips.
         @Override
         protected JTableHeader createDefaultTableHeader() {
-            return new SymbolTableHeader(columnModel);
+            return new LabelTableHeader(this.columnModel);
         }
 
         // Implement cell tool tips.  All of them are the same (although they could be customized).
         @Override
-        public Component prepareRenderer(TableCellRenderer renderer, int rowIndex, int vColIndex) {
-            Component component = super.prepareRenderer(renderer, rowIndex, vColIndex);
+        public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
+            Component component = super.prepareRenderer(renderer, row, column);
             if (component instanceof JComponent jComponent) {
-                jComponent.setToolTipText("Click on label or address to view it in Text/Data Segment");
+                jComponent.setToolTipText("Click on a label or address to view the location in memory.");
             }
             return component;
         }
@@ -477,56 +482,55 @@ public class SymbolTableWindow extends JInternalFrame {
          * mouse is clicked on each column.  The tool tip and sort are
          * customized based on the column under the mouse.
          */
-        private class SymbolTableHeader extends JTableHeader {
-            public SymbolTableHeader(TableColumnModel model) {
+        private class LabelTableHeader extends JTableHeader implements MouseListener {
+            public LabelTableHeader(TableColumnModel model) {
                 super(model);
-                this.addMouseListener(new SymbolTableHeaderMouseListener());
+                this.addMouseListener(this);
             }
 
             @Override
             public String getToolTipText(MouseEvent event) {
-                int index = columnModel.getColumnIndexAtX(event.getPoint().x);
-                if (index < 0) {
+                int columnIndex = this.columnModel.getColumnIndexAtX(event.getPoint().x);
+                if (columnIndex < 0) {
                     return null;
                 }
-                int realIndex = columnModel.getColumn(index).getModelIndex();
-                return COLUMN_TOOL_TIPS[realIndex];
+                int modelIndex = this.columnModel.getColumn(columnIndex).getModelIndex();
+                return COLUMN_TOOL_TIPS[modelIndex];
             }
 
             /**
              * When user clicks on table column header, system will sort the
              * table based on that column then redraw it.
              */
-            private class SymbolTableHeaderMouseListener implements MouseListener {
-                @Override
-                public void mouseClicked(MouseEvent event) {
-                    int index = columnModel.getColumnIndexAtX(event.getPoint().x);
-                    if (index < 0) {
-                        return;
-                    }
-                    int realIndex = columnModel.getColumn(index).getModelIndex();
-                    sortState = SORT_STATE_TRANSITIONS[sortState][realIndex];
-                    Application.getSettings().symbolTableSortState.set(sortState);
-                    setupTable();
-                    Application.getGUI().getMainPane().getExecuteTab().setSymbolTableWindowVisibility(false);
-                    Application.getGUI().getMainPane().getExecuteTab().setSymbolTableWindowVisibility(true);
+            @Override
+            public void mouseClicked(MouseEvent event) {
+                int columnIndex = this.columnModel.getColumnIndexAtX(event.getPoint().x);
+                if (columnIndex < 0) {
+                    return;
                 }
+                int modelIndex = this.columnModel.getColumn(columnIndex).getModelIndex();
+                SymbolTableWindow window = SymbolTableWindow.this;
+                window.sortState = SORT_STATE_TRANSITIONS[window.sortState][modelIndex];
+                window.gui.getSettings().symbolTableSortState.set(window.sortState);
+                window.setupTable();
+                window.gui.getMainPane().getExecuteTab().setSymbolTableWindowVisibile(false);
+                window.gui.getMainPane().getExecuteTab().setSymbolTableWindowVisibile(true);
+            }
 
-                @Override
-                public void mouseEntered(MouseEvent event) {
-                }
+            @Override
+            public void mouseEntered(MouseEvent event) {
+            }
 
-                @Override
-                public void mouseExited(MouseEvent event) {
-                }
+            @Override
+            public void mouseExited(MouseEvent event) {
+            }
 
-                @Override
-                public void mousePressed(MouseEvent event) {
-                }
+            @Override
+            public void mousePressed(MouseEvent event) {
+            }
 
-                @Override
-                public void mouseReleased(MouseEvent event) {
-                }
+            @Override
+            public void mouseReleased(MouseEvent event) {
             }
         }
     }

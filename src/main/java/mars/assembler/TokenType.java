@@ -138,7 +138,7 @@ public enum TokenType {
         // This is needed because most immediate operands limited to 16 bits
         // others limited to 5 bits unsigned (shift amounts) others 32 bits.
         try {
-            int i = Binary.stringToInt(value);   // KENV 1/6/05
+            int i = Binary.decodeInteger(value);   // KENV 1/6/05
 
             /* **************************************************************************
              *  MODIFICATION AND COMMENT, DPS 3-July-2008

@@ -60,7 +60,7 @@ public class RunStepBackwardAction extends VenusAction {
         ExecuteTab executeTab = gui.getMainPane().getExecuteTab();
         executeTab.getTextSegmentWindow().setCodeHighlighting(true);
 
-        if (Application.getSettings().getBackSteppingEnabled()) {
+        if (Application.isBackSteppingEnabled()) {
             boolean inDelaySlot = Application.program.getBackStepper().isInDelaySlot(); // Added 25 June 2007
 
             Memory.getInstance().addObserver(executeTab.getDataSegmentWindow());
