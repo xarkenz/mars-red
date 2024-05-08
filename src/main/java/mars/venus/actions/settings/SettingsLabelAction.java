@@ -46,7 +46,7 @@ public class SettingsLabelAction extends VenusAction {
     @Override
     public void actionPerformed(ActionEvent event) {
         boolean visibility = ((JCheckBoxMenuItem) event.getSource()).isSelected();
-        Application.getGUI().getMainPane().getExecuteTab().setSymbolTableWindowVisibile(visibility);
+        Application.getGUI().getMainPane().getExecuteTab().setSymbolTableWindowVisible(visibility);
         Application.getSettings().labelWindowVisible.set(visibility);
     }
 }

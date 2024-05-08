@@ -276,8 +276,8 @@ public class SymbolTableWindow extends JInternalFrame {
             window.gui.getSettings().symbolTableSortState.set(window.sortState);
             // Refresh the window
             window.setupTable();
-            window.gui.getMainPane().getExecuteTab().setSymbolTableWindowVisibile(false);
-            window.gui.getMainPane().getExecuteTab().setSymbolTableWindowVisibile(true);
+            window.gui.getMainPane().getExecuteTab().setSymbolTableWindowVisible(false);
+            window.gui.getMainPane().getExecuteTab().setSymbolTableWindowVisible(true);
         }
     }
 
@@ -513,8 +513,8 @@ public class SymbolTableWindow extends JInternalFrame {
                 window.sortState = SORT_STATE_TRANSITIONS[window.sortState][modelIndex];
                 window.gui.getSettings().symbolTableSortState.set(window.sortState);
                 window.setupTable();
-                window.gui.getMainPane().getExecuteTab().setSymbolTableWindowVisibile(false);
-                window.gui.getMainPane().getExecuteTab().setSymbolTableWindowVisibile(true);
+                window.gui.getMainPane().getExecuteTab().setSymbolTableWindowVisible(false);
+                window.gui.getMainPane().getExecuteTab().setSymbolTableWindowVisible(true);
             }
 
             @Override
