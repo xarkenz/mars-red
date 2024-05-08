@@ -132,7 +132,7 @@ public class MIPSTokenMarker extends TokenMarker {
                             backslash = false;
                             boolean validIdentifier;
                             try {
-                                validIdentifier = TokenType.isValidIdentifier(new String(line.array, lastOffset, offset - lastOffset).trim());
+                                validIdentifier = TokenType.isValidIdentifier(new String(line.array, lastOffset, offset - lastOffset).strip());
                             }
                             catch (StringIndexOutOfBoundsException e) {
                                 validIdentifier = false;
@@ -336,7 +336,7 @@ public class MIPSTokenMarker extends TokenMarker {
         //             directives start with "."
 
         if (token != null && token.id == Token.NULL) {
-            String trimmedTokenText = tokenText.trim();
+            String trimmedTokenText = tokenText.strip();
 
             // Subcase: no KEYWORD1 or KEYWORD2 but current token contains nothing but white space.  We're done.
             if (keywordTokenText == null && trimmedTokenText.isEmpty()) {

@@ -557,7 +557,7 @@ public class SystemIO {
         }
 
         // Client is responsible for catching NumberFormatException
-        return Integer.parseInt(input.trim());
+        return Integer.parseInt(input.strip());
     }
 
     /**
@@ -585,7 +585,7 @@ public class SystemIO {
                 input = Application.getGUI().getMessagesPane().getInputString(-1);
             }
         }
-        return Float.parseFloat(input.trim());
+        return Float.parseFloat(input.strip());
     }
 
     /**
@@ -613,7 +613,7 @@ public class SystemIO {
                 input = Application.getGUI().getMessagesPane().getInputString(-1);
             }
         }
-        return Double.parseDouble(input.trim());
+        return Double.parseDouble(input.strip());
     }
 
     /**

@@ -116,7 +116,7 @@ public class ExecuteTab extends JDesktopPane {
      *
      * @param visible set to true or false
      */
-    public void setSymbolTableWindowVisibile(boolean visible) {
+    public void setSymbolTableWindowVisible(boolean visible) {
         if (!visible && this.labelWindowVisible) {
             this.labelWindowVisible = false;
             this.textSegment.setVisible(false);
