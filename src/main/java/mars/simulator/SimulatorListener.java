@@ -28,13 +28,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
 */
 
+import java.util.EventListener;
+
 /**
  * This interface is used to detect simulator events. It can be implemented and attached to the {@link Simulator}
  * via {@link Simulator#addGUIListener(SimulatorListener)} or {@link Simulator#addThreadListener(SimulatorListener)}.
  * <p>
  * Note: which method above is used to add the listener will determine which thread the callbacks run on.
  */
-public interface SimulatorListener {
+public interface SimulatorListener extends EventListener {
     /**
      * Called when the simulator begins execution of a program.
      *

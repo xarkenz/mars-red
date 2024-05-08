@@ -138,9 +138,10 @@ public class RegistersTable extends JTable {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             Settings settings = Application.getSettings();
+            boolean isHighlighted = settings.highlightRegisters.get() && isUpdating && row == highlightedRow;
 
             this.setHorizontalAlignment(alignment);
-            if (settings.highlightRegisters.get() && isUpdating && row == highlightedRow) {
+            if (isHighlighted) {
                 this.setBackground(settings.registerHighlightBackground.get());
                 this.setForeground(settings.registerHighlightForeground.get());
             }
@@ -151,7 +152,12 @@ public class RegistersTable extends JTable {
 
             super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
-            this.setFont(MonoRightCellRenderer.MONOSPACED_PLAIN_12POINT);
+            if (isHighlighted) {
+                this.setFont(settings.tableHighlightFont.get());
+            }
+            else {
+                this.setFont(settings.tableFont.get());
+            }
 
             return this;
         }

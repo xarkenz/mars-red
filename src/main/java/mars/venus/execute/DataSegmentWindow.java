@@ -801,13 +801,13 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
         }
 
         @Override
-        public String getColumnName(int col) {
-            return this.columnNames[col];
+        public String getColumnName(int column) {
+            return this.columnNames[column];
         }
 
         @Override
-        public Object getValueAt(int row, int col) {
-            return this.data[row][col];
+        public Object getValueAt(int row, int column) {
+            return this.data[row][column];
         }
 
         /**
@@ -819,18 +819,18 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
          * effort to implement.
          */
         @Override
-        public boolean isCellEditable(int row, int col) {
+        public boolean isCellEditable(int row, int column) {
             // Note that the data/cell address is constant,
             // no matter where the cell appears onscreen.
-            return col != ADDRESS_COLUMN && !DataSegmentWindow.this.asciiDisplay;
+            return column != ADDRESS_COLUMN && !DataSegmentWindow.this.asciiDisplay;
         }
 
         /**
          * JTable uses this method to determine the default renderer/editor for each cell.
          */
         @Override
-        public Class<?> getColumnClass(int col) {
-            return getValueAt(0, col).getClass();
+        public Class<?> getColumnClass(int column) {
+            return getValueAt(0, column).getClass();
         }
 
         /**
@@ -839,21 +839,21 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
          * value is valid, MIPS memory is updated.
          */
         @Override
-        public void setValueAt(Object value, int row, int col) {
+        public void setValueAt(Object value, int row, int column) {
             int intValue;
             int address = 0;
             try {
                 intValue = Binary.decodeInteger(value.toString());
             }
             catch (NumberFormatException exception) {
-                this.data[row][col] = "INVALID";
-                this.fireTableCellUpdated(row, col);
+                this.data[row][column] = "INVALID";
+                this.fireTableCellUpdated(row, column);
                 return;
             }
 
             // Calculate address from row and column
             try {
-                address = Binary.decodeInteger(this.data[row][ADDRESS_COLUMN].toString()) + (col - 1) * BYTES_PER_VALUE; // KENV 1/6/05
+                address = Binary.decodeInteger(this.data[row][ADDRESS_COLUMN].toString()) + (column - 1) * BYTES_PER_VALUE; // KENV 1/6/05
             }
             catch (NumberFormatException exception) {
                 // Can't really happen since memory addresses are completely under
@@ -872,16 +872,16 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
                 }
             }
             int valueBase = DataSegmentWindow.this.gui.getMainPane().getExecuteTab().getValueDisplayBase();
-            this.data[row][col] = NumberDisplayBaseChooser.formatNumber(intValue, valueBase);
-            this.fireTableCellUpdated(row, col);
+            this.data[row][column] = NumberDisplayBaseChooser.formatNumber(intValue, valueBase);
+            this.fireTableCellUpdated(row, column);
         }
 
         /**
          * Update cell contents in table model.  Does not affect MIPS memory.
          */
-        private void setDisplayAndModelValueAt(Object value, int row, int col) {
-            this.data[row][col] = value;
-            this.fireTableCellUpdated(row, col);
+        private void setDisplayAndModelValueAt(Object value, int row, int column) {
+            this.data[row][column] = value;
+            this.fireTableCellUpdated(row, column);
         }
     }
 
@@ -893,11 +893,11 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             int rowFirstAddress = Binary.decodeInteger(table.getValueAt(row, ADDRESS_COLUMN).toString());
+            boolean isHighlighted = DataSegmentWindow.this.gui.getSettings().highlightDataSegment.get() && DataSegmentWindow.this.addressHighlighting
+                && rowFirstAddress == DataSegmentWindow.this.addressRowFirstAddress && column == DataSegmentWindow.this.addressColumn;
 
             this.setHorizontalAlignment(SwingConstants.CENTER);
-            if (DataSegmentWindow.this.gui.getSettings().highlightDataSegment.get() && DataSegmentWindow.this.addressHighlighting
-                && rowFirstAddress == DataSegmentWindow.this.addressRowFirstAddress && column == DataSegmentWindow.this.addressColumn)
-            {
+            if (isHighlighted) {
                 this.setBackground(DataSegmentWindow.this.gui.getSettings().dataSegmentHighlightBackground.get());
                 this.setForeground(DataSegmentWindow.this.gui.getSettings().dataSegmentHighlightForeground.get());
             }
@@ -908,7 +908,12 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
 
             super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
-            this.setFont(MonoRightCellRenderer.MONOSPACED_PLAIN_12POINT);
+            if (isHighlighted) {
+                this.setFont(DataSegmentWindow.this.gui.getSettings().tableHighlightFont.get());
+            }
+            else {
+                this.setFont(DataSegmentWindow.this.gui.getSettings().tableFont.get());
+            }
 
             return this;
         }

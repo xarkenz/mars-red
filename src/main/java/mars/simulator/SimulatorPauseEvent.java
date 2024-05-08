@@ -1,13 +1,12 @@
 package mars.simulator;
 
+import java.util.EventObject;
+
 /**
  * Event for when the simulator stops execution of a program due to pausing.
- *
- * @param maxSteps       The maximum number of steps the simulator took (-1 if not applicable).
- * @param programCounter The value of the program counter when the pause occurred.
- * @param reason         The reason why execution paused.
+ * Note that the return value of {@link #getSource()} will always be a {@link Simulator}.
  */
-public record SimulatorPauseEvent(int maxSteps, int programCounter, Reason reason) {
+public class SimulatorPauseEvent extends EventObject {
     /**
      * Enumeration of reasons for why the simulator might pause.
      */
@@ -26,5 +25,45 @@ public record SimulatorPauseEvent(int maxSteps, int programCounter, Reason reaso
          * This is usually caused by the Pause action.
          */
         EXTERNAL,
+    }
+
+    private final int stepCount;
+    private final int programCounter;
+    private final Reason reason;
+
+    /**
+     * Construct a new event with the given parameters.
+     *
+     * @param simulator      The source of this event.
+     * @param stepCount      The number of steps the simulator took (-1 if not applicable).
+     * @param programCounter The value of the program counter when the pause occurred.
+     * @param reason         The reason why execution paused.
+     */
+    public SimulatorPauseEvent(Simulator simulator, int stepCount, int programCounter, Reason reason) {
+        super(simulator);
+        this.stepCount = stepCount;
+        this.programCounter = programCounter;
+        this.reason = reason;
+    }
+
+    /**
+     * The number of steps the simulator took (-1 if not applicable).
+     */
+    public int getStepCount() {
+        return this.stepCount;
+    }
+
+    /**
+     * The value of the program counter when the pause occurred.
+     */
+    public int getProgramCounter() {
+        return this.programCounter;
+    }
+
+    /**
+     * The reason why execution paused.
+     */
+    public Reason getReason() {
+        return this.reason;
     }
 }

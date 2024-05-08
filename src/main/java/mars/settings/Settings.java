@@ -65,7 +65,7 @@ public class Settings {
     // run regedit and browse to: HKEY_CURRENT_USER\Software\JavaSoft\Prefs\mars
     private final Preferences preferences = Preferences.userNodeForPackage(Settings.class);
 
-    public interface Listener {
+    public interface Listener extends EventListener {
         void settingsChanged();
     }
 

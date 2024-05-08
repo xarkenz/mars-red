@@ -771,13 +771,13 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         }
 
         @Override
-        public String getColumnName(int col) {
-            return COLUMN_NAMES[col];
+        public String getColumnName(int column) {
+            return COLUMN_NAMES[column];
         }
 
         @Override
-        public Object getValueAt(int row, int col) {
-            return this.data[row][col];
+        public Object getValueAt(int row, int column) {
+            return this.data[row][column];
         }
 
         /**
@@ -787,17 +787,17 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
          * rather than a check box.
          */
         @Override
-        public Class<?> getColumnClass(int col) {
-            return this.getValueAt(0, col).getClass();
+        public Class<?> getColumnClass(int column) {
+            return this.getValueAt(0, column).getClass();
         }
 
         /**
          * Only Column #1, the Breakpoint, can be edited.
          */
         @Override
-        public boolean isCellEditable(int row, int col) {
+        public boolean isCellEditable(int row, int column) {
             // Note that the data/cell address is constant, no matter where the cell appears onscreen.
-            return col == BREAKPOINT_COLUMN || (col == CODE_COLUMN && TextSegmentWindow.this.gui.getSettings().selfModifyingCodeEnabled.get());
+            return column == BREAKPOINT_COLUMN || (column == CODE_COLUMN && TextSegmentWindow.this.gui.getSettings().selfModifyingCodeEnabled.get());
         }
 
         /**
@@ -805,14 +805,14 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
          * Straightforward process except for the Code column.
          */
         @Override
-        public void setValueAt(Object value, int row, int col) {
-            if (col != CODE_COLUMN) {
-                this.setDisplayAndModelValueAt(value, row, col);
+        public void setValueAt(Object value, int row, int column) {
+            if (column != CODE_COLUMN) {
+                this.setDisplayAndModelValueAt(value, row, column);
                 return;
             }
             // Handle changes in the Code column
             int address = 0;
-            if (value.equals(this.getValueAt(row, col))) {
+            if (value.equals(this.getValueAt(row, column))) {
                 return;
             }
             int intValue;
@@ -820,7 +820,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
                 intValue = Binary.decodeInteger(value.toString());
             }
             catch (NumberFormatException exception) {
-                this.setDisplayAndModelValueAt("INVALID", row, col);
+                this.setDisplayAndModelValueAt("INVALID", row, column);
                 return;
             }
             // Calculate address from row and column
@@ -846,9 +846,9 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         /**
          * Update cell contents in table model.  Does not affect underlying memory.
          */
-        public void setDisplayAndModelValueAt(Object value, int row, int col) {
-            this.data[row][col] = value;
-            this.fireTableCellUpdated(row, col);
+        public void setDisplayAndModelValueAt(Object value, int row, int column) {
+            this.data[row][column] = value;
+            this.fireTableCellUpdated(row, column);
         }
     }
 
@@ -861,8 +861,10 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
     private class CodeCellRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            boolean isHighlighted = TextSegmentWindow.this.getCodeHighlighting() && TextSegmentWindow.this.getIntCodeAddressAtRow(row) == highlightAddress;
+
             this.setHorizontalAlignment(SwingConstants.LEFT);
-            if (TextSegmentWindow.this.getCodeHighlighting() && TextSegmentWindow.this.getIntCodeAddressAtRow(row) == highlightAddress) {
+            if (isHighlighted) {
                 if (Simulator.isInDelaySlot() || TextSegmentWindow.this.inDelaySlot) {
                     this.setBackground(TextSegmentWindow.this.gui.getSettings().textSegmentDelaySlotHighlightBackground.get());
                     this.setForeground(TextSegmentWindow.this.gui.getSettings().textSegmentDelaySlotHighlightForeground.get());
@@ -879,7 +881,12 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
 
             super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
-            this.setFont(MonoRightCellRenderer.MONOSPACED_PLAIN_12POINT);
+            if (isHighlighted) {
+                this.setFont(TextSegmentWindow.this.gui.getSettings().tableHighlightFont.get());
+            }
+            else {
+                this.setFont(TextSegmentWindow.this.gui.getSettings().tableFont.get());
+            }
 
             return this;
         }

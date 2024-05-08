@@ -225,7 +225,7 @@ public class VenusUI extends JFrame {
         horizonSplitter.setOneTouchExpandable(true);
         horizonSplitter.resetToPreferredSizes();
 
-        // due to dependencies, do not set up menu/toolbar until now.
+        // Due to dependencies, do not set up menu/toolbar until now.
         this.createActionObjects();
         this.createMenuBar();
 
@@ -356,7 +356,7 @@ public class VenusUI extends JFrame {
         settingsHighlightingAction = new SettingsHighlightingAction(this, "Highlighting...", null, "View and modify Execute tab highlighting colors", null, null);
         settingsExceptionHandlerAction = new SettingsExceptionHandlerAction(this, "Exception Handler...", null, "If set, the specified exception handler file will be included in all Assemble operations.", null, null);
         settingsMemoryConfigurationAction = new SettingsMemoryConfigurationAction(this, "Memory Configuration...", null, "View and modify memory segment base addresses for simulated MIPS", null, null);
-        settingsPreferencesAction = new SettingsPreferencesAction(this, "Preferences...", null, "", null, null);
+        settingsPreferencesAction = new SettingsPreferencesAction(this, "Preferences...", getSVGActionIcon("preferences.svg"), "Edit the appearance and behavior of the application", null, null);
 
         helpHelpAction = new HelpHelpAction(this, "Help...", getSVGActionIcon("help.svg"), "View help information", KeyEvent.VK_H, KeyStroke.getKeyStroke(KeyEvent.VK_H, menuShortcutMask));
         helpUpdateAction = new HelpUpdateAction(this, "Check for Updates...", getSVGActionIcon("update.svg"), "Check if a newer version is available", null, null);
@@ -439,7 +439,7 @@ public class VenusUI extends JFrame {
         settingsMenu.add(createMenuItem(settingsHighlightingAction));
         settingsMenu.add(createMenuItem(settingsExceptionHandlerAction));
         settingsMenu.add(createMenuItem(settingsMemoryConfigurationAction));
-//        settingsMenu.add(createMenuItem(settingsPreferencesAction));
+        settingsMenu.add(createMenuItem(settingsPreferencesAction));
         menuBar.add(settingsMenu);
 
         List<ToolAction> toolActions = ToolManager.getToolActions();

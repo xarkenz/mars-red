@@ -1,5 +1,6 @@
 package mars.venus.execute;
 
+import mars.simulator.*;
 import mars.venus.*;
 
 import javax.swing.*;
@@ -76,6 +77,23 @@ public class ExecuteTab extends JDesktopPane {
         this.textSegment.setVisible(true);
         this.dataSegment.setVisible(true);
         this.labelValues.setVisible(this.labelWindowVisible);
+
+        Simulator.getInstance().addGUIListener(new SimulatorListener() {
+            @Override
+            public void simulatorStarted(SimulatorStartEvent event) {
+                ExecuteTab.this.setProgramStatus(ProgramStatus.RUNNING);
+            }
+
+            @Override
+            public void simulatorPaused(SimulatorPauseEvent event) {
+                ExecuteTab.this.setProgramStatus(ProgramStatus.PAUSED);
+            }
+
+            @Override
+            public void simulatorFinished(SimulatorFinishEvent event) {
+                ExecuteTab.this.setProgramStatus(ProgramStatus.TERMINATED);
+            }
+        });
     }
 
     /**

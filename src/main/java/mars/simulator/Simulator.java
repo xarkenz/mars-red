@@ -7,7 +7,6 @@ import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
 import mars.mips.instructions.BasicInstruction;
 import mars.util.Binary;
-import mars.venus.execute.ProgramStatus;
 import mars.venus.execute.RunSpeedPanel;
 
 import javax.swing.*;
@@ -46,15 +45,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * Used to simulate the execution of an assembled MIPS program.
  *
- * @author Pete Sanderson
- * @version August 2005
+ * @author Pete Sanderson, August 2005
  */
 public class Simulator {
     private static Simulator instance = null;
+
     // Others can set this true to indicate external interrupt.  Initially used
     // to simulate keyboard and display interrupts.  The device is identified
     // by the address of its MMIO control register.  keyboard 0xFFFF0000 and
-    // display 0xFFFF0008.  DPS 23 July 2008.
+    // display 0xFFFF0008.  DPS 23 July 2008
     public static final int NO_DEVICE = 0;
     public static volatile int externalInterruptingDevice = NO_DEVICE;
 
@@ -69,10 +68,6 @@ public class Simulator {
      * @return The Simulator object in use.
      */
     public static Simulator getInstance() {
-        // Do NOT change this to create the Simulator at load time (in declaration above)!
-        // Its constructor looks for the GUI, which at load time is not created yet,
-        // and incorrectly leaves interactiveGUIUpdater null!  This causes runtime
-        // exceptions while running in timed mode.
         if (Simulator.instance == null) {
             Simulator.instance = new Simulator();
         }
@@ -165,7 +160,7 @@ public class Simulator {
             SimulatorListener exceptionListener = new SimulatorListener() {
                 @Override
                 public void simulatorFinished(SimulatorFinishEvent event) {
-                    exception[0] = event.exception();
+                    exception[0] = event.getException();
                 }
             };
             this.addThreadListener(exceptionListener);
@@ -213,10 +208,8 @@ public class Simulator {
      * Called when the simulator has started execution of the current program.
      * Invokes {@link SimulatorListener#simulatorStarted(SimulatorStartEvent)} for all listeners.
      */
-    private void dispatchStartEvent(int maxSteps, int programCounter) {
-        Application.getGUI().updateMenuState(ProgramStatus.RUNNING);
-
-        final SimulatorStartEvent event = new SimulatorStartEvent(maxSteps, programCounter);
+    private void dispatchStartEvent(int stepCount, int programCounter) {
+        final SimulatorStartEvent event = new SimulatorStartEvent(this, stepCount, programCounter);
         for (SimulatorListener listener : threadListeners) {
             listener.simulatorStarted(event);
         }
@@ -233,10 +226,8 @@ public class Simulator {
      * Called when the simulator has paused execution of the current program.
      * Invokes {@link SimulatorListener#simulatorPaused(SimulatorPauseEvent)} for all listeners.
      */
-    public void dispatchPauseEvent(int maxSteps, int programCounter, SimulatorPauseEvent.Reason reason) {
-        Application.getGUI().setProgramStatus(ProgramStatus.PAUSED);
-
-        final SimulatorPauseEvent event = new SimulatorPauseEvent(maxSteps, programCounter, reason);
+    public void dispatchPauseEvent(int stepCount, int programCounter, SimulatorPauseEvent.Reason reason) {
+        final SimulatorPauseEvent event = new SimulatorPauseEvent(this, stepCount, programCounter, reason);
         for (SimulatorListener listener : threadListeners) {
             listener.simulatorPaused(event);
         }
@@ -253,10 +244,8 @@ public class Simulator {
      * Called when the simulator has finished execution of the current program.
      * Invokes {@link SimulatorListener#simulatorFinished(SimulatorFinishEvent)} for all listeners.
      */
-    private void dispatchFinishEvent(int maxSteps, int programCounter, SimulatorFinishEvent.Reason reason, ProcessingException exception) {
-        Application.getGUI().setProgramStatus(ProgramStatus.TERMINATED);
-
-        final SimulatorFinishEvent event = new SimulatorFinishEvent(maxSteps, programCounter, reason, exception);
+    private void dispatchFinishEvent(int programCounter, SimulatorFinishEvent.Reason reason, ProcessingException exception) {
+        final SimulatorFinishEvent event = new SimulatorFinishEvent(this, programCounter, reason, exception);
         for (SimulatorListener listener : threadListeners) {
             listener.simulatorFinished(event);
         }
@@ -324,7 +313,7 @@ public class Simulator {
 
         private void dispatchExternalFinishEvent() {
             // Dispatch a pause event once the simulator stops
-            this.simulator.dispatchFinishEvent(this.maxSteps, this.programCounter, SimulatorFinishEvent.Reason.EXTERNAL, null);
+            this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.EXTERNAL, null);
         }
 
         /**
@@ -369,7 +358,7 @@ public class Simulator {
                 // Should only happen if there is a bug somewhere
                 System.err.println("Error: unhandled exception during simulation:");
                 exception.printStackTrace(System.err);
-                this.simulator.dispatchFinishEvent(this.maxSteps, this.programCounter, SimulatorFinishEvent.Reason.INTERNAL_ERROR, null);
+                this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.INTERNAL_ERROR, null);
             }
         }
 
@@ -402,7 +391,7 @@ public class Simulator {
                     0, 0,
                     "invalid program counter value: " + Binary.intToHexString(RegisterFile.getProgramCounter())
                 ));
-                this.simulator.dispatchFinishEvent(this.maxSteps, this.programCounter, SimulatorFinishEvent.Reason.EXCEPTION, new ProcessingException(errors, exception));
+                this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.EXCEPTION, new ProcessingException(errors, exception));
                 return;
             }
 
@@ -477,7 +466,7 @@ public class Simulator {
                     }
                     catch (ProcessingException exception) {
                         if (exception.errors() == null) {
-                            this.simulator.dispatchFinishEvent(this.maxSteps, this.programCounter, SimulatorFinishEvent.Reason.EXIT_SYSCALL, exception);
+                            this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.EXIT_SYSCALL, exception);
                             return;
                         }
 
@@ -498,7 +487,7 @@ public class Simulator {
                             RegisterFile.setProgramCounter(Memory.exceptionHandlerAddress);
                         }
                         else {
-                            this.simulator.dispatchFinishEvent(this.maxSteps, this.programCounter, SimulatorFinishEvent.Reason.EXCEPTION, exception);
+                            this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.EXCEPTION, exception);
                             return;
                         }
                     }
@@ -567,7 +556,7 @@ public class Simulator {
                         0, 0,
                         "invalid program counter value: " + Binary.intToHexString(RegisterFile.getProgramCounter())
                     ));
-                    this.simulator.dispatchFinishEvent(this.maxSteps, this.programCounter, SimulatorFinishEvent.Reason.EXCEPTION, new ProcessingException(errors, exception));
+                    this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.EXCEPTION, new ProcessingException(errors, exception));
                     return;
                 }
             }
@@ -584,7 +573,7 @@ public class Simulator {
                 DelayedBranch.clear();
             }
 
-            this.simulator.dispatchFinishEvent(this.maxSteps, this.programCounter, SimulatorFinishEvent.Reason.RAN_OFF_BOTTOM, null);
+            this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.RAN_OFF_BOTTOM, null);
         }
     }
 }

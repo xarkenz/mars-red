@@ -431,12 +431,12 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
      */
     @Override
     public void simulatorPaused(SimulatorPauseEvent event) {
-        switch (event.reason()) {
+        switch (event.getReason()) {
             case BREAKPOINT -> {
                 this.writeToMessages(Simulator.class.getSimpleName() + ": paused simulation at breakpoint.\n");
             }
             case STEP_LIMIT_REACHED -> {
-                this.writeToMessages(Simulator.class.getSimpleName() + ": paused simulation after " + event.maxSteps() + " step(s).\n");
+                this.writeToMessages(Simulator.class.getSimpleName() + ": paused simulation after " + event.getStepCount() + " step(s).\n");
             }
             case EXTERNAL -> {
                 this.writeToMessages(Simulator.class.getSimpleName() + ": paused simulation.\n");
@@ -451,9 +451,9 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
      */
     @Override
     public void simulatorFinished(SimulatorFinishEvent event) {
-        switch (event.reason()) {
+        switch (event.getReason()) {
             case EXIT_SYSCALL -> {
-                int exitCode = event.exception().exitCode();
+                int exitCode = event.getException().exitCode();
                 if (exitCode == 0) {
                     this.writeToMessages(Simulator.class.getSimpleName() + ": finished simulation successfully.\n");
                 }
@@ -470,12 +470,12 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
             }
             case EXCEPTION -> {
                 this.writeToMessages(Simulator.class.getSimpleName() + ": finished simulation with errors.\n");
-                if (event.exception() == null) {
+                if (event.getException() == null) {
                     this.writeToConsole("\n--- program terminated due to error(s) ---\n\n");
                 }
                 else {
                     this.writeToConsole("\n--- program terminated due to error(s): ---\n");
-                    this.writeToConsole(event.exception().errors().generateErrorReport());
+                    this.writeToConsole(event.getException().errors().generateErrorReport());
                     this.writeToConsole("--- end of error report ---\n\n");
                 }
                 this.setSelectedComponent(consoleTab);

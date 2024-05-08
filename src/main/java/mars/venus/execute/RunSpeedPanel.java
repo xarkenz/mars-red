@@ -49,7 +49,7 @@ public class RunSpeedPanel extends JPanel {
 
     private static final int SPEED_INDEX_MIN = 0;
     private static final int SPEED_INDEX_MAX = 40;
-    private static final int SPEED_INDEX_INIT = 40;
+    private static final int SPEED_INDEX_INITIAL = 40;
     private static final int SPEED_INDEX_INTERACTION_LIMIT = 36;
     private static final double[] RUN_SPEED_TABLE = {
         .05, .1, .2, .3, .4, .5, 1, 2, 3, 4, 5, // 0-10
@@ -59,7 +59,7 @@ public class RunSpeedPanel extends JPanel {
         UNLIMITED_SPEED, UNLIMITED_SPEED, UNLIMITED_SPEED // 38-40
     };
 
-    private volatile int runSpeedIndex = SPEED_INDEX_INIT;
+    private volatile int runSpeedIndex = SPEED_INDEX_INITIAL;
 
     private static RunSpeedPanel instance = null;
 
@@ -90,9 +90,7 @@ public class RunSpeedPanel extends JPanel {
         sliderLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         this.add(sliderLabel, BorderLayout.NORTH);
 
-        JSlider runSpeedSlider = new JSlider(JSlider.HORIZONTAL, SPEED_INDEX_MIN, SPEED_INDEX_MAX, SPEED_INDEX_INIT);
-//        runSpeedSlider.setMajorTickSpacing(5);
-//        runSpeedSlider.setPaintTicks(true); // Create the label table
+        JSlider runSpeedSlider = new JSlider(JSlider.HORIZONTAL, SPEED_INDEX_MIN, SPEED_INDEX_MAX, SPEED_INDEX_INITIAL);
         runSpeedSlider.addChangeListener(event -> {
             // Revise label as user slides and update current index when sliding stops
             JSlider source = (JSlider) event.getSource();

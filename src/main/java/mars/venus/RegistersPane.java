@@ -88,7 +88,7 @@ public class RegistersPane extends JTabbedPane implements SimulatorListener {
 
     @Override
     public void simulatorFinished(SimulatorFinishEvent event) {
-        if (event.reason() == SimulatorFinishEvent.Reason.EXCEPTION) {
+        if (event.getReason() == SimulatorFinishEvent.Reason.EXCEPTION) {
             this.setSelectedComponent(this.coprocessor0Tab);
         }
     }
