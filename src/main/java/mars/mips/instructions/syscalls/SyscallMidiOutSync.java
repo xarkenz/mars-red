@@ -4,6 +4,11 @@ import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.RegisterFile;
 
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 /*
 Copyright (c) 2003-2007,  Pete Sanderson and Kenneth Vollmar
 
@@ -46,6 +51,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * not return until the tone duration has elapsed.  By contrast, syscall 31
  * (MidiOut) returns immediately upon generating the tone.
  */
+@SuppressWarnings("unused")
 public class SyscallMidiOutSync extends AbstractSyscall {
     // Endpoints of ranges for the three "byte" parameters.  The duration
     // parameter is limited at the high end only by the int range.
@@ -82,19 +88,34 @@ public class SyscallMidiOutSync extends AbstractSyscall {
         int volume = RegisterFile.getValue(7); // $a3
 
         if (pitch < RANGE_MIN || pitch > RANGE_MAX) {
-            pitch = ToneGenerator.DEFAULT_PITCH;
+            pitch = MidiNotePlayer.DEFAULT_PITCH;
         }
         if (duration < 0) {
-            duration = ToneGenerator.DEFAULT_DURATION;
+            duration = MidiNotePlayer.DEFAULT_DURATION;
         }
         if (instrument < RANGE_MIN || instrument > RANGE_MAX) {
-            instrument = ToneGenerator.DEFAULT_INSTRUMENT;
+            instrument = MidiNotePlayer.DEFAULT_INSTRUMENT;
         }
         if (volume < RANGE_MIN || volume > RANGE_MAX) {
-            volume = ToneGenerator.DEFAULT_VOLUME;
+            volume = MidiNotePlayer.DEFAULT_VOLUME;
         }
 
-        new ToneGenerator().generateToneSynchronously((byte) pitch, duration, (byte) instrument, (byte) volume);
+        try {
+            // Call get() to wait until the note finishes (or not)
+            MidiNotePlayer.playNote(pitch, duration, instrument, volume)
+                .get(duration, TimeUnit.MILLISECONDS);
+        }
+        catch (ExecutionException exception) {
+            if (exception.getCause() != null) {
+                exception.getCause().printStackTrace(System.err);
+            }
+            else {
+                exception.printStackTrace(System.err);
+            }
+        }
+        catch (InterruptedException | TimeoutException | CancellationException exception) {
+            // Ignore
+        }
     }
 }
 	

@@ -187,9 +187,9 @@ public class Simulator {
      * {@link SimulatorListener#simulatorPaused(SimulatorPauseEvent)} will be called for all registered listeners.
      */
     public void pause() {
-        if (simulatorThread != null) {
-            simulatorThread.stopForPause();
-            simulatorThread = null;
+        if (this.simulatorThread != null) {
+            this.simulatorThread.stopForPause();
+            this.simulatorThread = null;
         }
     }
 
@@ -198,9 +198,9 @@ public class Simulator {
      * {@link SimulatorListener#simulatorFinished(SimulatorFinishEvent)} will be called for all registered listeners.
      */
     public void terminate() {
-        if (simulatorThread != null) {
-            simulatorThread.stopForTermination();
-            simulatorThread = null;
+        if (this.simulatorThread != null) {
+            this.simulatorThread.stopForTermination();
+            this.simulatorThread = null;
         }
     }
 
@@ -210,12 +210,12 @@ public class Simulator {
      */
     private void dispatchStartEvent(int stepCount, int programCounter) {
         final SimulatorStartEvent event = new SimulatorStartEvent(this, stepCount, programCounter);
-        for (SimulatorListener listener : threadListeners) {
+        for (SimulatorListener listener : this.threadListeners) {
             listener.simulatorStarted(event);
         }
         if (Application.getGUI() != null) {
             SwingUtilities.invokeLater(() -> {
-                for (SimulatorListener listener : guiListeners) {
+                for (SimulatorListener listener : this.guiListeners) {
                     listener.simulatorStarted(event);
                 }
             });
@@ -228,12 +228,12 @@ public class Simulator {
      */
     public void dispatchPauseEvent(int stepCount, int programCounter, SimulatorPauseEvent.Reason reason) {
         final SimulatorPauseEvent event = new SimulatorPauseEvent(this, stepCount, programCounter, reason);
-        for (SimulatorListener listener : threadListeners) {
+        for (SimulatorListener listener : this.threadListeners) {
             listener.simulatorPaused(event);
         }
         if (Application.getGUI() != null) {
             SwingUtilities.invokeLater(() -> {
-                for (SimulatorListener listener : guiListeners) {
+                for (SimulatorListener listener : this.guiListeners) {
                     listener.simulatorPaused(event);
                 }
             });
@@ -246,12 +246,12 @@ public class Simulator {
      */
     private void dispatchFinishEvent(int programCounter, SimulatorFinishEvent.Reason reason, ProcessingException exception) {
         final SimulatorFinishEvent event = new SimulatorFinishEvent(this, programCounter, reason, exception);
-        for (SimulatorListener listener : threadListeners) {
+        for (SimulatorListener listener : this.threadListeners) {
             listener.simulatorFinished(event);
         }
         if (Application.getGUI() != null) {
             SwingUtilities.invokeLater(() -> {
-                for (SimulatorListener listener : guiListeners) {
+                for (SimulatorListener listener : this.guiListeners) {
                     listener.simulatorFinished(event);
                 }
             });
@@ -263,12 +263,14 @@ public class Simulator {
      * Invokes {@link SimulatorListener#simulatorStepped()} for all listeners.
      */
     private void dispatchStepEvent() {
-        for (SimulatorListener listener : threadListeners) {
-            listener.simulatorStepped();
+        synchronized (this.threadListeners) {
+            for (SimulatorListener listener : this.threadListeners) {
+                listener.simulatorStepped();
+            }
         }
         if (Application.getGUI() != null) {
             SwingUtilities.invokeLater(() -> {
-                for (SimulatorListener listener : guiListeners) {
+                for (SimulatorListener listener : this.guiListeners) {
                     listener.simulatorStepped();
                 }
             });

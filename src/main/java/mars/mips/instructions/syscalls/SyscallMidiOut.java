@@ -37,6 +37,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * immediately upon generating the tone.  By contrast, syscall 33
  * (MidiOutSync) does not return until tone duration has elapsed.
  */
+@SuppressWarnings("unused")
 public class SyscallMidiOut extends AbstractSyscall {
     // Endpoints of ranges for the three "byte" parameters.  The duration
     // parameter is limited at the high end only by the int range.
@@ -72,19 +73,19 @@ public class SyscallMidiOut extends AbstractSyscall {
         int volume = RegisterFile.getValue(7); // $a3
 
         if (pitch < RANGE_MIN || pitch > RANGE_MAX) {
-            pitch = ToneGenerator.DEFAULT_PITCH;
+            pitch = MidiNotePlayer.DEFAULT_PITCH;
         }
         if (duration < 0) {
-            duration = ToneGenerator.DEFAULT_DURATION;
+            duration = MidiNotePlayer.DEFAULT_DURATION;
         }
         if (instrument < RANGE_MIN || instrument > RANGE_MAX) {
-            instrument = ToneGenerator.DEFAULT_INSTRUMENT;
+            instrument = MidiNotePlayer.DEFAULT_INSTRUMENT;
         }
         if (volume < RANGE_MIN || volume > RANGE_MAX) {
-            volume = ToneGenerator.DEFAULT_VOLUME;
+            volume = MidiNotePlayer.DEFAULT_VOLUME;
         }
 
-        new ToneGenerator().generateTone((byte) pitch, duration, (byte) instrument, (byte) volume);
+        MidiNotePlayer.playNote(pitch, duration, instrument, volume);
     }
 }
 	
