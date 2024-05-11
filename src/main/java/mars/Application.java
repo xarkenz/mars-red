@@ -298,8 +298,7 @@ public class Application {
 
     /**
      * Return whether backstepping is permitted at this time.  Backstepping is ability to undo execution
-     * steps one at a time.  Available only in the IDE.  This is not a persistent setting and is not under
-     * MARS user control.
+     * steps one at a time.  Available only in GUI mode.
      *
      * @return true if backstepping is permitted, false otherwise.
      */

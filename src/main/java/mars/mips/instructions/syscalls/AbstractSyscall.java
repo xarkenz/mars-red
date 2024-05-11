@@ -98,5 +98,5 @@ public abstract class AbstractSyscall implements Syscall {
      * @param statement ProgramStatement object for this syscall instruction.
      */
     @Override
-    public abstract void simulate(ProgramStatement statement) throws ProcessingException;
+    public abstract void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException;
 }

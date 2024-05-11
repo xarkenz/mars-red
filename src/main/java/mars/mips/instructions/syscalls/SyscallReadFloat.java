@@ -37,6 +37,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * Service to read the bits of input float into $f0
  */
+@SuppressWarnings("unused")
 public class SyscallReadFloat extends AbstractSyscall {
     /**
      * Build an instance of the Read Float syscall.  Default service number
@@ -50,7 +51,7 @@ public class SyscallReadFloat extends AbstractSyscall {
      * Performs syscall function to read the bits of input float into $f0.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException {
         try {
             float floatValue = Simulator.getInstance().getSystemIO().readFloat();
             Coprocessor1.updateRegister(0, Float.floatToRawIntBits(floatValue));

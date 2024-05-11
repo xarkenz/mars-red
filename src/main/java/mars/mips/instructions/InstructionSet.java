@@ -1521,12 +1521,12 @@ public class InstructionSet {
             }
             inputReader.close();
         }
-        catch (IOException e) {
-            System.out.println("Internal Error: MIPS pseudo-instructions could not be loaded.");
+        catch (IOException exception) {
+            System.err.println("Internal Error: MIPS pseudo-instructions could not be loaded.");
             System.exit(0);
         }
-        catch (Exception e) {
-            System.out.println("Error: Invalid MIPS pseudo-instruction specification.");
+        catch (Exception exception) {
+            System.err.println("Error: Invalid MIPS pseudo-instruction specification.");
             System.exit(0);
         }
     }
@@ -1581,7 +1581,7 @@ public class InstructionSet {
      * function is represented by an object in an array list.  Each object is of
      * a class that implements Syscall or extends AbstractSyscall.
      */
-    private void findAndSimulateSyscall(int number, ProgramStatement statement) throws ProcessingException {
+    private void findAndSimulateSyscall(int number, ProgramStatement statement) throws ProcessingException, InterruptedException {
         Syscall service = SyscallManager.getSyscall(number);
         if (service != null) {
             service.simulate(statement);

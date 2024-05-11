@@ -328,7 +328,7 @@ public class SystemIO {
      * @param lengthRequested Maximum number of bytes to read.
      * @return Number of bytes read, 0 on EOF, or -1 on error.
      */
-    public int readFromFile(int descriptor, byte[] buffer, int lengthRequested) {
+    public int readFromFile(int descriptor, byte[] buffer, int lengthRequested) throws InterruptedException {
         /////////////// DPS 8-Jan-2013  //////////////////////////////////////////////////
         // Read from STDIN file descriptor while using IDE - get input from Messages pane.
         if (descriptor == STDIN_DESCRIPTOR && Application.getGUI() != null) {
@@ -537,7 +537,7 @@ public class SystemIO {
      * @return Integer value entered by user.
      * @throws NumberFormatException Thrown if invalid input is entered.
      */
-    public int readInteger() throws NumberFormatException {
+    public int readInteger() throws NumberFormatException, InterruptedException {
         String input = "";
         if (Application.getGUI() == null) {
             try {
@@ -567,7 +567,7 @@ public class SystemIO {
      * @throws NumberFormatException Thrown if invalid input is entered.
      * @author Ken Vollmar Feb 14 2005
      */
-    public float readFloat() throws NumberFormatException {
+    public float readFloat() throws NumberFormatException, InterruptedException {
         String input = "";
         if (Application.getGUI() == null) {
             try {
@@ -595,7 +595,7 @@ public class SystemIO {
      * @throws NumberFormatException Thrown if invalid input is entered.
      * @author DPS 1 Aug 2005, based on Ken Vollmar's {@link #readFloat()}
      */
-    public double readDouble() throws NumberFormatException {
+    public double readDouble() throws NumberFormatException, InterruptedException {
         String input = "";
         if (Application.getGUI() == null) {
             try {
@@ -622,7 +622,7 @@ public class SystemIO {
      * @param maxLength The maximum string length.
      * @return String value entered by user, truncated to maximum length if necessary.
      */
-    public String readString(int maxLength) {
+    public String readString(int maxLength) throws InterruptedException {
         String input = "";
         if (Application.getGUI() == null) {
             try {
@@ -659,7 +659,7 @@ public class SystemIO {
      * @return Integer value with least significant byte corresponding to user input.
      * @throws IndexOutOfBoundsException Thrown if invalid input is entered.
      */
-    public int readChar() throws IndexOutOfBoundsException {
+    public int readChar() throws IndexOutOfBoundsException, InterruptedException {
         String input = "";
         if (Application.getGUI() == null) {
             try {

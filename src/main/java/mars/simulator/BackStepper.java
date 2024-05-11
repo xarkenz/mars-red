@@ -2,6 +2,7 @@ package mars.simulator;
 
 import mars.Application;
 import mars.ProgramStatement;
+import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Coprocessor0;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.RegisterFile;
@@ -140,10 +141,9 @@ public class BackStepper {
                         case DO_NOTHING -> {}
                     }
                 }
-                catch (Exception e) {
-                    // if the original action did not cause an exception this will not either.
-                    System.out.println("Internal MARS error: address exception while back-stepping.");
-                    System.exit(0);
+                catch (AddressErrorException exception) {
+                    // If the original action did not cause an exception this will not either.
+                    throw new RuntimeException("accessed invalid memory address while backstepping");
                 }
             }
             while (!backSteps.isEmpty() && statement == backSteps.peek().statement);

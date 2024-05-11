@@ -480,6 +480,14 @@ public class Simulator {
                             throw exception;
                         }
                     }
+                    catch (InterruptedException exception) {
+                        // The instruction was interrupted in the middle of what it was doing,
+                        // and it should have already reverted all of its own changes, so all we need to do
+                        // to allow a pause interrupt to work is undo the incrementation of the program counter
+                        RegisterFile.setProgramCounter(this.programCounter);
+                        // Proceed with interrupt handling as usual
+                        throw exception;
+                    }
                 }
 
                 // DPS 15 June 2007.  Handle delayed branching if it occurs.
@@ -493,9 +501,7 @@ public class Simulator {
 
                 // Check for an interrupt (either a pause or termination)
                 if (Thread.interrupted()) {
-                    // this.interruptEventDispatcher will be set by the method that caused the interrupt
-                    this.interruptEventDispatcher.run();
-                    return;
+                    throw new InterruptedException();
                 }
                 // Check for a breakpoint
                 if (this.breakPoints != null && Arrays.binarySearch(this.breakPoints, RegisterFile.getProgramCounter()) >= 0) {

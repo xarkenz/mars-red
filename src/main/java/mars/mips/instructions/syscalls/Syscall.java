@@ -42,7 +42,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * with its service number stored in register $v0), its simulate()
  * method will be invoked.
  */
-
 public interface Syscall {
     /**
      * Return a name you have chosen for this syscall.  This can be used by a MARS
@@ -75,5 +74,5 @@ public interface Syscall {
      *
      * @param statement ProgramStatement for this syscall statement.
      */
-    void simulate(ProgramStatement statement) throws ProcessingException;
+    void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException;
 }

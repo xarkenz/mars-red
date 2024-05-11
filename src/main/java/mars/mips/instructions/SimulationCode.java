@@ -43,8 +43,8 @@ public interface SimulationCode {
     /**
      * Method to simulate the execution of a specific MIPS basic instruction.
      *
-     * @param statement A ProgramStatement representing the MIPS instruction to simulate.
-     * @throws ProcessingException This is a run-time exception generated during simulation.
+     * @param statement A {@link ProgramStatement} representing the MIPS instruction to simulate.
+     * @throws ProcessingException Thrown if a runtime exception was generated during simulation.
      */
-    void simulate(ProgramStatement statement) throws ProcessingException;
+    void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException;
 }

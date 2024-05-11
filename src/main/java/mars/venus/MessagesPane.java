@@ -146,7 +146,7 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
                         try {
                             column = Integer.parseInt(columnString);
                         }
-                        catch (NumberFormatException nfe) {
+                        catch (NumberFormatException exception) {
                             column = 0;
                         }
                         // everything between FILENAME_PREFIX and LINE_PREFIX is filename.
@@ -167,16 +167,11 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
 
         JButton consoleClearButton = new JButton("Clear");
         consoleClearButton.setToolTipText("Clear the Console area.");
-        consoleClearButton.addActionListener(event -> {
-            consoleTextArea.setText("");
-        });
+        consoleClearButton.addActionListener(event -> consoleTextArea.setText(""));
         consoleTab = new JPanel(new BorderLayout());
         consoleTab.setBorder(new EmptyBorder(6, 6, 6, 6));
         consoleTab.add(createBoxForButton(consoleClearButton), BorderLayout.WEST);
         JScrollPane consoleScrollPane = new JScrollPane(consoleTextArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-//        consoleScrollPane.getVerticalScrollBar().addAdjustmentListener(event -> {
-//            System.out.println(event.getValueIsAdjusting() + " " + event.getAdjustable().getMaximum() + " " + event.getValue());
-//        });
         consoleTab.add(consoleScrollPane, BorderLayout.CENTER);
         this.addTab("Messages", null, messagesTab, "Information, warnings and errors. Click on an error message to jump to the error source.");
         this.addTab("Console", null, consoleTab, "Simulated MIPS console input and output.");
@@ -383,7 +378,6 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
      * @param prompt Prompt to display to the user.
      * @return User input, as a String.
      */
-    // FIXME: This does not mix well with pausing/stopping! Figure out how to pause this process
     public String getInputString(String prompt) {
         JOptionPane pane = new JOptionPane(prompt, JOptionPane.QUESTION_MESSAGE, JOptionPane.DEFAULT_OPTION);
         pane.setWantsInput(true);
@@ -408,7 +402,7 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
      *                  Use -1 for no length restrictions.
      * @return User input, as a String.
      */
-    public String getInputString(int maxLength) {
+    public String getInputString(int maxLength) throws InterruptedException {
         ConsoleInputContext context = new ConsoleInputContext(consoleTextArea, maxLength);
         return context.awaitUserInput();
     }
@@ -514,7 +508,7 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
          *
          * @return The input submitted by the user, not including the newline.
          */
-        public String awaitUserInput() {
+        public String awaitUserInput() throws InterruptedException {
             SwingUtilities.invokeLater(this::beginInput);
 
             try {
@@ -522,7 +516,13 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
                 return resultQueue.take();
             }
             catch (InterruptedException exception) {
-                return null;
+                // Delete the partial input, as we don't have a good way to save it
+                SwingUtilities.invokeLater(() -> {
+                    if (this.initialPosition <= this.textArea.getDocument().getLength()) {
+                        this.textArea.replaceRange("", this.initialPosition, this.textArea.getDocument().getLength());
+                    }
+                });
+                throw exception;
             }
             finally {
                 SwingUtilities.invokeLater(this::endInput);
@@ -595,8 +595,8 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
             @Override
             public void remove(FilterBypass bypass, int offset, int length) throws BadLocationException {
                 // Prevent any edits before the initial position
-                if (offset < initialPosition) {
-                    textArea.getToolkit().beep();
+                if (offset < ConsoleInputContext.this.initialPosition) {
+                    ConsoleInputContext.this.textArea.getToolkit().beep();
                     return;
                 }
 
@@ -608,8 +608,8 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
             @Override
             public void moveDot(FilterBypass bypass, int dot, Position.Bias bias) {
                 // Prevent placement of the caret before the initial position
-                if (dot < initialPosition) {
-                    dot = Math.min(initialPosition, textArea.getDocument().getLength());
+                if (dot < ConsoleInputContext.this.initialPosition) {
+                    dot = Math.min(ConsoleInputContext.this.initialPosition, ConsoleInputContext.this.textArea.getDocument().getLength());
                 }
                 bypass.moveDot(dot, bias);
             }
@@ -617,8 +617,8 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
             @Override
             public void setDot(FilterBypass bypass, int dot, Position.Bias bias) {
                 // Prevent placement of the caret before the initial position
-                if (dot < initialPosition) {
-                    dot = Math.min(initialPosition, textArea.getDocument().getLength());
+                if (dot < ConsoleInputContext.this.initialPosition) {
+                    dot = Math.min(ConsoleInputContext.this.initialPosition, ConsoleInputContext.this.textArea.getDocument().getLength());
                 }
                 bypass.setDot(dot, bias);
             }
@@ -627,49 +627,50 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
         private final SimulatorListener simulatorListener = new SimulatorListener() {
             @Override
             public void simulatorStarted(SimulatorStartEvent event) {
-                textArea.setEditable(true);
+                ConsoleInputContext.this.textArea.setEditable(true);
             }
 
             @Override
             public void simulatorPaused(SimulatorPauseEvent event) {
-                textArea.setEditable(false);
+                ConsoleInputContext.this.textArea.setEditable(false);
             }
 
             @Override
             public void simulatorFinished(SimulatorFinishEvent event) {
-                submitInput();
+                ConsoleInputContext.this.submitInput();
             }
         };
 
         private void beginInput() {
-            textArea.setEditable(true);
-            textArea.requestFocusInWindow();
-            textArea.setCaretPosition(textArea.getDocument().getLength());
-            initialPosition = textArea.getCaretPosition();
-            textArea.setNavigationFilter(navigationFilter);
-            ((AbstractDocument) textArea.getDocument()).setDocumentFilter(documentFilter);
-            Simulator.getInstance().addGUIListener(simulatorListener);
+            this.textArea.setEditable(true);
+            this.textArea.requestFocusInWindow();
+            this.textArea.setCaretPosition(this.textArea.getDocument().getLength());
+            this.initialPosition = this.textArea.getCaretPosition();
+            this.textArea.setNavigationFilter(this.navigationFilter);
+            ((AbstractDocument) this.textArea.getDocument()).setDocumentFilter(this.documentFilter);
+            Simulator.getInstance().addGUIListener(this.simulatorListener);
         }
 
         private void submitInput() {
             try {
-                int position = Math.min(initialPosition, textArea.getDocument().getLength());
-                int length = Math.min(textArea.getDocument().getLength() - position, maxLength >= 0 ? maxLength : Integer.MAX_VALUE);
-                resultQueue.offer(textArea.getText(position, length));
+                int position = Math.min(this.initialPosition, this.textArea.getDocument().getLength());
+                int length = Math.min(this.textArea.getDocument().getLength() - position, this.maxLength >= 0 ? this.maxLength : Integer.MAX_VALUE);
+                this.resultQueue.offer(this.textArea.getText(position, length));
             }
             catch (BadLocationException exception) {
                 // This should not happen, but if it somehow does, default to an empty string
-                resultQueue.offer("");
+                this.resultQueue.offer("");
             }
+            // Append a newline to account for the newline stripped before submission
+            SwingUtilities.invokeLater(() -> this.textArea.append("\n"));
         }
 
         private void endInput() {
-            textArea.setEditable(false);
-            textArea.setNavigationFilter(null);
-            ((AbstractDocument) textArea.getDocument()).setDocumentFilter(null);
-            textArea.append("\n");
-            textArea.setCaretPosition(textArea.getDocument().getLength());
-            Simulator.getInstance().removeGUIListener(simulatorListener);
+            this.textArea.setEditable(false);
+            this.textArea.setNavigationFilter(null);
+            ((AbstractDocument) this.textArea.getDocument()).setDocumentFilter(null);
+            this.textArea.setCaretPosition(this.textArea.getDocument().getLength());
+            Simulator.getInstance().removeGUIListener(this.simulatorListener);
         }
     }
 }

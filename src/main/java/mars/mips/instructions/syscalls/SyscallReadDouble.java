@@ -39,6 +39,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Service to read the bits of console input double into $f0 and $f1.
  * $f1 contains high order word of the double.
  */
+@SuppressWarnings("unused")
 public class SyscallReadDouble extends AbstractSyscall {
     /**
      * Build an instance of the Read Double syscall.  Default service number
@@ -52,7 +53,7 @@ public class SyscallReadDouble extends AbstractSyscall {
      * Performs syscall function to read the bits of input double into $f0 and $f1.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException {
         try {
             double doubleValue = Simulator.getInstance().getSystemIO().readDouble();
             long longValue = Double.doubleToRawLongBits(doubleValue);

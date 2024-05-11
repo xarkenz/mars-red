@@ -37,6 +37,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * Service to read a character from input console into $a0.
  */
+@SuppressWarnings("unused")
 public class SyscallReadChar extends AbstractSyscall {
     /**
      * Build an instance of the Read Char syscall.  Default service number
@@ -50,7 +51,7 @@ public class SyscallReadChar extends AbstractSyscall {
      * Performs syscall function to read a character from input console into $v0.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException {
         try {
             int charValue = Simulator.getInstance().getSystemIO().readChar();
             // DPS 20 June 2008: changed from 4 ($a0) to 2 ($v0)

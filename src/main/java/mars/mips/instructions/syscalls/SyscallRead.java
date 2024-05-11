@@ -55,7 +55,7 @@ public class SyscallRead extends AbstractSyscall {
      * and $a2 specifies length.  Number of characters read is returned in $v0 (starting MARS 3.7).
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException {
         int descriptor = RegisterFile.getValue(4); // $a0: file descriptor
         int byteAddress = RegisterFile.getValue(5); // $a1: destination of characters to read from file
         int maxLength = RegisterFile.getValue(6); // $a2: user-requested length

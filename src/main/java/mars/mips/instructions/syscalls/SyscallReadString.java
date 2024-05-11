@@ -38,6 +38,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * Service to read console input string into buffer starting at address in $a0.
  */
+@SuppressWarnings("unused")
 public class SyscallReadString extends AbstractSyscall {
     /**
      * Build an instance of the Read String syscall.  Default service number
@@ -54,7 +55,7 @@ public class SyscallReadString extends AbstractSyscall {
      * newline to end.  In either case, then pad with null byte.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException {
         int buf = RegisterFile.getValue(4); // buf addr in $a0
         int maxLength = RegisterFile.getValue(5) - 1; // $a1
         boolean addNullByte = true;
