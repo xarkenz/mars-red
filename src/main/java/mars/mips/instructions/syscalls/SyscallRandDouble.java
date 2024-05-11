@@ -5,7 +5,7 @@ import mars.ProgramStatement;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.InvalidRegisterAccessException;
 import mars.mips.hardware.RegisterFile;
-import mars.simulator.Exceptions;
+import mars.simulator.ExceptionCause;
 
 import java.util.Random;
 
@@ -67,7 +67,7 @@ public class SyscallRandDouble extends AbstractSyscall {
         }
         catch (InvalidRegisterAccessException exception) {
             // This should not occur because $f0 is always a valid double target
-            throw new ProcessingException(statement, "Internal error storing double to register (syscall " + this.getNumber() + ")", Exceptions.SYSCALL_EXCEPTION);
+            throw new ProcessingException(statement, "Internal error storing double to register (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
     }
 }

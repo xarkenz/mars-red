@@ -2,7 +2,7 @@ package mars.tools;
 
 import mars.Application;
 import mars.mips.hardware.*;
-import mars.simulator.Exceptions;
+import mars.simulator.ExceptionCause;
 import mars.util.Binary;
 import mars.venus.AbstractFontSettingDialog;
 import mars.venus.VenusUI;
@@ -272,7 +272,7 @@ public class KeyboardAndDisplaySimulator extends AbstractMarsToolAndApplication 
                     && (Coprocessor0.getValue(Coprocessor0.STATUS) & 1) == 1) {
                     // interrupt-enabled bit is set in both Tranmitter Control and in
                     // Coprocessor0 Status register, and Interrupt Level Bit is 0, so trigger external interrupt.
-                    mars.simulator.Simulator.externalInterruptingDevice = Exceptions.EXTERNAL_INTERRUPT_DISPLAY;
+                    mars.simulator.Simulator.externalInterruptingDevice = ExceptionCause.EXTERNAL_INTERRUPT_DISPLAY;
                 }
             }
         }
@@ -760,7 +760,7 @@ public class KeyboardAndDisplaySimulator extends AbstractMarsToolAndApplication 
                 && (Coprocessor0.getValue(Coprocessor0.STATUS) & 1) == 1) {
                 // interrupt-enabled bit is set in both Receiver Control and in
                 // Coprocessor0 Status register, and Interrupt Level Bit is 0, so trigger external interrupt.
-                mars.simulator.Simulator.externalInterruptingDevice = Exceptions.EXTERNAL_INTERRUPT_KEYBOARD;
+                mars.simulator.Simulator.externalInterruptingDevice = ExceptionCause.EXTERNAL_INTERRUPT_KEYBOARD;
             }
         }
 

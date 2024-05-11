@@ -3,7 +3,7 @@ package mars.mips.instructions.syscalls;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.RegisterFile;
-import mars.simulator.Exceptions;
+import mars.simulator.ExceptionCause;
 
 import java.util.Random;
 
@@ -66,7 +66,7 @@ public class SyscallRandIntRange extends AbstractSyscall {
             RegisterFile.updateRegister(4, stream.nextInt(RegisterFile.getValue(5)));
         }
         catch (IllegalArgumentException exception) {
-            throw new ProcessingException(statement, "Upper bound of range cannot be negative (syscall " + this.getNumber() + ")", Exceptions.SYSCALL_EXCEPTION);
+            throw new ProcessingException(statement, "Upper bound of range cannot be negative (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
     }
 }

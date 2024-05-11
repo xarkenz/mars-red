@@ -1,9 +1,9 @@
 package mars;
 
 import mars.mips.hardware.AddressErrorException;
+import mars.mips.hardware.Coprocessor0;
 import mars.mips.hardware.RegisterFile;
 import mars.mips.instructions.Instruction;
-import mars.simulator.Exceptions;
 import mars.util.Binary;
 
 /*
@@ -41,7 +41,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @version August 2003
  */
 public class ProcessingException extends Exception {
-    private final ErrorList errs;
+    private final ErrorList errors;
     private int exitCode = 0;
 
     /**
@@ -51,7 +51,7 @@ public class ProcessingException extends Exception {
      *                  represents one processing error.
      */
     public ProcessingException(ErrorList errorList) {
-        errs = errorList;
+        errors = errorList;
     }
 
     /**
@@ -62,8 +62,8 @@ public class ProcessingException extends Exception {
      * @param exception AddressErrorException object containing specialized error message, cause, address
      */
     public ProcessingException(ErrorList errorList, AddressErrorException exception) {
-        errs = errorList;
-        Exceptions.setRegisters(exception.getType(), exception.getAddress());
+        this.errors = errorList;
+        Coprocessor0.updateRegisters(exception.getType(), exception.getAddress());
     }
 
     /**
@@ -73,8 +73,13 @@ public class ProcessingException extends Exception {
      * @param message   String containing specialized error message
      */
     public ProcessingException(ProgramStatement statement, String message) {
-        errs = new ErrorList();
-        errs.add(new ErrorMessage(statement, "Runtime exception at " + Binary.intToHexString(RegisterFile.getProgramCounter() - Instruction.INSTRUCTION_LENGTH_BYTES) + ": " + message));
+        this.errors = new ErrorList();
+        this.errors.add(new ErrorMessage(
+            statement,
+            "Runtime exception at " + Binary.intToHexString(
+                RegisterFile.getProgramCounter() - Instruction.INSTRUCTION_LENGTH_BYTES
+            ) + ": " + message
+        ));
         // Stopped using ps.getAddress() because of pseudo-instructions.  All instructions in
         // the macro expansion point to the same ProgramStatement, and thus all will return the
         // same value for getAddress(). But only the first such expanded instruction will
@@ -91,7 +96,7 @@ public class ProcessingException extends Exception {
      */
     public ProcessingException(ProgramStatement statement, String message, int cause) {
         this(statement, message);
-        Exceptions.setRegisters(cause);
+        Coprocessor0.updateRegisters(cause);
     }
 
     /**
@@ -102,7 +107,7 @@ public class ProcessingException extends Exception {
      */
     public ProcessingException(ProgramStatement statement, AddressErrorException exception) {
         this(statement, exception.getMessage());
-        Exceptions.setRegisters(exception.getType(), exception.getAddress());
+        Coprocessor0.updateRegisters(exception.getType(), exception.getAddress());
     }
 
     /**
@@ -114,7 +119,7 @@ public class ProcessingException extends Exception {
      * @param exitCode exit code
      */
     public ProcessingException(int exitCode) {
-        errs = null;
+        this.errors = null;
         this.exitCode = exitCode;
     }
 
@@ -125,7 +130,8 @@ public class ProcessingException extends Exception {
      * program termination (e.g. syscall 10 for exit).
      */
     public ProcessingException() {
-        errs = null;
+        this.errors = null;
+        this.exitCode = 0;
     }
 
     /**
@@ -135,8 +141,8 @@ public class ProcessingException extends Exception {
      * @see ErrorList
      * @see ErrorMessage
      */
-    public ErrorList errors() {
-        return errs;
+    public ErrorList getErrors() {
+        return this.errors;
     }
 
     /**
@@ -144,5 +150,7 @@ public class ProcessingException extends Exception {
      *
      * @return Returns the error code.
      */
-    public int exitCode() { return exitCode; }
+    public int getExitCode() {
+        return this.exitCode;
+    }
 }

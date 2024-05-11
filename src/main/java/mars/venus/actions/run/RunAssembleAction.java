@@ -130,12 +130,12 @@ public class RunAssembleAction extends VenusAction {
             gui.getMainPane().setSelectedComponent(executeTab);
         }
         catch (ProcessingException exception) {
-            String errorReport = exception.errors().generateErrorAndWarningReport();
+            String errorReport = exception.getErrors().generateErrorAndWarningReport();
             gui.getMessagesPane().writeToMessages(errorReport);
             gui.getMessagesPane().writeToMessages(getName() + ": operation completed with errors.\n");
             gui.getMessagesPane().selectMessagesTab();
             // Select editor line containing first error, and corresponding error message.
-            ArrayList<ErrorMessage> errorMessages = exception.errors().getErrorMessages();
+            ArrayList<ErrorMessage> errorMessages = exception.getErrors().getErrorMessages();
             for (ErrorMessage message : errorMessages) {
                 // No line or position may mean File Not Found (e.g. exception file). Don't try to open. DPS 3-Oct-2010
                 if (message.getLine() == 0 && message.getPosition() == 0) {

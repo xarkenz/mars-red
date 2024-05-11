@@ -522,7 +522,7 @@ public class MarsLauncher {
         }
         catch (ProcessingException exception) {
             Application.exitCode = (programRan) ? simulateErrorExitCode : assembleErrorExitCode;
-            out.println(exception.errors().generateErrorAndWarningReport());
+            out.println(exception.getErrors().generateErrorAndWarningReport());
             out.println("Processing terminated due to errors.");
         }
         return programRan;

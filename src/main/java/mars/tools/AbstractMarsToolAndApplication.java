@@ -9,8 +9,7 @@ import mars.util.FilenameFinder;
 import mars.venus.execute.RunSpeedPanel;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.TitledBorder;
+import javax.swing.border.Border;
 import javax.swing.filechooser.FileFilter;
 import java.awt.*;
 import java.awt.event.*;
@@ -74,7 +73,7 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
     private final String heading; // Text to be displayed in the top portion of the main window.
 
     // Some GUI settings
-    private final EmptyBorder emptyBorder = new EmptyBorder(4, 4, 4, 4);
+    private final Border emptyBorder = BorderFactory.createEmptyBorder(4, 4, 4, 4);
     private final Color backgroundColor = Color.WHITE;
 
     private final int lowMemoryAddress = Memory.dataSegmentBaseAddress;
@@ -146,22 +145,15 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
         this.isBeingUsedAsAMarsTool = false;
         this.setTitle(this.title);
         Application.initialize();
-        // assure the dialog goes away if user clicks the X
+        // Ensure the dialog goes away if the user clicks the X
         this.addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
+            @Override
+            public void windowClosing(WindowEvent event) {
                 performAppClosingDuties();
             }
         });
         initializePreGUI();
-
-        JPanel contentPane = new JPanel(new BorderLayout(5, 5));
-        contentPane.setBorder(emptyBorder);
-        contentPane.setOpaque(true);
-        contentPane.add(buildHeadingArea(), BorderLayout.NORTH);
-        contentPane.add(buildMainDisplayArea(), BorderLayout.CENTER);
-        contentPane.add(buildButtonAreaStandAlone(), BorderLayout.SOUTH);
-
-        this.setContentPane(contentPane);
+        this.setContentPane(buildContentPane(buildHeadingArea(), buildMainDisplayArea(), buildButtonAreaStandAlone()));
         this.pack();
         this.setLocationRelativeTo(null); // center on screen
         this.setVisible(true);
@@ -182,28 +174,24 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
      * properties are determined by default GUI settings), and buildMainDisplayArea()
      * to contain application-specific displays of parameters and results.
      */
+    @Override
     public void action() {
         this.isBeingUsedAsAMarsTool = true;
         dialog = new JDialog(Application.getGUI(), this.title);
-        // assure the dialog goes away if user clicks the X
+        // Ensure the dialog goes away if the user clicks the X
         dialog.addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
+            @Override
+            public void windowClosing(WindowEvent event) {
                 performToolClosingDuties();
             }
         });
         window = dialog;
         initializePreGUI();
-        JPanel contentPane = new JPanel(new BorderLayout(5, 5));
-        contentPane.setBorder(emptyBorder);
-        contentPane.setOpaque(true);
-        contentPane.add(buildHeadingArea(), BorderLayout.NORTH);
-        contentPane.add(buildMainDisplayArea(), BorderLayout.CENTER);
-        contentPane.add(buildButtonAreaMarsTool(), BorderLayout.SOUTH);
-        initializePostGUI();
-        dialog.setContentPane(contentPane);
+        dialog.setContentPane(buildContentPane(buildHeadingArea(), buildMainDisplayArea(), buildButtonAreaMarsTool()));
         dialog.pack();
         dialog.setLocationRelativeTo(Application.getGUI());
         dialog.setVisible(true);
+        initializePostGUI();
     }
 
     /**
@@ -229,6 +217,16 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
     protected void reset() {
     }
 
+    protected JComponent buildContentPane(JComponent headingArea, JComponent mainDisplayArea, JComponent buttonArea) {
+        JPanel contentPane = new JPanel(new BorderLayout(12, 12));
+        contentPane.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        contentPane.setOpaque(true);
+        contentPane.add(headingArea, BorderLayout.NORTH);
+        contentPane.add(mainDisplayArea, BorderLayout.CENTER);
+        contentPane.add(buttonArea, BorderLayout.SOUTH);
+        return contentPane;
+    }
+
     /**
      * Constructs GUI header as label with default positioning and font.  May be overridden.
      */
@@ -252,12 +250,10 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
      */
     protected JComponent buildButtonAreaMarsTool() {
         Box buttonArea = Box.createHorizontalBox();
-        TitledBorder tc = new TitledBorder("Tool Control");
-        tc.setTitleJustification(TitledBorder.CENTER);
-        buttonArea.setBorder(tc);
+//        buttonArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         connectButton = new ConnectButton();
         connectButton.setToolTipText("Control whether tool will respond to running MIPS program");
-        connectButton.addActionListener(e -> {
+        connectButton.addActionListener(event -> {
             if (connectButton.isConnected()) {
                 connectButton.disconnect();
             }
@@ -269,12 +265,12 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
 
         JButton resetButton = new JButton("Reset");
         resetButton.setToolTipText("Reset all counters and other structures");
-        resetButton.addActionListener(e -> reset());
+        resetButton.addActionListener(event -> reset());
         resetButton.addKeyListener(new EnterKeyListener(resetButton));
 
         JButton closeButton = new JButton("Close");
         closeButton.setToolTipText("Close (exit) this tool");
-        closeButton.addActionListener(e -> performToolClosingDuties());
+        closeButton.addActionListener(event -> performToolClosingDuties());
         closeButton.addKeyListener(new EnterKeyListener(closeButton));
 
         // Add all the buttons...
@@ -297,24 +293,21 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
      * to control timed execution, a button to assemble and run the program, a reset button
      * whose action is determined by the subclass reset() method, and an exit button.
      */
-
     protected JComponent buildButtonAreaStandAlone() {
         // Overall structure of control area (two rows).
         Box operationArea = Box.createVerticalBox();
         Box fileControlArea = Box.createHorizontalBox();
         Box buttonArea = Box.createHorizontalBox();
         operationArea.add(fileControlArea);
-        operationArea.add(Box.createVerticalStrut(5));
+        operationArea.add(Box.createVerticalStrut(6));
         operationArea.add(buttonArea);
-        TitledBorder operationAreaBorder = new TitledBorder("Application Control");
-        operationAreaBorder.setTitleJustification(TitledBorder.CENTER);
-        operationArea.setBorder(operationAreaBorder);
+        operationArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // Top row of controls consists of button to launch file open operation,
         // text field to show filename, and run speed slider.
         openFileButton = new JButton("Open MIPS program...");
         openFileButton.setToolTipText("Select MIPS program file to assemble and run");
-        openFileButton.addActionListener(e -> {
+        openFileButton.addActionListener(event -> {
             JFileChooser fileChooser = new JFileChooser();
             JCheckBox multiFileAssembleChoose = new JCheckBox("Assemble all in selected file's directory", multiFileAssemble);
             multiFileAssembleChoose.setToolTipText("If checked, selected file will be assembled first and all other assembly files in directory will be assembled also.");
@@ -357,7 +350,7 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
         assembleRunButton = new JButton("Assemble and Run");
         assembleRunButton.setToolTipText("Assemble and run the currently selected MIPS program");
         assembleRunButton.setEnabled(false);
-        assembleRunButton.addActionListener(e -> {
+        assembleRunButton.addActionListener(event -> {
             assembleRunButton.setEnabled(false);
             openFileButton.setEnabled(false);
             stopButton.setEnabled(true);
@@ -368,17 +361,17 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
         stopButton = new JButton("Stop");
         stopButton.setToolTipText("Terminate MIPS program execution");
         stopButton.setEnabled(false);
-        stopButton.addActionListener(e -> Simulator.getInstance().terminate());
+        stopButton.addActionListener(event -> Simulator.getInstance().terminate());
         stopButton.addKeyListener(new EnterKeyListener(stopButton));
 
         JButton resetButton = new JButton("Reset");
         resetButton.setToolTipText("Reset all counters and other structures");
-        resetButton.addActionListener(e -> reset());
+        resetButton.addActionListener(event -> reset());
         resetButton.addKeyListener(new EnterKeyListener(resetButton));
 
         JButton closeButton = new JButton("Exit");
         closeButton.setToolTipText("Exit this application");
-        closeButton.addActionListener(e -> performAppClosingDuties());
+        closeButton.addActionListener(event -> performAppClosingDuties());
         closeButton.addKeyListener(new EnterKeyListener(closeButton));
 
         // Add top row of controls...
@@ -635,9 +628,10 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
             myButton = who;
         }
 
-        public void keyPressed(KeyEvent e) {
-            if (e.getKeyChar() == KeyEvent.VK_ENTER) {
-                e.consume();
+        @Override
+        public void keyPressed(KeyEvent event) {
+            if (event.getKeyChar() == KeyEvent.VK_ENTER) {
+                event.consume();
                 try {
                     myButton.getActionListeners()[0].actionPerformed(new ActionEvent(myButton, 0, myButton.getText()));
                 }
@@ -651,6 +645,7 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
     /////////////////////////////////////////////////////////////////////////////////
     // called when the Assemble and Run button is pressed.  Used only by stand-alone app.
     private class CreateAssembleRunMIPSprogram implements Runnable {
+        @Override
         public void run() {
             String exceptionHandler = null;
             if (Application.getSettings().exceptionHandlerEnabled.get() && Application.getSettings().exceptionHandlerPath.get() != null && !Application.getSettings().exceptionHandlerPath.get().isEmpty()) {
@@ -747,6 +742,7 @@ public abstract class AbstractMarsToolAndApplication extends JFrame implements M
                 this.terminatingMessage = terminating;
             }
 
+            @Override
             public void run() {
                 if (text != null) {
                     operationStatusMessages.setText(text);

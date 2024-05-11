@@ -4,7 +4,7 @@ import mars.Application;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.RegisterFile;
-import mars.simulator.Exceptions;
+import mars.simulator.ExceptionCause;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -58,7 +58,7 @@ public class SyscallSbrk extends AbstractSyscall {
             RegisterFile.updateRegister(2, address); // Put address into $v0
         }
         catch (IllegalArgumentException exception) {
-            throw new ProcessingException(statement, exception.getMessage() + " (syscall " + this.getNumber() + ")", Exceptions.SYSCALL_EXCEPTION);
+            throw new ProcessingException(statement, exception.getMessage() + " (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
     }
 }

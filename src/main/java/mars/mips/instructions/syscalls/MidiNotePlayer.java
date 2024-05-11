@@ -49,6 +49,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *     pool executor, and
  * (3) simplify the interface by removing all the unused versions
  *     that provided default values for various parameters
+ *
+ * Sean Clarke renamed ToneGenerator to MidiNotePlayer and overhauled the
+ * implementation from top to bottom by eliminating the use of the sequencer,
+ * as well any message-passing whatsoever, in 05/2024. The new implementation
+ * makes use of the Java 1.5 concurrency features to create an event scheduler
+ * that "hibernates" when it sees no activity for a while. This scheduler is
+ * then used to interact directly with the MIDI synthesizer by immediately turning
+ * a note on, then scheduling a task to run after the given duration to turn it off.
  */
 
 /**

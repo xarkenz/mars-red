@@ -1,10 +1,5 @@
 package mars.simulator;
 
-import mars.mips.hardware.Coprocessor0;
-import mars.mips.hardware.RegisterFile;
-import mars.mips.instructions.Instruction;
-import mars.util.Binary;
-
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
 
@@ -34,12 +29,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Represents an error/interrupt that occurs during execution (simulation).
+ * Represents the cause of an error/interrupt that occurs during execution (simulation).
  *
  * @author Pete Sanderson
  * @version August 2005
  */
-public class Exceptions {
+public class ExceptionCause {
     /*
      * The exception number is stored in coprocessor 0 cause register ($13)
      * Note: the codes for External Interrupts have been modified from MIPS
@@ -62,38 +57,8 @@ public class Exceptions {
     public static final int RESERVED_INSTRUCTION_EXCEPTION = 10;
     public static final int ARITHMETIC_OVERFLOW_EXCEPTION = 12;
     public static final int TRAP_EXCEPTION = 13;
-    /* the following are from SPIM */
+    // The following are from SPIM.
     public static final int DIVIDE_BY_ZERO_EXCEPTION = 15;
     public static final int FLOATING_POINT_OVERFLOW = 16;
     public static final int FLOATING_POINT_UNDERFLOW = 17;
-
-    /**
-     * Given MIPS exception cause code, will place that code into
-     * coprocessor 0 CAUSE register ($13), set the EPC register to
-     * "current" program counter, and set Exception Level bit in STATUS register.
-     *
-     * @param cause The cause code (see Exceptions for a list)
-     */
-    public static void setRegisters(int cause) {
-        // Set CAUSE register bits 2 thru 6 to cause value.  The "& 0xFFFFFC83" will set bits 2-6 and 8-9 to 0 while
-        // keeping all the others.  Left-shift by 2 to put cause value into position then OR it in.  Bits 8-9 used to
-        // identify devices for External Interrupt (8=keyboard,9=display).
-        Coprocessor0.updateRegister(Coprocessor0.CAUSE, (Coprocessor0.getValue(Coprocessor0.CAUSE) & 0xFFFFFC83 | (cause << 2)));
-        // When exception occurred, PC had already been incremented so need to subtract 4 here.
-        Coprocessor0.updateRegister(Coprocessor0.EPC, RegisterFile.getProgramCounter() - Instruction.INSTRUCTION_LENGTH_BYTES);
-        // Set EXL (Exception Level) bit, bit position 1, in STATUS register to 1.
-        Coprocessor0.updateRegister(Coprocessor0.STATUS, Binary.setBit(Coprocessor0.getValue(Coprocessor0.STATUS), Coprocessor0.EXCEPTION_LEVEL));
-    }
-
-    /**
-     * Given MIPS exception cause code and bad address, place the bad address into VADDR
-     * register ($8) then call {@link #setRegisters(int)} to do the rest.
-     *
-     * @param cause   The cause code (see Exceptions for a list). Should be address exception.
-     * @param address The address that caused the exception.
-     */
-    public static void setRegisters(int cause, int address) {
-        Coprocessor0.updateRegister(Coprocessor0.VADDR, address);
-        setRegisters(cause);
-    }
 }

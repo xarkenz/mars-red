@@ -453,7 +453,7 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
     public void simulatorFinished(SimulatorFinishEvent event) {
         switch (event.getReason()) {
             case EXIT_SYSCALL -> {
-                int exitCode = event.getException().exitCode();
+                int exitCode = event.getException().getExitCode();
                 if (exitCode == 0) {
                     this.writeToMessages(Simulator.class.getSimpleName() + ": finished simulation successfully.\n");
                 }
@@ -475,7 +475,7 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
                 }
                 else {
                     this.writeToConsole("\n--- program terminated due to error(s): ---\n");
-                    this.writeToConsole(event.getException().errors().generateErrorReport());
+                    this.writeToConsole(event.getException().getErrors().generateErrorReport());
                     this.writeToConsole("--- end of error report ---\n\n");
                 }
                 this.setSelectedComponent(consoleTab);

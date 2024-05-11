@@ -356,6 +356,13 @@ public class Simulator {
             try {
                 this.runSimulation();
             }
+            catch (ProcessingException exception) {
+                this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.EXCEPTION, exception);
+            }
+            catch (InterruptedException exception) {
+                // this.interruptEventDispatcher will be set by the method that caused the interrupt
+                this.interruptEventDispatcher.run();
+            }
             catch (Exception exception) {
                 // Should only happen if there is a bug somewhere
                 System.err.println("Error: unhandled exception during simulation:");
@@ -367,7 +374,7 @@ public class Simulator {
         /**
          * The main simulation logic. This is run on the simulator thread, and is always called from {@link #run()}.
          */
-        private void runSimulation() {
+        private void runSimulation() throws ProcessingException, InterruptedException {
             if (this.breakPoints != null) {
                 // Must be pre-sorted for binary search
                 Arrays.sort(this.breakPoints);
@@ -376,26 +383,6 @@ public class Simulator {
             this.simulator.dispatchStartEvent(this.maxSteps, this.programCounter);
 
             RegisterFile.initializeProgramCounter(this.programCounter);
-            ProgramStatement statement;
-            try {
-                statement = Application.memory.getStatement(RegisterFile.getProgramCounter());
-            }
-            catch (AddressErrorException exception) {
-                // Next statement is a hack.  Previous statement sets EPC register to (PC - 4)
-                // because it assumes the bad address comes from an operand so the program counter has already been
-                // incremented.  In this case, bad address is the instruction fetch itself so program counter has
-                // not yet been incremented.  We'll set the EPC directly here.  DPS 8-July-2013
-                Coprocessor0.updateRegister(Coprocessor0.EPC, RegisterFile.getProgramCounter());
-
-                ErrorList errors = new ErrorList();
-                errors.add(new ErrorMessage(
-                    this.program,
-                    0, 0,
-                    "invalid program counter value: " + Binary.intToHexString(RegisterFile.getProgramCounter())
-                ));
-                this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.EXCEPTION, new ProcessingException(errors, exception));
-                return;
-            }
 
             // If there is a step limit, this is used to track the number of steps taken
             int stepCount = 0;
@@ -431,7 +418,8 @@ public class Simulator {
             // *********************************************************************
 
             // Main simulation loop
-            while (statement != null) {
+            ProgramStatement statement;
+            while ((statement = this.getStatement()) != null) {
                 this.programCounter = RegisterFile.getProgramCounter(); // Added 7/26/06 (explanation above)
                 RegisterFile.incrementPC();
                 // Perform the MIPS instruction in synchronized block.  If external threads agree
@@ -454,7 +442,7 @@ public class Simulator {
                             throw new ProcessingException(
                                 statement,
                                 "invalid instruction: " + Binary.intToHexString(statement.getBinaryStatement()),
-                                Exceptions.RESERVED_INSTRUCTION_EXCEPTION
+                                ExceptionCause.RESERVED_INSTRUCTION_EXCEPTION
                             );
                         }
 
@@ -467,7 +455,7 @@ public class Simulator {
                         }
                     }
                     catch (ProcessingException exception) {
-                        if (exception.errors() == null) {
+                        if (exception.getErrors() == null) {
                             this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.EXIT_SYSCALL, exception);
                             return;
                         }
@@ -477,20 +465,19 @@ public class Simulator {
                         // (e.g. 0x80000180) contains an instruction.  If so, then set the
                         // program counter there and continue.  Otherwise terminate the
                         // MIPS program with appropriate error message.
-                        ProgramStatement exceptionHandler;
+                        ProgramStatement exceptionHandler = null;
                         try {
-                            exceptionHandler = Application.memory.getStatement(Memory.exceptionHandlerAddress);
+                            exceptionHandler = Memory.getInstance().getStatement(Memory.exceptionHandlerAddress);
                         }
                         catch (AddressErrorException ignored) {
                             // Will not occur with this well-known address
-                            exceptionHandler = null;
                         }
+
                         if (exceptionHandler != null) {
                             RegisterFile.setProgramCounter(Memory.exceptionHandlerAddress);
                         }
                         else {
-                            this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.EXCEPTION, exception);
-                            return;
+                            throw exception;
                         }
                     }
                 }
@@ -503,6 +490,7 @@ public class Simulator {
                 else if (DelayedBranch.isRegistered()) {
                     DelayedBranch.trigger();
                 }
+
                 // Check for an interrupt (either a pause or termination)
                 if (Thread.interrupted()) {
                     // this.interruptEventDispatcher will be set by the method that caused the interrupt
@@ -524,48 +512,19 @@ public class Simulator {
                 }
 
                 // Update GUI and delay the next step if the program is not running at unlimited speed
-                if (Application.getGUI() != null) {
-                    if (RunSpeedPanel.getInstance().getRunSpeed() < RunSpeedPanel.UNLIMITED_SPEED) {
-                        // Schedule a GUI update
-                        this.simulator.dispatchStepEvent();
+                if (Application.getGUI() != null && RunSpeedPanel.getInstance().getRunSpeed() < RunSpeedPanel.UNLIMITED_SPEED) {
+                    // Schedule a GUI update
+                    this.simulator.dispatchStepEvent();
 
-                        // Wait according to the speed setting
-                        try {
-                            Thread.sleep((int) (1000 / RunSpeedPanel.getInstance().getRunSpeed())); // make sure it's never zero!
-                        }
-                        catch (InterruptedException exception) {
-                            // this.interruptEventDispatcher will be set by the method that caused the interrupt
-                            this.interruptEventDispatcher.run();
-                            return;
-                        }
-                    }
-                }
-
-                // Get next instruction in preparation for next iteration
-                try {
-                    statement = Application.memory.getStatement(RegisterFile.getProgramCounter());
-                }
-                catch (AddressErrorException exception) {
-                    // Next statement is a hack.  Previous statement sets EPC register to (PC - 4)
-                    // because it assumes the bad address comes from an operand so the program counter has already been
-                    // incremented.  In this case, bad address is the instruction fetch itself so program counter has
-                    // not yet been incremented.  We'll set the EPC directly here.  DPS 8-July-2013
-                    Coprocessor0.updateRegister(Coprocessor0.EPC, RegisterFile.getProgramCounter());
-
-                    ErrorList errors = new ErrorList();
-                    errors.add(new ErrorMessage(
-                        this.program,
-                        0, 0,
-                        "invalid program counter value: " + Binary.intToHexString(RegisterFile.getProgramCounter())
-                    ));
-                    this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.EXCEPTION, new ProcessingException(errors, exception));
-                    return;
+                    // Wait according to the speed setting (division is fine here since it should never be 0)
+                    Thread.sleep((int) (1000.0 / RunSpeedPanel.getInstance().getRunSpeed()));
                 }
             }
+            // End of main simulation loop
 
             // If we got here, it was due to a null statement, which means the program counter
             // "fell off the end" of the program.
-            // Note: The "while" loop above should not contain any "break" statements for this reason.
+            // The "while" loop above should not contain any "break" statements for this reason, only "return"s.
 
             // DPS July 2007.  This "if" statement is needed for correct program
             // termination if delayed branching on and last statement in
@@ -576,6 +535,28 @@ public class Simulator {
             }
 
             this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.RAN_OFF_BOTTOM, null);
+        }
+
+        private ProgramStatement getStatement() throws ProcessingException {
+            try {
+                return Memory.getInstance().getStatement(RegisterFile.getProgramCounter());
+            }
+            catch (AddressErrorException exception) {
+                // Next statement is a hack.  Previous statement sets EPC register to (PC - 4)
+                // because it assumes the bad address comes from an operand so the program counter has already been
+                // incremented.  In this case, bad address is the instruction fetch itself so program counter has
+                // not yet been incremented.  We'll set the EPC directly here.  DPS 8-July-2013
+                Coprocessor0.updateRegister(Coprocessor0.EPC, RegisterFile.getProgramCounter());
+
+                ErrorList errors = new ErrorList();
+                errors.add(new ErrorMessage(
+                    this.program,
+                    0, 0,
+                    "invalid program counter value: " + Binary.intToHexString(RegisterFile.getProgramCounter())
+                ));
+
+                throw new ProcessingException(errors, exception);
+            }
         }
     }
 }

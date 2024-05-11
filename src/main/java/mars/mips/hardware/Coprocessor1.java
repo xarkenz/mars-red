@@ -51,7 +51,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * storing into registers, and reassembled upon retrieval.
  */
 public class Coprocessor1 {
-    private static final Register[] registers = {
+    private static final Register[] REGISTERS = {
         new Register("$f0", 0, 0),
         new Register("$f1", 1, 0),
         new Register("$f2", 2, 0),
@@ -87,8 +87,8 @@ public class Coprocessor1 {
     };
 
     // The 8 condition flags will be stored in bits 0-7 for flags 0-7.
-    private static final Register condition = new Register("cf", 32, 0);
-    private static final int conditionFlagCount = 8;
+    private static final Register CONDITION_FLAGS = new Register("cf", 32, 0);
+    private static final int CONDITION_FLAG_COUNT = 8;
 
     /**
      * Set the value of the FPU register given to the value given.
@@ -107,8 +107,8 @@ public class Coprocessor1 {
      * @param val The desired float value for the register.
      */
     public static void setRegisterToFloat(int reg, float val) {
-        if (0 <= reg && reg < registers.length) {
-            registers[reg].setValue(Float.floatToRawIntBits(val));
+        if (0 <= reg && reg < REGISTERS.length) {
+            REGISTERS[reg].setValue(Float.floatToRawIntBits(val));
         }
     }
 
@@ -131,8 +131,8 @@ public class Coprocessor1 {
      * @param val The desired int bit pattern for the register.
      */
     public static void setRegisterToInt(int reg, int val) {
-        if (0 <= reg && reg < registers.length) {
-            registers[reg].setValue(val);
+        if (0 <= reg && reg < REGISTERS.length) {
+            REGISTERS[reg].setValue(val);
         }
     }
 
@@ -150,8 +150,8 @@ public class Coprocessor1 {
             throw new InvalidRegisterAccessException();
         }
         long bits = Double.doubleToRawLongBits(val);
-        registers[reg + 1].setValue(Binary.highOrderLongToInt(bits));  // high order 32 bits
-        registers[reg].setValue(Binary.lowOrderLongToInt(bits)); // low order 32 bits
+        REGISTERS[reg + 1].setValue(Binary.highOrderLongToInt(bits));  // high order 32 bits
+        REGISTERS[reg].setValue(Binary.lowOrderLongToInt(bits)); // low order 32 bits
     }
 
     /**
@@ -181,8 +181,8 @@ public class Coprocessor1 {
         if (reg % 2 != 0) {
             throw new InvalidRegisterAccessException();
         }
-        registers[reg + 1].setValue(Binary.highOrderLongToInt(val));  // high order 32 bits
-        registers[reg].setValue(Binary.lowOrderLongToInt(val)); // low order 32 bits
+        REGISTERS[reg + 1].setValue(Binary.highOrderLongToInt(val));  // high order 32 bits
+        REGISTERS[reg].setValue(Binary.lowOrderLongToInt(val)); // low order 32 bits
     }
 
     /**
@@ -206,8 +206,8 @@ public class Coprocessor1 {
      * @return The float value stored by that register.
      */
     public static float getFloatFromRegister(int reg) {
-        if (0 <= reg && reg < registers.length) {
-            return Float.intBitsToFloat(registers[reg].getValue());
+        if (0 <= reg && reg < REGISTERS.length) {
+            return Float.intBitsToFloat(REGISTERS[reg].getValue());
         }
         else {
             return 0.0f;
@@ -231,8 +231,8 @@ public class Coprocessor1 {
      * @return The int bit pattern stored by that register.
      */
     public static int getIntFromRegister(int reg) {
-        if (0 <= reg && reg < registers.length) {
-            return registers[reg].getValue();
+        if (0 <= reg && reg < REGISTERS.length) {
+            return REGISTERS[reg].getValue();
         }
         else {
             return 0;
@@ -260,7 +260,7 @@ public class Coprocessor1 {
         if (reg % 2 != 0) {
             throw new InvalidRegisterAccessException();
         }
-        long bits = Binary.twoIntsToLong(registers[reg + 1].getValue(), registers[reg].getValue());
+        long bits = Binary.twoIntsToLong(REGISTERS[reg + 1].getValue(), REGISTERS[reg].getValue());
         return Double.longBitsToDouble(bits);
     }
 
@@ -287,7 +287,7 @@ public class Coprocessor1 {
         if (reg % 2 != 0) {
             throw new InvalidRegisterAccessException();
         }
-        return Binary.twoIntsToLong(registers[reg + 1].getValue(), registers[reg].getValue());
+        return Binary.twoIntsToLong(REGISTERS[reg + 1].getValue(), REGISTERS[reg].getValue());
     }
 
     /**
@@ -312,11 +312,11 @@ public class Coprocessor1 {
      */
     public static int updateRegister(int number, int value) {
         int previousValue;
-        if (0 <= number && number < registers.length) {
+        if (0 <= number && number < REGISTERS.length) {
             // Originally, this used a linear search to figure out which register to update.
             // Since all registers 0-31 are present in order, a simple array access should work.
-            // - Sean Clarke 03/2024
-            previousValue = registers[number].setValue(value);
+            // Sean Clarke 03/2024
+            previousValue = REGISTERS[number].setValue(value);
         }
         else {
             // Invalid register, do nothing
@@ -340,7 +340,7 @@ public class Coprocessor1 {
      * @return The int value of the given register.
      */
     public static int getValue(int num) {
-        return registers[num].getValue();
+        return REGISTERS[num].getValue();
     }
 
     /**
@@ -351,7 +351,7 @@ public class Coprocessor1 {
      */
     public static int getRegisterNumber(String n) {
         int j = -1;
-        for (Register register : registers) {
+        for (Register register : REGISTERS) {
             if (register.getName().equals(n)) {
                 j = register.getNumber();
                 break;
@@ -366,7 +366,7 @@ public class Coprocessor1 {
      * @return The set of registers.
      */
     public static Register[] getRegisters() {
-        return registers;
+        return REGISTERS;
     }
 
     /**
@@ -381,7 +381,7 @@ public class Coprocessor1 {
         }
         try {
             // Check for register number 0-31
-            return registers[Binary.decodeInteger(name.substring(2))]; // KENV 1/6/05
+            return REGISTERS[Binary.decodeInteger(name.substring(2))]; // KENV 1/6/05
         }
         catch (Exception e) {
             // Handles both NumberFormat and ArrayIndexOutOfBounds
@@ -393,7 +393,7 @@ public class Coprocessor1 {
      * Method to reinitialize the values of the registers.
      */
     public static void resetRegisters() {
-        for (Register register : registers) {
+        for (Register register : REGISTERS) {
             register.resetValueToDefault();
         }
         clearConditionFlags();
@@ -404,7 +404,7 @@ public class Coprocessor1 {
      * will add the given Observer to each one.
      */
     public static void addRegistersObserver(Observer observer) {
-        for (Register register : registers) {
+        for (Register register : REGISTERS) {
             register.addObserver(observer);
         }
     }
@@ -414,7 +414,7 @@ public class Coprocessor1 {
      * will delete the given Observer from each one.
      */
     public static void deleteRegistersObserver(Observer observer) {
-        for (Register register : registers) {
+        for (Register register : REGISTERS) {
             register.deleteObserver(observer);
         }
     }
@@ -423,13 +423,12 @@ public class Coprocessor1 {
      * Set condition flag to 1 (true).
      *
      * @param flag condition flag number (0-7)
-     * @return previous flag setting (0 or 1)
      */
-    public static int setConditionFlag(int flag) {
+    public static void setConditionFlag(int flag) {
         int old = 0;
-        if (flag >= 0 && flag < conditionFlagCount) {
+        if (flag >= 0 && flag < CONDITION_FLAG_COUNT) {
             old = getConditionFlag(flag);
-            condition.setValue(Binary.setBit(condition.getValue(), flag));
+            CONDITION_FLAGS.setValue(Binary.setBit(CONDITION_FLAGS.getValue(), flag));
             if (Application.isBackSteppingEnabled()) {
                 if (old == 0) {
                     Application.program.getBackStepper().addConditionFlagClear(flag);
@@ -439,20 +438,18 @@ public class Coprocessor1 {
                 }
             }
         }
-        return old;
     }
 
     /**
      * Set condition flag to 0 (false).
      *
      * @param flag condition flag number (0-7)
-     * @return previous flag setting (0 or 1)
      */
-    public static int clearConditionFlag(int flag) {
+    public static void clearConditionFlag(int flag) {
         int old = 0;
-        if (flag >= 0 && flag < conditionFlagCount) {
+        if (flag >= 0 && flag < CONDITION_FLAG_COUNT) {
             old = getConditionFlag(flag);
-            condition.setValue(Binary.clearBit(condition.getValue(), flag));
+            CONDITION_FLAGS.setValue(Binary.clearBit(CONDITION_FLAGS.getValue(), flag));
             if (Application.isBackSteppingEnabled()) {
                 if (old == 0) {
                     Application.program.getBackStepper().addConditionFlagClear(flag);
@@ -462,7 +459,6 @@ public class Coprocessor1 {
                 }
             }
         }
-        return old;
     }
 
     /**
@@ -472,33 +468,35 @@ public class Coprocessor1 {
      * @return 0 if condition is false, 1 if condition is true
      */
     public static int getConditionFlag(int flag) {
-        if (flag < 0 || flag >= conditionFlagCount) {
-            flag = 0;
+        if (flag < 0 || flag >= CONDITION_FLAG_COUNT) {
+            return 0;
         }
-        return Binary.bitValue(condition.getValue(), flag);
+        return Binary.bitValue(CONDITION_FLAGS.getValue(), flag);
     }
 
     /**
      * Get bitfield of condition flags (0-7).
      *
-     * @return Bitfield of condition flags
+     * @return Bitfield of condition flags.
      */
     public static int getConditionFlags() {
-        return condition.getValue();
+        return CONDITION_FLAGS.getValue();
     }
 
     /**
      * Clear all condition flags (0-7).
      */
     public static void clearConditionFlags() {
-        condition.setValue(0);  // sets all 32 bits to 0.
+        // Set lowest 8 bits to 0
+        CONDITION_FLAGS.setValue(0);
     }
 
     /**
      * Set all condition flags (0-7).
      */
     public static void setConditionFlags() {
-        condition.setValue(-1);  // sets all 32 bits to 1.
+        // Set lowest 8 bits to 1
+        CONDITION_FLAGS.setValue(0xFF);
     }
 
     /**
@@ -507,6 +505,6 @@ public class Coprocessor1 {
      * @return number of condition flags
      */
     public static int getConditionFlagCount() {
-        return conditionFlagCount;
+        return CONDITION_FLAG_COUNT;
     }
 }

@@ -1,6 +1,9 @@
 package mars.mips.hardware;
 
 import mars.Application;
+import mars.mips.instructions.Instruction;
+import mars.simulator.ExceptionCause;
+import mars.util.Binary;
 
 import java.util.Observer;
 
@@ -50,7 +53,7 @@ public class Coprocessor0 {
     // bit 1 (exception level) not set, bit 0 (interrupt enable) set.
     public static final int DEFAULT_STATUS_VALUE = 0x0000FF11;
 
-    private static final Register[] registers = {
+    private static final Register[] REGISTERS = {
         new Register("vaddr", 8, 0),
         new Register("status", 12, DEFAULT_STATUS_VALUE),
         new Register("cause", 13, 0),
@@ -65,7 +68,7 @@ public class Coprocessor0 {
      * @return old value in register prior to update
      */
     public static int updateRegister(String number, int value) {
-        for (Register register : registers) {
+        for (Register register : REGISTERS) {
             if (("$" + register.getNumber()).equals(number) || register.getName().equals(number)) {
                 return register.setValue(value);
             }
@@ -81,7 +84,7 @@ public class Coprocessor0 {
      * @return old value in register prior to update
      */
     public static int updateRegister(int number, int value) {
-        for (Register register : registers) {
+        for (Register register : REGISTERS) {
             if (register.getNumber() == number) {
                 int previousValue = register.setValue(value);
                 if (Application.isBackSteppingEnabled()) {
@@ -102,7 +105,7 @@ public class Coprocessor0 {
      * @return The value of the given register.  0 for non-implemented registers
      */
     public static int getValue(int num) {
-        for (Register register : registers) {
+        for (Register register : REGISTERS) {
             if (register.getNumber() == num) {
                 return register.getValue();
             }
@@ -117,7 +120,7 @@ public class Coprocessor0 {
      * @return The number of the register represented by the string. -1 if no match.
      */
     public static int getNumber(String name) {
-        for (Register register : registers) {
+        for (Register register : REGISTERS) {
             if (("$" + register.getNumber()).equals(name) || register.getName().equals(name)) {
                 return register.getNumber();
             }
@@ -131,7 +134,7 @@ public class Coprocessor0 {
      * @return The set of registers.
      */
     public static Register[] getRegisters() {
-        return registers;
+        return REGISTERS;
     }
 
     /**
@@ -143,8 +146,8 @@ public class Coprocessor0 {
      * @return the list position of given register, -1 if not found.
      */
     public static int getRegisterPosition(Register register) {
-        for (int index = 0; index < registers.length; index++) {
-            if (registers[index] == register) {
+        for (int index = 0; index < REGISTERS.length; index++) {
+            if (REGISTERS[index] == register) {
                 return index;
             }
         }
@@ -158,7 +161,7 @@ public class Coprocessor0 {
      * @return The register object, or null if not found.
      */
     public static Register getRegister(String name) {
-        for (Register register : registers) {
+        for (Register register : REGISTERS) {
             if (("$" + register.getNumber()).equals(name) || register.getName().equals(name)) {
                 return register;
             }
@@ -170,7 +173,7 @@ public class Coprocessor0 {
      * Method to reinitialize the values of the registers.
      */
     public static void resetRegisters() {
-        for (Register register : registers) {
+        for (Register register : REGISTERS) {
             register.resetValueToDefault();
         }
     }
@@ -180,7 +183,7 @@ public class Coprocessor0 {
      * will add the given Observer to each one.
      */
     public static void addRegistersObserver(Observer observer) {
-        for (Register register : registers) {
+        for (Register register : REGISTERS) {
             register.addObserver(observer);
         }
     }
@@ -190,8 +193,42 @@ public class Coprocessor0 {
      * will delete the given Observer from each one.
      */
     public static void deleteRegistersObserver(Observer observer) {
-        for (Register register : registers) {
+        for (Register register : REGISTERS) {
             register.deleteObserver(observer);
         }
+    }
+
+    /**
+     * Given MIPS exception cause code, place that code into
+     * coprocessor 0 CAUSE register ($13), set the EPC register ($14) to
+     * "current" program counter, and set Exception Level bit in STATUS register ($12).
+     *
+     * @param cause The cause code (see {@link Coprocessor0} for a list)
+     * @author Pete Sanderson, August 2005
+     */
+    public static void updateRegisters(int cause) {
+        // Set CAUSE register bits 2 thru 6 to cause value.  The "& 0xFFFFFC83" will set bits 2-6 and 8-9 to 0 while
+        // keeping all the others.  Left-shift by 2 to put cause value into position then OR it in.  Bits 8-9 used to
+        // identify devices for External Interrupt (8=keyboard, 9=display).
+        updateRegister(CAUSE, (getValue(CAUSE) & 0xFFFFFC83) | (cause << 2));
+        // When exception occurred, PC had already been incremented so need to subtract 4 here.
+        updateRegister(EPC, RegisterFile.getProgramCounter() - Instruction.INSTRUCTION_LENGTH_BYTES);
+        // Set EXL (Exception Level) bit, bit position 1, in STATUS register to 1.
+        updateRegister(STATUS, Binary.setBit(getValue(STATUS), EXCEPTION_LEVEL));
+    }
+
+    /**
+     * Given MIPS exception cause code and bad address, place the bad address into VADDR
+     * register ($8), place the cause code into the CAUSE register ($13), set the EPC register ($14) to
+     * "current" program counter, and set Exception Level bit in STATUS register ($12).
+     *
+     * @param cause   The cause code (see {@link Coprocessor0} for a list). In this case, should probably be
+     *                {@link ExceptionCause#ADDRESS_EXCEPTION_LOAD} or {@link ExceptionCause#ADDRESS_EXCEPTION_STORE}.
+     * @param address The address that caused the exception.
+     * @author Pete Sanderson, August 2005
+     */
+    public static void updateRegisters(int cause, int address) {
+        updateRegister(VADDR, address);
+        updateRegisters(cause);
     }
 }

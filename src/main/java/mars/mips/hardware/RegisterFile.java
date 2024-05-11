@@ -50,7 +50,7 @@ public class RegisterFile {
     public static final int HIGH_ORDER = 33;
     public static final int LOW_ORDER = 34;
 
-    private static final Register[] registers = {
+    private static final Register[] REGISTERS = {
         new Register("$zero", 0, 0),
         new Register("$at", 1, 0),
         new Register("$v0", 2, 0),
@@ -100,11 +100,11 @@ public class RegisterFile {
     public static int updateRegister(int number, int value) {
         int previousValue;
         // The $zero register cannot be updated
-        if (0 < number && number < registers.length) {
+        if (0 < number && number < REGISTERS.length) {
             // Originally, this used a linear search to figure out which register to update.
             // Since all registers 0-31 are present in order, a simple array access should work.
             // - Sean Clarke 03/2024
-            previousValue = registers[number].setValue(value);
+            previousValue = REGISTERS[number].setValue(value);
         }
         else {
             // $zero or invalid register, do nothing
@@ -126,7 +126,7 @@ public class RegisterFile {
      * @return The value of the given register.
      */
     public static int getValue(int number) {
-        return registers[number].getValue();
+        return REGISTERS[number].getValue();
     }
 
     /**
@@ -139,7 +139,7 @@ public class RegisterFile {
     public static int getNumber(String name) {
         // check for register mnemonic $zero thru $ra
         // just do linear search; there aren't that many registers
-        for (Register register : registers) {
+        for (Register register : REGISTERS) {
             if (register.getName().equals(name)) {
                 return register.getNumber();
             }
@@ -153,7 +153,7 @@ public class RegisterFile {
      * @return The set of registers.
      */
     public static Register[] getRegisters() {
-        return registers;
+        return REGISTERS;
     }
 
     /**
@@ -168,13 +168,13 @@ public class RegisterFile {
         }
         try {
             // Check for register number 0-31
-            return registers[Binary.decodeInteger(name.substring(1))]; // KENV 1/6/05
+            return REGISTERS[Binary.decodeInteger(name.substring(1))]; // KENV 1/6/05
         }
         catch (Exception e) {
             // Handles both NumberFormat and ArrayIndexOutOfBounds
             // Check for register mnemonic $zero thru $ra
             // Just do linear search; there aren't that many registers
-            for (Register register : registers) {
+            for (Register register : REGISTERS) {
                 if (register.getName().equals(name)) {
                     return register;
                 }
@@ -191,7 +191,7 @@ public class RegisterFile {
      * @param value The value to set the Program Counter to.
      */
     public static void initializeProgramCounter(int value) {
-        registers[PROGRAM_COUNTER].setValue(value);
+        REGISTERS[PROGRAM_COUNTER].setValue(value);
     }
 
     /**
@@ -209,7 +209,7 @@ public class RegisterFile {
             initializeProgramCounter(mainAddr);
         }
         else {
-            initializeProgramCounter(registers[PROGRAM_COUNTER].getDefaultValue());
+            initializeProgramCounter(REGISTERS[PROGRAM_COUNTER].getDefaultValue());
         }
     }
 
@@ -221,7 +221,7 @@ public class RegisterFile {
      * @return The previous program counter value.
      */
     public static int setProgramCounter(int value) {
-        int previousValue = registers[PROGRAM_COUNTER].setValue(value);
+        int previousValue = REGISTERS[PROGRAM_COUNTER].setValue(value);
         if (Application.isBackSteppingEnabled()) {
             Application.program.getBackStepper().addPCRestore(previousValue);
         }
@@ -234,7 +234,7 @@ public class RegisterFile {
      * @return The program counter value as an int.
      */
     public static int getProgramCounter() {
-        return registers[PROGRAM_COUNTER].getValue();
+        return REGISTERS[PROGRAM_COUNTER].getValue();
     }
 
     /**
@@ -243,7 +243,7 @@ public class RegisterFile {
      * @return The program counter register.
      */
     public static Register getProgramCounterRegister() {
-        return registers[PROGRAM_COUNTER];
+        return REGISTERS[PROGRAM_COUNTER];
     }
 
     /**
@@ -252,7 +252,7 @@ public class RegisterFile {
      * @return The program counter's initial value.
      */
     public static int getInitialProgramCounter() {
-        return registers[PROGRAM_COUNTER].getDefaultValue();
+        return REGISTERS[PROGRAM_COUNTER].getDefaultValue();
     }
 
     /**
@@ -264,7 +264,7 @@ public class RegisterFile {
      * {@link mars.tools.AbstractMarsToolAndApplication}.
      */
     public static void resetRegisters() {
-        for (Register register : registers) {
+        for (Register register : REGISTERS) {
             register.resetValueToDefault();
         }
         initializeProgramCounter(Application.getSettings().startAtMain.get()); // replaces "programCounter.resetValue()", DPS 3/3/09
@@ -274,7 +274,7 @@ public class RegisterFile {
      * Increment the Program counter in the general case (not a jump or branch).
      */
     public static void incrementPC() {
-        registers[PROGRAM_COUNTER].setValue(registers[PROGRAM_COUNTER].getValue() + Instruction.INSTRUCTION_LENGTH_BYTES);
+        REGISTERS[PROGRAM_COUNTER].setValue(REGISTERS[PROGRAM_COUNTER].getValue() + Instruction.INSTRUCTION_LENGTH_BYTES);
     }
 
     /**
@@ -283,7 +283,7 @@ public class RegisterFile {
      * Counter.
      */
     public static void addRegistersObserver(Observer observer) {
-        for (Register register : registers) {
+        for (Register register : REGISTERS) {
             if (register.getNumber() != PROGRAM_COUNTER) {
                 register.addObserver(observer);
             }
@@ -296,7 +296,7 @@ public class RegisterFile {
      * Counter.
      */
     public static void deleteRegistersObserver(Observer observer) {
-        for (Register register : registers) {
+        for (Register register : REGISTERS) {
             if (register.getNumber() != PROGRAM_COUNTER) {
                 register.deleteObserver(observer);
             }

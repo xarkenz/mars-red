@@ -3,11 +3,8 @@ package mars.mips.instructions.syscalls;
 import mars.Application;
 import mars.ProcessingException;
 import mars.ProgramStatement;
-import mars.mips.hardware.AddressErrorException;
-import mars.mips.hardware.Coprocessor1;
-import mars.mips.hardware.InvalidRegisterAccessException;
-import mars.mips.hardware.RegisterFile;
-import mars.simulator.Exceptions;
+import mars.mips.hardware.*;
+import mars.simulator.ExceptionCause;
 
 import javax.swing.*;
 
@@ -75,7 +72,7 @@ public class SyscallMessageDialogDouble extends AbstractSyscall {
         }
         catch (InvalidRegisterAccessException exception) {
             RegisterFile.updateRegister(5, -1);  // set $a1 to -1 flag
-            throw new ProcessingException(statement, "Invalid register access during double input (syscall " + this.getNumber() + ")", Exceptions.SYSCALL_EXCEPTION);
+            throw new ProcessingException(statement, "Invalid register access during double input (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
     }
 }

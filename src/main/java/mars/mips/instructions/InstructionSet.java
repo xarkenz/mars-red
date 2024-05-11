@@ -7,7 +7,7 @@ import mars.mips.hardware.*;
 import mars.mips.instructions.syscalls.Syscall;
 import mars.mips.instructions.syscalls.SyscallManager;
 import mars.simulator.DelayedBranch;
-import mars.simulator.Exceptions;
+import mars.simulator.ExceptionCause;
 import mars.util.Binary;
 
 import java.io.BufferedReader;
@@ -94,7 +94,7 @@ public class InstructionSet {
             int sum = add1 + add2;
             // overflow on A+B detected when A and B have same sign and A+B has other sign.
             if ((add1 >= 0 && add2 >= 0 && sum < 0) || (add1 < 0 && add2 < 0 && sum >= 0)) {
-                throw new ProcessingException(statement, "arithmetic overflow", Exceptions.ARITHMETIC_OVERFLOW_EXCEPTION);
+                throw new ProcessingException(statement, "arithmetic overflow", ExceptionCause.ARITHMETIC_OVERFLOW_EXCEPTION);
             }
             RegisterFile.updateRegister(operands[0], sum);
         }));
@@ -105,7 +105,7 @@ public class InstructionSet {
             int dif = sub1 - sub2;
             // overflow on A-B detected when A and B have opposite signs and A-B has B's sign
             if ((sub1 >= 0 && sub2 < 0 && dif < 0) || (sub1 < 0 && sub2 >= 0 && dif >= 0)) {
-                throw new ProcessingException(statement, "arithmetic overflow", Exceptions.ARITHMETIC_OVERFLOW_EXCEPTION);
+                throw new ProcessingException(statement, "arithmetic overflow", ExceptionCause.ARITHMETIC_OVERFLOW_EXCEPTION);
             }
             RegisterFile.updateRegister(operands[0], dif);
         }));
@@ -116,7 +116,7 @@ public class InstructionSet {
             int sum = add1 + add2;
             // overflow on A+B detected when A and B have same sign and A+B has other sign.
             if ((add1 >= 0 && add2 >= 0 && sum < 0) || (add1 < 0 && add2 < 0 && sum >= 0)) {
-                throw new ProcessingException(statement, "arithmetic overflow", Exceptions.ARITHMETIC_OVERFLOW_EXCEPTION);
+                throw new ProcessingException(statement, "arithmetic overflow", ExceptionCause.ARITHMETIC_OVERFLOW_EXCEPTION);
             }
             RegisterFile.updateRegister(operands[0], sum);
         }));
@@ -519,11 +519,11 @@ public class InstructionSet {
         instructionList.add(new BasicInstruction("break 100", "Break execution with code : Terminate program execution with specified exception code", BasicInstructionFormat.R_FORMAT, "000000 ffffffffffffffffffff 001101", statement -> {  // At this time I don't have exception processing or trap handlers
             // so will just halt execution with a message.
             int[] operands = statement.getOperands();
-            throw new ProcessingException(statement, "break instruction executed; code = " + operands[0] + ".", Exceptions.BREAKPOINT_EXCEPTION);
+            throw new ProcessingException(statement, "break instruction executed; code = " + operands[0] + ".", ExceptionCause.BREAKPOINT_EXCEPTION);
         }));
         instructionList.add(new BasicInstruction("break", "Break execution : Terminate program execution with exception", BasicInstructionFormat.R_FORMAT, "000000 00000 00000 00000 00000 001101", statement -> {  // At this time I don't have exception processing or trap handlers
             // so will just halt execution with a message.
-            throw new ProcessingException(statement, "break instruction executed; no code given.", Exceptions.BREAKPOINT_EXCEPTION);
+            throw new ProcessingException(statement, "break instruction executed; no code given.", ExceptionCause.BREAKPOINT_EXCEPTION);
         }));
         instructionList.add(new BasicInstruction("syscall", "Issue a system call : Execute the system call specified by value in $v0", BasicInstructionFormat.R_FORMAT, "000000 00000 00000 00000 00000 001100", statement -> {
             findAndSimulateSyscall(RegisterFile.getValue(2), statement);
@@ -1307,7 +1307,7 @@ public class InstructionSet {
                 }
                 // IF statement added by DPS 13-July-2011.
                 if (!Memory.doublewordAligned(RegisterFile.getValue(operands[2]) + operands[1])) {
-                    throw new ProcessingException(statement, new AddressErrorException("address not aligned on doubleword boundary ", Exceptions.ADDRESS_EXCEPTION_LOAD, RegisterFile.getValue(operands[2]) + operands[1]));
+                    throw new ProcessingException(statement, new AddressErrorException("address not aligned on doubleword boundary ", ExceptionCause.ADDRESS_EXCEPTION_LOAD, RegisterFile.getValue(operands[2]) + operands[1]));
                 }
 
                 try {
@@ -1335,7 +1335,7 @@ public class InstructionSet {
             }
             // IF statement added by DPS 13-July-2011.
             if (!Memory.doublewordAligned(RegisterFile.getValue(operands[2]) + operands[1])) {
-                throw new ProcessingException(statement, new AddressErrorException("address not aligned on doubleword boundary ", Exceptions.ADDRESS_EXCEPTION_STORE, RegisterFile.getValue(operands[2]) + operands[1]));
+                throw new ProcessingException(statement, new AddressErrorException("address not aligned on doubleword boundary ", ExceptionCause.ADDRESS_EXCEPTION_STORE, RegisterFile.getValue(operands[2]) + operands[1]));
             }
             try {
                 Application.memory.setWord(RegisterFile.getValue(operands[2]) + operands[1], Coprocessor1.getValue(operands[0]));
@@ -1349,31 +1349,31 @@ public class InstructionSet {
         instructionList.add(new BasicInstruction("teq $t1,$t2", "Trap if equal : Trap if $t1 is equal to $t2", BasicInstructionFormat.R_FORMAT, "000000 fffff sssss 00000 00000 110100", statement -> {
             int[] operands = statement.getOperands();
             if (RegisterFile.getValue(operands[0]) == RegisterFile.getValue(operands[1])) {
-                throw new ProcessingException(statement, "trap", Exceptions.TRAP_EXCEPTION);
+                throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
             }
         }));
         instructionList.add(new BasicInstruction("teqi $t1,-100", "Trap if equal to immediate : Trap if $t1 is equal to sign-extended 16 bit immediate", BasicInstructionFormat.I_FORMAT, "000001 fffff 01100 ssssssssssssssss", statement -> {
             int[] operands = statement.getOperands();
             if (RegisterFile.getValue(operands[0]) == (operands[1] << 16 >> 16)) {
-                throw new ProcessingException(statement, "trap", Exceptions.TRAP_EXCEPTION);
+                throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
             }
         }));
         instructionList.add(new BasicInstruction("tne $t1,$t2", "Trap if not equal : Trap if $t1 is not equal to $t2", BasicInstructionFormat.R_FORMAT, "000000 fffff sssss 00000 00000 110110", statement -> {
             int[] operands = statement.getOperands();
             if (RegisterFile.getValue(operands[0]) != RegisterFile.getValue(operands[1])) {
-                throw new ProcessingException(statement, "trap", Exceptions.TRAP_EXCEPTION);
+                throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
             }
         }));
         instructionList.add(new BasicInstruction("tnei $t1,-100", "Trap if not equal to immediate : Trap if $t1 is not equal to sign-extended 16 bit immediate", BasicInstructionFormat.I_FORMAT, "000001 fffff 01110 ssssssssssssssss", statement -> {
             int[] operands = statement.getOperands();
             if (RegisterFile.getValue(operands[0]) != (operands[1] << 16 >> 16)) {
-                throw new ProcessingException(statement, "trap", Exceptions.TRAP_EXCEPTION);
+                throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
             }
         }));
         instructionList.add(new BasicInstruction("tge $t1,$t2", "Trap if greater or equal : Trap if $t1 is greater than or equal to $t2", BasicInstructionFormat.R_FORMAT, "000000 fffff sssss 00000 00000 110000", statement -> {
             int[] operands = statement.getOperands();
             if (RegisterFile.getValue(operands[0]) >= RegisterFile.getValue(operands[1])) {
-                throw new ProcessingException(statement, "trap", Exceptions.TRAP_EXCEPTION);
+                throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
             }
         }));
         instructionList.add(new BasicInstruction("tgeu $t1,$t2", "Trap if greater or equal unsigned : Trap if $t1 is greater than or equal to $t2 using unsigned comparision", BasicInstructionFormat.R_FORMAT, "000000 fffff sssss 00000 00000 110001", statement -> {
@@ -1382,13 +1382,13 @@ public class InstructionSet {
             int second = RegisterFile.getValue(operands[1]);
             // if signs same, do straight compare; if signs differ & first negative then first greater else second
             if ((first >= 0 && second >= 0 || first < 0 && second < 0) ? (first >= second) : (first < 0)) {
-                throw new ProcessingException(statement, "trap", Exceptions.TRAP_EXCEPTION);
+                throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
             }
         }));
         instructionList.add(new BasicInstruction("tgei $t1,-100", "Trap if greater than or equal to immediate : Trap if $t1 greater than or equal to sign-extended 16 bit immediate", BasicInstructionFormat.I_FORMAT, "000001 fffff 01000 ssssssssssssssss", statement -> {
             int[] operands = statement.getOperands();
             if (RegisterFile.getValue(operands[0]) >= (operands[1] << 16 >> 16)) {
-                throw new ProcessingException(statement, "trap", Exceptions.TRAP_EXCEPTION);
+                throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
             }
         }));
         instructionList.add(new BasicInstruction("tgeiu $t1,-100", "Trap if greater or equal to immediate unsigned : Trap if $t1 greater than or equal to sign-extended 16 bit immediate, unsigned comparison", BasicInstructionFormat.I_FORMAT, "000001 fffff 01001 ssssssssssssssss", statement -> {
@@ -1398,13 +1398,13 @@ public class InstructionSet {
             int second = operands[1] << 16 >> 16;
             // if signs same, do straight compare; if signs differ & first negative then first greater else second
             if ((first >= 0 && second >= 0 || first < 0 && second < 0) ? (first >= second) : (first < 0)) {
-                throw new ProcessingException(statement, "trap", Exceptions.TRAP_EXCEPTION);
+                throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
             }
         }));
         instructionList.add(new BasicInstruction("tlt $t1,$t2", "Trap if less than: Trap if $t1 less than $t2", BasicInstructionFormat.R_FORMAT, "000000 fffff sssss 00000 00000 110010", statement -> {
             int[] operands = statement.getOperands();
             if (RegisterFile.getValue(operands[0]) < RegisterFile.getValue(operands[1])) {
-                throw new ProcessingException(statement, "trap", Exceptions.TRAP_EXCEPTION);
+                throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
             }
         }));
         instructionList.add(new BasicInstruction("tltu $t1,$t2", "Trap if less than unsigned : Trap if $t1 less than $t2, unsigned comparison", BasicInstructionFormat.R_FORMAT, "000000 fffff sssss 00000 00000 110011", statement -> {
@@ -1413,13 +1413,13 @@ public class InstructionSet {
             int second = RegisterFile.getValue(operands[1]);
             // if signs same, do straight compare; if signs differ & first positive then first is less else second
             if ((first >= 0 && second >= 0 || first < 0 && second < 0) ? (first < second) : (first >= 0)) {
-                throw new ProcessingException(statement, "trap", Exceptions.TRAP_EXCEPTION);
+                throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
             }
         }));
         instructionList.add(new BasicInstruction("tlti $t1,-100", "Trap if less than immediate : Trap if $t1 less than sign-extended 16-bit immediate", BasicInstructionFormat.I_FORMAT, "000001 fffff 01010 ssssssssssssssss", statement -> {
             int[] operands = statement.getOperands();
             if (RegisterFile.getValue(operands[0]) < (operands[1] << 16 >> 16)) {
-                throw new ProcessingException(statement, "trap", Exceptions.TRAP_EXCEPTION);
+                throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
             }
         }));
         instructionList.add(new BasicInstruction("tltiu $t1,-100", "Trap if less than immediate unsigned : Trap if $t1 less than sign-extended 16-bit immediate, unsigned comparison", BasicInstructionFormat.I_FORMAT, "000001 fffff 01011 ssssssssssssssss", statement -> {
@@ -1429,7 +1429,7 @@ public class InstructionSet {
             int second = operands[1] << 16 >> 16;
             // if signs same, do straight compare; if signs differ & first positive then first is less else second
             if ((first >= 0 && second >= 0 || first < 0 && second < 0) ? (first < second) : (first >= 0)) {
-                throw new ProcessingException(statement, "trap", Exceptions.TRAP_EXCEPTION);
+                throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
             }
         }));
         instructionList.add(new BasicInstruction("eret", "Exception return : Set Program Counter to Coprocessor 0 EPC register value, set Coprocessor Status register bit 1 (exception level) to zero", BasicInstructionFormat.R_FORMAT, "010000 1 0000000000000000000 011000", statement -> {
@@ -1587,7 +1587,7 @@ public class InstructionSet {
             service.simulate(statement);
             return;
         }
-        throw new ProcessingException(statement, "invalid or unimplemented syscall service: " + number + " ", Exceptions.SYSCALL_EXCEPTION);
+        throw new ProcessingException(statement, "invalid or unimplemented syscall service: " + number + " ", ExceptionCause.SYSCALL_EXCEPTION);
     }
 
     /**
