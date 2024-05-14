@@ -7,6 +7,7 @@ mars.mips.instructions.syscalls
 mars.settings
 mars.simulator
 mars.tools
+mars.tools.bhtsim
 mars.util
 mars.venus
 mars.venus.actions
