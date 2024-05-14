@@ -446,7 +446,14 @@ public class VenusUI extends JFrame {
         if (!toolActions.isEmpty()) {
             JMenu toolsMenu = new JMenu("Tools");
             toolsMenu.setMnemonic(KeyEvent.VK_T);
+            int previousToolOrder = toolActions.get(0).getTool().getToolMenuOrder();
             for (ToolAction toolAction : toolActions) {
+                // Put separators between actions with differing tool orders
+                int toolOrder = toolAction.getTool().getToolMenuOrder();
+                if (toolOrder != previousToolOrder) {
+                    toolsMenu.addSeparator();
+                    previousToolOrder = toolOrder;
+                }
                 toolsMenu.add(createMenuItem(toolAction));
             }
             menuBar.add(toolsMenu);

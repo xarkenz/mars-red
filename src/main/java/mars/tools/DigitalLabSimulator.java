@@ -1,0 +1,365 @@
+package mars.tools;
+
+import mars.Application;
+import mars.mips.hardware.AddressErrorException;
+import mars.mips.hardware.Coprocessor0;
+import mars.mips.hardware.Memory;
+import mars.mips.hardware.MemoryAccessNotice;
+import mars.simulator.Simulator;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.Observable;
+
+/**
+ * Didier Teifreto LIFC Université de franche-Comté www.lifc.univ-fcomte.fr/~teifreto
+ * didier.teifreto@univ-fcomte.fr
+ */
+public class DigitalLabSimulator extends AbstractMarsTool {
+    private static final String NAME = "Digital Lab Simulator";
+    private static final String VERSION = "Version 1.0 (Didier Teifreto)";
+    private static final int IN_ADDRESS_DISPLAY_1 = Memory.mmioBaseAddress + 0x10;
+    private static final int IN_ADDRESS_DISPLAY_2 = Memory.mmioBaseAddress + 0x11;
+    private static final int IN_ADDRESS_HEXADECIMAL_KEYBOARD = Memory.mmioBaseAddress + 0x12;
+    private static final int IN_ADDRESS_COUNTER = Memory.mmioBaseAddress + 0x13;
+    private static final int OUT_ADDRESS_HEXADECIMAL_KEYBOARD = Memory.mmioBaseAddress + 0x14;
+
+    public static final int EXTERNAL_INTERRUPT_TIMER = 0x00000100;
+    public static final int EXTERNAL_INTERRUPT_HEXADECIMAL_KEYBOARD = 0x00000200;
+
+    // Seven segment display
+    private SevenSegmentPanel sevenSegmentPanel;
+    // Keyboard
+    private static int keyboardValueButtonClick = -1; // -1 no button click
+    private HexadecimalKeyboard hexadecimalKeyboard;
+    private static boolean keyboardInterruptOnOff = false;
+    // Counter
+    private static final int COUNTER_VALUE_MAX = 30;
+    private static int counterValue = COUNTER_VALUE_MAX;
+    private static boolean counterInterruptOnOff = false;
+    private static OneSecondCounter secondCounter;
+
+    /**
+     * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
+     */
+    @SuppressWarnings("unused")
+    public DigitalLabSimulator() {
+        super(NAME + ", " + VERSION);
+    }
+
+    @Override
+    public String getName() {
+        return NAME;
+    }
+
+    @Override
+    protected void startObserving() {
+        startObserving(IN_ADDRESS_DISPLAY_1, IN_ADDRESS_DISPLAY_1);
+        startObserving(Memory.textBaseAddress, Memory.textLimitAddress);
+    }
+
+    @Override
+    public void update(Observable ressource, Object accessNotice) {
+        MemoryAccessNotice notice = (MemoryAccessNotice) accessNotice;
+        int address = notice.getAddress();
+        char value = (char) notice.getValue();
+        if (address == IN_ADDRESS_DISPLAY_1) {
+            updateSevenSegment(1, value);
+        }
+        else if (address == IN_ADDRESS_DISPLAY_2) {
+            updateSevenSegment(0, value);
+        }
+        else if (address == IN_ADDRESS_HEXADECIMAL_KEYBOARD) {
+            updateHexadecimalKeyboard(value);
+        }
+        else if (address == IN_ADDRESS_COUNTER) {
+            updateOneSecondCounter(value);
+        }
+        if (counterInterruptOnOff) {
+            if (counterValue > 0) {
+                counterValue--;
+            }
+            else {
+                counterValue = COUNTER_VALUE_MAX;
+                if ((Coprocessor0.getValue(Coprocessor0.STATUS) & 2) == 0) {
+                    Simulator.externalInterruptingDevice = EXTERNAL_INTERRUPT_TIMER;
+                }
+            }
+        }
+    }
+
+    @Override
+    protected void reset() {
+        sevenSegmentPanel.resetSevenSegment();
+        hexadecimalKeyboard.resetHexaKeyboard();
+        secondCounter.resetOneSecondCounter();
+    }
+
+    @Override
+    protected JComponent buildMainDisplayArea() {
+        JPanel panelTools = new JPanel(new GridLayout(1, 2));
+        sevenSegmentPanel = new SevenSegmentPanel();
+        panelTools.add(sevenSegmentPanel);
+        hexadecimalKeyboard = new HexadecimalKeyboard();
+        panelTools.add(hexadecimalKeyboard);
+        secondCounter = new OneSecondCounter();
+        return panelTools;
+    }
+
+    private synchronized void updateMMIOControlAndData(int address, int value) {
+        synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
+            try {
+                Memory.getInstance().setByte(address, value);
+            }
+            catch (AddressErrorException exception) {
+                System.err.println("Tool author specified incorrect MMIO address!");
+                exception.printStackTrace(System.err);
+                System.exit(0);
+            }
+        }
+        if (Application.getGUI() != null && Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().getCodeHighlighting()) {
+            Application.getGUI().getMainPane().getExecuteTab().getDataSegmentWindow().updateValues();
+        }
+    }
+
+    @Override
+    protected JComponent getHelpComponent() {
+        final String helpContent = """
+            This tool is composed of 3 parts : two seven-segment displays, an hexadecimal keyboard and counter
+            Seven segment display
+             Byte value at address 0xFFFF0010 : command right seven segment display
+             Byte value at address 0xFFFF0011 : command left seven segment display
+             Each bit of these two bytes are connected to segments (bit 0 for a segment, 1 for b segment and 7 for point
+            
+            Hexadecimal keyboard
+             Byte value at address 0xFFFF0012 : command row number of hexadecimal keyboard (bit 0 to 3) and enable keyboard interrupt (bit 7)
+             Byte value at address 0xFFFF0014 : receive row and column of the key pressed, 0 if not key pressed
+             The mips program have to scan, one by one, each row (send 1,2,4,8...) and then observe if a key is pressed (that mean byte value at adresse 0xFFFF0014 is different from zero).  This byte value is composed of row number (4 left bits) and column number (4 right bits) Here you'll find the code for each key : 0x11,0x21,0x41,0x81,0x12,0x22,0x42,0x82,0x14,0x24,0x44,0x84,0x18,0x28,0x48,0x88.
+             For exemple key number 2 return 0x41, that mean the key is on column 3 and row 1.
+             If keyboard interruption is enable, an exception is started, with cause register bit number 11 set.
+            
+            Counter
+             Byte value at address 0xFFFF0013 : If one bit of this byte is set, the counter interruption is enable.
+             If counter interruption is enable, every 30 instructions, an exception is started with cause register bit number 10.
+             (contributed by Didier Teifreto, dteifreto@lifc.univ-fcomte.fr)""";
+        JButton help = new JButton("Help");
+        help.addActionListener(e -> {
+            JTextArea ja = new JTextArea(helpContent);
+            ja.setRows(20);
+            ja.setColumns(60);
+            ja.setLineWrap(true);
+            ja.setWrapStyleWord(true);
+            JOptionPane.showMessageDialog(dialog, new JScrollPane(ja), "Simulating the Hexa Keyboard and Seven segment display", JOptionPane.INFORMATION_MESSAGE);
+        });
+        return help;
+    }
+
+    public void updateSevenSegment(int number, char value) {
+        sevenSegmentPanel.display[number].modifyDisplay(value);
+    }
+
+    public static class SevenSegmentDisplay extends JComponent {
+        public char aff;
+
+        public SevenSegmentDisplay(char aff) {
+            this.aff = aff;
+            this.setPreferredSize(new Dimension(60, 80));
+        }
+
+        public void modifyDisplay(char val) {
+            aff = val;
+            this.repaint();
+        }
+
+        public void drawSegment(Graphics graphics, char segment) {
+            switch (segment) {
+                case 'a': // a segment
+                    int[] pxa1 = {12, 9, 12};
+                    int[] pxa2 = {36, 39, 36};
+                    int[] pya = {5, 8, 11};
+                    graphics.fillPolygon(pxa1, pya, 3);
+                    graphics.fillPolygon(pxa2, pya, 3);
+                    graphics.fillRect(12, 5, 24, 6);
+                    break;
+                case 'b': // b segment
+                    int[] pxb = {37, 40, 43};
+                    int[] pyb1 = {12, 9, 12};
+                    int[] pyb2 = {36, 39, 36};
+                    graphics.fillPolygon(pxb, pyb1, 3);
+                    graphics.fillPolygon(pxb, pyb2, 3);
+                    graphics.fillRect(37, 12, 6, 24);
+                    break;
+                case 'c': // c segment
+                    int[] pxc = {37, 40, 43};
+                    int[] pyc1 = {44, 41, 44};
+                    int[] pyc2 = {68, 71, 68};
+                    graphics.fillPolygon(pxc, pyc1, 3);
+                    graphics.fillPolygon(pxc, pyc2, 3);
+                    graphics.fillRect(37, 44, 6, 24);
+                    break;
+                case 'd': // d segment
+                    int[] pxd1 = {12, 9, 12};
+                    int[] pxd2 = {36, 39, 36};
+                    int[] pyd = {69, 72, 75};
+                    graphics.fillPolygon(pxd1, pyd, 3);
+                    graphics.fillPolygon(pxd2, pyd, 3);
+                    graphics.fillRect(12, 69, 24, 6);
+                    break;
+                case 'e': // e segment
+                    int[] pxe = {5, 8, 11};
+                    int[] pye1 = {44, 41, 44};
+                    int[] pye2 = {68, 71, 68};
+                    graphics.fillPolygon(pxe, pye1, 3);
+                    graphics.fillPolygon(pxe, pye2, 3);
+                    graphics.fillRect(5, 44, 6, 24);
+                    break;
+                case 'f': // f segment
+                    int[] pxf = {5, 8, 11};
+                    int[] pyf1 = {12, 9, 12};
+                    int[] pyf2 = {36, 39, 36};
+                    graphics.fillPolygon(pxf, pyf1, 3);
+                    graphics.fillPolygon(pxf, pyf2, 3);
+                    graphics.fillRect(5, 12, 6, 24);
+                    break;
+                case 'g': // g segment
+                    int[] pxg1 = {12, 9, 12};
+                    int[] pxg2 = {36, 39, 36};
+                    int[] pyg = {37, 40, 43};
+                    graphics.fillPolygon(pxg1, pyg, 3);
+                    graphics.fillPolygon(pxg2, pyg, 3);
+                    graphics.fillRect(12, 37, 24, 6);
+                    break;
+                case 'h': // decimal point
+                    graphics.fillOval(49, 68, 8, 8);
+                    break;
+            }
+        }
+
+        @Override
+        public void paint(Graphics graphics) {
+            char c = 'a';
+            while (c <= 'h') {
+                if ((aff & 0x1) == 1) {
+                    graphics.setColor(Color.RED);
+                }
+                else {
+                    graphics.setColor(Color.LIGHT_GRAY);
+                }
+                drawSegment(graphics, c);
+                aff = (char) (aff >>> 1);
+                c++;
+            }
+        }
+    }
+
+    public static class SevenSegmentPanel extends JPanel {
+        public SevenSegmentDisplay[] display;
+
+        public SevenSegmentPanel() {
+            FlowLayout fl = new FlowLayout();
+            this.setLayout(fl);
+            display = new SevenSegmentDisplay[2];
+            for (int i = 0; i < 2; i++) {
+                display[i] = new SevenSegmentDisplay('\0');
+                this.add(display[i]);
+            }
+        }
+
+        public void modifyDisplay(int num, char val) {
+            display[num].modifyDisplay(val);
+            display[num].repaint();
+        }
+
+        public void resetSevenSegment() {
+            int i;
+            for (i = 0; i < 2; i++) {
+                modifyDisplay(i, (char) 0);
+            }
+        }
+    }
+
+    public void updateHexadecimalKeyboard(char row) {
+        int key = keyboardValueButtonClick;
+        if ((key != -1) && ((1 << (key / 4)) == (row & 0xF))) {
+            updateMMIOControlAndData(OUT_ADDRESS_HEXADECIMAL_KEYBOARD, (char) (1 << (key / 4)) | (1 << (4 + (key % 4))));
+        }
+        else {
+            updateMMIOControlAndData(OUT_ADDRESS_HEXADECIMAL_KEYBOARD, 0);
+        }
+        keyboardInterruptOnOff = (row & 0xF0) != 0;
+    }
+
+    public class HexadecimalKeyboard extends JPanel {
+        public JButton[] buttons;
+
+        public HexadecimalKeyboard() {
+            GridLayout layout = new GridLayout(4, 4, 4, 4);
+            this.setLayout(layout);
+            this.buttons = new JButton[16];
+            for (int index = 0; index < this.buttons.length; index++) {
+                this.buttons[index] = new JButton(Integer.toHexString(index).toUpperCase());
+                this.buttons[index].setMargin(new Insets(10, 10, 10, 10));
+                this.buttons[index].addMouseListener(new ClickListener(index));
+                this.buttons[index].setBackground(null);
+                this.add(this.buttons[index]);
+            }
+        }
+
+        public void resetHexaKeyboard() {
+            keyboardValueButtonClick = -1;
+            for (JButton button : buttons) {
+                button.setBackground(null);
+            }
+        }
+
+        public class ClickListener extends MouseAdapter {
+            private final int buttonValue;
+
+            public ClickListener(int val) {
+                buttonValue = val;
+            }
+
+            @Override
+            public void mouseClicked(MouseEvent event) {
+                int i;
+                if (keyboardValueButtonClick != -1) { // Button already pressed -> now realease
+                    keyboardValueButtonClick = -1;
+                    updateMMIOControlAndData(OUT_ADDRESS_HEXADECIMAL_KEYBOARD, 0);
+                    for (i = 0; i < 16; i++) {
+                        buttons[i].setBackground(null);
+                    }
+                }
+                else { // new button pressed
+                    keyboardValueButtonClick = buttonValue;
+                    buttons[keyboardValueButtonClick].setBackground(new Color(0x118844));
+                    if (keyboardInterruptOnOff && (Coprocessor0.getValue(Coprocessor0.STATUS) & 2) == 0) {
+                        Simulator.externalInterruptingDevice = EXTERNAL_INTERRUPT_HEXADECIMAL_KEYBOARD;
+                    }
+                }
+            }
+        }
+    }
+
+    public void updateOneSecondCounter(char value) {
+        if (value != 0) {
+            counterInterruptOnOff = true;
+            counterValue = COUNTER_VALUE_MAX;
+        }
+        else {
+            counterInterruptOnOff = false;
+        }
+    }
+
+    public static class OneSecondCounter {
+        public OneSecondCounter() {
+            counterInterruptOnOff = false;
+        }
+
+        public void resetOneSecondCounter() {
+            counterInterruptOnOff = false;
+            counterValue = COUNTER_VALUE_MAX;
+        }
+    }
+}

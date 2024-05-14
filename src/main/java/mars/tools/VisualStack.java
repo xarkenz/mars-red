@@ -11,7 +11,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.Observable;
 
-public class VisualStack extends AbstractMarsToolAndApplication {
+public class VisualStack extends AbstractMarsTool {
     private static final String NAME = "Visual Stack";
     private static final String VERSION = "Version 1.0";
     private static final int STACK_VIEWER_WIDTH = 400;
@@ -22,16 +22,12 @@ public class VisualStack extends AbstractMarsToolAndApplication {
     private int oldStackPtrValue;
     private boolean stackOK = true;
 
-    public static void main(String[] args) {
-        new VisualStack().go();
-    }
-
-    public VisualStack(String title, String heading) {
-        super(title, heading);
-    }
-
+    /**
+     * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
+     */
+    @SuppressWarnings("unused")
     public VisualStack() {
-        this(NAME + ", " + VERSION, NAME);
+        super(NAME + ", " + VERSION);
     }
 
     @Override
@@ -41,8 +37,8 @@ public class VisualStack extends AbstractMarsToolAndApplication {
 
     @Override
     public void initializePreGUI() {
-        this.addAsObserver(Memory.stackLimitAddress, Memory.stackBaseAddress);
-        this.addAsObserver(RegisterFile.getProgramCounterRegister());
+        this.startObserving(Memory.stackLimitAddress, Memory.stackBaseAddress);
+        this.startObserving(RegisterFile.getProgramCounterRegister());
         this.oldStackPtrValue = Memory.stackPointer;
     }
 
@@ -61,12 +57,7 @@ public class VisualStack extends AbstractMarsToolAndApplication {
 
     @Override
     public void initializePostGUI() {
-        if (this.isBeingUsedAsAMarsTool) {
-            ((JDialog) this.window).setResizable(false);
-        }
-        else {
-            this.setResizable(false);
-        }
+        this.dialog.setResizable(false);
     }
 
     @Override
@@ -92,33 +83,33 @@ public class VisualStack extends AbstractMarsToolAndApplication {
             textArea.setLineWrap(true);
             textArea.setWrapStyleWord(true);
             textArea.setEditable(false);
-            JOptionPane.showMessageDialog(this.window, new JScrollPane(textArea), "Visual Stack", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this.dialog, new JScrollPane(textArea), "Visual Stack", JOptionPane.INFORMATION_MESSAGE);
         });
         return help;
     }
 
     @Override
     protected void processMIPSUpdate(Observable resource, AccessNotice notice) {
-        if (this.stackOK && this.isObserving()) {
+        if (this.stackOK) {
             synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
                 if (notice.getAccessType() == AccessNotice.WRITE) {
                     if (notice.accessIsFromGUI()) {
                         return;
                     }
 
-                    if (notice instanceof MemoryAccessNotice) {
-                        this.processMemoryUpdate((MemoryAccessNotice) notice);
+                    if (notice instanceof MemoryAccessNotice memoryAccessNotice) {
+                        this.processMemoryUpdate(memoryAccessNotice);
                     }
                     else {
-                        this.processStackPtrUpdate((RegisterAccessNotice) notice);
+                        this.processStackPtrUpdate();
                     }
                 }
             }
         }
     }
 
-    private void processMemoryUpdate(MemoryAccessNotice theNotice) {
-        int address = theNotice.getAddress();
+    private void processMemoryUpdate(MemoryAccessNotice notice) {
+        int address = notice.getAddress();
         int valueWritten;
         int registerDataCameFrom;
         if (address <= Memory.stackBaseAddress && address >= Memory.stackLimitAddress) {
@@ -159,7 +150,7 @@ public class VisualStack extends AbstractMarsToolAndApplication {
         this.repaint();
     }
 
-    private void processStackPtrUpdate(RegisterAccessNotice ignoredNotice) {
+    private void processStackPtrUpdate() {
         int newStackPtrValue = RegisterFile.getValue(RegisterFile.STACK_POINTER);
         int stackPtrDelta = this.oldStackPtrValue - newStackPtrValue;
         if (stackPtrDelta % Memory.WORD_LENGTH_BYTES != 0) {

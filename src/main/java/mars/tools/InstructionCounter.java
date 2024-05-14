@@ -43,35 +43,31 @@ import java.util.Observable;
  * Instruction counter tool. Can be used to know how many instructions
  * were executed to complete a given program.
  * <p>
- * Code slightly based on MemoryReferenceVisualization.
+ * Code slightly based on {@link MemoryReferenceVisualization}.
  *
- * @author Felipe Lessa &lt;felipe.lessa@gmail.com&gt;
+ * @author Felipe Lessa (felipe.lessa@gmail.com)
  */
-public class InstructionCounter extends AbstractMarsToolAndApplication {
+public class InstructionCounter extends AbstractMarsTool {
     private static final String NAME = "Instruction Counter";
     private static final String VERSION = "Version 1.0 (Felipe Lessa)";
-    private static final String HEADING = "Counting the number of instructions executed";
 
     /**
      * Number of instructions executed until now.
      */
     protected int counter = 0;
     private JTextField counterField;
-
     /**
      * Number of instructions of type R.
      */
     protected int counterR = 0;
     private JTextField counterRField;
     private JProgressBar progressbarR;
-
     /**
      * Number of instructions of type I.
      */
     protected int counterI = 0;
     private JTextField counterIField;
     private JProgressBar progressbarI;
-
     /**
      * Number of instructions of type J.
      */
@@ -87,20 +83,11 @@ public class InstructionCounter extends AbstractMarsToolAndApplication {
     protected int lastAddress = -1;
 
     /**
-     * Simple constructor, likely used to run a stand-alone memory reference visualizer.
-     *
-     * @param title   String containing title for title bar
-     * @param heading String containing text for heading shown in upper part of window.
+     * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
      */
-    public InstructionCounter(String title, String heading) {
-        super(title, heading);
-    }
-
-    /**
-     * Simple construction, likely used by the MARS Tools menu mechanism.
-     */
+    @SuppressWarnings("unused")
     public InstructionCounter() {
-        super(NAME + ", " + VERSION, HEADING);
+        super(NAME + ", " + VERSION);
     }
 
     @Override
@@ -110,7 +97,6 @@ public class InstructionCounter extends AbstractMarsToolAndApplication {
 
     @Override
     protected JComponent buildMainDisplayArea() {
-        // Create everything
         JPanel panel = new JPanel(new GridBagLayout());
 
         counterField = new JTextField("0", 10);
@@ -188,8 +174,8 @@ public class InstructionCounter extends AbstractMarsToolAndApplication {
     }
 
     @Override
-    protected void addAsObserver() {
-        addAsObserver(Memory.textBaseAddress, Memory.textLimitAddress);
+    protected void startObserving() {
+        startObserving(Memory.textBaseAddress, Memory.textLimitAddress);
     }
 
     @Override

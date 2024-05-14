@@ -48,7 +48,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @author Pete Sanderson, 23 December 2010
  * @version 1.0
  */
-public class BitmapDisplay extends AbstractMarsToolAndApplication {
+public class BitmapDisplay extends AbstractMarsTool {
     private static final String NAME = "Bitmap Display";
     private static final String VERSION = "Version 1.0";
 
@@ -86,30 +86,11 @@ public class BitmapDisplay extends AbstractMarsToolAndApplication {
     private final Object imageLock = new Object();
 
     /**
-     * Main provided for pure stand-alone use.  Recommended stand-alone use is to write a
-     * driver program that instantiates a Bitmap object then invokes its go() method.
-     * "stand-alone" means it is not invoked from the MARS Tools menu.  "Pure" means there
-     * is no driver program to invoke the application.
+     * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
      */
-    public static void main(String[] args) {
-        new BitmapDisplay().go();
-    }
-
-    /**
-     * Simple constructor, used to run a stand-alone bitmap display tool.
-     *
-     * @param title   String containing title for title bar.
-     * @param heading String containing text for heading shown in upper part of window.
-     */
-    public BitmapDisplay(String title, String heading) {
-        super(title, heading);
-    }
-
-    /**
-     * Simple constructor, used by the MARS Tools menu mechanism.
-     */
+    @SuppressWarnings("unused")
     public BitmapDisplay() {
-        this(NAME + ", " + VERSION, NAME);
+        super(NAME + ", " + VERSION);
     }
 
     /**
@@ -119,7 +100,7 @@ public class BitmapDisplay extends AbstractMarsToolAndApplication {
      */
     @Override
     public String getName() {
-        return "Bitmap Display";
+        return NAME;
     }
 
     /**
@@ -133,7 +114,11 @@ public class BitmapDisplay extends AbstractMarsToolAndApplication {
      * "Assemble and Run" button on a Mars-based app.
      */
     @Override
-    protected void addAsObserver() {
+    protected void startObserving() {
+        if (this.image == null) {
+            return;
+        }
+
         int highAddress = this.baseAddress + this.image.getWidth() * this.image.getHeight() * Memory.WORD_LENGTH_BYTES;
         // Special case: baseAddress < 0 means we're in kernel memory (0x80000000 and up) and most likely
         // in memory map address space (0xffff0000 and up).  In this case, we need to make sure the high address
@@ -142,16 +127,14 @@ public class BitmapDisplay extends AbstractMarsToolAndApplication {
         if (this.baseAddress < 0 && highAddress > -4) {
             highAddress = -4;
         }
-        this.addAsObserver(this.baseAddress, highAddress);
+        this.startObserving(this.baseAddress, highAddress);
     }
 
     @Override
-    protected JComponent buildContentPane(JComponent headingArea, JComponent mainDisplayArea, JComponent buttonArea) {
+    protected JComponent buildContentPane(JComponent mainDisplayArea, JComponent buttonArea) {
         Box contentPane = Box.createVerticalBox();
         contentPane.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
         contentPane.setOpaque(true);
-        contentPane.add(headingArea);
-        contentPane.add(Box.createVerticalStrut(12));
         contentPane.add(mainDisplayArea);
         contentPane.add(Box.createVerticalStrut(12));
         contentPane.add(buttonArea);
@@ -276,7 +259,7 @@ public class BitmapDisplay extends AbstractMarsToolAndApplication {
             questions or comments.
             """;
         JButton help = new JButton("Help");
-        help.addActionListener(event -> JOptionPane.showMessageDialog(this.window, helpContent));
+        help.addActionListener(event -> JOptionPane.showMessageDialog(this.dialog, helpContent));
         return help;
     }
 
@@ -386,16 +369,14 @@ public class BitmapDisplay extends AbstractMarsToolAndApplication {
             this.resetImage();
 
             // Reshape the window to fit the new size
-            BitmapDisplay.this.window.pack();
-            BitmapDisplay.this.window.setLocationRelativeTo(Application.getGUI());
+            BitmapDisplay.this.dialog.pack();
+            BitmapDisplay.this.dialog.setLocationRelativeTo(Application.getGUI());
         }
 
         public void resetImage() {
             // If something has changed, we can delete and add ourselves as an observer to refresh the memory range
-            if (BitmapDisplay.this.connectButton != null && BitmapDisplay.this.connectButton.isConnected()) {
-                BitmapDisplay.this.deleteAsObserver();
-                BitmapDisplay.this.addAsObserver();
-            }
+            BitmapDisplay.this.stopObserving();
+            BitmapDisplay.this.startObserving();
 
             synchronized (BitmapDisplay.this.imageLock) {
                 // Regenerate the contents of the image from scratch

@@ -3,7 +3,6 @@ package mars.tools;
 import javax.swing.*;
 import java.awt.*;
 
-	
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
 
@@ -30,44 +29,22 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
- */
+*/
 
 /**
  * The "hello world" of MarsTools!
  */
-public class IntroToTools extends AbstractMarsToolAndApplication {
-
-    private static final String heading = "Introduction to MARS Tools and Applications";
-    private static final String version = " Version 1.0";
-
-    /**
-     * Simple constructor, likely used to run a stand-alone memory reference visualizer.
-     *
-     * @param title   String containing title for title bar
-     * @param heading String containing text for heading shown in upper part of window.
-     */
-    public IntroToTools(String title, String heading) {
-        super(title, heading);
-    }
+public class IntroToTools extends AbstractMarsTool {
+    private static final String NAME = "Introduction to MARS Tools";
+    private static final String VERSION = "Version 1.0";
 
     /**
-     * Simple constructor, likely used by the MARS Tools menu mechanism
+     * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
      */
+    @SuppressWarnings("unused")
     public IntroToTools() {
-        super(heading + ", " + version, heading);
+        super(NAME + ", " + VERSION);
     }
-
-
-    /**
-     * Main provided for pure stand-alone use.  Recommended stand-alone use is to write a
-     * driver program that instantiates a MemoryReferenceVisualization object then invokes its go() method.
-     * "stand-alone" means it is not invoked from the MARS Tools menu.  "Pure" means there
-     * is no driver program to invoke the application.
-     */
-    public static void main(String[] args) {
-        new IntroToTools(heading + ", " + version, heading).go();
-    }
-
 
     /**
      * Required method to return Tool name.
@@ -76,11 +53,12 @@ public class IntroToTools extends AbstractMarsToolAndApplication {
      */
     @Override
     public String getName() {
-        return "Introduction to Tools";
+        return NAME;
     }
 
     @Override
     public int getToolMenuOrder() {
+        // Put tool at the top of the tool list
         return -1;
     }
 
@@ -90,43 +68,30 @@ public class IntroToTools extends AbstractMarsToolAndApplication {
      * BorderLayout.  The title is in the NORTH area, and the controls are
      * in the SOUTH area.
      */
+    @Override
     protected JComponent buildMainDisplayArea() {
         JTextArea message = new JTextArea();
         message.setEditable(false);
         message.setLineWrap(true);
         message.setWrapStyleWord(true);
-        message.setFont(new Font("Arial", Font.PLAIN, 12));
-        message.setText(
-                """
-                Hello!  This Tool does not do anything but you may use its source code as a starting point to build your own MARS Tool or Application.
+        message.setPreferredSize(new Dimension(500, 400));
+        message.setText("""
+            Hello!  This Tool does not do anything but you may use its source code as a starting point to build your own MARS Tool.
 
-                A MARS Tool is a program listed in the MARS Tools menu.  It is launched when you select its menu item and typically interacts with executing MIPS programs to do something exciting and informative or at least interesting.
+            A MARS Tool is a program listed in the MARS Tools menu.  It is launched when you select its menu item and typically interacts with executing MIPS programs to do something exciting and informative or at least interesting.
 
-                A MARS Application is a stand-alone program for similarly interacting with executing MIPS programs.  It uses MARS' MIPS assembler and runtime simulator in the background to control MIPS execution.
+            The basic requirements for building a MARS Tool are:
+              1. It must be a class that implements the MarsTool interface.  This has only two methods: 'String getName()' to return the name to be displayed in its Tools menu item, and 'void action()' which is invoked when that menu item is selected by the MARS user.
+              2. It must be stored in the mars.tools package (in folder mars/tools)
+              3. It must be successfully compiled in that package.  This normally means the MARS distribution needs to be extracted from the JAR file before you can develop your Tool.
 
-                The basic requirements for building a MARS Tool are:
-                  1. It must be a class that implements the MarsTool interface.  This has only two methods: 'String getName()' to return the name to be displayed in its Tools menu item, and 'void action()' which is invoked when that menu item is selected by the MARS user.
-                  2. It must be stored in the mars.tools package (in folder mars/tools)
-                  3. It must be successfully compiled in that package.  This normally means the MARS distribution needs to be extracted from the JAR file before you can develop your Tool.
+            If these requirements are met, MARS will recognize and load your Tool into its Tools menu the next time it runs.
 
-                If these requirements are met, MARS will recognize and load your Tool into its Tools menu the next time it runs.
+            The frame/dialog you are reading right now is an example of an AbstractMarsTool subclass.
 
-                There are no fixed requirements for building a MARS Application, a stand-alone program that utilizes the MARS API.
-
-                You can build a program that may be run as either a MARS Tool or an Application.  The easiest way is to extend an abstract class provided in the MARS distribution: mars.tools.AbstractMarsToolAndApplication. \s
-                  1. It defines a suite of methods and provides default definitions for all but two: getName() and buildMainDisplayArea().
-                  2.  String getName() was introduced above.
-                  3.  JComponent buildMainDisplayArea() returns the JComponent to be placed in the BorderLayout.CENTER region of the tool/app's user interface.  The NORTH and SOUTH are defined to contain a heading and a set of button controls, respectively. \s
-                  4. It defines a default 'void go()' method to launch the application.
-                  5. Conventional usage is to define your application as a subclass then launch it by invoking its go() method.
-
-                The frame/dialog you are reading right now is an example of an AbstractMarsToolAndApplication subclass.  If you run it as an application, you will notice the set of controls at the bottom of the window differ from those you get when running it from MARS' Tools menu.  It includes additional controls to load and control the execution of pre-existing MIPS programs.
-
-                See the mars.tools.AbstractMarsToolAndApplication API or the source code of existing tool/apps for further information.
-                """
-        );
-        message.setCaretPosition(0); // Assure first line is visible and at top of scroll pane.
+            See the mars.tools.AbstractMarsTool API or the source code of existing tool/apps for further information.
+            """);
+        message.setCaretPosition(0); // Assure first line is visible and at top of scroll pane
         return new JScrollPane(message);
     }
-
 }

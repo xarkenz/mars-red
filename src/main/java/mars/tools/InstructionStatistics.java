@@ -42,51 +42,40 @@ import java.util.Observable;
 /**
  * A MARS tool for obtaining instruction statistics by instruction category.
  * <p>
- * The code of this tools is initially based on the Instruction counter tool by Felipe Lassa.
+ * The code of this tools is initially based on the {@link InstructionCounter} tool by Felipe Lessa.
  *
- * @author Ingo Kofler &lt;ingo.kofler@itec.uni-klu.ac.at&gt;
+ * @author Ingo Kofler (ingo.kofler@itec.uni-klu.ac.at)
  */
-public class InstructionStatistics extends AbstractMarsToolAndApplication {
+public class InstructionStatistics extends AbstractMarsTool {
     /**
      * name of the tool
      */
     private static final String NAME = "Instruction Statistics";
-
     /**
      * version and author information of the tool
      */
     private static final String VERSION = "Version 1.0 (Ingo Kofler)";
 
     /**
-     * heading of the tool
-     */
-    private static final String HEADING = "";
-
-    /**
      * number of instruction categories used by this tool
      */
     private static final int MAX_CATEGORY = 5;
-
     /**
      * constant for ALU instructions category
      */
     private static final int CATEGORY_ALU = 0;
-
     /**
      * constant for jump instructions category
      */
     private static final int CATEGORY_JUMP = 1;
-
     /**
      * constant for branch instructions category
      */
     private static final int CATEGORY_BRANCH = 2;
-
     /**
      * constant for memory instructions category
      */
     private static final int CATEGORY_MEM = 3;
-
     /**
      * constant for any other instruction category
      */
@@ -132,20 +121,11 @@ public class InstructionStatistics extends AbstractMarsToolAndApplication {
     protected int lastAddress = -1;
 
     /**
-     * Simple constructor, likely used to run a stand-alone enhanced instruction counter.
-     *
-     * @param title   String containing title for title bar
-     * @param heading String containing text for heading shown in upper part of window.
+     * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
      */
-    public InstructionStatistics(String title, String heading) {
-        super(title, heading);
-    }
-
-    /**
-     * Simple construction, likely used by the MARS Tools menu mechanism.
-     */
+    @SuppressWarnings("unused")
     public InstructionStatistics() {
-        super(InstructionStatistics.NAME + ", " + InstructionStatistics.VERSION, InstructionStatistics.HEADING);
+        super(NAME + ", " + VERSION);
     }
 
     /**
@@ -215,8 +195,8 @@ public class InstructionStatistics extends AbstractMarsToolAndApplication {
      * registers the tool as observer for the text segment of the MIPS program
      */
     @Override
-    protected void addAsObserver() {
-        addAsObserver(Memory.textBaseAddress, Memory.textLimitAddress);
+    protected void startObserving() {
+        startObserving(Memory.textBaseAddress, Memory.textLimitAddress);
     }
 
     /**

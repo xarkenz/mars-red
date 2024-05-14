@@ -26,7 +26,7 @@ public class SVGIcon implements Icon {
     // This is a trick to account for SVG elements seemingly aligning to integer boundaries.
     // When set to 1, elements can appear out of alignment with each other for this reason.
     // The higher the number, the larger the internal image the transcoder generates, which is then
-    // sampled with antialiasing when painted.
+    // interpolated with a bicubic algorithm when painted.
     private static final int SAMPLES_PER_PIXEL = 2;
     private static final float DISABLED_OPACITY = 0.3f;
 
@@ -98,6 +98,9 @@ public class SVGIcon implements Icon {
     @Override
     public void paintIcon(Component component, Graphics graphics, int leftX, int topY) {
         Graphics2D graphics2D = (Graphics2D) graphics;
+        graphics2D.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        graphics2D.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        graphics2D.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
 
         // Save the original composite so it can be restored later
         Composite composite = graphics2D.getComposite();
@@ -110,15 +113,21 @@ public class SVGIcon implements Icon {
         // converting from user space to device space so the image still appears sharp on high-DPI screens
         AffineTransform transform = graphics2D.getTransform();
         BufferedImage iconImage = this.getIconImage((float) transform.getScaleX(), (float) transform.getScaleY());
-        // Simply setting the transform to the identity matrix seems to work for preventing
-        // scaling of the actual graphics context here
-        transform.setToIdentity();
+
+        // Calculate a new transformation which doesn't have the scaling applied, translated to the icon corner
+        AffineTransform unscaledTransform = new AffineTransform();
+        unscaledTransform.setToTranslation(
+            transform.getTranslateX() + leftX * transform.getScaleX(),
+            transform.getTranslateY() + topY * transform.getScaleY()
+        );
+        graphics2D.setTransform(unscaledTransform);
 
         // Draw the image in the proper location
-        graphics2D.drawImage(iconImage, leftX, topY, this.width, this.height, null);
+        graphics2D.drawImage(iconImage, 0, 0, (int) (this.width * transform.getScaleX()), (int) (this.height * transform.getScaleY()), null);
 
-        // Restore the original composite of the graphics context
-        // (otherwise, the custom composite seems to mess with the menu item text in menus)
+        // Restore the original transform composite of the graphics context
+        // (otherwise, the custom settings seem to mess with the menu item text in menus, for example)
+        graphics2D.setTransform(transform);
         graphics2D.setComposite(composite);
     }
 

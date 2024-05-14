@@ -12,8 +12,8 @@ import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.Observable;
-	
-	/*
+
+/*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
 
 Developed by Pete Sanderson (psanderson@otterbein.edu)
@@ -39,19 +39,17 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
- */
+*/
 
 /**
- * Tool to help students learn about IEEE 754 representation of 32 bit
- * floating point values.  This representation is used by MIPS "float"
- * directive and instructions and also the Java (and most other languages)
- * "float" data type.  As written, it can ALMOST be adapted to 64 bit by
- * changing a few constants.
+ * Tool to help students learn about the IEEE-754 representation of 32-bit
+ * floating point values.  This representation is used by Coprocessor 1 instructions,
+ * and also the <code>float</code> data type in most programming languages in general.
+ * As written, it can <i>almost</i> be adapted to 64-bit by changing a few constants.
  */
-public class FloatRepresentation extends AbstractMarsToolAndApplication {
-    private static final String version = "Version 1.1";
-    private static final String heading = "32-bit IEEE 754 Floating Point Representation";
-    private static final String title = "Floating Point Representation, ";
+public class FloatRepresentation extends AbstractMarsTool {
+    private static final String NAME = "Floating-Point Representation";
+    private static final String VERSION = "Version 1.1";
 
     private static final String defaultHex = "00000000";
     private static final String defaultDecimal = "0.0";
@@ -80,11 +78,9 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
     private Register attachedRegister = null;
     private Register[] fpRegisters;
     // Panels to hold binary displays and decorations (labels, arrows)
-    private JPanel binarySignDecoratedDisplay,
-            binaryExponentDecoratedDisplay, binaryFractionDecoratedDisplay;
+    private JPanel binarySignDecoratedDisplay, binaryExponentDecoratedDisplay, binaryFractionDecoratedDisplay;
     // Editable fields for the hex, binary and decimal representations.
-    private JTextField hexDisplay, decimalDisplay,
-            binarySignDisplay, binaryExponentDisplay, binaryFractionDisplay;
+    private JTextField hexDisplay, decimalDisplay, binarySignDisplay, binaryExponentDisplay, binaryFractionDisplay;
     // Non-editable fields to display formula translating binary to decimal.
     private JLabel expansionDisplay;
     private final JLabel significandLabel = new JLabel(denormalizedLabel, JLabel.CENTER);
@@ -94,30 +90,11 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
     private final String defaultInstructions = "Modify any value then press the Enter key to update all values.";
 
     /**
-     * Simple constructor, likely used to run a stand-alone memory reference visualizer.
-     *
-     * @param title   String containing title for title bar
-     * @param heading String containing text for heading shown in upper part of window.
+     * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
      */
-    public FloatRepresentation(String title, String heading) {
-        super(title, heading);
-    }
-
-    /**
-     * Simple constructor, likely used by the MARS Tools menu mechanism
-     */
+    @SuppressWarnings("unused")
     public FloatRepresentation() {
-        this(title + version, heading);
-    }
-
-    /**
-     * Main provided for pure stand-alone use.  Recommended stand-alone use is to write a
-     * driver program that instantiates a FloatRepresentation object then invokes its go() method.
-     * "stand-alone" means it is not invoked from the MARS Tools menu.  "Pure" means there
-     * is no driver program to invoke the application.
-     */
-    public static void main(String[] args) {
-        new FloatRepresentation(title + version, heading).go();
+        super(NAME + ", " + VERSION);
     }
 
     /**
@@ -125,8 +102,9 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
      *
      * @return String containing tool name
      */
+    @Override
     public String getName() {
-        return "Floating Point Representation";
+        return NAME;
     }
 
     /**
@@ -136,8 +114,9 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
      * If you use the inherited GUI buttons, this method is invoked when you click "Connect" button
      * on MarsTool or the "Assemble and Run" button on a Mars-based app.
      */
-    protected void addAsObserver() {
-        addAsObserver(attachedRegister);
+    @Override
+    protected void startObserving() {
+        startObserving(attachedRegister);
     }
 
     /**
@@ -147,8 +126,9 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
      * when the MIPS program execution triggered by the default "Assemble and run" on a stand-alone
      * Mars app terminates (e.g. when the button is re-enabled).
      */
-    protected void deleteAsObserver() {
-        deleteAsObserver(attachedRegister);
+    @Override
+    protected void stopObserving() {
+        stopObserving(attachedRegister);
     }
 
     /**
@@ -185,7 +165,6 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
         instructions.setText(defaultInstructions);
         updateDisplaysAndRegister(new FlavorsOfFloat());
     }
-
 
     //////////////////////////////////////////////////////////////////////////////////////
     //  Private methods defined to support the above.
@@ -367,29 +346,24 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
         JComboBox<String> registerSelect = new JComboBox<>(registerList);
         registerSelect.setSelectedIndex(0);  // No register attached
         registerSelect.setToolTipText("Attach to selected FP register");
-        registerSelect.addActionListener(
-                e -> {
-                    JComboBox<String> cb = (JComboBox<String>) e.getSource();
-                    int selectedIndex = cb.getSelectedIndex();
-                    if (isObserving()) {
-                        deleteAsObserver();
-                    }
-                    if (selectedIndex == 0) {
-                        attachedRegister = null;
-                        updateDisplays(new FlavorsOfFloat());
-                        instructions.setText("The program is not attached to any MIPS floating point registers.");
-                    } else {
-                        attachedRegister = fpRegisters[selectedIndex - 1];
-                        updateDisplays(new FlavorsOfFloat().buildOneFromInt(attachedRegister.getValue()));
-                        if (isObserving()) {
-                            addAsObserver();
-                        }
-                        instructions.setText("The program and register " + attachedRegister.getName() + " will respond to each other when MIPS program connected or running.");
-                    }
-                });
+        registerSelect.addActionListener(e -> {
+            JComboBox<String> cb = (JComboBox<String>) e.getSource();
+            int selectedIndex = cb.getSelectedIndex();
+            stopObserving();
+            if (selectedIndex == 0) {
+                attachedRegister = null;
+                updateDisplays(new FlavorsOfFloat());
+                instructions.setText("The program is not attached to any MIPS floating point registers.");
+            }
+            else {
+                attachedRegister = fpRegisters[selectedIndex - 1];
+                updateDisplays(new FlavorsOfFloat().buildOneFromInt(attachedRegister.getValue()));
+                startObserving();
+                instructions.setText("The program and register " + attachedRegister.getName() + " will respond to each other when MIPS program connected or running.");
+            }
+        });
         return registerSelect;
     }
-
 
     // If display is attached to a register then update the register value.
     private synchronized void updateAnyAttachedRegister(int intValue) {
@@ -425,9 +399,7 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
     // this will not update the register unless we are an active Observer.
     private void updateDisplaysAndRegister(FlavorsOfFloat flavors) {
         updateDisplays(flavors);
-        if (isObserving()) {
-            updateAnyAttachedRegister(flavors.intValue);
-        }
+        updateAnyAttachedRegister(flavors.intValue);
     }
 
     // Called by updateDisplays() to determine whether or not the significand label needs
@@ -435,25 +407,18 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
     // normalizing "hidden bit".
     private void updateSignificandLabel(FlavorsOfFloat flavors) {
         // Will change significandLabel text only if it needs to be changed...
-        if (flavors.binaryString.substring(maxLengthBinarySign, maxLengthBinarySign + maxLengthBinaryExponent)
-                .equals(zeroes.substring(maxLengthBinarySign, maxLengthBinarySign + maxLengthBinaryExponent))) {
+        if (flavors.binaryString.substring(maxLengthBinarySign, maxLengthBinarySign + maxLengthBinaryExponent).equals(zeroes.substring(maxLengthBinarySign, maxLengthBinarySign + maxLengthBinaryExponent))) {
             // Will change text only if it truly is changing....
             if (!significandLabel.getText().contains("deno")) {
                 significandLabel.setText(denormalizedLabel);
             }
-        } else {
+        }
+        else {
             if (!significandLabel.getText().contains("unde")) {
                 significandLabel.setText(normalizedLabel);
             }
         }
     }
-
-    ///////////////////////////////////////////////////////////////////////////////
-    ///////
-    ///////   THE REST OF THE TOOL CONSISTS OF LITTLE PRIVATE CLASSES THAT MAKE
-    ///////   LIFE EASIER FOR THE ABOVE CODE.
-    ///////
-    ///////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////
     //
@@ -483,9 +448,7 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
 
         //  Assign all fields given a string representing 32 bit hex value.
         public FlavorsOfFloat buildOneFromHexString(String hexString) {
-            this.hexString = "0x" + addLeadingZeroes(
-                    ((hexString.indexOf("0X") == 0 || hexString.indexOf("0x") == 0)
-                            ? hexString.substring(2) : hexString), maxLengthHex);
+            this.hexString = "0x" + addLeadingZeroes(((hexString.indexOf("0X") == 0 || hexString.indexOf("0x") == 0) ? hexString.substring(2) : hexString), maxLengthHex);
             this.binaryString = Binary.hexStringToBinaryString(this.hexString);
             this.decimalString = Float.toString(Float.intBitsToFloat(Binary.binaryStringToInt(this.binaryString)));
             this.expansionString = buildExpansionFromBinaryString(this.binaryString);
@@ -508,7 +471,8 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
             float floatValue;
             try {
                 floatValue = Float.parseFloat(decimalString);
-            } catch (NumberFormatException nfe) {
+            }
+            catch (NumberFormatException nfe) {
                 return null;
             }
             this.decimalString = Float.toString(floatValue);
@@ -531,47 +495,32 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
 
         //  Build binary expansion formula for display -- will not be editable.
         public String buildExpansionFromBinaryString(String binaryString) {
-            int biasedExponent = Binary.binaryStringToInt(
-                    binaryString.substring(maxLengthBinarySign, maxLengthBinarySign + maxLengthBinaryExponent));
+            int biasedExponent = Binary.binaryStringToInt(binaryString.substring(maxLengthBinarySign, maxLengthBinarySign + maxLengthBinaryExponent));
             String stringExponent = Integer.toString(biasedExponent - exponentBias);
             // stringExponent length will range from 1 to 4 (e.g. "0" to "-128") characters.
             // Right-pad with HTML spaces ("&nbsp;") to total length 5 displayed characters.
-            return "<html><head></head><body>" + expansionFontTag
-                    + "-1<sup>" + binaryString.substring(0, maxLengthBinarySign) + "</sup> &nbsp;*&nbsp; 2<sup>"
-                    + stringExponent + HTMLspaces.substring(0, (5 - stringExponent.length()) * 6)
-                    + "</sup> &nbsp;* &nbsp;"
-                    + ((biasedExponent == 0) ? "&nbsp;." : "<u>1</u>.")
-                    + binaryString.substring(maxLengthBinarySign + maxLengthBinaryExponent, maxLengthBinaryTotal)
-                    + " =</font></body></html>";
+            return "<html><head></head><body>" + expansionFontTag + "-1<sup>" + binaryString.charAt(0) + "</sup> &nbsp;*&nbsp; 2<sup>" + stringExponent + HTMLspaces.substring(0, (5 - stringExponent.length()) * 6) + "</sup> &nbsp;* &nbsp;" + ((biasedExponent == 0) ? "&nbsp;." : "<u>1</u>.") + binaryString.substring(maxLengthBinarySign + maxLengthBinaryExponent, maxLengthBinaryTotal) + " =</font></body></html>";
         }
 
         // Handy utility to concatentate the binary field values into one 32 character string
         // Left-pad each field with zeroes as needed to reach its full length.
         private String getFullBinaryStringFromDisplays() {
-            return addLeadingZeroes(binarySignDisplay.getText(), maxLengthBinarySign) +
-                    addLeadingZeroes(binaryExponentDisplay.getText(), maxLengthBinaryExponent) +
-                    addLeadingZeroes(binaryFractionDisplay.getText(), maxLengthBinaryFraction);
+            return addLeadingZeroes(binarySignDisplay.getText(), maxLengthBinarySign) + addLeadingZeroes(binaryExponentDisplay.getText(), maxLengthBinaryExponent) + addLeadingZeroes(binaryFractionDisplay.getText(), maxLengthBinaryFraction);
         }
 
         // Handy utility. Pads with leading zeroes to specified length, maximum 64 of 'em.
         private String addLeadingZeroes(String str, int length) {
-            return (str.length() < length)
-                    ? zeroes.substring(0, Math.min(zeroes.length(), length - str.length())) + str
-                    : str;
+            return (str.length() < length) ? zeroes.substring(0, Math.min(zeroes.length(), length - str.length())) + str : str;
         }
-
     }
 
     //Put here because inner class cannot have static members.
-    private static final String zeroes =
-            "0000000000000000000000000000000000000000000000000000000000000000"; //64
+    private static final String zeroes = "0000000000000000000000000000000000000000000000000000000000000000"; //64
     private static final String HTMLspaces = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-
 
     // NOTE: It would be nice to use InputVerifier class to verify user input
     // but I want keystroke-level monitoring to assure that no invalid
     // keystrokes are echoed and that maximum string length is not exceeded.
-
 
     //////////////////////////////////////////////////////////////////
     //
@@ -585,20 +534,20 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
             digitLength = length;
         }
 
-
         // Process user keystroke.  If not valid for the context, this
         // will consume the stroke and beep.
         public void keyTyped(KeyEvent e) {
             JTextField source = (JTextField) e.getComponent();
-            if (e.getKeyChar() == KeyEvent.VK_BACK_SPACE || e.getKeyChar() == KeyEvent.VK_TAB)
+            if (e.getKeyChar() == KeyEvent.VK_BACK_SPACE || e.getKeyChar() == KeyEvent.VK_TAB) {
                 return;
-            if (!isHexDigit(e.getKeyChar()) ||
-                    source.getText().length() == digitLength && source.getSelectedText() == null) {
+            }
+            if (!isHexDigit(e.getKeyChar()) || source.getText().length() == digitLength && source.getSelectedText() == null) {
                 if (e.getKeyChar() != KeyEvent.VK_ENTER && e.getKeyChar() != KeyEvent.VK_TAB) {
                     Toolkit.getDefaultToolkit().beep();
                     if (source.getText().length() == digitLength && source.getSelectedText() == null) {
                         instructions.setText("Maximum length of this field is " + digitLength + ".");
-                    } else {
+                    }
+                    else {
                         instructions.setText("Only digits and A-F (or a-f) are accepted in hexadecimal field.");
                     }
                 }
@@ -619,8 +568,8 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
         // handy utility.
         private boolean isHexDigit(char digit) {
             return switch (digit) {
-                case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F' ->
-                        true;
+                case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D',
+                     'E', 'F' -> true;
                 default -> false;
             };
         }
@@ -642,16 +591,16 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
         // will consume the stroke and beep.
         public void keyTyped(KeyEvent e) {
             JTextField source = (JTextField) e.getComponent();
-            if (e.getKeyChar() == KeyEvent.VK_BACK_SPACE)
+            if (e.getKeyChar() == KeyEvent.VK_BACK_SPACE) {
                 return;
-            if (!isBinaryDigit(e.getKeyChar()) ||
-                    e.getKeyChar() == KeyEvent.VK_ENTER ||
-                    source.getText().length() == bitLength && source.getSelectedText() == null) {
+            }
+            if (!isBinaryDigit(e.getKeyChar()) || e.getKeyChar() == KeyEvent.VK_ENTER || source.getText().length() == bitLength && source.getSelectedText() == null) {
                 if (e.getKeyChar() != KeyEvent.VK_ENTER) {
                     Toolkit.getDefaultToolkit().beep();
                     if (source.getText().length() == bitLength && source.getSelectedText() == null) {
                         instructions.setText("Maximum length of this field is " + bitLength + ".");
-                    } else {
+                    }
+                    else {
                         instructions.setText("Only 0 and 1 are accepted in binary field.");
                     }
                 }
@@ -676,9 +625,7 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
                 default -> false;
             };
         }
-
     }
-
 
     //////////////////////////////////////////////////////////////////
     //
@@ -689,8 +636,9 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
         // Process user keystroke.  If not valid for the context, this
         // will consume the stroke and beep.
         public void keyTyped(KeyEvent e) {
-            if (e.getKeyChar() == KeyEvent.VK_BACK_SPACE)
+            if (e.getKeyChar() == KeyEvent.VK_BACK_SPACE) {
                 return;
+            }
             if (!isDecimalFloatDigit(e.getKeyChar())) {
                 if (e.getKeyChar() != KeyEvent.VK_ENTER) {
                     instructions.setText("Only digits, period, signs and E (or e) are accepted in decimal field.");
@@ -708,7 +656,8 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
                 if (fof == null) {
                     Toolkit.getDefaultToolkit().beep();
                     instructions.setText("'" + ((JTextField) e.getSource()).getText() + "' is not a valid floating point number.");
-                } else {
+                }
+                else {
                     updateDisplaysAndRegister(fof);
                     instructions.setText(defaultInstructions);
                 }
@@ -723,7 +672,6 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
                 default -> false;
             };
         }
-
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -773,7 +721,6 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
             p.addPoint(binarySignDecoratedDisplay.getX(), lowerY);
             g.fillPolygon(p);
         }
-
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -847,9 +794,7 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
         private String buildSubtractLabel(int value) {
             return value + subtractLabelTrailer;
         }
-
     }
-
 
     /////////////////////////////////////////////////////////////////////////
     //
@@ -869,7 +814,6 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
             super.setText(text);
         }
     }
-
 
     ////////////////////////////////////////////////////////////////////////////
     //
@@ -934,5 +878,4 @@ public class FloatRepresentation extends AbstractMarsToolAndApplication {
          	*/
         }
     }
-
 }

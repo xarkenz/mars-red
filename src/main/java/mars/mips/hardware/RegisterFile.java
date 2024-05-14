@@ -3,6 +3,7 @@ package mars.mips.hardware;
 import mars.Application;
 import mars.assembler.SymbolTable;
 import mars.mips.instructions.Instruction;
+import mars.tools.AbstractMarsTool;
 import mars.util.Binary;
 
 import java.util.Observer;
@@ -261,7 +262,7 @@ public class RegisterFile {
      * this method uses global settings from the registry.  Command-mode must operate
      * using only the command switches, not registry settings.  It can be called
      * from tools running stand-alone, and this is done in
-     * {@link mars.tools.AbstractMarsToolAndApplication}.
+     * {@link AbstractMarsTool}.
      */
     public static void resetRegisters() {
         for (Register register : REGISTERS) {

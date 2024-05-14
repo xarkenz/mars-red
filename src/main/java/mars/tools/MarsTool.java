@@ -28,8 +28,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
 */
 
-import mars.Application;
-
 import javax.swing.*;
 
 /**
@@ -42,14 +40,12 @@ import javax.swing.*;
  * When its menu item is selected, the {@link #action()} method will be invoked.
  * <p>
  * A tool may receive communication from MIPS system resources
- * (registers or memory) by registering as an {@link java.util.Observer} with
+ * (registers or memory) by registering as an observer with
  * {@link mars.mips.hardware.Memory} and/or {@link mars.mips.hardware.Register} objects.
  * <p>
- * It may also
- * communicate directly with those resources through their
- * published methods, provided any such communication is
- * wrapped inside a block synchronized on the
- * {@link Application#MEMORY_AND_REGISTERS_LOCK} object.
+ * It may also communicate directly with those resources through their published methods,
+ * provided any such communication is wrapped inside a block synchronized on the
+ * {@link mars.Application#MEMORY_AND_REGISTERS_LOCK} object.
  */
 public interface MarsTool {
     /**
