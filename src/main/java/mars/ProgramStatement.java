@@ -236,7 +236,7 @@ public class ProgramStatement {
                 if (instruction instanceof BasicInstruction basicInstruction) {
                     if (basicInstruction.getInstructionFormat() == BasicInstructionFormat.I_BRANCH_FORMAT) {
                         //address = (address - (this.textAddress+((Globals.getSettings().getDelayedBranchingEnabled())? Instruction.INSTRUCTION_LENGTH : 0))) >> 2;
-                        address = (address - (this.textAddress + Instruction.INSTRUCTION_LENGTH_BYTES)) >> 2;
+                        address = (address - (this.textAddress + Instruction.BYTES_PER_INSTRUCTION)) >> 2;
                         absoluteAddress = false;
                     }
                 }

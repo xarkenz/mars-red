@@ -526,7 +526,7 @@ public class CacheSimulator extends AbstractMarsTool {
     private void updateCacheSizeDisplay() {
         int cacheSize = CACHE_BLOCK_SIZE_CHOICES[this.cacheBlockSizeSelector.getSelectedIndex()]
             * CACHE_BLOCK_COUNT_CHOICES[this.cacheBlockCountSelector.getSelectedIndex()]
-            * Memory.WORD_LENGTH_BYTES;
+            * Memory.BYTES_PER_WORD;
         cacheSizeDisplay.setText(Integer.toString(cacheSize));
     }
 
@@ -595,12 +595,12 @@ public class CacheSimulator extends AbstractMarsTool {
         // For full assoc, #sets==1 so anything % #sets == 0
         // For n-way assoc, it extracts the set bits in address.
         public int getSetNumber(int address) {
-            return address / Memory.WORD_LENGTH_BYTES / this.blockSizeInWords % this.numberOfSets;
+            return address / Memory.BYTES_PER_WORD / this.blockSizeInWords % this.numberOfSets;
         }
 
         // This will work regardless of placement policy (direct map, n-way or full assoc)
         public int getTag(int address) {
-            return address / Memory.WORD_LENGTH_BYTES / this.blockSizeInWords / this.numberOfSets;
+            return address / Memory.BYTES_PER_WORD / this.blockSizeInWords / this.numberOfSets;
         }
 
         // This will work regardless of placement policy (direct map, n-way or full assoc)

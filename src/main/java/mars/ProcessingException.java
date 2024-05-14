@@ -77,7 +77,7 @@ public class ProcessingException extends Exception {
         this.errors.add(new ErrorMessage(
             statement,
             "Runtime exception at " + Binary.intToHexString(
-                RegisterFile.getProgramCounter() - Instruction.INSTRUCTION_LENGTH_BYTES
+                RegisterFile.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION
             ) + ": " + message
         ));
         // Stopped using ps.getAddress() because of pseudo-instructions.  All instructions in

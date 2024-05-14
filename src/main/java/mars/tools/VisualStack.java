@@ -11,7 +11,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.Observable;
 
-public class VisualStack extends AbstractMarsTool {
+public class VisualStack extends AbstractMarsTool implements Register.Listener {
     private static final String NAME = "Visual Stack";
     private static final String VERSION = "Version 1.0";
     private static final int STACK_VIEWER_WIDTH = 400;
@@ -38,7 +38,7 @@ public class VisualStack extends AbstractMarsTool {
     @Override
     public void initializePreGUI() {
         this.startObserving(Memory.stackLimitAddress, Memory.stackBaseAddress);
-        this.startObserving(RegisterFile.getProgramCounterRegister());
+        RegisterFile.getRegisters()[RegisterFile.STACK_POINTER].addListener(this);
         this.oldStackPtrValue = Memory.stackPointer;
     }
 
@@ -93,15 +93,8 @@ public class VisualStack extends AbstractMarsTool {
         if (this.stackOK) {
             synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
                 if (notice.getAccessType() == AccessNotice.WRITE) {
-                    if (notice.accessIsFromGUI()) {
-                        return;
-                    }
-
                     if (notice instanceof MemoryAccessNotice memoryAccessNotice) {
                         this.processMemoryUpdate(memoryAccessNotice);
-                    }
-                    else {
-                        this.processStackPtrUpdate();
                     }
                 }
             }
@@ -115,7 +108,7 @@ public class VisualStack extends AbstractMarsTool {
         if (address <= Memory.stackBaseAddress && address >= Memory.stackLimitAddress) {
             try {
                 valueWritten = Memory.getInstance().getWord(address);
-                ProgramStatement statement = Memory.getInstance().getStatement(RegisterFile.getProgramCounter() - Instruction.INSTRUCTION_LENGTH_BYTES);
+                ProgramStatement statement = Memory.getInstance().getStatement(RegisterFile.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION);
                 registerDataCameFrom = statement.getBinaryStatement();
                 registerDataCameFrom &= 0x1F0000;
                 registerDataCameFrom >>= 16;
@@ -125,7 +118,7 @@ public class VisualStack extends AbstractMarsTool {
                 return;
             }
 
-            int position = (Memory.stackPointer - address) / Memory.WORD_LENGTH_BYTES;
+            int position = (Memory.stackPointer - address) / Memory.BYTES_PER_WORD;
             if (position < 0) {
                 this.handleError("Data was pushed to an address greater than stack base!");
             }
@@ -150,10 +143,11 @@ public class VisualStack extends AbstractMarsTool {
         this.repaint();
     }
 
-    private void processStackPtrUpdate() {
-        int newStackPtrValue = RegisterFile.getValue(RegisterFile.STACK_POINTER);
+    @Override
+    public void registerWritten(Register stackPtr) {
+        int newStackPtrValue = stackPtr.getValueNoNotify();
         int stackPtrDelta = this.oldStackPtrValue - newStackPtrValue;
-        if (stackPtrDelta % Memory.WORD_LENGTH_BYTES != 0) {
+        if (stackPtrDelta % Memory.BYTES_PER_WORD != 0) {
             this.handleError("$sp set to " + Binary.intToHexString(newStackPtrValue) + "; not word-aligned!");
         }
         else {
@@ -164,9 +158,9 @@ public class VisualStack extends AbstractMarsTool {
     }
 
     private synchronized boolean isReturnAddress(int address) {
-        if (Memory.inTextSegment(address)) {
+        if (Memory.isInTextSegment(address)) {
             try {
-                ProgramStatement statement = Memory.getInstance().getStatement(address - Instruction.INSTRUCTION_LENGTH_BYTES);
+                ProgramStatement statement = Memory.getInstance().getStatement(address - Instruction.BYTES_PER_INSTRUCTION);
                 return statement.getBasicAssemblyStatement().startsWith("jal");
             }
             catch (AddressErrorException exception) {
@@ -187,6 +181,11 @@ public class VisualStack extends AbstractMarsTool {
         this.oldStackPtrValue = Memory.stackPointer;
         this.stackOK = true;
         this.repaint();
+    }
+
+    @Override
+    public void handleClose() {
+        RegisterFile.getRegisters()[RegisterFile.STACK_POINTER].removeListener(this);
     }
 
     private static class StackViewer extends JComponent {

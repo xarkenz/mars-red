@@ -237,12 +237,16 @@ public class Coprocessor1Window extends RegistersDisplayTab {
 
     @Override
     public void startObservingRegisters() {
-        Coprocessor1.addRegistersObserver(this);
+        for (Register register : Coprocessor1.getRegisters()) {
+            register.addListener(this);
+        }
     }
 
     @Override
     public void stopObservingRegisters() {
-        Coprocessor1.deleteRegistersObserver(this);
+        for (Register register : Coprocessor1.getRegisters()) {
+            register.addListener(this);
+        }
     }
 
     private class RegisterTableModel extends AbstractTableModel {

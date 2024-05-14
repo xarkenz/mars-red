@@ -85,12 +85,12 @@ public class SegmentWindowDumpFormat extends AbstractDumpFormat {
         boolean hexAddresses = Application.getSettings().displayAddressesInHex.get();
 
         // If address in data segment, print in same format as Data Segment Window
-        if (Memory.inDataSegment(firstAddress)) {
+        if (Memory.isInDataSegment(firstAddress)) {
             boolean hexValues = Application.getSettings().displayValuesInHex.get();
             int offset = 0;
             StringBuilder string = new StringBuilder();
             try {
-                for (int address = firstAddress; address <= lastAddress; address += Memory.WORD_LENGTH_BYTES) {
+                for (int address = firstAddress; address <= lastAddress; address += Memory.BYTES_PER_WORD) {
                     if (offset % 8 == 0) {
                         string = new StringBuilder(((hexAddresses) ? Binary.intToHexString(address) : Integer.toUnsignedString(address)) + "    ");
                     }
@@ -113,7 +113,7 @@ public class SegmentWindowDumpFormat extends AbstractDumpFormat {
             return;
         }
 
-        if (!Memory.inTextSegment(firstAddress)) {
+        if (!Memory.isInTextSegment(firstAddress)) {
             return;
         }
         // If address in text segment, print in same format as Text Segment Window
@@ -122,7 +122,7 @@ public class SegmentWindowDumpFormat extends AbstractDumpFormat {
         //                    1         2         3         4         5
         out.println();
         try {
-            for (int address = firstAddress; address <= lastAddress; address += Memory.WORD_LENGTH_BYTES) {
+            for (int address = firstAddress; address <= lastAddress; address += Memory.BYTES_PER_WORD) {
                 String string = ((hexAddresses) ? Binary.intToHexString(address) : Integer.toUnsignedString(address)) + "  ";
                 Integer temp = Application.memory.getRawWordOrNull(address);
                 if (temp == null) {

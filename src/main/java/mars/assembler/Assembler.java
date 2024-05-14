@@ -322,7 +322,7 @@ public class Assembler {
                         Instruction instructionMatch = OperandFormat.bestOperandMatch(newTokens, instructionMatches);
                         ProgramStatement newStatement = new ProgramStatement(this.fileCurrentlyBeingAssembled, source, newTokens, newTokens, instructionMatch, textAddress.get(), statement.getSourceLine());
                         source = ""; // Only first generated instruction is linked to original source
-                        textAddress.increment(Instruction.INSTRUCTION_LENGTH_BYTES);
+                        textAddress.increment(Instruction.BYTES_PER_INSTRUCTION);
                         newStatement.buildBasicStatementFromBasicInstruction(errors);
                         this.machineList.add(newStatement);
                     } // end of FOR loop, repeated for each template in list.
@@ -385,7 +385,7 @@ public class Assembler {
                         + NumberDisplayBaseChooser.formatUnsignedInteger(statement2.getAddress(), (Application.getSettings().displayAddressesInHex.get()) ? 16 : 10)
                         + " already occupied by " + statement1.getSourceFile()
                         + " line " + statement1.getSourceLine()
-                        + " (caused by use of " + ((Memory.inTextSegment(statement2.getAddress())) ? ".text" : ".ktext") + " operand)"
+                        + " (caused by use of " + ((Memory.isInTextSegment(statement2.getAddress())) ? ".text" : ".ktext") + " operand)"
                 ));
             }
         }

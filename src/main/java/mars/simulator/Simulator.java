@@ -96,7 +96,9 @@ public class Simulator {
      * @param listener The listener to add.
      */
     public void addGUIListener(SimulatorListener listener) {
-        this.guiListeners.add(listener);
+        if (!this.guiListeners.contains(listener)) {
+            this.guiListeners.add(listener);
+        }
     }
 
     /**
@@ -114,7 +116,9 @@ public class Simulator {
      * @param listener The listener to add.
      */
     public void addThreadListener(SimulatorListener listener) {
-        this.threadListeners.add(listener);
+        if (!this.threadListeners.contains(listener)) {
+            this.threadListeners.add(listener);
+        }
     }
 
     /**

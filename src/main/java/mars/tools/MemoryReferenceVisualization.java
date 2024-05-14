@@ -135,7 +135,7 @@ public class MemoryReferenceVisualization extends AbstractMarsTool {
      */
     @Override
     protected void startObserving() {
-        int highAddress = baseAddress + grid.getRows() * grid.getColumns() * Memory.WORD_LENGTH_BYTES * wordsPerUnit;
+        int highAddress = baseAddress + grid.getRows() * grid.getColumns() * Memory.BYTES_PER_WORD * wordsPerUnit;
         // Special case: baseAddress<0 means we're in kernel memory (0x80000000 and up) and most likely
         // in memory map address space (0xffff0000 and up).  In this case, we need to make sure the high address
         // does not drop off the high end of 32 bit address space.  Highest allowable word address is 0xfffffffc,
@@ -471,7 +471,7 @@ public class MemoryReferenceVisualization extends AbstractMarsTool {
     // If address maps to invalid grid element (e.g. is outside the current bounds based on all
     // display settings) then nothing happens.
     private void incrementReferenceCountForAddress(int address) {
-        int offset = (address - baseAddress) / Memory.WORD_LENGTH_BYTES / wordsPerUnit;
+        int offset = (address - baseAddress) / Memory.BYTES_PER_WORD / wordsPerUnit;
         // If you care to do anything with it, the following will return -1 if the address
         // maps outside the dimensions of the grid (e.g. below the base address or beyond end).
         grid.incrementElement(offset / grid.getColumns(), offset % grid.getColumns());

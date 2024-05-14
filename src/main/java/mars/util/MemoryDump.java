@@ -113,7 +113,7 @@ public class MemoryDump {
      */
     public static int getAddressOfFirstNull(int baseAddress, int limitAddress) throws AddressErrorException {
         int address;
-        for (address = baseAddress; address < limitAddress; address += Memory.WORD_LENGTH_BYTES) {
+        for (address = baseAddress; address < limitAddress; address += Memory.BYTES_PER_WORD) {
             if (Application.memory.getRawWordOrNull(address) == null) {
                 break;
             }

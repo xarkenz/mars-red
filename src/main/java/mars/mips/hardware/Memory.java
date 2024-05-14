@@ -108,7 +108,15 @@ public class Memory extends Observable {
      * MIPS word length in bytes.
      */
     // NOTE:  Much of the code is hardwired for 4 byte words.  Refactoring this is low priority.
-    public static final int WORD_LENGTH_BYTES = 4;
+    public static final int BYTES_PER_WORD = 4;
+    /**
+     * MIPS doubleword length in bytes.
+     */
+    public static final int BYTES_PER_DOUBLEWORD = BYTES_PER_WORD * 2;
+    /**
+     * MIPS halfword length in bytes.
+     */
+    public static final int BYTES_PER_HALFWORD = BYTES_PER_WORD / 2;
     /**
      * Constant representing byte order of each memory word.  Little-endian means lowest
      * numbered byte is right most [3][2][1][0].
@@ -210,12 +218,12 @@ public class Memory extends Observable {
     // Set "top" address boundary to go with each "base" address.  This determines permissable
     // address range for user program.  Currently limit is 4MB, or 1024 * 1024 * 4 bytes based
     // on the table structures described above (except memory mapped IO, limited to 64KB by range).
-    public static int dataSegmentLimitAddress = dataSegmentBaseAddress + BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * WORD_LENGTH_BYTES;
-    public static int textLimitAddress = textBaseAddress + TEXT_BLOCK_LENGTH_WORDS * TEXT_BLOCK_TABLE_LENGTH * WORD_LENGTH_BYTES;
-    public static int kernelDataSegmentLimitAddress = kernelDataBaseAddress + BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * WORD_LENGTH_BYTES;
-    public static int kernelTextLimitAddress = kernelTextBaseAddress + TEXT_BLOCK_LENGTH_WORDS * TEXT_BLOCK_TABLE_LENGTH * WORD_LENGTH_BYTES;
-    public static int stackLimitAddress = stackBaseAddress - BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * WORD_LENGTH_BYTES;
-    public static int memoryMapLimitAddress = mmioBaseAddress + BLOCK_LENGTH_WORDS * MMIO_TABLE_LENGTH * WORD_LENGTH_BYTES;
+    public static int dataSegmentLimitAddress = dataSegmentBaseAddress + BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * BYTES_PER_WORD;
+    public static int textLimitAddress = textBaseAddress + TEXT_BLOCK_LENGTH_WORDS * TEXT_BLOCK_TABLE_LENGTH * BYTES_PER_WORD;
+    public static int kernelDataSegmentLimitAddress = kernelDataBaseAddress + BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * BYTES_PER_WORD;
+    public static int kernelTextLimitAddress = kernelTextBaseAddress + TEXT_BLOCK_LENGTH_WORDS * TEXT_BLOCK_TABLE_LENGTH * BYTES_PER_WORD;
+    public static int stackLimitAddress = stackBaseAddress - BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * BYTES_PER_WORD;
+    public static int memoryMapLimitAddress = mmioBaseAddress + BLOCK_LENGTH_WORDS * MMIO_TABLE_LENGTH * BYTES_PER_WORD;
 
     // This will be a Singleton class, only one instance is ever created.  Since I know the 
     // Memory object is always needed, I'll go ahead and create it at the time of class loading.
@@ -268,12 +276,12 @@ public class Memory extends Observable {
         kernelDataBaseAddress = config.getKernelDataBaseAddress(); //0x90000000;
         mmioBaseAddress = config.getMemoryMapBaseAddress(); //0xffff0000;
         kernelHighAddress = config.getKernelHighAddress(); //0xffffffff;
-        dataSegmentLimitAddress = Math.min(config.getDataSegmentLimitAddress(), dataSegmentBaseAddress + BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * WORD_LENGTH_BYTES);
-        textLimitAddress = Math.min(config.getTextLimitAddress(), textBaseAddress + TEXT_BLOCK_LENGTH_WORDS * TEXT_BLOCK_TABLE_LENGTH * WORD_LENGTH_BYTES);
-        kernelDataSegmentLimitAddress = Math.min(config.getKernelDataSegmentLimitAddress(), kernelDataBaseAddress + BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * WORD_LENGTH_BYTES);
-        kernelTextLimitAddress = Math.min(config.getKernelTextLimitAddress(), kernelTextBaseAddress + TEXT_BLOCK_LENGTH_WORDS * TEXT_BLOCK_TABLE_LENGTH * WORD_LENGTH_BYTES);
-        stackLimitAddress = Math.max(config.getStackLimitAddress(), stackBaseAddress - BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * WORD_LENGTH_BYTES);
-        memoryMapLimitAddress = Math.min(config.getMemoryMapLimitAddress(), mmioBaseAddress + BLOCK_LENGTH_WORDS * MMIO_TABLE_LENGTH * WORD_LENGTH_BYTES);
+        dataSegmentLimitAddress = Math.min(config.getDataSegmentLimitAddress(), dataSegmentBaseAddress + BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * BYTES_PER_WORD);
+        textLimitAddress = Math.min(config.getTextLimitAddress(), textBaseAddress + TEXT_BLOCK_LENGTH_WORDS * TEXT_BLOCK_TABLE_LENGTH * BYTES_PER_WORD);
+        kernelDataSegmentLimitAddress = Math.min(config.getKernelDataSegmentLimitAddress(), kernelDataBaseAddress + BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * BYTES_PER_WORD);
+        kernelTextLimitAddress = Math.min(config.getKernelTextLimitAddress(), kernelTextBaseAddress + TEXT_BLOCK_LENGTH_WORDS * TEXT_BLOCK_TABLE_LENGTH * BYTES_PER_WORD);
+        stackLimitAddress = Math.max(config.getStackLimitAddress(), stackBaseAddress - BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * BYTES_PER_WORD);
+        memoryMapLimitAddress = Math.min(config.getMemoryMapLimitAddress(), mmioBaseAddress + BLOCK_LENGTH_WORDS * MMIO_TABLE_LENGTH * BYTES_PER_WORD);
     }
 
     /**
@@ -310,10 +318,7 @@ public class Memory extends Observable {
         if (numBytes < 0) {
             throw new IllegalArgumentException("request (" + numBytes + ") is negative heap amount");
         }
-        int newHeapAddress = heapAddress + numBytes;
-        if (newHeapAddress % 4 != 0) {
-            newHeapAddress = newHeapAddress + (4 - newHeapAddress % 4); // next higher multiple of 4
-        }
+        int newHeapAddress = alignToWordBoundary(heapAddress + numBytes);
         if (newHeapAddress >= dataSegmentLimitAddress) {
             throw new IllegalArgumentException("request (" + numBytes + ") exceeds available heap storage");
         }
@@ -339,9 +344,6 @@ public class Memory extends Observable {
         return byteOrder;
     }
 
-
-    /*  *******************************  THE SETTER METHODS  ******************************/
-
     /**
      * Starting at the given address, write the given value over the given number of bytes.
      * This one does not check for word boundaries, and copies one byte at a time.
@@ -359,7 +361,7 @@ public class Memory extends Observable {
             System.out.println("memory[" + address + "] set to " + value + "(" + length + " bytes)");
         }
         int relativeByteAddress;
-        if (inDataSegment(address)) {
+        if (isInDataSegment(address)) {
             // in data segment.  Will write one byte at a time, w/o regard to boundaries.
             relativeByteAddress = address - dataSegmentBaseAddress; // relative to data segment start, in bytes
             oldValue = storeBytesInTable(dataBlockTable, relativeByteAddress, length, value);
@@ -370,7 +372,7 @@ public class Memory extends Observable {
             relativeByteAddress = stackBaseAddress - address;
             oldValue = storeBytesInTable(stackBlockTable, relativeByteAddress, length, value);
         }
-        else if (inTextSegment(address)) {
+        else if (isInTextSegment(address)) {
             // Burch Mod (Jan 2013): replace throw with call to setStatement
             // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
 
@@ -390,12 +392,12 @@ public class Memory extends Observable {
             relativeByteAddress = address - mmioBaseAddress;
             oldValue = storeBytesInTable(memoryMapBlockTable, relativeByteAddress, length, value);
         }
-        else if (inKernelDataSegment(address)) {
+        else if (isInKernelDataSegment(address)) {
             // in kernel data segment.  Will write one byte at a time, w/o regard to boundaries.
             relativeByteAddress = address - kernelDataBaseAddress; // relative to data segment start, in bytes
             oldValue = storeBytesInTable(kernelDataBlockTable, relativeByteAddress, length, value);
         }
-        else if (inKernelTextSegment(address)) {
+        else if (isInKernelTextSegment(address)) {
             // DEVELOPER: PLEASE USE setStatement() TO WRITE TO KERNEL TEXT SEGMENT...
             throw new AddressErrorException("DEVELOPER: You must use setStatement() to write to kernel text segment!", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
         }
@@ -403,7 +405,7 @@ public class Memory extends Observable {
             // falls outside Mars addressing range
             throw new AddressErrorException("address out of range ", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
         }
-        notifyAnyObservers(AccessNotice.WRITE, address, length, value);
+        this.notifyAnyObservers(AccessNotice.WRITE, address, length, value);
         return oldValue;
     }
 
@@ -414,15 +416,14 @@ public class Memory extends Observable {
      *
      * @param address Starting address of Memory address to be set.
      * @param value   Value to be stored starting at that address.
-     * @return old value that was replaced by the set operation.
      * @throws AddressErrorException If address is not on word boundary.
      */
-    public int setRawWord(int address, int value) throws AddressErrorException {
+    public void setRawWord(int address, int value) throws AddressErrorException {
         int relative, oldValue = 0;
-        if (address % WORD_LENGTH_BYTES != 0) {
+        if (address % BYTES_PER_WORD != 0) {
             throw new AddressErrorException("store address not aligned on word boundary ", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
         }
-        if (inDataSegment(address)) {
+        if (isInDataSegment(address)) {
             // in data segment
             relative = (address - dataSegmentBaseAddress) >> 2; // convert byte address to words
             oldValue = storeWordInTable(dataBlockTable, relative, value);
@@ -433,7 +434,7 @@ public class Memory extends Observable {
             relative = (stackBaseAddress - address) >> 2; // convert byte address to words
             oldValue = storeWordInTable(stackBlockTable, relative, value);
         }
-        else if (inTextSegment(address)) {
+        else if (isInTextSegment(address)) {
             // Burch Mod (Jan 2013): replace throw with call to setStatement
             // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
             if (Application.getSettings().selfModifyingCodeEnabled.get()) {
@@ -452,12 +453,12 @@ public class Memory extends Observable {
             relative = (address - mmioBaseAddress) >> 2; // convert byte address to word
             oldValue = storeWordInTable(memoryMapBlockTable, relative, value);
         }
-        else if (inKernelDataSegment(address)) {
+        else if (isInKernelDataSegment(address)) {
             // in data segment
             relative = (address - kernelDataBaseAddress) >> 2; // convert byte address to words
             oldValue = storeWordInTable(kernelDataBlockTable, relative, value);
         }
-        else if (inKernelTextSegment(address)) {
+        else if (isInKernelTextSegment(address)) {
             // DEVELOPER: PLEASE USE setStatement() TO WRITE TO KERNEL TEXT SEGMENT...
             throw new AddressErrorException("DEVELOPER: You must use setStatement() to write to kernel text segment!", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
         }
@@ -465,11 +466,10 @@ public class Memory extends Observable {
             // falls outside Mars addressing range
             throw new AddressErrorException("store address out of range ", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
         }
-        notifyAnyObservers(AccessNotice.WRITE, address, WORD_LENGTH_BYTES, value);
+        this.notifyAnyObservers(AccessNotice.WRITE, address, BYTES_PER_WORD, value);
         if (Application.isBackSteppingEnabled()) {
             Application.program.getBackStepper().addMemoryRestoreRawWord(address, oldValue);
         }
-        return oldValue;
     }
 
     /**
@@ -478,18 +478,15 @@ public class Memory extends Observable {
      *
      * @param address Starting address of Memory address to be set.
      * @param value   Value to be stored starting at that address.
-     * @return old value that was replaced by setWord operation.
      * @throws AddressErrorException If address is not on word boundary.
      */
-    public int setWord(int address, int value) throws AddressErrorException {
-        if (address % WORD_LENGTH_BYTES != 0) {
+    public void setWord(int address, int value) throws AddressErrorException {
+        if (address % BYTES_PER_WORD != 0) {
             throw new AddressErrorException("store address not aligned on word boundary ", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
         }
+        int oldValue = this.set(address, value, BYTES_PER_WORD);
         if (Application.isBackSteppingEnabled()) {
-            return Application.program.getBackStepper().addMemoryRestoreWord(address, set(address, value, WORD_LENGTH_BYTES));
-        }
-        else {
-            return set(address, value, WORD_LENGTH_BYTES);
+            Application.program.getBackStepper().addMemoryRestoreWord(address, oldValue);
         }
     }
 
@@ -499,18 +496,15 @@ public class Memory extends Observable {
      *
      * @param address Starting address of Memory address to be set.
      * @param value   Value to be stored starting at that address.  Only low order 16 bits used.
-     * @return old value that was replaced by setHalf operation.
      * @throws AddressErrorException If address is not on halfword boundary.
      */
-    public int setHalf(int address, int value) throws AddressErrorException {
+    public void setHalf(int address, int value) throws AddressErrorException {
         if (address % 2 != 0) {
             throw new AddressErrorException("store address not aligned on halfword boundary ", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
         }
+        int oldValue = this.set(address, value, 2);
         if (Application.isBackSteppingEnabled()) {
-            return Application.program.getBackStepper().addMemoryRestoreHalf(address, set(address, value, 2));
-        }
-        else {
-            return set(address, value, 2);
+            Application.program.getBackStepper().addMemoryRestoreHalf(address, oldValue);
         }
     }
 
@@ -519,14 +513,11 @@ public class Memory extends Observable {
      *
      * @param address Address of Memory byte to be set.
      * @param value   Value to be stored at that address.  Only low order 8 bits used.
-     * @return old value that was replaced by setByte operation.
      */
-    public int setByte(int address, int value) throws AddressErrorException {
+    public void setByte(int address, int value) throws AddressErrorException {
+        int oldValue = this.set(address, value, 1);
         if (Application.isBackSteppingEnabled()) {
-            return Application.program.getBackStepper().addMemoryRestoreByte(address, set(address, value, 1));
-        }
-        else {
-            return set(address, value, 1);
+            Application.program.getBackStepper().addMemoryRestoreByte(address, oldValue);
         }
     }
 
@@ -537,14 +528,11 @@ public class Memory extends Observable {
      *
      * @param address Starting address of Memory address to be set.
      * @param value   Value to be stored at that address.
-     * @return old value that was replaced by setDouble operation.
      */
-    public double setDouble(int address, double value) throws AddressErrorException {
-        int oldHighOrder, oldLowOrder;
+    public void setDouble(int address, double value) throws AddressErrorException {
         long longValue = Double.doubleToLongBits(value);
-        oldHighOrder = set(address + 4, Binary.highOrderLongToInt(longValue), 4);
-        oldLowOrder = set(address, Binary.lowOrderLongToInt(longValue), 4);
-        return Double.longBitsToDouble(Binary.twoIntsToLong(oldHighOrder, oldLowOrder));
+        this.set(address + 4, Binary.highOrderLongToInt(longValue), 4);
+        this.set(address, Binary.lowOrderLongToInt(longValue), 4);
     }
 
     /**
@@ -557,13 +545,13 @@ public class Memory extends Observable {
      * @see ProgramStatement
      */
     public void setStatement(int address, ProgramStatement statement) throws AddressErrorException {
-        if (address % 4 != 0 || !(inTextSegment(address) || inKernelTextSegment(address))) {
+        if (address % 4 != 0 || !(isInTextSegment(address) || isInKernelTextSegment(address))) {
             throw new AddressErrorException("store address to text segment out of range or not aligned to word boundary ", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
         }
         if (Application.debug) {
             System.out.println("memory[" + address + "] set to " + statement.getBinaryStatement());
         }
-        if (inTextSegment(address)) {
+        if (isInTextSegment(address)) {
             storeProgramStatement(address, statement, textBaseAddress, textBlockTable);
         }
         else {
@@ -588,7 +576,7 @@ public class Memory extends Observable {
     private int get(int address, int length, boolean notify) throws AddressErrorException {
         int value;
         int relativeByteAddress;
-        if (inDataSegment(address)) {
+        if (isInDataSegment(address)) {
             // in data segment.  Will read one byte at a time, w/o regard to boundaries.
             relativeByteAddress = address - dataSegmentBaseAddress; // relative to data segment start, in bytes
             value = fetchBytesFromTable(dataBlockTable, relativeByteAddress, length);
@@ -604,7 +592,7 @@ public class Memory extends Observable {
             relativeByteAddress = address - mmioBaseAddress;
             value = fetchBytesFromTable(memoryMapBlockTable, relativeByteAddress, length);
         }
-        else if (inTextSegment(address)) {
+        else if (isInTextSegment(address)) {
             // Burch Mod (Jan 2013): replace throw with calls to getStatementNoNotify & getBinaryStatement
             // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
             if (Application.getSettings().selfModifyingCodeEnabled.get()) {
@@ -615,12 +603,12 @@ public class Memory extends Observable {
                 throw new AddressErrorException("Cannot read directly from text segment!", ExceptionCause.ADDRESS_EXCEPTION_LOAD, address);
             }
         }
-        else if (inKernelDataSegment(address)) {
+        else if (isInKernelDataSegment(address)) {
             // in kernel data segment.  Will read one byte at a time, w/o regard to boundaries.
             relativeByteAddress = address - kernelDataBaseAddress; // relative to data segment start, in bytes
             value = fetchBytesFromTable(kernelDataBlockTable, relativeByteAddress, length);
         }
-        else if (inKernelTextSegment(address)) {
+        else if (isInKernelTextSegment(address)) {
             // DEVELOPER: PLEASE USE getStatement() TO READ FROM KERNEL TEXT SEGMENT...
             throw new AddressErrorException("DEVELOPER: You must use getStatement() to read from kernel text segment!", ExceptionCause.ADDRESS_EXCEPTION_LOAD, address);
         }
@@ -651,10 +639,10 @@ public class Memory extends Observable {
     public int getRawWord(int address) throws AddressErrorException {
         int value;
         int relative;
-        if (address % WORD_LENGTH_BYTES != 0) {
+        if (address % BYTES_PER_WORD != 0) {
             throw new AddressErrorException("address for fetch not aligned on word boundary", ExceptionCause.ADDRESS_EXCEPTION_LOAD, address);
         }
-        if (inDataSegment(address)) {
+        if (isInDataSegment(address)) {
             // in data segment
             relative = (address - dataSegmentBaseAddress) >> 2; // convert byte address to words
             value = fetchWordFromTable(dataBlockTable, relative);
@@ -669,7 +657,7 @@ public class Memory extends Observable {
             relative = (address - mmioBaseAddress) >> 2;
             value = fetchWordFromTable(memoryMapBlockTable, relative);
         }
-        else if (inTextSegment(address)) {
+        else if (isInTextSegment(address)) {
             // Burch Mod (Jan 2013): replace throw with calls to getStatementNoNotify & getBinaryStatement
             // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
             if (Application.getSettings().selfModifyingCodeEnabled.get()) {
@@ -680,12 +668,12 @@ public class Memory extends Observable {
                 throw new AddressErrorException("Cannot read directly from text segment!", ExceptionCause.ADDRESS_EXCEPTION_LOAD, address);
             }
         }
-        else if (inKernelDataSegment(address)) {
+        else if (isInKernelDataSegment(address)) {
             // in kernel data segment
             relative = (address - kernelDataBaseAddress) >> 2; // convert byte address to words
             value = fetchWordFromTable(kernelDataBlockTable, relative);
         }
-        else if (inKernelTextSegment(address)) {
+        else if (isInKernelTextSegment(address)) {
             // DEVELOPER: PLEASE USE getStatement() TO READ FROM KERNEL TEXT SEGMENT...
             throw new AddressErrorException("DEVELOPER: You must use getStatement() to read from kernel text segment!", ExceptionCause.ADDRESS_EXCEPTION_LOAD, address);
         }
@@ -693,7 +681,7 @@ public class Memory extends Observable {
             // falls outside Mars addressing range
             throw new AddressErrorException("address out of range", ExceptionCause.ADDRESS_EXCEPTION_LOAD, address);
         }
-        notifyAnyObservers(AccessNotice.READ, address, Memory.WORD_LENGTH_BYTES, value);
+        notifyAnyObservers(AccessNotice.READ, address, Memory.BYTES_PER_WORD, value);
         return value;
     }
 
@@ -719,10 +707,10 @@ public class Memory extends Observable {
     public Integer getRawWordOrNull(int address) throws AddressErrorException {
         Integer value = null;
         int relative;
-        if (address % WORD_LENGTH_BYTES != 0) {
+        if (address % BYTES_PER_WORD != 0) {
             throw new AddressErrorException("address for fetch not aligned on word boundary", ExceptionCause.ADDRESS_EXCEPTION_LOAD, address);
         }
-        if (inDataSegment(address)) {
+        if (isInDataSegment(address)) {
             // in data segment
             relative = (address - dataSegmentBaseAddress) >> 2; // convert byte address to words
             value = fetchWordOrNullFromTable(dataBlockTable, relative);
@@ -732,14 +720,14 @@ public class Memory extends Observable {
             relative = (stackBaseAddress - address) >> 2; // convert byte address to words
             value = fetchWordOrNullFromTable(stackBlockTable, relative);
         }
-        else if (inTextSegment(address) || inKernelTextSegment(address)) {
+        else if (isInTextSegment(address) || isInKernelTextSegment(address)) {
             try {
                 value = (getStatementNoNotify(address) == null) ? null : getStatementNoNotify(address).getBinaryStatement();
             }
             catch (AddressErrorException ignored) {
             }
         }
-        else if (inKernelDataSegment(address)) {
+        else if (isInKernelDataSegment(address)) {
             // in kernel data segment
             relative = (address - kernelDataBaseAddress) >> 2; // convert byte address to words
             value = fetchWordOrNullFromTable(kernelDataBlockTable, relative);
@@ -766,7 +754,7 @@ public class Memory extends Observable {
      */
     public int getAddressOfFirstNull(int baseAddress, int limitAddress) throws AddressErrorException {
         int address = baseAddress;
-        for (; address < limitAddress; address += Memory.WORD_LENGTH_BYTES) {
+        for (; address < limitAddress; address += Memory.BYTES_PER_WORD) {
             if (getRawWordOrNull(address) == null) {
                 break;
             }
@@ -782,10 +770,10 @@ public class Memory extends Observable {
      * @throws AddressErrorException If address is not on word boundary.
      */
     public int getWord(int address) throws AddressErrorException {
-        if (address % WORD_LENGTH_BYTES != 0) {
+        if (address % BYTES_PER_WORD != 0) {
             throw new AddressErrorException("fetch address not aligned on word boundary ", ExceptionCause.ADDRESS_EXCEPTION_LOAD, address);
         }
-        return get(address, WORD_LENGTH_BYTES, true);
+        return get(address, BYTES_PER_WORD, true);
     }
 
     /**
@@ -796,10 +784,10 @@ public class Memory extends Observable {
      * @throws AddressErrorException If address is not on word boundary.
      */
     public int getWordNoNotify(int address) throws AddressErrorException {
-        if (address % WORD_LENGTH_BYTES != 0) {
+        if (address % BYTES_PER_WORD != 0) {
             throw new AddressErrorException("fetch address not aligned on word boundary ", ExceptionCause.ADDRESS_EXCEPTION_LOAD, address);
         }
-        return get(address, WORD_LENGTH_BYTES, false);
+        return get(address, BYTES_PER_WORD, false);
     }
 
     /**
@@ -851,20 +839,20 @@ public class Memory extends Observable {
     }
 
     private ProgramStatement getStatement(int address, boolean notify) throws AddressErrorException {
-        if (!wordAligned(address)) {
+        if (!isWordAligned(address)) {
             throw new AddressErrorException("fetch address for text segment not aligned to word boundary ", ExceptionCause.ADDRESS_EXCEPTION_LOAD, address);
         }
-        if (!Application.getSettings().selfModifyingCodeEnabled.get() && !(inTextSegment(address) || inKernelTextSegment(address))) {
+        if (!Application.getSettings().selfModifyingCodeEnabled.get() && !(isInTextSegment(address) || isInKernelTextSegment(address))) {
             throw new AddressErrorException("fetch address for text segment out of range ", ExceptionCause.ADDRESS_EXCEPTION_LOAD, address);
         }
-        if (inTextSegment(address)) {
+        if (isInTextSegment(address)) {
             return readProgramStatement(address, textBaseAddress, textBlockTable, notify);
         }
-        else if (inKernelTextSegment(address)) {
+        else if (isInKernelTextSegment(address)) {
             return readProgramStatement(address, kernelTextBaseAddress, kernelTextBlockTable, notify);
         }
         else {
-            return new ProgramStatement(get(address, WORD_LENGTH_BYTES), address);
+            return new ProgramStatement(get(address, BYTES_PER_WORD), address);
         }
     }
 
@@ -893,8 +881,8 @@ public class Memory extends Observable {
      * @param address the address to check
      * @return true if address is word-aligned, false otherwise
      */
-    public static boolean wordAligned(int address) {
-        return address % WORD_LENGTH_BYTES == 0;
+    public static boolean isWordAligned(int address) {
+        return address % BYTES_PER_WORD == 0;
     }
 
     /**
@@ -903,8 +891,8 @@ public class Memory extends Observable {
      * @param address the address to check
      * @return true if address is doubleword-aligned, false otherwise
      */
-    public static boolean doublewordAligned(int address) {
-        return address % (WORD_LENGTH_BYTES + WORD_LENGTH_BYTES) == 0;
+    public static boolean isDoubleWordAligned(int address) {
+        return address % BYTES_PER_DOUBLEWORD == 0;
     }
 
     /**
@@ -912,15 +900,15 @@ public class Memory extends Observable {
      * aligned.
      *
      * @param address a memory address (any int value is potentially valid)
-     * @return address aligned to next word boundary (divisible by 4)
+     * @return address aligned to next word boundary (divisible by {@link #BYTES_PER_WORD})
      */
     public static int alignToWordBoundary(int address) {
-        if (!wordAligned(address)) {
+        if (!isWordAligned(address)) {
             if (address > 0) {
-                address += (4 - (address % WORD_LENGTH_BYTES));
+                address += (BYTES_PER_WORD - (address % BYTES_PER_WORD));
             }
             else {
-                address -= (4 - (address % WORD_LENGTH_BYTES));
+                address -= (BYTES_PER_WORD - (address % BYTES_PER_WORD));
             }
         }
         return address;
@@ -937,7 +925,7 @@ public class Memory extends Observable {
      * @return true if that address is within MARS-defined text segment,
      *     false otherwise.
      */
-    public static boolean inTextSegment(int address) {
+    public static boolean isInTextSegment(int address) {
         return address >= textBaseAddress && address < textLimitAddress;
     }
 
@@ -949,7 +937,7 @@ public class Memory extends Observable {
      * @return true if that address is within MARS-defined kernel text segment,
      *     false otherwise.
      */
-    public static boolean inKernelTextSegment(int address) {
+    public static boolean isInKernelTextSegment(int address) {
         return address >= kernelTextBaseAddress && address < kernelTextLimitAddress;
     }
 
@@ -963,7 +951,7 @@ public class Memory extends Observable {
      * @return true if that address is within MARS-defined data segment,
      *     false otherwise.
      */
-    public static boolean inDataSegment(int address) {
+    public static boolean isInDataSegment(int address) {
         return address >= dataSegmentBaseAddress && address < dataSegmentLimitAddress;
     }
 
@@ -975,7 +963,7 @@ public class Memory extends Observable {
      * @return true if that address is within MARS-defined kernel data segment,
      *     false otherwise.
      */
-    public static boolean inKernelDataSegment(int address) {
+    public static boolean isInKernelDataSegment(int address) {
         return address >= kernelDataBaseAddress && address < kernelDataSegmentLimitAddress;
     }
 
@@ -987,7 +975,7 @@ public class Memory extends Observable {
      * @return true if that address is within MARS-defined memory map (MMIO) area,
      *     false otherwise.
      */
-    public static boolean inMemoryMapSegment(int address) {
+    public static boolean isInMemoryMapSegment(int address) {
         return address >= mmioBaseAddress && address < kernelHighAddress;
     }
 
@@ -1038,10 +1026,10 @@ public class Memory extends Observable {
      * @param endAddr   the high end of memory address range, must be on word boundary
      */
     public void addObserver(Observer obs, int startAddr, int endAddr) throws AddressErrorException {
-        if (startAddr % WORD_LENGTH_BYTES != 0) {
+        if (startAddr % BYTES_PER_WORD != 0) {
             throw new AddressErrorException("address not aligned on word boundary ", ExceptionCause.ADDRESS_EXCEPTION_LOAD, startAddr);
         }
-        if (endAddr != startAddr && endAddr % WORD_LENGTH_BYTES != 0) {
+        if (endAddr != startAddr && endAddr % BYTES_PER_WORD != 0) {
             throw new AddressErrorException("address not aligned on word boundary ", ExceptionCause.ADDRESS_EXCEPTION_LOAD, startAddr);
         }
         // Upper half of address space (above 0x7fffffff) has sign bit 1, and thus is seen as negative
@@ -1129,7 +1117,7 @@ public class Memory extends Observable {
         }
 
         public boolean match(int address) {
-            return (address >= lowAddress && address <= highAddress - 1 + WORD_LENGTH_BYTES);
+            return (address >= lowAddress && address <= highAddress - 1 + BYTES_PER_WORD);
         }
 
         public void notifyObserver(MemoryAccessNotice notice) {
@@ -1357,19 +1345,19 @@ public class Memory extends Observable {
             if (blockTable[block] == null || blockTable[block][offset] == null) {
                 // No instructions are stored in this block or offset.
                 if (notify) {
-                    notifyAnyObservers(AccessNotice.READ, address, Instruction.INSTRUCTION_LENGTH_BYTES, 0);
+                    notifyAnyObservers(AccessNotice.READ, address, Instruction.BYTES_PER_INSTRUCTION, 0);
                 }
                 return null;
             }
             else {
                 if (notify) {
-                    notifyAnyObservers(AccessNotice.READ, address, Instruction.INSTRUCTION_LENGTH_BYTES, blockTable[block][offset].getBinaryStatement());
+                    notifyAnyObservers(AccessNotice.READ, address, Instruction.BYTES_PER_INSTRUCTION, blockTable[block][offset].getBinaryStatement());
                 }
                 return blockTable[block][offset];
             }
         }
         if (notify) {
-            notifyAnyObservers(AccessNotice.READ, address, Instruction.INSTRUCTION_LENGTH_BYTES, 0);
+            notifyAnyObservers(AccessNotice.READ, address, Instruction.BYTES_PER_INSTRUCTION, 0);
         }
         return null;
     }

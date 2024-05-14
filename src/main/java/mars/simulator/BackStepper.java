@@ -158,7 +158,7 @@ public class BackStepper {
      */
     private int pc() {
         // PC incremented prior to instruction simulation, so need to adjust for that.
-        return RegisterFile.getProgramCounter() - Instruction.INSTRUCTION_LENGTH_BYTES;
+        return RegisterFile.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION;
     }
 
     /**
@@ -235,7 +235,7 @@ public class BackStepper {
      */
     public int addPCRestore(int value) {
         // adjust for value reflecting incremented PC.
-        value -= Instruction.INSTRUCTION_LENGTH_BYTES;
+        value -= Instruction.BYTES_PER_INSTRUCTION;
         // Use "value" insead of "pc()" for second arg because RegisterFile.getProgramCounter()
         // returns branch target address at this point.
         backSteps.push(BackStepAction.PC_RESTORE, value, value);

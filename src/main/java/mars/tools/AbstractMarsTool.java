@@ -105,7 +105,7 @@ public abstract class AbstractMarsTool extends JFrame implements MarsTool, Obser
         this.dialog.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent event) {
-                closeTool();
+                AbstractMarsTool.this.closeTool();
             }
         });
         this.initializePreGUI();
@@ -161,17 +161,17 @@ public abstract class AbstractMarsTool extends JFrame implements MarsTool, Obser
     protected JComponent buildButtonArea() {
         JButton resetButton = new JButton("Reset");
         resetButton.setToolTipText("Reset all counters and other structures");
-        resetButton.addActionListener(event -> reset());
+        resetButton.addActionListener(event -> this.reset());
 
         JButton closeButton = new JButton("Close");
         closeButton.setToolTipText("Close this tool");
-        closeButton.addActionListener(event -> closeTool());
+        closeButton.addActionListener(event -> this.closeTool());
 
         // Add all the buttons
         Box buttonArea = Box.createHorizontalBox();
         buttonArea.add(resetButton);
         buttonArea.add(Box.createHorizontalGlue());
-        JComponent helpComponent = getHelpComponent();
+        JComponent helpComponent = this.getHelpComponent();
         if (helpComponent != null) {
             buttonArea.add(helpComponent);
             buttonArea.add(Box.createHorizontalGlue());
@@ -194,8 +194,8 @@ public abstract class AbstractMarsTool extends JFrame implements MarsTool, Obser
     @Override
     public void update(Observable resource, Object accessNotice) {
         if (((AccessNotice) accessNotice).accessIsFromMIPS()) {
-            processMIPSUpdate(resource, (AccessNotice) accessNotice);
-            updateDisplay();
+            this.processMIPSUpdate(resource, (AccessNotice) accessNotice);
+            this.updateDisplay();
         }
     }
 
@@ -256,15 +256,6 @@ public abstract class AbstractMarsTool extends JFrame implements MarsTool, Obser
     }
 
     /**
-     * Add this tool as an observer of the specified MIPS register.
-     */
-    protected void startObserving(Register register) {
-        if (register != null) {
-            register.addObserver(this);
-        }
-    }
-
-    /**
      * Delete this tool as an observer of MIPS observables (memory and registers).
      * This method is called when the tool is closed by the user.
      * <p>
@@ -272,15 +263,6 @@ public abstract class AbstractMarsTool extends JFrame implements MarsTool, Obser
      */
     protected void stopObserving() {
         Memory.getInstance().deleteObserver(this);
-    }
-
-    /**
-     * Delete this tool as an observer of the specified MIPS register.
-     */
-    protected void stopObserving(Register register) {
-        if (register != null) {
-            register.deleteObserver(this);
-        }
     }
 
     /**

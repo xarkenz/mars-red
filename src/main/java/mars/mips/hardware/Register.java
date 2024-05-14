@@ -1,6 +1,7 @@
 package mars.mips.hardware;
 
-import java.util.Observable;
+import java.util.ArrayList;
+import java.util.List;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -36,7 +37,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @author Jason Bumgarner, Jason Shrewsbury, Ben Sherman
  * @version June 2003
  */
-public class Register extends Observable {
+public class Register {
+    public interface Listener {
+        default void registerWritten(Register register) {
+            // Do nothing by default
+        }
+
+        default void registerRead(Register register) {
+            // Do nothing by default
+        }
+    }
+
+    private final List<Listener> listeners;
     private final String name;
     private final int number;
     private int defaultValue;
@@ -54,6 +66,7 @@ public class Register extends Observable {
      * @param defaultValue  The default (and initial) value of the register.
      */
     public Register(String name, int number, int defaultValue) {
+        this.listeners = new ArrayList<>();
         this.name = name;
         this.number = number;
         this.value = defaultValue;
@@ -66,7 +79,7 @@ public class Register extends Observable {
      * @return The name of the register.
      */
     public String getName() {
-        return name;
+        return this.name;
     }
 
     /**
@@ -75,7 +88,7 @@ public class Register extends Observable {
      * @return The number of the register.
      */
     public int getNumber() {
-        return number;
+        return this.number;
     }
 
     /**
@@ -84,14 +97,14 @@ public class Register extends Observable {
      * @return The default value of the register.
      */
     public int getDefaultValue() {
-        return defaultValue;
+        return this.defaultValue;
     }
 
     /**
      * Change the register's default value, the value to which it will be
      * set when {@link #resetValueToDefault()} is called.
      */
-    public synchronized void setDefaultValue(int defaultValue) {
+    public void setDefaultValue(int defaultValue) {
         this.defaultValue = defaultValue;
     }
 
@@ -102,8 +115,10 @@ public class Register extends Observable {
      * @return The value of the register.
      */
     public synchronized int getValue() {
-        notifyAnyObservers(AccessNotice.READ);
-        return value;
+        for (Listener listener : this.listeners) {
+            listener.registerRead(this);
+        }
+        return this.value;
     }
 
     /**
@@ -113,7 +128,7 @@ public class Register extends Observable {
      * @return The value of the register.
      */
     public synchronized int getValueNoNotify() {
-        return value;
+        return this.value;
     }
 
     /**
@@ -126,7 +141,9 @@ public class Register extends Observable {
     public synchronized int setValue(int value) {
         int previousValue = this.value;
         this.value = value;
-        notifyAnyObservers(AccessNotice.WRITE);
+        for (Listener listener : this.listeners) {
+            listener.registerWritten(this);
+        }
         return previousValue;
     }
 
@@ -135,16 +152,16 @@ public class Register extends Observable {
      * Observers are not notified.
      */
     public synchronized void resetValueToDefault() {
-        value = defaultValue;
+        this.value = this.defaultValue;
     }
 
-    /**
-     * Notify any observers of the register operation that has just occurred.
-     */
-    private void notifyAnyObservers(int accessType) {
-        if (this.countObservers() > 0) {
-            this.setChanged();
-            this.notifyObservers(new RegisterAccessNotice(accessType, this.name));
+    public void addListener(Listener listener) {
+        if (!this.listeners.contains(listener)) {
+            this.listeners.add(listener);
         }
+    }
+
+    public void removeListener(Listener listener) {
+        this.listeners.remove(listener);
     }
 }

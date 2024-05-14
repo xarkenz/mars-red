@@ -247,7 +247,7 @@ public class MMIOSimulator extends AbstractMarsTool {
         // has been reached, set the transmitter Ready flag to indicate the MIPS program
         // can write another character to the transmitter data register.  If the Interrupt-Enabled
         // bit had been set by the MIPS program, generate an interrupt!
-        if (this.countingInstructions && notice.getAccessType() == AccessNotice.READ && (Memory.inTextSegment(notice.getAddress()) || Memory.inKernelTextSegment(notice.getAddress()))) {
+        if (this.countingInstructions && notice.getAccessType() == AccessNotice.READ && (Memory.isInTextSegment(notice.getAddress()) || Memory.isInKernelTextSegment(notice.getAddress()))) {
             this.instructionCount++;
             if (this.instructionCount >= this.transmitDelayInstructionCountLimit) {
                 if (displayAfterDelay) {
@@ -583,7 +583,7 @@ public class MMIOSimulator extends AbstractMarsTool {
      */
     private static boolean isReadyBitSet(int mmioControlRegister) {
         try {
-            return (Application.memory.get(mmioControlRegister, Memory.WORD_LENGTH_BYTES) & 1) == 1;
+            return (Application.memory.get(mmioControlRegister, Memory.BYTES_PER_WORD) & 1) == 1;
         }
         catch (AddressErrorException aee) {
             System.out.println("Tool author specified incorrect MMIO address!" + aee);
@@ -598,7 +598,7 @@ public class MMIOSimulator extends AbstractMarsTool {
      */
     private static int readyBitSet(int mmioControlRegister) {
         try {
-            return Application.memory.get(mmioControlRegister, Memory.WORD_LENGTH_BYTES) | 1;
+            return Application.memory.get(mmioControlRegister, Memory.BYTES_PER_WORD) | 1;
         }
         catch (AddressErrorException aee) {
             System.out.println("Tool author specified incorrect MMIO address!" + aee);
@@ -613,7 +613,7 @@ public class MMIOSimulator extends AbstractMarsTool {
      */
     private static int readyBitCleared(int mmioControlRegister) {
         try {
-            return Application.memory.get(mmioControlRegister, Memory.WORD_LENGTH_BYTES) & 2;
+            return Application.memory.get(mmioControlRegister, Memory.BYTES_PER_WORD) & 2;
         }
         catch (AddressErrorException aee) {
             System.out.println("Tool author specified incorrect MMIO address!" + aee);

@@ -1,16 +1,12 @@
 package mars.venus;
 
-import mars.mips.hardware.AccessNotice;
 import mars.mips.hardware.Register;
-import mars.mips.hardware.RegisterAccessNotice;
 import mars.simulator.*;
 import mars.venus.execute.RunSpeedPanel;
 
 import javax.swing.*;
-import java.util.Observable;
-import java.util.Observer;
 
-public abstract class RegistersDisplayTab extends JPanel implements SimulatorListener, Observer {
+public abstract class RegistersDisplayTab extends JPanel implements SimulatorListener, Register.Listener {
     protected final VenusUI gui;
 
     public RegistersDisplayTab(VenusUI gui) {
@@ -43,7 +39,7 @@ public abstract class RegistersDisplayTab extends JPanel implements SimulatorLis
      * Update register display using current number base (10 or 16).
      */
     public void updateRegisters() {
-        this.updateRegisters(gui.getMainPane().getExecuteTab().getValueDisplayBase());
+        this.updateRegisters(this.gui.getMainPane().getExecuteTab().getValueDisplayBase());
     }
 
     /**
@@ -88,30 +84,15 @@ public abstract class RegistersDisplayTab extends JPanel implements SimulatorLis
         this.updateRegisters();
     }
 
-    /**
-     * Required by Observer interface.  Called when notified by an Observable that we are registered with.
-     * Observables include:
-     * A register object, which lets us know of register operations
-     * The Simulator keeps us informed of when simulated MIPS execution is active.
-     * This is the only time we care about register operations.
-     *
-     * @param observable The Observable object who is notifying us
-     * @param obj        Auxiliary object with additional information.
-     */
     @Override
-    public void update(Observable observable, Object obj) {
-        if (obj instanceof RegisterAccessNotice access) {
-            // Note: each register is a separate Observable
-            if (access.getAccessType() == AccessNotice.WRITE) {
-                if (RunSpeedPanel.getInstance().getRunSpeed() != RunSpeedPanel.UNLIMITED_SPEED) {
-                    this.getTable().setUpdating(true);
-                    this.highlightRegister((Register) observable);
-                    gui.getRegistersPane().setSelectedComponent(this);
-                }
-                else {
-                    this.getTable().setUpdating(false);
-                }
-            }
+    public void registerWritten(Register register) {
+        if (RunSpeedPanel.getInstance().getRunSpeed() != RunSpeedPanel.UNLIMITED_SPEED) {
+            this.getTable().setUpdating(true);
+            this.highlightRegister(register);
+            this.gui.getRegistersPane().setSelectedComponent(this);
+        }
+        else {
+            this.getTable().setUpdating(false);
         }
     }
 }

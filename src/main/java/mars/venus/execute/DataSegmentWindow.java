@@ -354,13 +354,13 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
      */
     private int getBaseAddressIndexForAddress(int address) {
         int desiredComboBoxIndex = -1; // Assume not a data address
-        if (Memory.inKernelDataSegment(address)) {
+        if (Memory.isInKernelDataSegment(address)) {
             return KERNEL_DATA_BASE_ADDRESS_INDEX;
         }
-        else if (Memory.inMemoryMapSegment(address)) {
+        else if (Memory.isInMemoryMapSegment(address)) {
             return MMIO_BASE_ADDRESS_INDEX;
         }
-        else if (Memory.inTextSegment(address)) { // DPS 8-July-2013
+        else if (Memory.isInTextSegment(address)) { // DPS 8-July-2013
             return TEXT_BASE_ADDRESS_INDEX;
         }
 
@@ -516,7 +516,7 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
                     // self-modifying code setting is disabled.  This is a good thing if it is the executing MIPS program trying to
                     // read.  But not a good thing if it is the DataSegmentDisplay trying to read.  I'll trick Memory by
                     // temporarily enabling the setting as "non persistent" so it won't write through to the registry.
-                    if (Memory.inTextSegment(address)) {
+                    if (Memory.isInTextSegment(address)) {
                         int displayValue = 0;
                         if (!this.gui.getSettings().selfModifyingCodeEnabled.get()) {
                             this.gui.getSettings().selfModifyingCodeEnabled.setNonPersistent(true);

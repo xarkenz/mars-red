@@ -58,7 +58,7 @@ public class MemoryAccessNotice extends AccessNotice {
     public MemoryAccessNotice(int accessType, int address, int value) {
         super(accessType);
         this.address = address;
-        this.length = Memory.WORD_LENGTH_BYTES;
+        this.length = Memory.BYTES_PER_WORD;
         this.value = value;
     }
 
@@ -92,6 +92,7 @@ public class MemoryAccessNotice extends AccessNotice {
     /**
      * @return String indicating access type, address and length in bytes.
      */
+    @Override
     public String toString() {
         return ((this.getAccessType() == AccessNotice.READ) ? "R " : "W ") + "Mem " + address + " " + length + "B = " + value;
     }

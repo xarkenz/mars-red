@@ -3,7 +3,6 @@ package mars.mips.hardware;
 import mars.Application;
 import mars.assembler.SymbolTable;
 import mars.mips.instructions.Instruction;
-import mars.tools.AbstractMarsTool;
 import mars.util.Binary;
 
 import java.util.Observer;
@@ -47,6 +46,7 @@ public class RegisterFile {
     public static final int STACK_POINTER = 29;
     public static final int FRAME_POINTER = 30;
     public static final int RETURN_ADDRESS = 31;
+    // These numbers aren't really meaningful, but they are useful in some cases e.g. register display
     public static final int PROGRAM_COUNTER = 32;
     public static final int HIGH_ORDER = 33;
     public static final int LOW_ORDER = 34;
@@ -84,18 +84,18 @@ public class RegisterFile {
         new Register("$sp", STACK_POINTER, Memory.stackPointer),
         new Register("$fp", FRAME_POINTER, 0),
         new Register("$ra", RETURN_ADDRESS, 0),
-        // These are internal registers which are not accessible directly by the user
-        new Register("pc", PROGRAM_COUNTER, Memory.textBaseAddress),
-        new Register("hi", HIGH_ORDER, 0),
-        new Register("lo", LOW_ORDER, 0),
     };
+
+    private static final Register PROGRAM_COUNTER_REGISTER = new Register("pc", PROGRAM_COUNTER, Memory.textBaseAddress);
+    private static final Register HIGH_ORDER_REGISTER = new Register("hi", HIGH_ORDER, 0);
+    private static final Register LOW_ORDER_REGISTER = new Register("lo", LOW_ORDER, 0);
 
     /**
      * Update the register value whose number is given, unless it is <code>$zero</code>.
      * Also handles the internal pc, lo, and hi registers.
      *
      * @param number Register to set the value of.
-     * @param value The desired value for the register.
+     * @param value  The desired value for the register.
      * @return The previous value of the register.
      */
     public static int updateRegister(int number, int value) {
@@ -149,7 +149,7 @@ public class RegisterFile {
     }
 
     /**
-     * Get the set of accessible registers, not including pc, hi, or lo.
+     * Get the set of accessible registers, including pc, hi, and lo.
      *
      * @return The set of registers.
      */
@@ -171,7 +171,7 @@ public class RegisterFile {
             // Check for register number 0-31
             return REGISTERS[Binary.decodeInteger(name.substring(1))]; // KENV 1/6/05
         }
-        catch (Exception e) {
+        catch (NumberFormatException | ArrayIndexOutOfBoundsException exception) {
             // Handles both NumberFormat and ArrayIndexOutOfBounds
             // Check for register mnemonic $zero thru $ra
             // Just do linear search; there aren't that many registers
@@ -192,7 +192,7 @@ public class RegisterFile {
      * @param value The value to set the Program Counter to.
      */
     public static void initializeProgramCounter(int value) {
-        REGISTERS[PROGRAM_COUNTER].setValue(value);
+        PROGRAM_COUNTER_REGISTER.setValue(value);
     }
 
     /**
@@ -206,12 +206,21 @@ public class RegisterFile {
      */
     public static void initializeProgramCounter(boolean startAtMain) {
         int mainAddr = Application.globalSymbolTable.getAddress(SymbolTable.getStartLabel());
-        if (startAtMain && mainAddr != SymbolTable.NOT_FOUND && (Memory.inTextSegment(mainAddr) || Memory.inKernelTextSegment(mainAddr))) {
+        if (startAtMain && mainAddr != SymbolTable.NOT_FOUND && (Memory.isInTextSegment(mainAddr) || Memory.isInKernelTextSegment(mainAddr))) {
             initializeProgramCounter(mainAddr);
         }
         else {
-            initializeProgramCounter(REGISTERS[PROGRAM_COUNTER].getDefaultValue());
+            initializeProgramCounter(PROGRAM_COUNTER_REGISTER.getDefaultValue());
         }
+    }
+
+    /**
+     * Get the current program counter value.
+     *
+     * @return The program counter value as an int.
+     */
+    public static int getProgramCounter() {
+        return PROGRAM_COUNTER_REGISTER.getValue();
     }
 
     /**
@@ -222,20 +231,11 @@ public class RegisterFile {
      * @return The previous program counter value.
      */
     public static int setProgramCounter(int value) {
-        int previousValue = REGISTERS[PROGRAM_COUNTER].setValue(value);
+        int previousValue = PROGRAM_COUNTER_REGISTER.setValue(value);
         if (Application.isBackSteppingEnabled()) {
             Application.program.getBackStepper().addPCRestore(previousValue);
         }
         return previousValue;
-    }
-
-    /**
-     * Get the current program counter value.
-     *
-     * @return The program counter value as an int.
-     */
-    public static int getProgramCounter() {
-        return REGISTERS[PROGRAM_COUNTER].getValue();
     }
 
     /**
@@ -244,7 +244,7 @@ public class RegisterFile {
      * @return The program counter register.
      */
     public static Register getProgramCounterRegister() {
-        return REGISTERS[PROGRAM_COUNTER];
+        return PROGRAM_COUNTER_REGISTER;
     }
 
     /**
@@ -253,54 +253,52 @@ public class RegisterFile {
      * @return The program counter's initial value.
      */
     public static int getInitialProgramCounter() {
-        return REGISTERS[PROGRAM_COUNTER].getDefaultValue();
-    }
-
-    /**
-     * Reinitialize the values of the registers.
-     * <b>NOTE:</b> Should <i>not</i> be called from command-mode MARS because this
-     * this method uses global settings from the registry.  Command-mode must operate
-     * using only the command switches, not registry settings.  It can be called
-     * from tools running stand-alone, and this is done in
-     * {@link AbstractMarsTool}.
-     */
-    public static void resetRegisters() {
-        for (Register register : REGISTERS) {
-            register.resetValueToDefault();
-        }
-        initializeProgramCounter(Application.getSettings().startAtMain.get()); // replaces "programCounter.resetValue()", DPS 3/3/09
+        return PROGRAM_COUNTER_REGISTER.getDefaultValue();
     }
 
     /**
      * Increment the Program counter in the general case (not a jump or branch).
      */
     public static void incrementPC() {
-        REGISTERS[PROGRAM_COUNTER].setValue(REGISTERS[PROGRAM_COUNTER].getValue() + Instruction.INSTRUCTION_LENGTH_BYTES);
+        PROGRAM_COUNTER_REGISTER.setValue(PROGRAM_COUNTER_REGISTER.getValue() + Instruction.BYTES_PER_INSTRUCTION);
+    }
+
+    public static int getHighOrder() {
+        return HIGH_ORDER_REGISTER.getValue();
+    }
+
+    public static void setHighOrder(int value) {
+        HIGH_ORDER_REGISTER.setValue(value);
+    }
+
+    public static Register getHighOrderRegister() {
+        return HIGH_ORDER_REGISTER;
+    }
+
+    public static int getLowOrder() {
+        return LOW_ORDER_REGISTER.getValue();
+    }
+
+    public static void setLowOrder(int value) {
+        LOW_ORDER_REGISTER.setValue(value);
+    }
+
+    public static Register getLowOrderRegister() {
+        return LOW_ORDER_REGISTER;
     }
 
     /**
-     * Each individual register is a separate object and Observable.  This handy method
-     * will add the given Observer to each one.  Currently does not apply to Program
-     * Counter.
+     * Reinitialize the values of the registers.
+     * <p>
+     * <b>NOTE:</b> Should <i>not</i> be called from command-mode MARS because this
+     * this method uses global settings from the registry.  Command-mode must operate
+     * using only the command switches, not registry settings.
      */
-    public static void addRegistersObserver(Observer observer) {
+    public static void resetRegisters() {
         for (Register register : REGISTERS) {
-            if (register.getNumber() != PROGRAM_COUNTER) {
-                register.addObserver(observer);
-            }
+            register.resetValueToDefault();
         }
-    }
-
-    /**
-     * Each individual register is a separate object and Observable.  This handy method
-     * will delete the given Observer from each one.  Currently does not apply to Program
-     * Counter.
-     */
-    public static void deleteRegistersObserver(Observer observer) {
-        for (Register register : REGISTERS) {
-            if (register.getNumber() != PROGRAM_COUNTER) {
-                register.deleteObserver(observer);
-            }
-        }
+        // Replaces "programCounter.resetValue()", DPS 3/3/09
+        initializeProgramCounter(Application.getSettings().startAtMain.get());
     }
 }

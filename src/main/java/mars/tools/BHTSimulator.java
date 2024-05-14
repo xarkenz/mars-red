@@ -34,8 +34,6 @@ import mars.tools.bhtsim.BHTableModel;
 import mars.util.Binary;
 
 import javax.swing.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.Objects;
 import java.util.Observable;
 
@@ -54,7 +52,7 @@ import java.util.Observable;
  *
  * @author Ingo Kofler (ingo.kofler@itec.uni-klu.ac.at)
  */
-public class BHTSimulator extends AbstractMarsTool implements ActionListener {
+public class BHTSimulator extends AbstractMarsTool {
     /**
      * Constant for the default size of the BHT.
      */
@@ -107,7 +105,6 @@ public class BHTSimulator extends AbstractMarsTool implements ActionListener {
     @Override
     protected void startObserving() {
         this.startObserving(Memory.textBaseAddress, Memory.textLimitAddress);
-        this.startObserving(RegisterFile.getProgramCounterRegister());
     }
 
     /**
@@ -122,9 +119,9 @@ public class BHTSimulator extends AbstractMarsTool implements ActionListener {
         this.gui.getHistorySizeComboBox().setSelectedItem(DEFAULT_HISTORY_SIZE);
         this.gui.getEntryCountComboBox().setSelectedItem(DEFAULT_ENTRY_COUNT);
 
-        this.gui.getEntryCountComboBox().addActionListener(this);
-        this.gui.getHistorySizeComboBox().addActionListener(this);
-        this.gui.getInitialValueComboBox().addActionListener(this);
+        this.gui.getEntryCountComboBox().addActionListener(event -> this.reset());
+        this.gui.getHistorySizeComboBox().addActionListener(event -> this.reset());
+        this.gui.getInitialValueComboBox().addActionListener(event -> this.reset());
 
         return this.gui;
     }
@@ -157,19 +154,6 @@ public class BHTSimulator extends AbstractMarsTool implements ActionListener {
 
         this.pendingBranchInstructionAddress = 0;
         this.lastBranchTaken = false;
-    }
-
-    /**
-     * Handles the actions when selecting another value in one of the two combo boxes.
-     * Selecting a different BHT size or history causes a reset of the simulator.
-     */
-    @Override
-    public void actionPerformed(ActionEvent event) {
-        // change of the BHT size or BHT bit configuration
-        // resets the simulator
-        if (event.getSource() == gui.getEntryCountComboBox() || event.getSource() == gui.getHistorySizeComboBox() || event.getSource() == gui.getInitialValueComboBox()) {
-            this.reset();
-        }
     }
 
     /**

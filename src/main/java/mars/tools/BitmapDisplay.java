@@ -119,7 +119,7 @@ public class BitmapDisplay extends AbstractMarsTool {
             return;
         }
 
-        int highAddress = this.baseAddress + this.image.getWidth() * this.image.getHeight() * Memory.WORD_LENGTH_BYTES;
+        int highAddress = this.baseAddress + this.image.getWidth() * this.image.getHeight() * Memory.BYTES_PER_WORD;
         // Special case: baseAddress < 0 means we're in kernel memory (0x80000000 and up) and most likely
         // in memory map address space (0xffff0000 and up).  In this case, we need to make sure the high address
         // does not drop off the high end of 32 bit address space.  Highest allowable word address is 0xfffffffc,
@@ -173,7 +173,7 @@ public class BitmapDisplay extends AbstractMarsTool {
             MemoryAccessNotice notice = (MemoryAccessNotice) accessNotice;
             int address = notice.getAddress();
             int value = notice.getValue();
-            int offset = (address - this.baseAddress) / Memory.WORD_LENGTH_BYTES;
+            int offset = (address - this.baseAddress) / Memory.BYTES_PER_WORD;
             synchronized (BitmapDisplay.this.imageLock) {
                 if (0 <= offset && offset < this.image.getWidth() * this.image.getHeight()) {
                     this.image.setRGB(offset % this.image.getWidth(), offset / this.image.getWidth(), value);
@@ -390,7 +390,7 @@ public class BitmapDisplay extends AbstractMarsTool {
                     for (int y = 0; y < BitmapDisplay.this.image.getHeight(); y++) {
                         for (int x = 0; x < BitmapDisplay.this.image.getWidth(); x++) {
                             BitmapDisplay.this.image.setRGB(x, y, Memory.getInstance().getWordNoNotify(BitmapDisplay.this.baseAddress + offset));
-                            offset += Memory.WORD_LENGTH_BYTES;
+                            offset += Memory.BYTES_PER_WORD;
                         }
                     }
                 }

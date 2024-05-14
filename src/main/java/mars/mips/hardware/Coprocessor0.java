@@ -5,8 +5,6 @@ import mars.mips.instructions.Instruction;
 import mars.simulator.ExceptionCause;
 import mars.util.Binary;
 
-import java.util.Observer;
-
 /*
 Copyright (c) 2003-2009,  Pete Sanderson and Kenneth Vollmar
 
@@ -179,26 +177,6 @@ public class Coprocessor0 {
     }
 
     /**
-     * Each individual register is a separate object and Observable.  This handy method
-     * will add the given Observer to each one.
-     */
-    public static void addRegistersObserver(Observer observer) {
-        for (Register register : REGISTERS) {
-            register.addObserver(observer);
-        }
-    }
-
-    /**
-     * Each individual register is a separate object and Observable.  This handy method
-     * will delete the given Observer from each one.
-     */
-    public static void deleteRegistersObserver(Observer observer) {
-        for (Register register : REGISTERS) {
-            register.deleteObserver(observer);
-        }
-    }
-
-    /**
      * Given MIPS exception cause code, place that code into
      * coprocessor 0 CAUSE register ($13), set the EPC register ($14) to
      * "current" program counter, and set Exception Level bit in STATUS register ($12).
@@ -212,7 +190,7 @@ public class Coprocessor0 {
         // identify devices for External Interrupt (8=keyboard, 9=display).
         updateRegister(CAUSE, (getValue(CAUSE) & 0xFFFFFC83) | (cause << 2));
         // When exception occurred, PC had already been incremented so need to subtract 4 here.
-        updateRegister(EPC, RegisterFile.getProgramCounter() - Instruction.INSTRUCTION_LENGTH_BYTES);
+        updateRegister(EPC, RegisterFile.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION);
         // Set EXL (Exception Level) bit, bit position 1, in STATUS register to 1.
         updateRegister(STATUS, Binary.setBit(getValue(STATUS), EXCEPTION_LEVEL));
     }

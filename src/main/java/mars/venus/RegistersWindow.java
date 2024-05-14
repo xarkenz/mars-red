@@ -119,22 +119,24 @@ public class RegistersWindow extends RegistersDisplayTab {
     public Object[][] setupWindow() {
         int valueBase = NumberDisplayBaseChooser.getBase(Application.getSettings().displayValuesInHex.get());
         Object[][] tableData = new Object[35][3];
+
         for (Register register : RegisterFile.getRegisters()) {
             tableData[register.getNumber()][0] = register.getName();
             tableData[register.getNumber()][1] = "$" + register.getNumber();
             tableData[register.getNumber()][2] = NumberDisplayBaseChooser.formatNumber(register.getValue(), valueBase);
         }
+
         tableData[RegisterFile.PROGRAM_COUNTER][0] = "pc";
         tableData[RegisterFile.PROGRAM_COUNTER][1] = "";
         tableData[RegisterFile.PROGRAM_COUNTER][2] = NumberDisplayBaseChooser.formatUnsignedInteger(RegisterFile.getProgramCounter(), valueBase);
 
         tableData[RegisterFile.HIGH_ORDER][0] = "hi";
         tableData[RegisterFile.HIGH_ORDER][1] = "";
-        tableData[RegisterFile.HIGH_ORDER][2] = NumberDisplayBaseChooser.formatNumber(RegisterFile.getValue(RegisterFile.HIGH_ORDER), valueBase);
+        tableData[RegisterFile.HIGH_ORDER][2] = NumberDisplayBaseChooser.formatNumber(RegisterFile.getHighOrder(), valueBase);
 
         tableData[RegisterFile.LOW_ORDER][0] = "lo";
         tableData[RegisterFile.LOW_ORDER][1] = "";
-        tableData[RegisterFile.LOW_ORDER][2] = NumberDisplayBaseChooser.formatNumber(RegisterFile.getValue(RegisterFile.LOW_ORDER), valueBase);
+        tableData[RegisterFile.LOW_ORDER][2] = NumberDisplayBaseChooser.formatNumber(RegisterFile.getLowOrder(), valueBase);
 
         return tableData;
     }
@@ -159,8 +161,8 @@ public class RegistersWindow extends RegistersDisplayTab {
             updateRegisterValue(register.getNumber(), register.getValue(), base);
         }
         updateRegisterUnsignedValue(RegisterFile.PROGRAM_COUNTER, RegisterFile.getProgramCounter(), base);
-        updateRegisterValue(RegisterFile.HIGH_ORDER, RegisterFile.getValue(RegisterFile.HIGH_ORDER), base);
-        updateRegisterValue(RegisterFile.LOW_ORDER, RegisterFile.getValue(RegisterFile.LOW_ORDER), base);
+        updateRegisterValue(RegisterFile.HIGH_ORDER, RegisterFile.getHighOrder(), base);
+        updateRegisterValue(RegisterFile.LOW_ORDER, RegisterFile.getLowOrder(), base);
     }
 
     /**
@@ -195,12 +197,16 @@ public class RegistersWindow extends RegistersDisplayTab {
 
     @Override
     public void startObservingRegisters() {
-        RegisterFile.addRegistersObserver(this);
+        for (Register register : RegisterFile.getRegisters()) {
+            register.addListener(this);
+        }
     }
 
     @Override
     public void stopObservingRegisters() {
-        RegisterFile.deleteRegistersObserver(this);
+        for (Register register : RegisterFile.getRegisters()) {
+            register.removeListener(this);
+        }
     }
 
     private class RegisterTableModel extends AbstractTableModel {

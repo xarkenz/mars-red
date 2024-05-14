@@ -3,8 +3,6 @@ package mars.mips.hardware;
 import mars.Application;
 import mars.util.Binary;
 
-import java.util.Observer;
-
 /*
 Copyright (c) 2003-2009,  Pete Sanderson and Kenneth Vollmar
 
@@ -400,37 +398,16 @@ public class Coprocessor1 {
     }
 
     /**
-     * Each individual register is a separate object and Observable.  This handy method
-     * will add the given Observer to each one.
-     */
-    public static void addRegistersObserver(Observer observer) {
-        for (Register register : REGISTERS) {
-            register.addObserver(observer);
-        }
-    }
-
-    /**
-     * Each individual register is a separate object and Observable.  This handy method
-     * will delete the given Observer from each one.
-     */
-    public static void deleteRegistersObserver(Observer observer) {
-        for (Register register : REGISTERS) {
-            register.deleteObserver(observer);
-        }
-    }
-
-    /**
      * Set condition flag to 1 (true).
      *
      * @param flag condition flag number (0-7)
      */
     public static void setConditionFlag(int flag) {
-        int old = 0;
         if (flag >= 0 && flag < CONDITION_FLAG_COUNT) {
-            old = getConditionFlag(flag);
+            int oldFlagValue = getConditionFlag(flag);
             CONDITION_FLAGS.setValue(Binary.setBit(CONDITION_FLAGS.getValue(), flag));
             if (Application.isBackSteppingEnabled()) {
-                if (old == 0) {
+                if (oldFlagValue == 0) {
                     Application.program.getBackStepper().addConditionFlagClear(flag);
                 }
                 else {

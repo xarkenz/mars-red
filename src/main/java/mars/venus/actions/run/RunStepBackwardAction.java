@@ -64,16 +64,16 @@ public class RunStepBackwardAction extends VenusAction {
             boolean inDelaySlot = Application.program.getBackStepper().isInDelaySlot(); // Added 25 June 2007
 
             Memory.getInstance().addObserver(executeTab.getDataSegmentWindow());
-            RegisterFile.addRegistersObserver(registersPane.getRegistersWindow());
-            Coprocessor0.addRegistersObserver(registersPane.getCoprocessor0Window());
-            Coprocessor1.addRegistersObserver(registersPane.getCoprocessor1Window());
+            registersPane.getRegistersWindow().startObservingRegisters();
+            registersPane.getCoprocessor0Window().startObservingRegisters();
+            registersPane.getCoprocessor1Window().startObservingRegisters();
 
             Application.program.getBackStepper().backStep();
 
             Memory.getInstance().deleteObserver(executeTab.getDataSegmentWindow());
-            RegisterFile.deleteRegistersObserver(registersPane.getRegistersWindow());
-            Coprocessor0.deleteRegistersObserver(registersPane.getCoprocessor0Window());
-            Coprocessor1.deleteRegistersObserver(registersPane.getCoprocessor1Window());
+            registersPane.getRegistersWindow().stopObservingRegisters();
+            registersPane.getCoprocessor0Window().stopObservingRegisters();
+            registersPane.getCoprocessor1Window().stopObservingRegisters();
             registersPane.getRegistersWindow().updateRegisters();
             registersPane.getCoprocessor1Window().updateRegisters();
             registersPane.getCoprocessor0Window().updateRegisters();

@@ -227,7 +227,7 @@ public class MarsLauncher {
                 continue;
             }
             try {
-                int highAddress = Application.memory.getAddressOfFirstNull(segmentInfo[0], segmentInfo[1]) - Memory.WORD_LENGTH_BYTES;
+                int highAddress = Application.memory.getAddressOfFirstNull(segmentInfo[0], segmentInfo[1]) - Memory.BYTES_PER_WORD;
                 if (highAddress < segmentInfo[0]) {
                     out.println("This segment has not been written to, there is nothing to dump.");
                     continue;
@@ -543,7 +543,7 @@ public class MarsLauncher {
             memoryRange[1] = arg.substring(arg.indexOf(RANGE_SEPARATOR) + 1);
             // NOTE: I will use homegrown decoder, because Integer.decode will throw
             // exception on address higher than 0x7FFFFFFF (e.g. sign bit is 1).
-            if (Binary.decodeInteger(memoryRange[0]) > Binary.decodeInteger(memoryRange[1]) || !Memory.wordAligned(Binary.decodeInteger(memoryRange[0])) || !Memory.wordAligned(Binary.decodeInteger(memoryRange[1]))) {
+            if (Binary.decodeInteger(memoryRange[0]) > Binary.decodeInteger(memoryRange[1]) || !Memory.isWordAligned(Binary.decodeInteger(memoryRange[0])) || !Memory.isWordAligned(Binary.decodeInteger(memoryRange[1]))) {
                 throw new NumberFormatException();
             }
         }
@@ -693,7 +693,7 @@ public class MarsLauncher {
             catch (NumberFormatException ignored) {
             }
             int valuesDisplayed = 0;
-            for (int addr = addressStart; addr <= addressEnd; addr += Memory.WORD_LENGTH_BYTES) {
+            for (int addr = addressStart; addr <= addressEnd; addr += Memory.BYTES_PER_WORD) {
                 if (addr < 0 && addressEnd > 0) {
                     break;  // happens only if addressEnd is 0x7ffffffc
                 }
@@ -705,7 +705,7 @@ public class MarsLauncher {
                 }
                 try {
                     // Allow display of binary text segment (machine code) DPS 14-July-2008
-                    if (Memory.inTextSegment(addr) || Memory.inKernelTextSegment(addr)) {
+                    if (Memory.isInTextSegment(addr) || Memory.isInKernelTextSegment(addr)) {
                         Integer iValue = Application.memory.getRawWordOrNull(addr);
                         value = (iValue == null) ? 0 : iValue;
                     }

@@ -1,7 +1,6 @@
 package mars.tools;
 
 import mars.Application;
-import mars.mips.hardware.AccessNotice;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.Register;
 import mars.util.Binary;
@@ -11,7 +10,6 @@ import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.util.Observable;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -47,7 +45,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * and also the <code>float</code> data type in most programming languages in general.
  * As written, it can <i>almost</i> be adapted to 64-bit by changing a few constants.
  */
-public class FloatRepresentation extends AbstractMarsTool {
+public class FloatRepresentation extends AbstractMarsTool implements Register.Listener {
     private static final String NAME = "Floating-Point Representation";
     private static final String VERSION = "Version 1.1";
 
@@ -116,7 +114,9 @@ public class FloatRepresentation extends AbstractMarsTool {
      */
     @Override
     protected void startObserving() {
-        startObserving(attachedRegister);
+        if (this.attachedRegister != null) {
+            this.attachedRegister.addListener(this);
+        }
     }
 
     /**
@@ -128,7 +128,9 @@ public class FloatRepresentation extends AbstractMarsTool {
      */
     @Override
     protected void stopObserving() {
-        stopObserving(attachedRegister);
+        if (this.attachedRegister != null) {
+            this.attachedRegister.removeListener(this);
+        }
     }
 
     /**
@@ -137,23 +139,14 @@ public class FloatRepresentation extends AbstractMarsTool {
      *
      * @return the GUI component containing the application/tool-specific part of the user interface
      */
+    @Override
     protected JComponent buildMainDisplayArea() {
         return buildDisplayArea();
     }
 
-    /**
-     * Override inherited update() to update display when "attached" register is modified
-     * either by MIPS program or by user editing it on the MARS user interface.
-     * The latter is the reason for overriding the inherited update() method.
-     * The inherited method will filter out notices triggered by the MARS GUI or the user.
-     *
-     * @param register     the attached register
-     * @param accessNotice information provided by register in RegisterAccessNotice object
-     */
-    public void update(Observable register, Object accessNotice) {
-        if (((AccessNotice) accessNotice).getAccessType() == AccessNotice.WRITE) {
-            updateDisplays(new FlavorsOfFloat().buildOneFromInt(attachedRegister.getValue()));
-        }
+    @Override
+    public void registerWritten(Register register) {
+        this.updateDisplays(new FlavorsOfFloat().buildOneFromInt(register.getValueNoNotify()));
     }
 
     /**
@@ -161,13 +154,11 @@ public class FloatRepresentation extends AbstractMarsTool {
      * If attached to a MIPS register at the time, the register will be reset as well.
      * Overrides inherited method that does nothing.
      */
+    @Override
     protected void reset() {
         instructions.setText(defaultInstructions);
         updateDisplaysAndRegister(new FlavorsOfFloat());
     }
-
-    //////////////////////////////////////////////////////////////////////////////////////
-    //  Private methods defined to support the above.
 
     protected JComponent buildDisplayArea() {
         // Panel to hold all floating point dislay and editing components
@@ -341,14 +332,12 @@ public class FloatRepresentation extends AbstractMarsTool {
         return mainPanel;
     } // end of buildDisplayArea()
 
-    @SuppressWarnings("unchecked")
     private JComboBox<String> getRegisterSelect(String[] registerList) {
-        JComboBox<String> registerSelect = new JComboBox<>(registerList);
-        registerSelect.setSelectedIndex(0);  // No register attached
+        final JComboBox<String> registerSelect = new JComboBox<>(registerList);
+        registerSelect.setSelectedIndex(0); // No register attached
         registerSelect.setToolTipText("Attach to selected FP register");
-        registerSelect.addActionListener(e -> {
-            JComboBox<String> cb = (JComboBox<String>) e.getSource();
-            int selectedIndex = cb.getSelectedIndex();
+        registerSelect.addActionListener(event -> {
+            int selectedIndex = registerSelect.getSelectedIndex();
             stopObserving();
             if (selectedIndex == 0) {
                 attachedRegister = null;
@@ -536,6 +525,7 @@ public class FloatRepresentation extends AbstractMarsTool {
 
         // Process user keystroke.  If not valid for the context, this
         // will consume the stroke and beep.
+        @Override
         public void keyTyped(KeyEvent e) {
             JTextField source = (JTextField) e.getComponent();
             if (e.getKeyChar() == KeyEvent.VK_BACK_SPACE || e.getKeyChar() == KeyEvent.VK_TAB) {
@@ -557,6 +547,7 @@ public class FloatRepresentation extends AbstractMarsTool {
 
         // Enter key is echoed on component after keyPressed but before keyTyped?
         // Consuming the VK_ENTER event in keyTyped does not suppress it but this will.
+        @Override
         public void keyPressed(KeyEvent e) {
             if (e.getKeyChar() == KeyEvent.VK_ENTER || e.getKeyChar() == KeyEvent.VK_TAB) {
                 updateDisplaysAndRegister(new FlavorsOfFloat().buildOneFromHexString(((JTextField) e.getSource()).getText()));
@@ -589,6 +580,7 @@ public class FloatRepresentation extends AbstractMarsTool {
 
         // Process user keystroke.  If not valid for the context, this
         // will consume the stroke and beep.
+        @Override
         public void keyTyped(KeyEvent e) {
             JTextField source = (JTextField) e.getComponent();
             if (e.getKeyChar() == KeyEvent.VK_BACK_SPACE) {
@@ -610,6 +602,7 @@ public class FloatRepresentation extends AbstractMarsTool {
 
         // Enter key is echoed on component after keyPressed but before keyTyped?
         // Consuming the VK_ENTER event in keyTyped does not suppress it but this will.
+        @Override
         public void keyPressed(KeyEvent e) {
             if (e.getKeyChar() == KeyEvent.VK_ENTER) {
                 updateDisplaysAndRegister(new FlavorsOfFloat().buildOneFromBinaryString());
@@ -635,6 +628,7 @@ public class FloatRepresentation extends AbstractMarsTool {
 
         // Process user keystroke.  If not valid for the context, this
         // will consume the stroke and beep.
+        @Override
         public void keyTyped(KeyEvent e) {
             if (e.getKeyChar() == KeyEvent.VK_BACK_SPACE) {
                 return;
@@ -650,6 +644,7 @@ public class FloatRepresentation extends AbstractMarsTool {
 
         // Enter key is echoed on component after keyPressed but before keyTyped?
         // Consuming the VK_ENTER event in keyTyped does not suppress it but this will.
+        @Override
         public void keyPressed(KeyEvent e) {
             if (e.getKeyChar() == KeyEvent.VK_ENTER) {
                 FlavorsOfFloat fof = new FlavorsOfFloat().buildOneFromDecimalString(((JTextField) e.getSource()).getText());
@@ -684,6 +679,7 @@ public class FloatRepresentation extends AbstractMarsTool {
         // This overrides inherited JPanel method.  Override is necessary to
         // assure my drawn graphics get painted immediately after painting the
         // underlying JPanel (see first statement).
+        @Override
         public void paintComponent(Graphics g) {
             super.paintComponent(g);
             g.setColor(Color.red);
@@ -739,6 +735,7 @@ public class FloatRepresentation extends AbstractMarsTool {
         int upperYArrowHead = upperY - arrowHeadOffset;
         int currentExponent = Binary.binaryStringToInt(defaultBinaryExponent);
 
+        @Override
         public void paintComponent(Graphics g) {
             super.paintComponent(g);
             // Arrow down from binary sign field
@@ -803,13 +800,13 @@ public class FloatRepresentation extends AbstractMarsTool {
     //  used to display instructions.
 
     class InstructionsPane extends JLabel {
-
         InstructionsPane(Component parent) {
             super(defaultInstructions);
             this.setFont(instructionsFont);
             this.setBackground(parent.getBackground());
         }
 
+        @Override
         public void setText(String text) {
             super.setText(text);
         }
@@ -820,7 +817,6 @@ public class FloatRepresentation extends AbstractMarsTool {
     //  Use this to draw custom background in the binary fraction display.
     //
     static class BinaryFractionDisplayTextField extends JTextField {
-
         public BinaryFractionDisplayTextField(String value, int columns) {
             super(value, columns);
         }
@@ -828,6 +824,7 @@ public class FloatRepresentation extends AbstractMarsTool {
         // This overrides inherited JPanel method.  Override is necessary to
         // assure my drawn graphics get painted immediately after painting the
         // underlying JPanel (see first statement).
+        @Override
         public void paintComponent(Graphics g) {
             super.paintComponent(g);
             // The code below is commented out because I decided to abandon

@@ -46,8 +46,8 @@ public abstract class Instruction {
      * Length in bytes of a machine instruction.  MIPS is a RISC architecture
      * so all instructions are the same length.  Currently set to 4.
      */
-    public static final int INSTRUCTION_LENGTH_BYTES = Memory.WORD_LENGTH_BYTES;
-    public static final int INSTRUCTION_LENGTH_BITS = INSTRUCTION_LENGTH_BYTES * Byte.SIZE;
+    public static final int BYTES_PER_INSTRUCTION = Memory.BYTES_PER_WORD;
+    public static final int INSTRUCTION_LENGTH_BITS = BYTES_PER_INSTRUCTION * Byte.SIZE;
     /**
      * Characters used in instruction mask to indicate bit positions
      * for 'f'irst, 's'econd, and 't'hird operands.
@@ -121,7 +121,7 @@ public abstract class Instruction {
      * @return int length in bytes of corresponding binary instruction(s).
      */
     public int getInstructionLength() {
-        return INSTRUCTION_LENGTH_BYTES;
+        return BYTES_PER_INSTRUCTION;
     }
 
     /**

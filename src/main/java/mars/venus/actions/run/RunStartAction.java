@@ -57,13 +57,10 @@ public class RunStartAction extends VenusAction {
             // Argument pointers and count go into runtime stack and $sp is adjusted accordingly.
             // $a0 gets argument count (argc), $a1 gets stack address of first arg pointer (argv).
             String programArguments = gui.getMainPane().getExecuteTab().getTextSegmentWindow().getProgramArguments();
-            if (programArguments != null && !programArguments.isEmpty() && Application.getSettings().useProgramArguments.get()) {
+            if (programArguments != null && !programArguments.isEmpty() && gui.getSettings().useProgramArguments.get()) {
                 new ProgramArgumentList(programArguments).storeProgramArguments();
             }
         }
-
-        gui.getMainPane().getExecuteTab().getTextSegmentWindow().setCodeHighlighting(false);
-        gui.getMainPane().getExecuteTab().getTextSegmentWindow().unhighlightAllSteps();
 
         try {
             int[] breakPoints = gui.getMainPane().getExecuteTab().getTextSegmentWindow().getSortedBreakPointsArray();

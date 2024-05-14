@@ -39,7 +39,7 @@ public class IntelHexDumpFormat extends AbstractDumpFormat {
      */
     public void dumpMemoryRange(File file, int firstAddress, int lastAddress) throws AddressErrorException, IOException {
         try (PrintStream out = new PrintStream(new FileOutputStream(file))) {
-            for (int address = firstAddress; address <= lastAddress; address += Memory.WORD_LENGTH_BYTES) {
+            for (int address = firstAddress; address <= lastAddress; address += Memory.BYTES_PER_WORD) {
                 // TODO: This can probably be replaced with a single call to String.format() -Sean Clarke
                 Integer wordOrNull = Application.memory.getRawWordOrNull(address);
                 if (wordOrNull == null) {

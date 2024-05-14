@@ -30,8 +30,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /**
  * Object provided to Observers of runtime access to MIPS memory or registers.
- * The access types {@link #READ} and {@link #WRITE} defined here; use subclasses defined for
- * {@link MemoryAccessNotice} and {@link RegisterAccessNotice}.  This is an abstract class.
+ * The access types {@link #READ} and {@link #WRITE} defined here; use subclass defined for
+ * {@link MemoryAccessNotice}.  This is an abstract class.
  *
  * @author Pete Sanderson
  * @version July 2005

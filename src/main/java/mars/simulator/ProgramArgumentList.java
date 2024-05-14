@@ -168,22 +168,22 @@ public class ProgramArgumentList {
                 // 0x7ffffffc - 0x7fffeffc = 0x00001000 = 4096 bytes.  In this case, set
                 // stackAddress to next lower word boundary minus 4 for clearance (since every
                 // byte from highAddress+1 is filled).
-                stackAddress = highAddress - (highAddress % Memory.WORD_LENGTH_BYTES) - Memory.WORD_LENGTH_BYTES;
+                stackAddress = highAddress - (highAddress % Memory.BYTES_PER_WORD) - Memory.BYTES_PER_WORD;
             }
-            Application.memory.set(stackAddress, 0, Memory.WORD_LENGTH_BYTES);  // null word for end of argv array
-            stackAddress -= Memory.WORD_LENGTH_BYTES;
+            Application.memory.set(stackAddress, 0, Memory.BYTES_PER_WORD);  // null word for end of argv array
+            stackAddress -= Memory.BYTES_PER_WORD;
             for (int i = argStartAddress.length - 1; i >= 0; i--) {
-                Application.memory.set(stackAddress, argStartAddress[i], Memory.WORD_LENGTH_BYTES);
-                stackAddress -= Memory.WORD_LENGTH_BYTES;
+                Application.memory.set(stackAddress, argStartAddress[i], Memory.BYTES_PER_WORD);
+                stackAddress -= Memory.BYTES_PER_WORD;
             }
-            Application.memory.set(stackAddress, argStartAddress.length, Memory.WORD_LENGTH_BYTES); // argc
-            stackAddress -= Memory.WORD_LENGTH_BYTES;
+            Application.memory.set(stackAddress, argStartAddress.length, Memory.BYTES_PER_WORD); // argc
+            stackAddress -= Memory.BYTES_PER_WORD;
 
             // Set $sp register to stack address, $a0 to argc, $a1 to argv
             // Bypass the backstepping mechanism by using Register.setValue() instead of RegisterFile.updateRegister()
-            RegisterFile.getUserRegister("$sp").setValue(stackAddress + Memory.WORD_LENGTH_BYTES);
+            RegisterFile.getUserRegister("$sp").setValue(stackAddress + Memory.BYTES_PER_WORD);
             RegisterFile.getUserRegister("$a0").setValue(argStartAddress.length); // argc
-            RegisterFile.getUserRegister("$a1").setValue(stackAddress + Memory.WORD_LENGTH_BYTES + Memory.WORD_LENGTH_BYTES); // argv
+            RegisterFile.getUserRegister("$a1").setValue(stackAddress + Memory.BYTES_PER_WORD + Memory.BYTES_PER_WORD); // argv
         }
         catch (AddressErrorException e) {
             System.out.println("Internal Error: Memory write error occurred while storing program arguments! " + e);

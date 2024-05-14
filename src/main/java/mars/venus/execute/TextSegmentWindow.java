@@ -7,7 +7,6 @@ import mars.mips.hardware.*;
 import mars.simulator.*;
 import mars.util.Binary;
 import mars.util.EditorFont;
-import mars.venus.MonoRightCellRenderer;
 import mars.venus.NumberDisplayBaseChooser;
 import mars.venus.VenusUI;
 
@@ -225,6 +224,8 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         if (this.gui.getSettings().selfModifyingCodeEnabled.get()) {
             this.addAsTextSegmentObserver();
         }
+
+        this.contentPane.revalidate();
     }
 
     /**
@@ -440,7 +441,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         this.deleteAsTextSegmentObserver();
         this.setCodeHighlighting(true);
         this.unhighlightAllSteps();
-        this.highlightStepAtAddress(RegisterFile.getProgramCounter() - BasicInstruction.INSTRUCTION_LENGTH_BYTES);
+        this.highlightStepAtPC();
     }
 
     @Override

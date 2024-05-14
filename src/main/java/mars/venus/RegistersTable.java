@@ -77,7 +77,7 @@ public class RegistersTable extends JTable {
     public void clearHighlighting() {
         this.isUpdating = false;
         this.highlightedRow = -1; // Assure highlight will not occur upon re-assemble
-        this.tableChanged(new TableModelEvent(this.getModel()));
+        this.refresh();
     }
 
     /**
