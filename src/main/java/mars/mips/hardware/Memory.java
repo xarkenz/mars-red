@@ -1035,7 +1035,6 @@ public class Memory {
      * This is equivalent to calling {@link #addListener(Listener, int, int) addListener(listener, 0x00000000, 0xFFFFFFFF)}.
      *
      * @param listener The listener to add.
-     * @implNote
      */
     public void addListener(Listener listener) {
         this.addListener(listener, 0x00000000, 0xFFFFFFFF);
