@@ -113,11 +113,10 @@ public class RegisterFile {
         }
 
         if (Application.isBackSteppingEnabled()) {
-            return Application.program.getBackStepper().addRegisterFileRestore(number, previousValue);
+            Application.program.getBackStepper().addRegisterFileRestore(number, previousValue);
         }
-        else {
-            return previousValue;
-        }
+
+        return previousValue;
     }
 
     /**
@@ -260,7 +259,7 @@ public class RegisterFile {
      * Increment the Program counter in the general case (not a jump or branch).
      */
     public static void incrementPC() {
-        PROGRAM_COUNTER_REGISTER.setValue(PROGRAM_COUNTER_REGISTER.getValue() + Instruction.BYTES_PER_INSTRUCTION);
+        PROGRAM_COUNTER_REGISTER.setValue(PROGRAM_COUNTER_REGISTER.getValueNoNotify() + Instruction.BYTES_PER_INSTRUCTION);
     }
 
     public static int getHighOrder() {

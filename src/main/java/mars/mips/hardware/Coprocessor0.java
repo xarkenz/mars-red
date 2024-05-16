@@ -85,12 +85,12 @@ public class Coprocessor0 {
         for (Register register : REGISTERS) {
             if (register.getNumber() == number) {
                 int previousValue = register.setValue(value);
+
                 if (Application.isBackSteppingEnabled()) {
-                    return Application.program.getBackStepper().addCoprocessor1Restore(number, previousValue);
+                    Application.program.getBackStepper().addCoprocessor0Restore(number, previousValue);
                 }
-                else {
-                    return previousValue;
-                }
+
+                return previousValue;
             }
         }
         return 0;
@@ -99,12 +99,12 @@ public class Coprocessor0 {
     /**
      * Returns the value of the register whose number is given.
      *
-     * @param num The register number.
+     * @param number The register number.
      * @return The value of the given register.  0 for non-implemented registers
      */
-    public static int getValue(int num) {
+    public static int getValue(int number) {
         for (Register register : REGISTERS) {
-            if (register.getNumber() == num) {
+            if (register.getNumber() == number) {
                 return register.getValue();
             }
         }
@@ -117,13 +117,9 @@ public class Coprocessor0 {
      * @param name The string formatted register name to look for.
      * @return The number of the register represented by the string. -1 if no match.
      */
-    public static int getNumber(String name) {
-        for (Register register : REGISTERS) {
-            if (("$" + register.getNumber()).equals(name) || register.getName().equals(name)) {
-                return register.getNumber();
-            }
-        }
-        return -1;
+    public static int getRegisterNumber(String name) {
+        Register register = getRegister(name);
+        return (register == null) ? -1 : register.getNumber();
     }
 
     /**

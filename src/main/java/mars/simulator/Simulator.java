@@ -424,7 +424,7 @@ public class Simulator {
             // Main simulation loop
             ProgramStatement statement;
             while ((statement = this.getStatement()) != null) {
-                this.programCounter = RegisterFile.getProgramCounter(); // Added 7/26/06 (explanation above)
+                this.programCounter = RegisterFile.getProgramCounterRegister().getValueNoNotify(); // Added 7/26/06 (explanation above)
                 RegisterFile.incrementPC();
                 // Perform the MIPS instruction in synchronized block.  If external threads agree
                 // to access MIPS memory and registers only through synchronized blocks on same

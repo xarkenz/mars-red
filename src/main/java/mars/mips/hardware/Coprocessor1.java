@@ -322,11 +322,10 @@ public class Coprocessor1 {
         }
 
         if (Application.isBackSteppingEnabled()) {
-            return Application.program.getBackStepper().addCoprocessor1Restore(number, previousValue);
+            Application.program.getBackStepper().addCoprocessor1Restore(number, previousValue);
         }
-        else {
-            return previousValue;
-        }
+
+        return previousValue;
     }
 
     /**
@@ -334,28 +333,22 @@ public class Coprocessor1 {
      * raw int value actually stored there.  If you need a float, use
      * Float.intBitsToFloat() to get the equivent float.
      *
-     * @param num The FPU register number.
+     * @param number The FPU register number.
      * @return The int value of the given register.
      */
-    public static int getValue(int num) {
-        return REGISTERS[num].getValue();
+    public static int getValue(int number) {
+        return REGISTERS[number].getValue();
     }
 
     /**
      * For getting the number representation of the FPU register.
      *
-     * @param n The string formatted register name to look for.
+     * @param name The string formatted register name to look for.
      * @return The number of the register represented by the string.
      */
-    public static int getRegisterNumber(String n) {
-        int j = -1;
-        for (Register register : REGISTERS) {
-            if (register.getName().equals(n)) {
-                j = register.getNumber();
-                break;
-            }
-        }
-        return j;
+    public static int getRegisterNumber(String name) {
+        Register register = getRegister(name);
+        return (register == null) ? -1 : register.getNumber();
     }
 
     /**
@@ -374,15 +367,14 @@ public class Coprocessor1 {
      * @return The register object, or null if not found.
      */
     public static Register getRegister(String name) {
-        if (name.length() < 2 || name.charAt(0) != '$' || name.charAt(1) != 'f') {
+        if (name.length() <= 2 || name.charAt(0) != '$' || name.charAt(1) != 'f') {
             return null;
         }
         try {
             // Check for register number 0-31
             return REGISTERS[Binary.decodeInteger(name.substring(2))]; // KENV 1/6/05
         }
-        catch (Exception e) {
-            // Handles both NumberFormat and ArrayIndexOutOfBounds
+        catch (ArrayIndexOutOfBoundsException | NumberFormatException exception) {
             return null;
         }
     }

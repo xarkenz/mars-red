@@ -1031,10 +1031,11 @@ public class Memory {
     /**
      * Register the given listener to all memory addresses (<code>0x00000000</code> through <code>0xFFFFFFFF</code>).
      * The listener will be notified when any read/write operations occur anywhere in memory.
+     * <p>
+     * This is equivalent to calling {@link #addListener(Listener, int, int) addListener(listener, 0x00000000, 0xFFFFFFFF)}.
      *
      * @param listener The listener to add.
-     * @implNote This is equivalent to calling
-     *           {@link #addListener(Listener, int, int) addListener(listener, 0x00000000, 0xFFFFFFFF)}.
+     * @implNote
      */
     public void addListener(Listener listener) {
         this.addListener(listener, 0x00000000, 0xFFFFFFFF);
@@ -1043,11 +1044,11 @@ public class Memory {
     /**
      * Register the given listener to a single address.
      * The listener will be notified when any read/write operations occur on the byte at that address.
+     * <p>
+     * This is equivalent to calling {@link #addListener(Listener, int, int) addListener(listener, address, address)}.
      *
      * @param listener The listener to add.
      * @param address  The memory address of the byte to attach the listener to.
-     * @implNote This is equivalent to calling
-     *           {@link #addListener(Listener, int, int) addListener(listener, address, address)}.
      */
     public void addListener(Listener listener, int address) {
         this.addListener(listener, address, address);

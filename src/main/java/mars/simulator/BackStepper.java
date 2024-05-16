@@ -47,7 +47,7 @@ public class BackStepper {
     // memory/register value via GUI after assembling program but before running it.
     private static final int NOT_PC_VALUE = -1;
 
-    private boolean engaged;
+    private boolean isEnabled;
     private final BackStepStack backSteps;
 
     // One can argue using java.util.Stack, given its clumsy implementation.
@@ -63,7 +63,7 @@ public class BackStepper {
      * recorded here.
      */
     public BackStepper() {
-        engaged = true;
+        isEnabled = true;
         backSteps = new BackStepStack(Application.MAXIMUM_BACKSTEPS);
     }
 
@@ -73,7 +73,7 @@ public class BackStepper {
      * @return true if undo steps being recorded, false if not.
      */
     public boolean isEnabled() {
-        return engaged;
+        return isEnabled;
     }
 
     /**
@@ -82,7 +82,7 @@ public class BackStepper {
      * @param state If true, will begin (or continue) recoding "undo" steps.  If false, will stop.
      */
     public void setEnabled(boolean state) {
-        engaged = state;
+        isEnabled = state;
     }
 
     /**
@@ -110,7 +110,6 @@ public class BackStepper {
      * Carry out a "back step", which will undo the latest execution step.
      * Does nothing if backstepping not enabled or if there are no steps to undo.
      */
-
     // Note that there may be more than one "step" in an instruction execution; for
     // instance the multiply, divide, and double-precision floating point operations
     // all store their result in register pairs which results in two store operations.
@@ -118,9 +117,9 @@ public class BackStepper {
     // together and carry out all of them here.
     // Use a do-while loop based on the backstep's program statement reference.
     public void backStep() {
-        if (engaged && !backSteps.isEmpty()) {
+        if (isEnabled && !backSteps.isEmpty()) {
             ProgramStatement statement = backSteps.peek().statement;
-            engaged = false; // MUST DO THIS SO METHOD CALL IN SWITCH WILL NOT RESULT IN NEW ACTION ON STACK!
+            isEnabled = false; // MUST DO THIS SO METHOD CALL IN SWITCH WILL NOT RESULT IN NEW ACTION ON STACK!
             do {
                 BackStep step = backSteps.pop();
                 if (step.programCounter != NOT_PC_VALUE) {
@@ -147,12 +146,12 @@ public class BackStepper {
                 }
             }
             while (!backSteps.isEmpty() && statement == backSteps.peek().statement);
-            engaged = true;  // RESET IT (was disabled at top of loop -- see comment)
+            isEnabled = true;  // RESET IT (was disabled at top of loop -- see comment)
         }
     }
 
 
-    /*
+    /**
      * Convenience method called below to get program counter value.  If it needs to be
      * be modified (e.g. to subtract 4) that can be done here in one place.
      */
@@ -167,11 +166,9 @@ public class BackStepper {
      *
      * @param address The affected memory address.
      * @param value   The "restore" value to be stored there.
-     * @return <code>value</code>
      */
-    public int addMemoryRestoreRawWord(int address, int value) {
+    public void addMemoryRestoreRawWord(int address, int value) {
         backSteps.push(BackStepAction.MEMORY_RESTORE_RAW_WORD, pc(), address, value);
-        return value;
     }
 
     /**
@@ -180,11 +177,9 @@ public class BackStepper {
      *
      * @param address The affected memory address.
      * @param value   The "restore" value to be stored there.
-     * @return <code>value</code>
      */
-    public int addMemoryRestoreWord(int address, int value) {
+    public void addMemoryRestoreWord(int address, int value) {
         backSteps.push(BackStepAction.MEMORY_RESTORE_WORD, pc(), address, value);
-        return value;
     }
 
     /**
@@ -193,11 +188,9 @@ public class BackStepper {
      *
      * @param address The affected memory address.
      * @param value   The "restore" value to be stored there, in low order half.
-     * @return <code>value</code>
      */
-    public int addMemoryRestoreHalf(int address, int value) {
+    public void addMemoryRestoreHalf(int address, int value) {
         backSteps.push(BackStepAction.MEMORY_RESTORE_HALF, pc(), address, value);
-        return value;
     }
 
     /**
@@ -206,11 +199,9 @@ public class BackStepper {
      *
      * @param address The affected memory address.
      * @param value   The "restore" value to be stored there, in low order byte.
-     * @return <code>value</code>
      */
-    public int addMemoryRestoreByte(int address, int value) {
+    public void addMemoryRestoreByte(int address, int value) {
         backSteps.push(BackStepAction.MEMORY_RESTORE_BYTE, pc(), address, value);
-        return value;
     }
 
     /**
@@ -219,11 +210,9 @@ public class BackStepper {
      *
      * @param register The affected register number.
      * @param value    The "restore" value to be stored there.
-     * @return <code>value</code>
      */
-    public int addRegisterFileRestore(int register, int value) {
+    public void addRegisterFileRestore(int register, int value) {
         backSteps.push(BackStepAction.REGISTER_RESTORE, pc(), register, value);
-        return value;
     }
 
     /**
@@ -231,15 +220,13 @@ public class BackStepper {
      * is to restore the program counter.
      *
      * @param value The "restore" value to be stored there.
-     * @return <code>value</code>
      */
-    public int addPCRestore(int value) {
+    public void addPCRestore(int value) {
         // adjust for value reflecting incremented PC.
         value -= Instruction.BYTES_PER_INSTRUCTION;
         // Use "value" insead of "pc()" for second arg because RegisterFile.getProgramCounter()
         // returns branch target address at this point.
         backSteps.push(BackStepAction.PC_RESTORE, value, value);
-        return value;
     }
 
     /**
@@ -248,11 +235,9 @@ public class BackStepper {
      *
      * @param register The affected register number.
      * @param value    The "restore" value to be stored there.
-     * @return <code>value</code>
      */
-    public int addCoprocessor0Restore(int register, int value) {
+    public void addCoprocessor0Restore(int register, int value) {
         backSteps.push(BackStepAction.COPROC0_REGISTER_RESTORE, pc(), register, value);
-        return value;
     }
 
     /**
@@ -261,11 +246,9 @@ public class BackStepper {
      *
      * @param register The affected register number.
      * @param value    The "restore" value to be stored there.
-     * @return <code>value</code>
      */
-    public int addCoprocessor1Restore(int register, int value) {
+    public void addCoprocessor1Restore(int register, int value) {
         backSteps.push(BackStepAction.COPROC1_REGISTER_RESTORE, pc(), register, value);
-        return value;
     }
 
     /**
@@ -273,11 +256,9 @@ public class BackStepper {
      * is to set the given coprocessor 1 condition flag (to 1).
      *
      * @param flag The condition flag number.
-     * @return <code>flag</code>
      */
-    public int addConditionFlagSet(int flag) {
+    public void addConditionFlagSet(int flag) {
         backSteps.push(BackStepAction.COPROC1_CONDITION_SET, pc(), flag);
-        return flag;
     }
 
     /**
@@ -285,11 +266,9 @@ public class BackStepper {
      * is to clear the given coprocessor 1 condition flag (to 0).
      *
      * @param flag The condition flag number.
-     * @return <code>flag</code>
      */
-    public int addConditionFlagClear(int flag) {
+    public void addConditionFlagClear(int flag) {
         backSteps.push(BackStepAction.COPROC1_CONDITION_CLEAR, pc(), flag);
-        return flag;
     }
 
     /**
@@ -299,13 +278,11 @@ public class BackStepper {
      * stack has the same PC counter, the do-nothing action will not be added.
      *
      * @param programCounter The program counter to check against the top of the stack.
-     * @return int value 0.
      */
-    public int addDoNothing(int programCounter) {
+    public void addDoNothing(int programCounter) {
         if (backSteps.isEmpty() || backSteps.peek().programCounter != programCounter) {
             backSteps.push(BackStepAction.DO_NOTHING, programCounter);
         }
-        return 0;
     }
 
     // The types of "undo" actions.
@@ -346,7 +323,7 @@ public class BackStepper {
                 // Want the program statement but do not want observers notified.
                 this.statement = Application.memory.getStatementNoNotify(programCounter);
             }
-            catch (Exception e) {
+            catch (AddressErrorException exception) {
                 // The only situation causing this so far: user modifies memory or register
                 // contents through direct manipulation on the GUI, after assembling the program but
                 // before starting to run it (or after backstepping all the way to the start).
