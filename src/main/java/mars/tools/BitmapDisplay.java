@@ -1,16 +1,13 @@
 package mars.tools;
 
 import mars.Application;
-import mars.mips.hardware.AccessNotice;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.MemoryAccessNotice;
 import mars.util.Binary;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.Observable;
 
 /*
 Copyright (c) 2010-2011,  Pete Sanderson and Kenneth Vollmar
@@ -41,9 +38,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Bitmap display simulator.  It can be run either as a stand-alone Java application having
- * access to the mars package, or through MARS as an item in its Tools menu.  It makes
- * maximum use of methods inherited from its abstract superclass AbstractMarsToolAndApplication.
+ * Bitmap display simulator.
  *
  * @author Pete Sanderson, 23 December 2010
  * @version 1.0
@@ -66,11 +61,11 @@ public class BitmapDisplay extends AbstractMarsTool {
     private int bitmapWidth = BITMAP_SIZE_CHOICES[DEFAULT_BITMAP_WIDTH_INDEX];
     private int bitmapHeight = BITMAP_SIZE_CHOICES[DEFAULT_BITMAP_HEIGHT_INDEX];
 
-    // The next four are initialized dynamically in initializeDisplayBaseChoices()
+    // The base addresses are lazy-initialized
     private static final String[] BASE_ADDRESS_NAMES = { "global data", "$gp", "static data", "heap", "MMIO" };
     private static final int DEFAULT_BASE_ADDRESS_INDEX = 2; // Static data
     private int[] baseAddresses;
-    private int baseAddress;
+    private int firstAddress;
     private String[] baseAddressChoices;
 
     // Major GUI components
@@ -119,15 +114,19 @@ public class BitmapDisplay extends AbstractMarsTool {
             return;
         }
 
-        int highAddress = this.baseAddress + this.image.getWidth() * this.image.getHeight() * Memory.BYTES_PER_WORD;
-        // Special case: baseAddress < 0 means we're in kernel memory (0x80000000 and up) and most likely
-        // in memory map address space (0xffff0000 and up).  In this case, we need to make sure the high address
-        // does not drop off the high end of 32 bit address space.  Highest allowable word address is 0xfffffffc,
-        // which is interpreted in Java int as -4.
-        if (this.baseAddress < 0 && highAddress > -4) {
-            highAddress = -4;
+        int lastAddress = this.firstAddress + this.image.getWidth() * this.image.getHeight() * Memory.BYTES_PER_WORD - 1;
+        // If lastAddress < firstAddress, the range probably crosses the unsigned 32-bit integer limit
+        if (Integer.compareUnsigned(lastAddress, this.firstAddress) < 0) {
+            // Just cap lastAddress at the unsigned 32-bit integer limit
+            lastAddress = 0xFFFFFFFF;
         }
-        this.startObserving(this.baseAddress, highAddress);
+
+        Memory.getInstance().addListener(this, this.firstAddress, lastAddress);
+    }
+
+    @Override
+    protected void stopObserving() {
+        Memory.getInstance().removeListener(this);
     }
 
     @Override
@@ -162,24 +161,18 @@ public class BitmapDisplay extends AbstractMarsTool {
     }
 
     /**
-     * Update display when connected MIPS program accesses (data) memory.
-     *
-     * @param memory       The attached memory.
-     * @param accessNotice Information provided by memory in MemoryAccessNotice object.
+     * When memory pertaining to the bitmap is modified, change the color of the corresponding pixel and update.
      */
     @Override
-    protected void processMIPSUpdate(Observable memory, AccessNotice accessNotice) {
-        if (accessNotice.getAccessType() == AccessNotice.WRITE) {
-            MemoryAccessNotice notice = (MemoryAccessNotice) accessNotice;
-            int address = notice.getAddress();
-            int value = notice.getValue();
-            int offset = (address - this.baseAddress) / Memory.BYTES_PER_WORD;
-            synchronized (BitmapDisplay.this.imageLock) {
-                if (0 <= offset && offset < this.image.getWidth() * this.image.getHeight()) {
-                    this.image.setRGB(offset % this.image.getWidth(), offset / this.image.getWidth(), value);
-                }
+    public void memoryWritten(int address, int length, int value, int wordAddress, int wordValue) {
+        int offset = (wordAddress - this.firstAddress) / Memory.BYTES_PER_WORD;
+        synchronized (BitmapDisplay.this.imageLock) {
+            if (0 <= offset && offset < this.image.getWidth() * this.image.getHeight()) {
+                this.image.setRGB(offset % this.image.getWidth(), offset / this.image.getWidth(), wordValue);
             }
         }
+        // Update the canvas
+        this.canvas.repaint();
     }
 
     /**
@@ -195,7 +188,7 @@ public class BitmapDisplay extends AbstractMarsTool {
             Memory.heapBaseAddress,
             Memory.mmioBaseAddress,
         };
-        this.baseAddress = this.baseAddresses[DEFAULT_BASE_ADDRESS_INDEX];
+        this.firstAddress = this.baseAddresses[DEFAULT_BASE_ADDRESS_INDEX];
         this.baseAddressChoices = new String[BASE_ADDRESS_NAMES.length];
         for (int choice = 0; choice < BASE_ADDRESS_NAMES.length; choice++) {
             this.baseAddressChoices[choice] = Binary.intToHexString(this.baseAddresses[choice]) + " (" + BASE_ADDRESS_NAMES[choice] + ")";
@@ -216,16 +209,6 @@ public class BitmapDisplay extends AbstractMarsTool {
      */
     @Override
     protected void reset() {
-        this.updateDisplay();
-    }
-
-    /**
-     * Updates display immediately after each update (AccessNotice) is processed, after
-     * display configuration changes as needed, and after each execution step when Mars
-     * is running in timed mode.  Overrides inherited method that does nothing.
-     */
-    @Override
-    protected void updateDisplay() {
         this.canvas.repaint();
     }
 
@@ -320,7 +303,7 @@ public class BitmapDisplay extends AbstractMarsTool {
             // AbstractMarsToolAndApplication.addAsObserver().  The no-argument version of
             // that method is called automatically  when "Connect" button is clicked for MarsTool
             // and when "Assemble and Run" button is clicked for Mars application.
-            this.baseAddress = this.baseAddresses[this.baseAddressSelector.getSelectedIndex()];
+            this.firstAddress = this.baseAddresses[this.baseAddressSelector.getSelectedIndex()];
             this.canvas.resetImage();
         });
         organization.add(this.createSettingsRow("Base memory address:", this.baseAddressSelector));
@@ -389,7 +372,7 @@ public class BitmapDisplay extends AbstractMarsTool {
                     int offset = 0;
                     for (int y = 0; y < BitmapDisplay.this.image.getHeight(); y++) {
                         for (int x = 0; x < BitmapDisplay.this.image.getWidth(); x++) {
-                            BitmapDisplay.this.image.setRGB(x, y, Memory.getInstance().getWordNoNotify(BitmapDisplay.this.baseAddress + offset));
+                            BitmapDisplay.this.image.setRGB(x, y, Memory.getInstance().getWordNoNotify(BitmapDisplay.this.firstAddress + offset));
                             offset += Memory.BYTES_PER_WORD;
                         }
                     }
@@ -399,8 +382,9 @@ public class BitmapDisplay extends AbstractMarsTool {
                 }
             }
 
-            // Update the canvas component, which will repaint the image
+            // Update the canvas component and repaint the image
             this.revalidate();
+            this.repaint();
         }
     }
 }

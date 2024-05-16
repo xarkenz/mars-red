@@ -3,7 +3,7 @@ package mars.mips.hardware;
 import mars.Application;
 
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.List;
 
 /*
 Copyright (c) 2003-2009,  Pete Sanderson and Kenneth Vollmar
@@ -42,7 +42,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @version August 2009
  */
 public class MemoryConfigurations {
-    private static ArrayList<MemoryConfiguration> configurations = null;
+    private static List<MemoryConfiguration> configurations = null;
     private static MemoryConfiguration defaultConfiguration;
     private static MemoryConfiguration currentConfiguration;
 
@@ -150,8 +150,8 @@ public class MemoryConfigurations {
         0x00007fff, // memory map limit address
     };
 
-    public MemoryConfigurations() {
-    }
+    // Prevent instances of this class
+    private MemoryConfigurations() {}
 
     public static void buildConfigurationCollection() {
         if (configurations == null) {
@@ -166,18 +166,16 @@ public class MemoryConfigurations {
         }
     }
 
-    public static Iterator<MemoryConfiguration> getConfigurationsIterator() {
+    public static List<MemoryConfiguration> getConfigurations() {
         if (configurations == null) {
             buildConfigurationCollection();
         }
-        return configurations.iterator();
+        return configurations;
     }
 
     public static MemoryConfiguration getConfigurationByName(String name) {
-        Iterator<MemoryConfiguration> configurationsIterator = getConfigurationsIterator();
-        while (configurationsIterator.hasNext()) {
-            MemoryConfiguration config = configurationsIterator.next();
-            if (name.equals(config.getConfigurationIdentifier())) {
+        for (MemoryConfiguration config : getConfigurations()) {
+            if (name.equals(config.getIdentifier())) {
                 return config;
             }
         }
@@ -205,8 +203,8 @@ public class MemoryConfigurations {
         if (config != currentConfiguration) {
             currentConfiguration = config;
             Application.memory.clear();
-            RegisterFile.getUserRegister("$gp").setDefaultValue(config.getGlobalPointer());
-            RegisterFile.getUserRegister("$sp").setDefaultValue(config.getStackPointer());
+            RegisterFile.getRegisters()[RegisterFile.GLOBAL_POINTER].setDefaultValue(config.getGlobalPointer());
+            RegisterFile.getRegisters()[RegisterFile.STACK_POINTER].setDefaultValue(config.getStackPointer());
             RegisterFile.getProgramCounterRegister().setDefaultValue(config.getTextBaseAddress());
             RegisterFile.initializeProgramCounter(config.getTextBaseAddress());
             RegisterFile.resetRegisters();

@@ -1,6 +1,5 @@
 package mars.tools;
 
-import mars.Application;
 import mars.ProgramStatement;
 import mars.mips.hardware.*;
 import mars.mips.instructions.Instruction;
@@ -9,7 +8,6 @@ import mars.util.Binary;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.Observable;
 
 public class VisualStack extends AbstractMarsTool implements Register.Listener {
     private static final String NAME = "Visual Stack";
@@ -37,8 +35,6 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
 
     @Override
     public void initializePreGUI() {
-        this.startObserving(Memory.stackLimitAddress, Memory.stackBaseAddress);
-        RegisterFile.getRegisters()[RegisterFile.STACK_POINTER].addListener(this);
         this.oldStackPtrValue = Memory.stackPointer;
     }
 
@@ -89,47 +85,46 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
     }
 
     @Override
-    protected void processMIPSUpdate(Observable resource, AccessNotice notice) {
-        if (this.stackOK) {
-            synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
-                if (notice.getAccessType() == AccessNotice.WRITE) {
-                    if (notice instanceof MemoryAccessNotice memoryAccessNotice) {
-                        this.processMemoryUpdate(memoryAccessNotice);
-                    }
-                }
-            }
-        }
+    protected void startObserving() {
+        Memory.getInstance().addListener(this, Memory.stackLimitAddress, Memory.stackBaseAddress + Memory.BYTES_PER_WORD - 1);
+        RegisterFile.getRegisters()[RegisterFile.STACK_POINTER].addListener(this);
     }
 
-    private void processMemoryUpdate(MemoryAccessNotice notice) {
-        int address = notice.getAddress();
-        int valueWritten;
+    @Override
+    protected void stopObserving() {
+        Memory.getInstance().removeListener(this);
+        RegisterFile.getRegisters()[RegisterFile.STACK_POINTER].removeListener(this);
+    }
+
+    @Override
+    public void memoryWritten(int address, int length, int value, int wordAddress, int wordValue) {
+        if (!this.stackOK) {
+            return;
+        }
+
         int registerDataCameFrom;
-        if (address <= Memory.stackBaseAddress && address >= Memory.stackLimitAddress) {
-            try {
-                valueWritten = Memory.getInstance().getWord(address);
-                ProgramStatement statement = Memory.getInstance().getStatement(RegisterFile.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION);
-                registerDataCameFrom = statement.getBinaryStatement();
-                registerDataCameFrom &= 0x1F0000;
-                registerDataCameFrom >>= 16;
-            }
-            catch (AddressErrorException exception) {
-                exception.printStackTrace(System.err);
-                return;
-            }
+        try {
+            ProgramStatement statement = Memory.getInstance().getStatementNoNotify(RegisterFile.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION);
+            registerDataCameFrom = statement.getBinaryStatement();
+            registerDataCameFrom &= 0x1F0000;
+            registerDataCameFrom >>= 16;
+        }
+        catch (AddressErrorException exception) {
+            exception.printStackTrace(System.err);
+            return;
+        }
 
-            int position = (Memory.stackPointer - address) / Memory.BYTES_PER_WORD;
-            if (position < 0) {
-                this.handleError("Data was pushed to an address greater than stack base!");
-            }
-            else {
-                boolean dataIsReturnAddress = this.isReturnAddress(valueWritten);
-                String description = (dataIsReturnAddress ? "Return address" : "Data")
-                    + " from register " + RegisterFile.getRegisters()[registerDataCameFrom].getName();
+        int position = (Memory.stackPointer - address) / Memory.BYTES_PER_WORD;
+        if (position < 0) {
+            this.handleError("Data was pushed to an address greater than stack base!");
+        }
+        else {
+            boolean dataIsReturnAddress = this.isReturnAddress(wordValue);
+            String description = (dataIsReturnAddress ? "Return address from " : "Contents of ")
+                + RegisterFile.getRegisters()[registerDataCameFrom].getName();
 
-                if (position > 0) {
-                    this.stackViewer.insertStackElement(position, dataIsReturnAddress, description);
-                }
+            if (position > 0) {
+                this.stackViewer.insertStackElement(position, dataIsReturnAddress, description);
             }
         }
     }
@@ -160,7 +155,7 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
     private synchronized boolean isReturnAddress(int address) {
         if (Memory.isInTextSegment(address)) {
             try {
-                ProgramStatement statement = Memory.getInstance().getStatement(address - Instruction.BYTES_PER_INSTRUCTION);
+                ProgramStatement statement = Memory.getInstance().getStatementNoNotify(address - Instruction.BYTES_PER_INSTRUCTION);
                 return statement.getBasicAssemblyStatement().startsWith("jal");
             }
             catch (AddressErrorException exception) {
@@ -181,11 +176,6 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
         this.oldStackPtrValue = Memory.stackPointer;
         this.stackOK = true;
         this.repaint();
-    }
-
-    @Override
-    public void handleClose() {
-        RegisterFile.getRegisters()[RegisterFile.STACK_POINTER].removeListener(this);
     }
 
     private static class StackViewer extends JComponent {
@@ -238,7 +228,7 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
             this.ensureHeight(40 * (newPosition + 1));
             this.imageWriter.setColor(Color.BLACK);
             this.imageWriter.fillRect(0, 40 * (this.stackPtrPosition > 0 ? this.stackPtrPosition : 1) + 1, 35, 39);
-            this.drawArrow(newPosition, ARROW_COLOR);
+            this.drawArrow(newPosition);
             if (numPositions < 0) {
                 for (int index = newPosition + 1; index <= this.stackPtrPosition; ++index) {
                     this.removeStackElement(index);
@@ -328,7 +318,7 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
             this.imageWriter.drawString(string, x + offset, y);
         }
 
-        private void drawArrow(int position, Color color) {
+        private void drawArrow(int position) {
             int[] arrowXPoints = { 12, 24, 12 };
             int[] arrowYPoints = { 10, 20, 30 };
 
@@ -336,7 +326,7 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
                 arrowYPoints[index] += (position > 0 ? position : 1) * 400 / 10;
             }
 
-            this.imageWriter.setColor(color);
+            this.imageWriter.setColor(ARROW_COLOR);
             this.imageWriter.setRenderingHints(new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON));
             this.imageWriter.fillPolygon(arrowXPoints, arrowYPoints, 3);
         }

@@ -130,7 +130,7 @@ public class BackStepper {
                     switch (step.action) {
                         case MEMORY_RESTORE_RAW_WORD -> Application.memory.setRawWord(step.param1, step.param2);
                         case MEMORY_RESTORE_WORD -> Application.memory.setWord(step.param1, step.param2);
-                        case MEMORY_RESTORE_HALF -> Application.memory.setHalf(step.param1, step.param2);
+                        case MEMORY_RESTORE_HALF -> Application.memory.setHalfword(step.param1, step.param2);
                         case MEMORY_RESTORE_BYTE -> Application.memory.setByte(step.param1, step.param2);
                         case REGISTER_RESTORE -> RegisterFile.updateRegister(step.param1, step.param2);
                         case PC_RESTORE -> RegisterFile.setProgramCounter(step.param1);

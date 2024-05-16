@@ -2,7 +2,6 @@ package mars.venus.execute;
 
 import mars.Application;
 import mars.ProgramStatement;
-import mars.mips.instructions.BasicInstruction;
 import mars.mips.hardware.*;
 import mars.simulator.*;
 import mars.util.Binary;
@@ -54,33 +53,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Team JSpim
  */
-public class TextSegmentWindow extends JInternalFrame implements SimulatorListener, Observer {
-    private final VenusUI gui;
-    private final JPanel programArgumentsPanel; // DPS 17-July-2008
-    private final JTextField programArgumentsTextField; // DPS 17-July-2008
-    private static final int PROGRAM_ARGUMENT_TEXTFIELD_COLUMNS = 40;
-    private TextSegmentTable table;
-    private JScrollPane tableScroller;
-    private Object[][] data;
-    /*
-     * Maintain an int array of code addresses in parallel with ADDRESS_COLUMN,
-     * to speed model-row -> text-address mapping.  Maintain a Hashtable of
-     * (text-address, model-row) pairs to speed text-address -> model-row mapping.
-     * The former is used for breakpoints and changing display base (e.g. base 10
-     * to 16); the latter is used for highlighting.  Both structures will remain
-     * consistent once set up, since address column is not editable.
-     */
-    private int[] intAddresses; // Index is table model row, value is text address
-    private Hashtable<Integer, Integer> addressRows; // Key is text address, value is table model row
-    private Hashtable<Integer, ModifiedCode> executeMods; // Key is table model row, value is original code, basic, source.
-    private final Container contentPane;
-    private TextTableModel tableModel;
-    private boolean codeHighlighting;
-    private boolean breakpointsEnabled; // Added 31 Dec 2009
-    private int highlightAddress;
-    private TableModelListener tableModelListener;
-    private boolean inDelaySlot; // Added 25 June 2007
-
+public class TextSegmentWindow extends JInternalFrame implements SimulatorListener, Memory.Listener {
     private static final int BREAKPOINT_COLUMN = 0;
     private static final int ADDRESS_COLUMN = 1;
     private static final int CODE_COLUMN = 2;
@@ -100,6 +73,31 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
      */
     private static final String MODIFIED_CODE_MARKER = " ------ ";
 
+    private final VenusUI gui;
+    private final JPanel programArgumentsPanel; // DPS 17-July-2008
+    private final JTextField programArgumentsTextField; // DPS 17-July-2008
+    private static final int PROGRAM_ARGUMENT_TEXTFIELD_COLUMNS = 40;
+    private TextSegmentTable table;
+    private JScrollPane tableScroller;
+    private Object[][] data;
+    /*
+     * Maintain an int array of code addresses in parallel with ADDRESS_COLUMN,
+     * to speed model-row -> text-address mapping.  Maintain a Hashtable of
+     * (text-address, model-row) pairs to speed text-address -> model-row mapping.
+     * The former is used for breakpoints and changing display base (e.g. base 10
+     * to 16); the latter is used for highlighting.  Both structures will remain
+     * consistent once set up, since address column is not editable.
+     */
+    private int[] intAddresses; // Index is table model row, value is text address
+    private Hashtable<Integer, Integer> addressRows; // Key is text address, value is table model row
+    private Hashtable<Integer, ModifiedCode> executeMods; // Key is table model row, value is original code, basic, source.
+    private TextTableModel tableModel;
+    private boolean codeHighlighting;
+    private boolean breakpointsEnabled; // Added 31 Dec 2009
+    private int highlightAddress;
+    private TableModelListener tableModelListener;
+    private boolean inDelaySlot; // Added 25 June 2007
+
     /**
      * Constructor, sets up a new JInternalFrame.
      */
@@ -108,7 +106,6 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         this.setFrameIcon(null);
 
         this.gui = gui;
-        this.contentPane = this.getContentPane();
         this.codeHighlighting = true;
         this.breakpointsEnabled = true;
         this.programArgumentsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -118,12 +115,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         this.programArgumentsPanel.add(this.programArgumentsTextField);
 
         Simulator.getInstance().addGUIListener(this);
-        this.gui.getSettings().addListener(() -> {
-            this.deleteAsTextSegmentObserver();
-            if (this.gui.getSettings().selfModifyingCodeEnabled.get()) {
-                this.addAsTextSegmentObserver();
-            }
-        });
+        this.gui.getSettings().addListener(this::updateListeningStatus);
     }
 
     /**
@@ -172,7 +164,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
             this.data[row][SOURCE_COLUMN] = sourceString;
             lastLine = statement.getSourceLine();
         }
-        this.contentPane.removeAll();
+        this.getContentPane().removeAll();
         this.tableModel = new TextTableModel(this.data);
         if (this.tableModelListener != null) {
             this.tableModel.addTableModelListener(this.tableModelListener);
@@ -215,17 +207,13 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         this.table.getColumnModel().addColumnModelListener(new ColumnOrderListener());
 
         this.tableScroller = new JScrollPane(this.table, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        this.contentPane.add(this.tableScroller);
+        this.getContentPane().add(this.tableScroller);
         if (this.gui.getSettings().useProgramArguments.get()) {
             this.addProgramArgumentsPanel();
         }
 
-        this.deleteAsTextSegmentObserver();
-        if (this.gui.getSettings().selfModifyingCodeEnabled.get()) {
-            this.addAsTextSegmentObserver();
-        }
-
-        this.contentPane.revalidate();
+        this.updateListeningStatus();
+        this.getContentPane().revalidate();
     }
 
     /**
@@ -245,9 +233,9 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
      */
     public void addProgramArgumentsPanel() {
         // Don't add it if text segment window blank (file closed or no assemble yet)
-        if (this.contentPane != null && this.contentPane.getComponentCount() > 0) {
-            this.contentPane.add(this.programArgumentsPanel, BorderLayout.NORTH);
-            this.contentPane.validate();
+        if (this.getContentPane() != null && this.getContentPane().getComponentCount() > 0) {
+            this.getContentPane().add(this.programArgumentsPanel, BorderLayout.NORTH);
+            this.getContentPane().validate();
         }
     }
 
@@ -257,9 +245,9 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
      * @author DPS 17-July-2008
      */
     public void removeProgramArgumentsPanel() {
-        if (this.contentPane != null) {
-            this.contentPane.remove(this.programArgumentsPanel);
-            this.contentPane.validate();
+        if (this.getContentPane() != null) {
+            this.getContentPane().remove(this.programArgumentsPanel);
+            this.getContentPane().validate();
         }
     }
 
@@ -267,7 +255,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
      * Remove all components.
      */
     public void clearWindow() {
-        this.contentPane.removeAll();
+        this.getContentPane().removeAll();
     }
 
     /**
@@ -285,7 +273,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
      * modified (e.g. between base 16 hex and base 10 dec).
      */
     public void updateCodeAddresses() {
-        if (this.contentPane.getComponentCount() == 0) {
+        if (this.getContentPane().getComponentCount() == 0) {
             // No content to change
             return;
         }
@@ -301,7 +289,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
      * modified (e.g. between base 16 hex and base 10 dec).
      */
     public void updateBasicStatements() {
-        if (this.contentPane.getComponentCount() == 0) {
+        if (this.getContentPane().getComponentCount() == 0) {
             // No content to change
             return;
         }
@@ -331,106 +319,83 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         }
     }
 
-    /**
-     * Required by Observer interface.  Called when notified by an Observable that we are registered with.
-     * The Observable here is a delegate of the Memory object, which lets us know of memory operations.
-     * More precisely, memory operations only in the text segment, since that is the only range of
-     * addresses we're registered for.  And we're only interested in write operations.
-     *
-     * @param observable The Observable object who is notifying us
-     * @param obj        Auxiliary object with additional information.
-     */
     @Override
-    public void update(Observable observable, Object obj) {
-        if (obj instanceof MemoryAccessNotice access) {
-            // NOTE: observable != Memory.getInstance() because Memory class delegates notification duty.
-            // This will occur only if running program has written to text segment (self-modifying code)
-            if (access.getAccessType() == AccessNotice.WRITE) {
-                int address = access.getAddress();
-                int value = access.getValue();
-                String strValue = Binary.intToHexString(access.getValue());
-                String strBasic;
-                String strSource;
-                // Translate the address into table model row and modify the values in that row accordingly.
-                int row;
-                try {
-                    row = findRowForAddress(address);
-                }
-                catch (IllegalArgumentException exception) {
-                    // Address modified is outside the range of original program, ignore
-                    return;
-                }
-                ModifiedCode modification = this.executeMods.get(row);
-                if (modification == null) {
-                    // Not already modified and new code is same as original, so do nothing
-                    if (this.tableModel.getValueAt(row, CODE_COLUMN).equals(strValue)) {
-                        return;
-                    }
-                    modification = new ModifiedCode(
-                        row,
-                        this.tableModel.getValueAt(row, CODE_COLUMN),
-                        this.tableModel.getValueAt(row, BASIC_COLUMN),
-                        this.tableModel.getValueAt(row, SOURCE_COLUMN)
-                    );
-                    this.executeMods.put(row, modification);
-                    // Make a ProgramStatement and get basic code to display in BASIC_COLUMN
-                    strBasic = new ProgramStatement(value, address).getPrintableBasicAssemblyStatement();
-                    strSource = MODIFIED_CODE_MARKER;
-                }
-                else {
-                    // If restored to original value, restore the basic and source
-                    // This will be the case upon backstepping.
-                    if (modification.code().equals(strValue)) {
-                        strBasic = modification.basic().toString();
-                        strSource = modification.source().toString();
-                        // Remove from executeMods since we are back to original
-                        this.executeMods.remove(row);
-                    }
-                    else {
-                        // Make a ProgramStatement and get basic code to display in BASIC_COLUMN
-                        strBasic = new ProgramStatement(value, address).getPrintableBasicAssemblyStatement();
-                        strSource = MODIFIED_CODE_MARKER;
-                    }
-                }
-                // For the code column, we don't want to do the following:
-                //       tableModel.setValueAt(strValue, row, CODE_COLUMN)
-                // because that method will write to memory using Memory.setRawWord() which will
-                // trigger notification to observers, which brings us back to here!!!  Infinite
-                // indirect recursion results.  Neither fun nor productive.  So what happens is
-                // this: (1) change to memory cell causes setValueAt() to be automatically be
-                // called.  (2) it updates the memory cell which in turn notifies us which invokes
-                // the update() method - the method we're in right now.  All we need to do here is
-                // update the table model then notify the controller/view to update its display.
-                this.data[row][CODE_COLUMN] = strValue;
-                this.tableModel.fireTableCellUpdated(row, CODE_COLUMN);
-                // The other columns do not present a problem since they are not editable by user.
-                this.tableModel.setValueAt(strBasic, row, BASIC_COLUMN);
-                this.tableModel.setValueAt(strSource, row, SOURCE_COLUMN);
-                // Let's update the value displayed in the DataSegmentWindow too.  But it only observes memory while
-                // the MIPS program is running, and even then only in timed or step mode.  There are good reasons
-                // for that.  So we'll pretend to be Memory observable and send it a fake memory write update.
-                try {
-                    this.gui.getMainPane().getExecuteTab().getDataSegmentWindow()
-                        .update(Memory.getInstance(), new MemoryAccessNotice(AccessNotice.WRITE, address, value));
-                }
-                catch (Exception exception) {
-                    // Not sure if anything bad can happen in this sequence, but if anything does we can let it go.
-                }
+    public void memoryWritten(int address, int length, int value, int wordAddress, int wordValue) {
+        String strValue = Binary.intToHexString(wordValue);
+        String strBasic;
+        String strSource;
+        // Translate the address into table model row and modify the values in that row accordingly.
+        int row;
+        try {
+            row = this.findRowForAddress(wordAddress);
+        }
+        catch (IndexOutOfBoundsException exception) {
+            // Address modified is outside the range of original program, ignore
+            return;
+        }
+
+        ModifiedCode modification = this.executeMods.get(row);
+        if (modification == null) {
+            // Not already modified and new code is same as original, so do nothing
+            if (this.tableModel.getValueAt(row, CODE_COLUMN).equals(strValue)) {
+                return;
+            }
+            modification = new ModifiedCode(
+                row,
+                this.tableModel.getValueAt(row, CODE_COLUMN),
+                this.tableModel.getValueAt(row, BASIC_COLUMN),
+                this.tableModel.getValueAt(row, SOURCE_COLUMN)
+            );
+            this.executeMods.put(row, modification);
+            // Make a ProgramStatement and get basic code to display in BASIC_COLUMN
+            strBasic = new ProgramStatement(wordValue, wordAddress).getPrintableBasicAssemblyStatement();
+            strSource = MODIFIED_CODE_MARKER;
+        }
+        else {
+            // If restored to original value, restore the basic and source
+            // (this will be the case upon backstepping)
+            if (modification.code.equals(strValue)) {
+                strBasic = modification.basic.toString();
+                strSource = modification.source.toString();
+                // Remove from executeMods since we are back to original
+                this.executeMods.remove(row);
+            }
+            else {
+                // Make a ProgramStatement and get basic code to display in BASIC_COLUMN
+                strBasic = new ProgramStatement(wordValue, wordAddress).getPrintableBasicAssemblyStatement();
+                strSource = MODIFIED_CODE_MARKER;
             }
         }
+
+        // For the code column, we don't want to do the following:
+        //       tableModel.setValueAt(strValue, row, CODE_COLUMN)
+        // because that method will write to memory using Memory.setRawWord() which will
+        // trigger notification to observers, which brings us back to here!!!  Infinite
+        // indirect recursion results.  Neither fun nor productive.  So what happens is
+        // this: (1) change to memory cell causes setValueAt() to be automatically be
+        // called.  (2) it updates the memory cell which in turn notifies us which invokes
+        // the update() method - the method we're in right now.  All we need to do here is
+        // update the table model then notify the controller/view to update its display.
+        this.data[row][CODE_COLUMN] = strValue;
+        this.tableModel.fireTableCellUpdated(row, CODE_COLUMN);
+        // The other columns do not present a problem since they are not editable by user.
+        this.tableModel.setValueAt(strBasic, row, BASIC_COLUMN);
+        this.tableModel.setValueAt(strSource, row, SOURCE_COLUMN);
+
+        // Let's update the value displayed in the DataSegmentWindow too.  But it only observes memory while
+        // the MIPS program is running, and even then only in timed or step mode.  There are good reasons
+        // for that.  So we'll send it an artificial memory write event.
+        this.gui.getMainPane().getExecuteTab().getDataSegmentWindow().memoryWritten(address, length, value, wordAddress, wordValue);
     }
 
     @Override
     public void simulatorStarted(SimulatorStartEvent event) {
-        this.deleteAsTextSegmentObserver();
-        if (this.gui.getSettings().selfModifyingCodeEnabled.get()) {
-            this.addAsTextSegmentObserver();
-        }
+        this.updateListeningStatus();
     }
 
     @Override
     public void simulatorPaused(SimulatorPauseEvent event) {
-        this.deleteAsTextSegmentObserver();
+        this.stopObservingMemory();
         this.setCodeHighlighting(true);
         this.unhighlightAllSteps();
         this.highlightStepAtPC();
@@ -438,7 +403,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
 
     @Override
     public void simulatorFinished(SimulatorFinishEvent event) {
-        this.deleteAsTextSegmentObserver();
+        this.stopObservingMemory();
         this.setCodeHighlighting(true);
         this.unhighlightAllSteps();
         this.highlightStepAtPC();
@@ -457,9 +422,9 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
     public void resetModifiedSourceCode() {
         if (this.executeMods != null && !this.executeMods.isEmpty()) {
             for (ModifiedCode modifiedCode : this.executeMods.values()) {
-                this.tableModel.setValueAt(modifiedCode.code(), modifiedCode.row(), CODE_COLUMN);
-                this.tableModel.setValueAt(modifiedCode.basic(), modifiedCode.row(), BASIC_COLUMN);
-                this.tableModel.setValueAt(modifiedCode.source(), modifiedCode.row(), SOURCE_COLUMN);
+                this.tableModel.setValueAt(modifiedCode.code, modifiedCode.row, CODE_COLUMN);
+                this.tableModel.setValueAt(modifiedCode.basic, modifiedCode.row, BASIC_COLUMN);
+                this.tableModel.setValueAt(modifiedCode.source, modifiedCode.row, SOURCE_COLUMN);
             }
             this.executeMods.clear();
         }
@@ -539,7 +504,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
      * execution and when reaching breakpoints.
      */
     public void highlightStepAtPC() {
-        this.highlightStepAtAddress(RegisterFile.getProgramCounter(), false);
+        this.highlightStepAtAddress(RegisterFile.getProgramCounter());
     }
 
     /**
@@ -579,7 +544,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         try {
             row = this.findRowForAddress(address);
         }
-        catch (IllegalArgumentException exception) {
+        catch (IndexOutOfBoundsException exception) {
             return;
         }
         this.table.scrollRectToVisible(this.table.getCellRect(row, 0, true));
@@ -638,7 +603,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         try {
             addressRow = this.findRowForAddress(address);
         }
-        catch (IllegalArgumentException exception) {
+        catch (IndexOutOfBoundsException exception) {
             return;
         }
         // Scroll to assure desired row is centered in view port.
@@ -691,22 +656,28 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
     }
 
     /**
-     * Little convenience method to add this as observer of text segment
+     * Convenience method to add this as a listener of the text segment in memory.
      */
-    private void addAsTextSegmentObserver() {
-        try {
-            Memory.getInstance().addObserver(this, Memory.textBaseAddress, Memory.dataSegmentBaseAddress);
-        }
-        catch (AddressErrorException exception) {
-            // No action
-        }
+    public void startObservingMemory() {
+        Memory.getInstance().addListener(this, Memory.textBaseAddress, Memory.textLimitAddress - 1);
     }
 
     /**
-     * Little convenience method to remove this as observer of text segment
+     * Convenience method to remove this as a listener of memory.
      */
-    private void deleteAsTextSegmentObserver() {
-        Memory.getInstance().deleteObserver(this);
+    public void stopObservingMemory() {
+        Memory.getInstance().removeListener(this);
+    }
+
+    /**
+     * Convenience method to remove this as a listener of memory, then add again if the self-modifying code
+     * feature is enabled in the settings.
+     */
+    public void updateListeningStatus() {
+        this.stopObservingMemory();
+        if (this.gui.getSettings().selfModifyingCodeEnabled.get()) {
+            this.startObservingMemory();
+        }
     }
 
     /**
@@ -739,15 +710,16 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
      *
      * @param address The address to find the row for.
      * @return The table row corresponding to this address.
+     * @throws IndexOutOfBoundsException Thrown if the address does not correspond to any row in the table.
      */
-    private int findRowForAddress(int address) throws IllegalArgumentException {
+    public int findRowForAddress(int address) throws IndexOutOfBoundsException {
         Integer row = this.addressRows.get(address);
         if (row != null) {
             return row;
         }
         else {
             // Address not found in map
-            throw new IllegalArgumentException();
+            throw new IndexOutOfBoundsException();
         }
     }
 

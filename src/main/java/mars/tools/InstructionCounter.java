@@ -28,16 +28,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 package mars.tools;
 
 import mars.ProgramStatement;
-import mars.mips.hardware.AccessNotice;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.MemoryAccessNotice;
 import mars.mips.instructions.BasicInstruction;
 import mars.mips.instructions.BasicInstructionFormat;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.Observable;
 
 /**
  * Instruction counter tool. Can be used to know how many instructions
@@ -175,26 +172,23 @@ public class InstructionCounter extends AbstractMarsTool {
 
     @Override
     protected void startObserving() {
-        startObserving(Memory.textBaseAddress, Memory.textLimitAddress);
+        Memory.getInstance().addListener(this, Memory.textBaseAddress, Memory.textLimitAddress - 1);
     }
 
     @Override
-    protected void processMIPSUpdate(Observable resource, AccessNotice notice) {
-		if (!notice.accessIsFromMIPS()) {
+    protected void stopObserving() {
+        Memory.getInstance().removeListener(this);
+    }
+
+    @Override
+    public void memoryRead(int address, int length, int value, int wordAddress, int wordValue) {
+		if (wordAddress == lastAddress) {
 			return;
 		}
-		if (notice.getAccessType() != AccessNotice.READ) {
-			return;
-		}
-        MemoryAccessNotice m = (MemoryAccessNotice) notice;
-        int a = m.getAddress();
-		if (a == lastAddress) {
-			return;
-		}
-        lastAddress = a;
+        lastAddress = wordAddress;
         counter++;
         try {
-            ProgramStatement stmt = Memory.getInstance().getStatement(a);
+            ProgramStatement stmt = Memory.getInstance().getStatementNoNotify(wordAddress);
             BasicInstruction instr = (BasicInstruction) stmt.getInstruction();
             BasicInstructionFormat format = instr.getInstructionFormat();
 			if (format == BasicInstructionFormat.R_FORMAT) {
@@ -207,8 +201,8 @@ public class InstructionCounter extends AbstractMarsTool {
 				counterJ++;
 			}
         }
-        catch (AddressErrorException e) {
-            e.printStackTrace(System.err);
+        catch (AddressErrorException exception) {
+            exception.printStackTrace(System.err);
         }
         updateDisplay();
     }
@@ -226,8 +220,7 @@ public class InstructionCounter extends AbstractMarsTool {
         updateDisplay();
     }
 
-    @Override
-    protected void updateDisplay() {
+    private void updateDisplay() {
         counterField.setText(String.valueOf(counter));
 
         counterRField.setText(String.valueOf(counterR));

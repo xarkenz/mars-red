@@ -54,7 +54,7 @@ public class SyscallSbrk extends AbstractSyscall {
         int numBytes = RegisterFile.getValue(4); // $a0: number of bytes to allocate
 
         try {
-            int address = Application.memory.allocateBytesFromHeap(numBytes);
+            int address = Application.memory.allocateHeapSpace(numBytes);
             RegisterFile.updateRegister(2, address); // Put address into $v0
         }
         catch (IllegalArgumentException exception) {

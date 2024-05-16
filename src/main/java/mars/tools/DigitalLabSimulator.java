@@ -4,14 +4,12 @@ import mars.Application;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Coprocessor0;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.MemoryAccessNotice;
 import mars.simulator.Simulator;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.Observable;
 
 /**
  * Didier Teifreto LIFC Université de franche-Comté www.lifc.univ-fcomte.fr/~teifreto
@@ -56,20 +54,22 @@ public class DigitalLabSimulator extends AbstractMarsTool {
 
     @Override
     protected void startObserving() {
-        startObserving(IN_ADDRESS_DISPLAY_1, IN_ADDRESS_DISPLAY_1);
-        startObserving(Memory.textBaseAddress, Memory.textLimitAddress);
+        Memory.getInstance().addListener(this, IN_ADDRESS_DISPLAY_1);
+        Memory.getInstance().addListener(this, Memory.textBaseAddress, Memory.textLimitAddress - 1);
     }
 
     @Override
-    public void update(Observable ressource, Object accessNotice) {
-        MemoryAccessNotice notice = (MemoryAccessNotice) accessNotice;
-        int address = notice.getAddress();
-        char value = (char) notice.getValue();
+    protected void stopObserving() {
+        Memory.getInstance().removeListener(this);
+    }
+
+    @Override
+    public void memoryWritten(int address, int length, int value, int wordAddress, int wordValue) {
         if (address == IN_ADDRESS_DISPLAY_1) {
-            updateSevenSegment(1, value);
+            sevenSegmentPanel.modifyDisplay(1, (byte) value);
         }
         else if (address == IN_ADDRESS_DISPLAY_2) {
-            updateSevenSegment(0, value);
+            sevenSegmentPanel.modifyDisplay(0, (byte) value);
         }
         else if (address == IN_ADDRESS_HEXADECIMAL_KEYBOARD) {
             updateHexadecimalKeyboard(value);
@@ -100,7 +100,7 @@ public class DigitalLabSimulator extends AbstractMarsTool {
     @Override
     protected JComponent buildMainDisplayArea() {
         JPanel panelTools = new JPanel(new GridLayout(1, 2));
-        sevenSegmentPanel = new SevenSegmentPanel();
+        sevenSegmentPanel = new SevenSegmentPanel(2);
         panelTools.add(sevenSegmentPanel);
         hexadecimalKeyboard = new HexadecimalKeyboard();
         panelTools.add(hexadecimalKeyboard);
@@ -156,20 +156,16 @@ public class DigitalLabSimulator extends AbstractMarsTool {
         return help;
     }
 
-    public void updateSevenSegment(int number, char value) {
-        sevenSegmentPanel.display[number].modifyDisplay(value);
-    }
-
     public static class SevenSegmentDisplay extends JComponent {
-        public char aff;
+        public byte segments;
 
-        public SevenSegmentDisplay(char aff) {
-            this.aff = aff;
+        public SevenSegmentDisplay(byte segments) {
+            this.segments = segments;
             this.setPreferredSize(new Dimension(60, 80));
         }
 
-        public void modifyDisplay(char val) {
-            aff = val;
+        public void modifyDisplay(byte segments) {
+            this.segments = segments;
             this.repaint();
         }
 
@@ -239,51 +235,48 @@ public class DigitalLabSimulator extends AbstractMarsTool {
 
         @Override
         public void paint(Graphics graphics) {
-            char c = 'a';
-            while (c <= 'h') {
-                if ((aff & 0x1) == 1) {
+            for (char segment = 'a'; segment <= 'h'; segment++) {
+                if ((segments & 0x1) == 1) {
                     graphics.setColor(Color.RED);
                 }
                 else {
                     graphics.setColor(Color.LIGHT_GRAY);
                 }
-                drawSegment(graphics, c);
-                aff = (char) (aff >>> 1);
-                c++;
+                drawSegment(graphics, segment);
+                segments = (byte) (segments >>> 1);
             }
         }
     }
 
     public static class SevenSegmentPanel extends JPanel {
-        public SevenSegmentDisplay[] display;
+        public SevenSegmentDisplay[] displays;
 
-        public SevenSegmentPanel() {
-            FlowLayout fl = new FlowLayout();
-            this.setLayout(fl);
-            display = new SevenSegmentDisplay[2];
-            for (int i = 0; i < 2; i++) {
-                display[i] = new SevenSegmentDisplay('\0');
-                this.add(display[i]);
+        public SevenSegmentPanel(int displayCount) {
+            this.setLayout(new FlowLayout());
+            displays = new SevenSegmentDisplay[displayCount];
+            for (int index = 0; index < displays.length; index++) {
+                displays[index] = new SevenSegmentDisplay((byte) 0);
+                this.add(displays[index]);
             }
         }
 
-        public void modifyDisplay(int num, char val) {
-            display[num].modifyDisplay(val);
-            display[num].repaint();
+        public void modifyDisplay(int index, byte segments) {
+            displays[index].modifyDisplay(segments);
+            displays[index].repaint();
         }
 
         public void resetSevenSegment() {
-            int i;
-            for (i = 0; i < 2; i++) {
-                modifyDisplay(i, (char) 0);
+            for (SevenSegmentDisplay display : displays) {
+                display.modifyDisplay((byte) 0);
+                display.repaint();
             }
         }
     }
 
-    public void updateHexadecimalKeyboard(char row) {
+    public void updateHexadecimalKeyboard(int row) {
         int key = keyboardValueButtonClick;
         if ((key != -1) && ((1 << (key / 4)) == (row & 0xF))) {
-            updateMMIOControlAndData(OUT_ADDRESS_HEXADECIMAL_KEYBOARD, (char) (1 << (key / 4)) | (1 << (4 + (key % 4))));
+            updateMMIOControlAndData(OUT_ADDRESS_HEXADECIMAL_KEYBOARD, (1 << (key / 4)) | (1 << (4 + (key % 4))));
         }
         else {
             updateMMIOControlAndData(OUT_ADDRESS_HEXADECIMAL_KEYBOARD, 0);
@@ -342,7 +335,7 @@ public class DigitalLabSimulator extends AbstractMarsTool {
         }
     }
 
-    public void updateOneSecondCounter(char value) {
+    public void updateOneSecondCounter(int value) {
         if (value != 0) {
             counterInterruptOnOff = true;
             counterValue = COUNTER_VALUE_MAX;

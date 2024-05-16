@@ -5,9 +5,8 @@ import mars.mips.hardware.*;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
-import java.util.Observable;
-import java.util.Observer;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
@@ -52,16 +51,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Pete Sanderson, 14 November 2006
  */
-public abstract class AbstractMarsTool extends JFrame implements MarsTool, Observer {
+public abstract class AbstractMarsTool extends JFrame implements MarsTool, Memory.Listener {
     protected JDialog dialog;
 
     /**
      * Descriptive title for title bar provided to constructor.
      */
     private final String title;
-
-    private final int firstMemoryAddress = Memory.dataSegmentBaseAddress;
-    private final int lastMemoryAddress = Memory.stackBaseAddress;
 
     /**
      * Simple constructor
@@ -88,10 +84,11 @@ public abstract class AbstractMarsTool extends JFrame implements MarsTool, Obser
     protected abstract JComponent buildMainDisplayArea();
 
     /**
-     * Required {@link MarsTool} method.  It is invoked when the user selects this tool from the Tools menu.
+     * This is invoked when the user selects this tool from the Tools menu.
      * This default implementation provides generic definitions for interactively controlling the tool.
-     * The generic controls for MarsTools are 3 buttons:  connect/disconnect to MIPS resource (memory and/or
-     * registers), reset, and close (exit).  This calls 3 methods that can be defined/overriden in the subclass:
+     * The generic controls for MarsTools are 3 buttons:  reset, help, and close.
+     * <p>
+     * This calls 3 methods that can be defined/overriden in the subclass:
      * {@link #initializePreGUI()} for any special initialization that must be completed before building the user
      * interface (e.g. data structures whose properties determine default GUI settings),
      * {@link #initializePostGUI()} for any special initialization that cannot be completed until after
@@ -109,14 +106,12 @@ public abstract class AbstractMarsTool extends JFrame implements MarsTool, Obser
             }
         });
         this.initializePreGUI();
-        synchronized (Application.MEMORY_AND_REGISTERS_LOCK) { // DPS 23 July 2008
-            this.startObserving();
-        }
         this.dialog.setContentPane(this.buildContentPane(this.buildMainDisplayArea(), this.buildButtonArea()));
         this.dialog.pack();
         this.dialog.setLocationRelativeTo(Application.getGUI());
         this.dialog.setVisible(true);
         this.initializePostGUI();
+        this.startObserving();
     }
 
     /**
@@ -181,35 +176,6 @@ public abstract class AbstractMarsTool extends JFrame implements MarsTool, Obser
     }
 
     /**
-     * Called when receiving notice of access to MIPS memory or registers.  Default
-     * implementation of method required by Observer interface.  This method will filter out
-     * notices originating from the MARS GUI or from direct user editing of memory or register
-     * displays.  Only notices arising from MIPS program access are allowed in.
-     * It then calls two methods to be overridden by the subclass (since they do
-     * nothing by default): {@link #processMIPSUpdate(Observable, AccessNotice)}, then {@link #updateDisplay()}.
-     *
-     * @param resource     The attached MIPS resource.
-     * @param accessNotice Information provided by the resource about the access.
-     */
-    @Override
-    public void update(Observable resource, Object accessNotice) {
-        if (((AccessNotice) accessNotice).accessIsFromMIPS()) {
-            this.processMIPSUpdate(resource, (AccessNotice) accessNotice);
-            this.updateDisplay();
-        }
-    }
-
-    /**
-     * Override this method to process a received notice from MIPS Observable (memory or register)
-     * It will only be called if the notice was generated as the result of MIPS instruction execution.
-     * After this method is complete, the {@link #updateDisplay()} method will be invoked automatically.
-     * Does nothing by default.
-     */
-    protected void processMIPSUpdate(Observable resource, AccessNotice notice) {
-        // Do nothing by default
-    }
-
-    /**
      * This method is called when tool/app is exited either through the "Close" button or the window's X button.
      * Override it to perform any special cleaning needed.  Does nothing by default.
      */
@@ -218,58 +184,26 @@ public abstract class AbstractMarsTool extends JFrame implements MarsTool, Obser
     }
 
     /**
-     * Add this tool as an Observer of desired MIPS observables (memory and registers).
-     * This method is called when the tool is opened by the user.
-     * <p>
-     * By default, will add as an observer of the entire Data Segment in memory.
-     * Override if you want something different.  Note that the Memory methods to add an
-     * Observer to memory are flexible (you can register for a range of addresses) but
-     * may throw an {@link AddressErrorException} that you need to catch.
-     * <p>
-     * NOTE: if you do not want to register as an Observer of the entire data segment
-     * (starts at address 0x10000000) then override this to either do some alternative
-     * or nothing at all.  This method is also overloaded to allow arbitrary memory
-     * subrange.
+     * Register this tool as a listener of memory and/or registers, if applicable.
+     * This method is called when the tool is opened by the user. Does nothing by default.
+     *
+     * @see Register#addListener(Register.Listener)
+     * @see Memory#addListener(Memory.Listener)
+     * @see Memory#addListener(Memory.Listener, int)
+     * @see Memory#addListener(Memory.Listener, int, int)
      */
     protected void startObserving() {
-        this.startObserving(this.firstMemoryAddress, this.lastMemoryAddress);
+        // Do nothing by default
     }
 
     /**
-     * Add this tool as an Observer of the specified subrange of MIPS memory.  Note
-     * that this method is not invoked automatically like the no-argument version, but
-     * if you use this method, you can still take advantage of provided default {@link #stopObserving()}
-     * since it will remove the app as a memory observer regardless of the subrange
-     * or number of subranges it is registered for.
+     * Unregister this tool as a listener of memory and/or registers, if applicable.
+     * This method is called when the tool is closed by the user. Does nothing by default.
      *
-     * @param firstAddress The first memory address in the range to observe.
-     * @param lastAddress  The last memory address in the range to observe, which must be greater than
-     *                     or equal to <code>firstAddress</code>.
-     */
-    protected void startObserving(int firstAddress, int lastAddress) {
-        try {
-            Memory.getInstance().addObserver(this, firstAddress, lastAddress);
-        }
-        catch (AddressErrorException exception) {
-            JOptionPane.showMessageDialog(this.dialog, "Error connecting to MIPS memory.", "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    /**
-     * Delete this tool as an observer of MIPS observables (memory and registers).
-     * This method is called when the tool is closed by the user.
-     * <p>
-     * By default, will delete as an observer of memory. Override if you want something different.
+     * @see Register#removeListener(Register.Listener)
+     * @see Memory#removeListener(Memory.Listener)
      */
     protected void stopObserving() {
-        Memory.getInstance().deleteObserver(this);
-    }
-
-    /**
-     * Override this method to implement updating of GUI after each MIPS instruction is executed,
-     * while running in "timed" mode (user specifies execution speed on the slider control). Does nothing by default.
-     */
-    protected void updateDisplay() {
         // Do nothing by default
     }
 
@@ -284,13 +218,12 @@ public abstract class AbstractMarsTool extends JFrame implements MarsTool, Obser
     }
 
     /**
-     * Close the tool's dialog and disconnect the tool.
+     * Disconnect the tool from registers/memory and close the tool's dialog.
+     * This calls {@link #stopObserving()}, then {@link #handleClose()}, then closes the actual dialog.
      */
     public void closeTool() {
+        this.stopObserving();
         this.handleClose();
-        synchronized (Application.MEMORY_AND_REGISTERS_LOCK) { // DPS 23 July 2008
-            this.stopObserving();
-        }
         this.dialog.setVisible(false);
         this.dialog.dispose();
     }

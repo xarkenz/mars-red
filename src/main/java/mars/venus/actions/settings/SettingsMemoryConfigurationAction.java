@@ -105,9 +105,7 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
         private Component buildConfigChooser() {
             JPanel chooserPanel = new JPanel(new GridLayout(4, 1));
             ButtonGroup choices = new ButtonGroup();
-            Iterator<MemoryConfiguration> configurationsIterator = MemoryConfigurations.getConfigurationsIterator();
-            while (configurationsIterator.hasNext()) {
-                MemoryConfiguration config = configurationsIterator.next();
+            for (MemoryConfiguration config : MemoryConfigurations.getConfigurations()) {
                 ConfigurationButton button = new ConfigurationButton(config);
                 button.addActionListener(this);
                 if (button.isSelected()) {
@@ -201,7 +199,7 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
 
         private void performApply() {
             if (MemoryConfigurations.setCurrentConfiguration(this.selectedConfigurationButton.getConfiguration())) {
-                Application.getSettings().memoryConfiguration.set(this.selectedConfigurationButton.getConfiguration().getConfigurationIdentifier());
+                Application.getSettings().memoryConfiguration.set(this.selectedConfigurationButton.getConfiguration().getIdentifier());
                 gui.getRegistersPane().getRegistersWindow().clearHighlighting();
                 gui.getRegistersPane().getRegistersWindow().updateRegisters();
                 gui.getMainPane().getExecuteTab().getDataSegmentWindow().updateBaseAddressComboBox();

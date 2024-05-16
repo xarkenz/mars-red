@@ -556,34 +556,17 @@ public class MarsLauncher {
      */
     private void establishObserver() {
         if (countInstructions) {
-            Observer instructionCounter = new Observer() {
-                private int lastAddress = 0;
+            Memory.getInstance().addListener(new Memory.Listener() {
+                private int lastAddress = -1;
 
                 @Override
-                public void update(Observable o, Object obj) {
-                    if (obj instanceof AccessNotice notice) {
-                        if (!notice.accessIsFromMIPS()) {
-                            return;
-                        }
-                        if (notice.getAccessType() != AccessNotice.READ) {
-                            return;
-                        }
-                        MemoryAccessNotice m = (MemoryAccessNotice) notice;
-                        int a = m.getAddress();
-                        if (a == lastAddress) {
-                            return;
-                        }
-                        lastAddress = a;
-                        instructionCount++;
+                public void memoryRead(int address, int length, int value, int wordAddress, int wordValue) {
+                    if (wordAddress != this.lastAddress) {
+                        this.lastAddress = wordAddress;
+                        MarsLauncher.this.instructionCount++;
                     }
                 }
-            };
-            try {
-                Application.memory.addObserver(instructionCounter, Memory.textBaseAddress, Memory.textLimitAddress);
-            }
-            catch (AddressErrorException aee) {
-                out.println("Internal error: MarsLaunch uses incorrect text segment address for instruction observer");
-            }
+            }, Memory.textBaseAddress, Memory.textLimitAddress - 1);
         }
     }
 

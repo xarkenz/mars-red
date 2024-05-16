@@ -56,6 +56,10 @@ public class IntroToTools extends AbstractMarsTool {
         return NAME;
     }
 
+    /**
+     * When making a custom tool, it is recommended that you remove this method.
+     * This only exists so the "Introduction to MARS Tools" tool shows up at the top of the tool list.
+     */
     @Override
     public int getToolMenuOrder() {
         // Put tool at the top of the tool list

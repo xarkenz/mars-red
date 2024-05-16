@@ -1114,7 +1114,7 @@ public class Assembler {
             this.dataAddress.set(this.alignToBoundary(this.dataAddress.get(), lengthInBytes));
         }
         try {
-            Application.memory.setDouble(this.dataAddress.get(), value);
+            Application.memory.setDoubleword(this.dataAddress.get(), value);
         }
         catch (AddressErrorException e) {
             errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + this.dataAddress.get() + "\" is not a valid data segment address"));

@@ -1,8 +1,6 @@
 package mars.tools;
 
-import mars.mips.hardware.AccessNotice;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.MemoryAccessNotice;
 import mars.util.Binary;
 
 import javax.swing.*;
@@ -11,7 +9,6 @@ import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Observable;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -50,7 +47,12 @@ public class MemoryReferenceVisualization extends AbstractMarsTool {
     private static final String VERSION = "Version 1.0";
 
     // Major GUI components
-    private JComboBox<String> wordsPerUnitSelector, visualizationUnitPixelWidthSelector, visualizationUnitPixelHeightSelector, visualizationPixelWidthSelector, visualizationPixelHeightSelector, displayBaseAddressSelector;
+    private JComboBox<String> wordsPerUnitSelector;
+    private JComboBox<String> visualizationUnitPixelWidthSelector;
+    private JComboBox<String> visualizationUnitPixelHeightSelector;
+    private JComboBox<String> visualizationPixelWidthSelector;
+    private JComboBox<String> visualizationPixelHeightSelector;
+    private JComboBox<String> displayBaseAddressSelector;
     private JCheckBox drawHashMarksSelector;
     private JPanel canvas;
 
@@ -100,7 +102,7 @@ public class MemoryReferenceVisualization extends AbstractMarsTool {
     private String[] displayBaseAddressChoices;
     private int[] displayBaseAddresses;
     private int defaultBaseAddressIndex;
-    private int baseAddress;
+    private int firstAddress;
 
     private Grid grid;
     private CounterColorScale counterColorScale;
@@ -128,22 +130,22 @@ public class MemoryReferenceVisualization extends AbstractMarsTool {
      * (starting address 0x10010000) only.  This version will register us as observer over the
      * the memory range as selected by the base address combo box and capacity of the visualization display
      * (number of visualization elements times the number of memory words each one represents).
-     * It does so by calling the inherited 2-parameter overload of this method.
-     * If you use the inherited GUI buttons, this
-     * method is invoked when you click "Connect" button on MarsTool or the
-     * "Assemble and Run" button on a Mars-based app.
      */
     @Override
     protected void startObserving() {
-        int highAddress = baseAddress + grid.getRows() * grid.getColumns() * Memory.BYTES_PER_WORD * wordsPerUnit;
-        // Special case: baseAddress<0 means we're in kernel memory (0x80000000 and up) and most likely
-        // in memory map address space (0xffff0000 and up).  In this case, we need to make sure the high address
-        // does not drop off the high end of 32 bit address space.  Highest allowable word address is 0xfffffffc,
-        // which is interpreted in Java int as -4.
-        if (baseAddress < 0 && highAddress > -4) {
-            highAddress = -4;
+        int lastAddress = this.firstAddress + grid.getRows() * grid.getColumns() * Memory.BYTES_PER_WORD * wordsPerUnit - 1;
+        // If lastAddress < firstAddress, the range probably crosses the unsigned 32-bit integer limit
+        if (Integer.compareUnsigned(lastAddress, this.firstAddress) < 0) {
+            // Just cap lastAddress at the unsigned 32-bit integer limit
+            lastAddress = 0xFFFFFFFF;
         }
-        startObserving(baseAddress, highAddress);
+
+        Memory.getInstance().addListener(this, this.firstAddress, lastAddress);
+    }
+
+    @Override
+    protected void stopObserving() {
+        Memory.getInstance().removeListener(this);
     }
 
     /**
@@ -163,15 +165,21 @@ public class MemoryReferenceVisualization extends AbstractMarsTool {
     }
 
     /**
-     * Update display when connected MIPS program accesses (data) memory.
-     *
-     * @param memory       the attached memory
-     * @param accessNotice information provided by memory in MemoryAccessNotice object
+     * Update display when connected MIPS program accesses memory.
      */
     @Override
-    protected void processMIPSUpdate(Observable memory, AccessNotice accessNotice) {
-        incrementReferenceCountForAddress(((MemoryAccessNotice) accessNotice).getAddress());
-        updateDisplay();
+    public void memoryRead(int address, int length, int value, int wordAddress, int wordValue) {
+        incrementReferenceCountForAddress(address);
+        this.canvas.repaint();
+    }
+
+    /**
+     * Update display when connected MIPS program accesses memory.
+     */
+    @Override
+    public void memoryWritten(int address, int length, int value, int wordAddress, int wordValue) {
+        incrementReferenceCountForAddress(address);
+        this.canvas.repaint();
     }
 
     /**
@@ -206,17 +214,7 @@ public class MemoryReferenceVisualization extends AbstractMarsTool {
     @Override
     protected void reset() {
         resetCounts();
-        updateDisplay();
-    }
-
-    /**
-     * Updates display immediately after each update (AccessNotice) is processed, after
-     * display configuration changes as needed, and after each execution step when Mars
-     * is running in timed mode.  Overrides inherited method that does nothing.
-     */
-    @Override
-    protected void updateDisplay() {
-        canvas.repaint();
+        this.canvas.repaint();
     }
 
     /**
@@ -261,7 +259,7 @@ public class MemoryReferenceVisualization extends AbstractMarsTool {
 
         drawHashMarksSelector = new JCheckBox();
         drawHashMarksSelector.setSelected(defaultDrawHashMarks);
-        drawHashMarksSelector.addActionListener(event -> updateDisplay());
+        drawHashMarksSelector.addActionListener(event -> this.canvas.repaint());
         wordsPerUnitSelector = new JComboBox<>(wordsPerUnitChoices);
         wordsPerUnitSelector.setEditable(false);
         wordsPerUnitSelector.setSelectedIndex(defaultWordsPerUnitIndex);
@@ -277,7 +275,7 @@ public class MemoryReferenceVisualization extends AbstractMarsTool {
         visualizationUnitPixelWidthSelector.addActionListener(event -> {
             unitPixelWidth = getIntComboBoxSelection(visualizationUnitPixelWidthSelector);
             grid = createNewGrid();
-            updateDisplay();
+            this.canvas.repaint();
         });
         visualizationUnitPixelHeightSelector = new JComboBox<>(visualizationUnitPixelHeightChoices);
         visualizationUnitPixelHeightSelector.setEditable(false);
@@ -286,7 +284,7 @@ public class MemoryReferenceVisualization extends AbstractMarsTool {
         visualizationUnitPixelHeightSelector.addActionListener(event -> {
             unitPixelHeight = getIntComboBoxSelection(visualizationUnitPixelHeightSelector);
             grid = createNewGrid();
-            updateDisplay();
+            this.canvas.repaint();
         });
         visualizationPixelWidthSelector = new JComboBox<>(displayAreaPixelWidthChoices);
         visualizationPixelWidthSelector.setEditable(false);
@@ -297,8 +295,7 @@ public class MemoryReferenceVisualization extends AbstractMarsTool {
             canvas.setPreferredSize(getDisplayAreaDimension());
             canvas.setSize(getDisplayAreaDimension());
             grid = createNewGrid();
-            canvas.repaint();
-            updateDisplay();
+            this.canvas.repaint();
         });
         visualizationPixelHeightSelector = new JComboBox<>(displayAreaPixelHeightChoices);
         visualizationPixelHeightSelector.setEditable(false);
@@ -309,8 +306,7 @@ public class MemoryReferenceVisualization extends AbstractMarsTool {
             canvas.setPreferredSize(getDisplayAreaDimension());
             canvas.setSize(getDisplayAreaDimension());
             grid = createNewGrid();
-            canvas.repaint();
-            updateDisplay();
+            this.canvas.repaint();
         });
         displayBaseAddressSelector = new JComboBox<>(displayBaseAddressChoices);
         displayBaseAddressSelector.setEditable(false);
@@ -329,7 +325,7 @@ public class MemoryReferenceVisualization extends AbstractMarsTool {
             stopObserving();
             startObserving();
             grid = createNewGrid();
-            updateDisplay();
+            this.canvas.repaint();
         });
 
         // ALL COMPONENTS FOR "ORGANIZATION" SECTION
@@ -414,12 +410,12 @@ public class MemoryReferenceVisualization extends AbstractMarsTool {
             displayBaseAddressChoices[i] = Binary.intToHexString(displayBaseAddressArray[i]) + descriptions[i];
         }
         defaultBaseAddressIndex = 3;  // default to 0x10010000 (static data)
-        baseAddress = displayBaseAddressArray[defaultBaseAddressIndex];
+        firstAddress = displayBaseAddressArray[defaultBaseAddressIndex];
     }
 
     // update based on combo box selection (currently not editable but that may change).
     private void updateBaseAddress() {
-        baseAddress = displayBaseAddresses[displayBaseAddressSelector.getSelectedIndex()];
+        firstAddress = displayBaseAddresses[displayBaseAddressSelector.getSelectedIndex()];
       	/*  If you want to extend this app to allow user to edit combo box, you can always
       	    parse the getSelectedItem() value, because the pre-defined items are all formatted
       		 such that the first 10 characters contain the integer's hex value.  And if the
@@ -471,7 +467,7 @@ public class MemoryReferenceVisualization extends AbstractMarsTool {
     // If address maps to invalid grid element (e.g. is outside the current bounds based on all
     // display settings) then nothing happens.
     private void incrementReferenceCountForAddress(int address) {
-        int offset = (address - baseAddress) / Memory.BYTES_PER_WORD / wordsPerUnit;
+        int offset = (address - firstAddress) / Memory.BYTES_PER_WORD / wordsPerUnit;
         // If you care to do anything with it, the following will return -1 if the address
         // maps outside the dimensions of the grid (e.g. below the base address or beyond end).
         grid.incrementElement(offset / grid.getColumns(), offset % grid.getColumns());
@@ -571,7 +567,7 @@ public class MemoryReferenceVisualization extends AbstractMarsTool {
                 if (newColor != null && !newColor.equals(counterColorScale.getColor(counterValue))) {
                     counterColorScale.insertOrReplace(new CounterColor(counterValue, newColor));
                     currentColorButton.setBackground(newColor);
-                    updateDisplay();
+                    canvas.repaint();
                 }
             });
             colorChooserRow = new JPanel();

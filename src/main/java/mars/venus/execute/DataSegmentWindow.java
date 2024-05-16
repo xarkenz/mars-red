@@ -18,8 +18,6 @@ import javax.swing.table.TableModel;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Date;
-import java.util.Observable;
-import java.util.Observer;
 
 /*
 Copyright (c) 2003-2013,  Pete Sanderson and Kenneth Vollmar
@@ -54,7 +52,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Sanderson and Bumgarner
  */
-public class DataSegmentWindow extends JInternalFrame implements SimulatorListener, Observer {
+public class DataSegmentWindow extends JInternalFrame implements SimulatorListener, Memory.Listener {
     private final VenusUI gui;
     private Object[][] tableData;
     private JTable table;
@@ -67,7 +65,7 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
     public static final int VALUES_PER_ROW = 8;
     public static final int ROW_COUNT = 16; // with 8 value columns, this shows 512 bytes
     public static final int COLUMN_COUNT = 1 + VALUES_PER_ROW; // 1 for address and 8 for values
-    public static final int BYTES_PER_VALUE = 4;
+    public static final int BYTES_PER_VALUE = Memory.BYTES_PER_WORD;
     public static final int BYTES_PER_ROW = VALUES_PER_ROW * BYTES_PER_VALUE;
     public static final int MEMORY_CHUNK_SIZE = ROW_COUNT * BYTES_PER_ROW;
     // PREV_NEXT_CHUNK_SIZE determines how many rows will be scrolled when Prev or Next buttons fire.
@@ -80,9 +78,8 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
 
     private boolean addressHighlighting = false;
     private boolean asciiDisplay = false;
-    private int addressRow;
-    private int addressColumn;
     private int addressRowFirstAddress;
+    private int addressColumn;
 
     private int firstAddress;
     private int homeAddress;
@@ -138,8 +135,6 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
         super("Memory Viewer", true, false, true, false);
         this.setFrameIcon(null);
 
-        Simulator.getInstance().addGUIListener(this);
-
         this.gui = gui;
         this.homeAddress = Memory.dataBaseAddress;
         this.firstAddress = homeAddress;
@@ -192,6 +187,8 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
         navigationBar.add(asciiDisplayCheckBox);
 
         this.contentPane.add(navigationBar, BorderLayout.SOUTH);
+
+        Simulator.getInstance().addGUIListener(this);
     }
 
     public void updateBaseAddressComboBox() {
@@ -246,16 +243,15 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
      * Scroll the viewport so the cell at the given data segment address
      * is visible, vertically centered if possible, and highlighted (but not selected).
      *
-     * @param address data segment address of word to be selected.
+     * @param address Data segment address of word to be selected.
      */
     public void highlightCellForAddress(int address) {
         Point rowColumn = this.displayCellForAddress(address);
         if (rowColumn == null || rowColumn.x < 0 || rowColumn.y < 0) {
             return;
         }
-        this.addressRow = rowColumn.x;
         this.addressColumn = rowColumn.y;
-        this.addressRowFirstAddress = Binary.decodeInteger(this.table.getValueAt(this.addressRow, ADDRESS_COLUMN).toString());
+        this.addressRowFirstAddress = Binary.decodeInteger(this.table.getValueAt(rowColumn.x, ADDRESS_COLUMN).toString());
         // Tell the system that table contents have changed.  This will trigger re-rendering
         // during which cell renderers are obtained.  The cell of interest (identified by
         // instance variables this.addressRow and this.addressColumn) will get a renderer
@@ -571,29 +567,29 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
      * Update data display to show all values.
      */
     public void updateValues() {
-        updateModelForMemoryRange(this.firstAddress);
+        this.updateModelForMemoryRange(this.firstAddress);
     }
 
     @Override
     public void simulatorStarted(SimulatorStartEvent event) {
-        Memory.getInstance().addObserver(this);
+        this.startObservingMemory();
     }
 
     @Override
     public void simulatorPaused(SimulatorPauseEvent event) {
-        Memory.getInstance().deleteObserver(this);
-        updateValues();
+        this.stopObservingMemory();
+        this.updateValues();
     }
 
     @Override
     public void simulatorFinished(SimulatorFinishEvent event) {
-        Memory.getInstance().deleteObserver(this);
-        updateValues();
+        this.stopObservingMemory();
+        this.updateValues();
     }
 
     @Override
     public void simulatorStepped() {
-        updateValues();
+        this.updateValues();
     }
 
     /**
@@ -727,31 +723,29 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
         }
     }
 
-    /**
-     * Required by Observer interface.  Called when notified by an Observable that we are registered with.
-     * Observables include:
-     * The Simulator object, which lets us know when it starts and stops running
-     * A delegate of the Memory object, which lets us know of memory operations
-     * The Simulator keeps us informed of when simulated MIPS execution is active.
-     * This is the only time we care about memory operations.
-     *
-     * @param observable The Observable object who is notifying us.
-     * @param obj        Auxiliary object with additional information.
-     */
     @Override
-    public void update(Observable observable, Object obj) {
-        // NOTE: observable != Memory.getInstance() because Memory class delegates notification duty.
-        if (obj instanceof MemoryAccessNotice access) {
-            if (access.getAccessType() == AccessNotice.WRITE) {
-                if (RunSpeedPanel.getInstance().getRunSpeed() != RunSpeedPanel.UNLIMITED_SPEED) {
-                    this.addressHighlighting = true;
-                    this.highlightCellForAddress(access.getAddress());
-                }
-                else {
-                    this.addressHighlighting = false;
-                }
-            }
+    public void memoryWritten(int address, int length, int value, int wordAddress, int wordValue) {
+        if (RunSpeedPanel.getInstance().getRunSpeed() != RunSpeedPanel.UNLIMITED_SPEED) {
+            this.addressHighlighting = true;
+            this.highlightCellForAddress(wordAddress);
         }
+        else {
+            this.addressHighlighting = false;
+        }
+    }
+
+    /**
+     * Convenience method to add this as a listener of all memory.
+     */
+    public void startObservingMemory() {
+        Memory.getInstance().addListener(this);
+    }
+
+    /**
+     * Convenience method to remove this as a listener of memory.
+     */
+    public void stopObservingMemory() {
+        Memory.getInstance().removeListener(this);
     }
 
     /**

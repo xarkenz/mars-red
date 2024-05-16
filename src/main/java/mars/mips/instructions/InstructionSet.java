@@ -563,7 +563,7 @@ public class InstructionSet {
         instructionList.add(new BasicInstruction("lh $t1,-100($t2)", "Load halfword : Set $t1 to sign-extended 16-bit value from effective memory halfword address", BasicInstructionFormat.I_FORMAT, "100001 ttttt fffff ssssssssssssssss", statement -> {
             int[] operands = statement.getOperands();
             try {
-                RegisterFile.updateRegister(operands[0], Application.memory.getHalf(RegisterFile.getValue(operands[2]) + (operands[1] << 16 >> 16)) << 16 >> 16);
+                RegisterFile.updateRegister(operands[0], Application.memory.getHalfword(RegisterFile.getValue(operands[2]) + (operands[1] << 16 >> 16)) << 16 >> 16);
             }
             catch (AddressErrorException e) {
                 throw new ProcessingException(statement, e);
@@ -573,7 +573,7 @@ public class InstructionSet {
             int[] operands = statement.getOperands();
             try {
                 // offset is sign-extended and loaded halfword value is zero-extended
-                RegisterFile.updateRegister(operands[0], Application.memory.getHalf(RegisterFile.getValue(operands[2]) + (operands[1] << 16 >> 16)) & 0x0000ffff);
+                RegisterFile.updateRegister(operands[0], Application.memory.getHalfword(RegisterFile.getValue(operands[2]) + (operands[1] << 16 >> 16)) & 0x0000ffff);
             }
             catch (AddressErrorException e) {
                 throw new ProcessingException(statement, e);
@@ -600,7 +600,7 @@ public class InstructionSet {
         instructionList.add(new BasicInstruction("sh $t1,-100($t2)", "Store halfword : Store the low-order 16 bits of $t1 into the effective memory halfword address", BasicInstructionFormat.I_FORMAT, "101001 ttttt fffff ssssssssssssssss", statement -> {
             int[] operands = statement.getOperands();
             try {
-                Application.memory.setHalf(RegisterFile.getValue(operands[2]) + (operands[1] << 16 >> 16), RegisterFile.getValue(operands[0]) & 0x0000ffff);
+                Application.memory.setHalfword(RegisterFile.getValue(operands[2]) + (operands[1] << 16 >> 16), RegisterFile.getValue(operands[0]) & 0x0000ffff);
             }
             catch (AddressErrorException e) {
                 throw new ProcessingException(statement, e);
@@ -1306,7 +1306,7 @@ public class InstructionSet {
                     throw new ProcessingException(statement, "first register must be even-numbered");
                 }
                 // IF statement added by DPS 13-July-2011.
-                if (!Memory.isDoubleWordAligned(RegisterFile.getValue(operands[2]) + operands[1])) {
+                if (!Memory.isDoublewordAligned(RegisterFile.getValue(operands[2]) + operands[1])) {
                     throw new ProcessingException(statement, new AddressErrorException("address not aligned on doubleword boundary ", ExceptionCause.ADDRESS_EXCEPTION_LOAD, RegisterFile.getValue(operands[2]) + operands[1]));
                 }
 
@@ -1334,7 +1334,7 @@ public class InstructionSet {
                 throw new ProcessingException(statement, "first register must be even-numbered");
             }
             // IF statement added by DPS 13-July-2011.
-            if (!Memory.isDoubleWordAligned(RegisterFile.getValue(operands[2]) + operands[1])) {
+            if (!Memory.isDoublewordAligned(RegisterFile.getValue(operands[2]) + operands[1])) {
                 throw new ProcessingException(statement, new AddressErrorException("address not aligned on doubleword boundary ", ExceptionCause.ADDRESS_EXCEPTION_STORE, RegisterFile.getValue(operands[2]) + operands[1]));
             }
             try {

@@ -109,21 +109,21 @@ public class Register {
     }
 
     /**
-     * Returns the value of the register.  Observers are notified
-     * of the {@link AccessNotice#READ} operation.
+     * Gets the value of the register, notifying listeners.
      *
      * @return The value of the register.
      */
     public synchronized int getValue() {
-        for (Listener listener : this.listeners) {
-            listener.registerRead(this);
+        synchronized (this.listeners) {
+            for (Listener listener : this.listeners) {
+                listener.registerRead(this);
+            }
         }
         return this.value;
     }
 
     /**
-     * Returns the value of the register.  Observers are not notified.
-     * Added for release 3.8.
+     * Gets the value of the register without notifying listeners.
      *
      * @return The value of the register.
      */
@@ -132,8 +132,7 @@ public class Register {
     }
 
     /**
-     * Sets the value of the register.
-     * Observers are notified of the {@link AccessNotice#WRITE} operation.
+     * Sets the value of the register, notifying listeners.
      *
      * @param value Value to set the register to.
      * @return Previous value of the register.
@@ -141,27 +140,39 @@ public class Register {
     public synchronized int setValue(int value) {
         int previousValue = this.value;
         this.value = value;
-        for (Listener listener : this.listeners) {
-            listener.registerWritten(this);
+        synchronized (this.listeners) {
+            for (Listener listener : this.listeners) {
+                listener.registerWritten(this);
+            }
         }
         return previousValue;
     }
 
     /**
      * Resets the value of the register to the value it was constructed with.
-     * Observers are not notified.
+     * Listeners are not notified.
      */
     public synchronized void resetValueToDefault() {
         this.value = this.defaultValue;
     }
 
     public void addListener(Listener listener) {
-        if (!this.listeners.contains(listener)) {
-            this.listeners.add(listener);
+        synchronized (this.listeners) {
+            if (!this.listeners.contains(listener)) {
+                this.listeners.add(listener);
+            }
         }
     }
 
     public void removeListener(Listener listener) {
-        this.listeners.remove(listener);
+        synchronized (this.listeners) {
+            this.listeners.remove(listener);
+        }
+    }
+
+    public Listener[] getListeners() {
+        synchronized (this.listeners) {
+            return this.listeners.toArray(Listener[]::new);
+        }
     }
 }

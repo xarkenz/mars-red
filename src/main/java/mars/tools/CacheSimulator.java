@@ -1,8 +1,6 @@
 package mars.tools;
 
-import mars.mips.hardware.AccessNotice;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.MemoryAccessNotice;
 import mars.util.Binary;
 
 import javax.swing.*;
@@ -12,7 +10,6 @@ import java.awt.*;
 import java.awt.event.ItemEvent;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Observable;
 import java.util.Random;
 
 /*
@@ -390,17 +387,32 @@ public class CacheSimulator extends AbstractMarsTool {
         return performance;
     }
 
+    @Override
+    protected void startObserving() {
+        Memory.getInstance().addListener(this, Memory.dataSegmentBaseAddress, Memory.dataSegmentLimitAddress - 1);
+    }
+
+    @Override
+    protected void stopObserving() {
+        Memory.getInstance().removeListener(this);
+    }
+
+    @Override
+    public void memoryRead(int address, int length, int value, int wordAddress, int wordValue) {
+        this.processMemoryAccess(wordAddress);
+    }
+
+    @Override
+    public void memoryWritten(int address, int length, int value, int wordAddress, int wordValue) {
+        this.processMemoryAccess(wordAddress);
+    }
+
     /**
      * Apply caching policies and update display when connected MIPS program accesses (data) memory.
-     *
-     * @param memory       the attached memory
-     * @param accessNotice information provided by memory in MemoryAccessNotice object
      */
-    @Override
-    protected void processMIPSUpdate(Observable memory, AccessNotice accessNotice) {
-        MemoryAccessNotice notice = (MemoryAccessNotice) accessNotice;
+    private void processMemoryAccess(int address) {
         this.memoryAccessCount++;
-        CacheAccessResult cacheAccessResult = this.cache.isItAHitThenReadOnMiss(notice.getAddress());
+        CacheAccessResult cacheAccessResult = this.cache.isItAHitThenReadOnMiss(address);
         if (cacheAccessResult.isHit()) {
             this.cacheHitCount++;
             this.animations.showHit(cacheAccessResult.blockNumber);
@@ -410,6 +422,8 @@ public class CacheSimulator extends AbstractMarsTool {
             this.animations.showMiss(cacheAccessResult.blockNumber);
         }
         this.cacheHitRate = this.cacheHitCount / (double) this.memoryAccessCount;
+
+        this.updateDisplay();
     }
 
     /**
@@ -444,12 +458,11 @@ public class CacheSimulator extends AbstractMarsTool {
     }
 
     /**
-     * Updates display immediately after each update (AccessNotice) is processed, after
+     * Updates display immediately after each memory access is processed, after
      * cache configuration changes as needed, and after each execution step when Mars
      * is running in timed mode.  Overrides inherited method that does nothing.
      */
-    @Override
-    protected void updateDisplay() {
+    private void updateDisplay() {
         this.updateMemoryAccessCountDisplay();
         this.updateCacheHitCountDisplay();
         this.updateCacheMissCountDisplay();

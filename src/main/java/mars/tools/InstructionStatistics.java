@@ -29,15 +29,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 package mars.tools;
 
 import mars.ProgramStatement;
-import mars.mips.hardware.AccessNotice;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.MemoryAccessNotice;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.Arrays;
-import java.util.Observable;
 
 /**
  * A MARS tool for obtaining instruction statistics by instruction category.
@@ -196,7 +193,12 @@ public class InstructionStatistics extends AbstractMarsTool {
      */
     @Override
     protected void startObserving() {
-        startObserving(Memory.textBaseAddress, Memory.textLimitAddress);
+        Memory.getInstance().addListener(this, Memory.textBaseAddress, Memory.textLimitAddress - 1);
+    }
+
+    @Override
+    protected void stopObserving() {
+        Memory.getInstance().removeListener(this);
     }
 
     /**
@@ -264,51 +266,35 @@ public class InstructionStatistics extends AbstractMarsTool {
     }
 
     /**
-     * method that is called each time the MIPS simulator accesses the text segment.
+     * Method that is called each time the MIPS simulator accesses the text segment.
      * Before an instruction is executed by the simulator, the instruction is fetched from the program memory.
      * This memory access is observed and the corresponding instruction is decoded and categorized by the tool.
      * According to the category the counter values are increased and the display gets updated.
-     *
-     * @param resource the observed resource
-     * @param notice   signals the type of access (memory, register etc.)
      */
     @Override
-    protected void processMIPSUpdate(Observable resource, AccessNotice notice) {
-
-        if (!notice.accessIsFromMIPS()) {
+    public void memoryRead(int address, int length, int value, int wordAddress, int wordValue) {
+        // The next three statments are from Felipe Lessa's instruction counter.  Prevents double-counting.
+        if (wordAddress == lastAddress) {
             return;
         }
+        lastAddress = wordAddress;
 
-        // check for a read access in the text segment
-        if (notice.getAccessType() == AccessNotice.READ && notice instanceof MemoryAccessNotice memAccNotice) {
+        try {
+            // Access the statement in the text segment without causing infinite recursion
+            ProgramStatement stmt = Memory.getInstance().getStatementNoNotify(wordAddress);
 
-            // now it is safe to make a cast of the notice
+            // necessary to handle possible null pointers at the end of the program
+            // (e.g., if the simulator tries to execute the next instruction after the last instruction in the text segment)
+            if (stmt != null) {
+                int category = getInstructionCategory(stmt);
 
-            // The next three statments are from Felipe Lessa's instruction counter.  Prevents double-counting.
-            int a = memAccNotice.getAddress();
-            if (a == lastAddress) {
-                return;
+                m_totalCounter++;
+                m_counters[category]++;
+                updateDisplay();
             }
-            lastAddress = a;
-
-            try {
-
-                // access the statement in the text segment without notifying other tools etc.
-                ProgramStatement stmt = Memory.getInstance().getStatementNoNotify(memAccNotice.getAddress());
-
-                // necessary to handle possible null pointers at the end of the program
-                // (e.g., if the simulator tries to execute the next instruction after the last instruction in the text segment)
-                if (stmt != null) {
-                    int category = getInstructionCategory(stmt);
-
-                    m_totalCounter++;
-                    m_counters[category]++;
-                    updateDisplay();
-                }
-            }
-            catch (AddressErrorException e) {
-                // silently ignore these exceptions
-            }
+        }
+        catch (AddressErrorException e) {
+            // silently ignore these exceptions
         }
     }
 
@@ -336,8 +322,7 @@ public class InstructionStatistics extends AbstractMarsTool {
     /**
      * updates the text fields and progress bars according to the current counter values.
      */
-    @Override
-    protected void updateDisplay() {
+    private void updateDisplay() {
         m_tfTotalCounter.setText(String.valueOf(m_totalCounter));
 
         for (int i = 0; i < InstructionStatistics.MAX_CATEGORY; i++) {

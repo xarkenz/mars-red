@@ -35,7 +35,6 @@ import mars.util.Binary;
 
 import javax.swing.*;
 import java.util.Objects;
-import java.util.Observable;
 
 /**
  * A MARS tool for simulating branch prediction with a Branch History Table (BHT)
@@ -104,7 +103,12 @@ public class BHTSimulator extends AbstractMarsTool {
      */
     @Override
     protected void startObserving() {
-        this.startObserving(Memory.textBaseAddress, Memory.textLimitAddress);
+        Memory.getInstance().addListener(this, Memory.textBaseAddress, Memory.textLimitAddress - 1);
+    }
+
+    @Override
+    protected void stopObserving() {
+        Memory.getInstance().removeListener(this);
     }
 
     /**
@@ -297,55 +301,52 @@ public class BHTSimulator extends AbstractMarsTool {
      * The method is called each time the text segment is accessed to fetch the next instruction.
      * If the next instruction to execute was a branch instruction, the branch prediction is performed and visualized.
      * In case the last instruction was a branch instruction, the outcome of the branch prediction is analyzed and visualized.
-     *
-     * @param resource The observed resource.
-     * @param notice   Signals the type of access (memory, register etc.)
      */
     @Override
-    protected void processMIPSUpdate(Observable resource, AccessNotice notice) {
-        if (notice.getAccessType() == AccessNotice.READ && notice instanceof MemoryAccessNotice memoryAccessNotice) {
-            try {
-                // Access the statement in the text segment without notifying other tools etc.
-                ProgramStatement statement = Memory.getInstance().getStatementNoNotify(memoryAccessNotice.getAddress());
+    public void memoryRead(int address, int length, int value, int wordAddress, int wordValue) {
+        ProgramStatement statement;
+        try {
+            // Access the statement in the text segment without causing an infinite loop
+            statement = Memory.getInstance().getStatementNoNotify(address);
+        }
+        catch (AddressErrorException exception) {
+            // Ignore misaligned reads
+            return;
+        }
 
-                // Necessary to handle possible null pointers at the end of the program
-                // (e.g. if the simulator tries to execute the next instruction after the last instruction in the text segment)
-                if (statement != null) {
-                    boolean clearTextFields = true;
+        // Necessary to handle possible null pointers at the end of the program
+        // (e.g. if the simulator tries to execute the next instruction after the last instruction in the text segment)
+        if (statement != null) {
+            boolean clearTextFields = true;
 
-                    // First, check if there's a pending branch to handle
-                    if (this.pendingBranchInstructionAddress != 0) {
-                        this.handleExecuteBranchInstruction(this.pendingBranchInstructionAddress, this.lastBranchTaken);
-                        clearTextFields = false;
-                        this.pendingBranchInstructionAddress = 0;
-                    }
-
-                    // If current instruction is branch instruction
-                    if (isBranchInstruction(statement)) {
-                        this.handlePreBranchInst(statement);
-                        this.lastBranchTaken = willBranch(statement);
-                        this.pendingBranchInstructionAddress = statement.getAddress();
-                        clearTextFields = false;
-                    }
-
-                    // Clear text fields and selection
-                    if (clearTextFields) {
-                        this.gui.getInstructionTextField().setText("");
-                        this.gui.getInstructionAddressTextField().setText("");
-                        this.gui.getInstructionIndexTextField().setText("");
-                        this.gui.getTable().clearSelection();
-                    }
-                }
-                else {
-                    // Check if there's a pending branch to handle
-                    if (this.pendingBranchInstructionAddress != 0) {
-                        this.handleExecuteBranchInstruction(this.pendingBranchInstructionAddress, this.lastBranchTaken);
-                        this.pendingBranchInstructionAddress = 0;
-                    }
-                }
+            // First, check if there's a pending branch to handle
+            if (this.pendingBranchInstructionAddress != 0) {
+                this.handleExecuteBranchInstruction(this.pendingBranchInstructionAddress, this.lastBranchTaken);
+                clearTextFields = false;
+                this.pendingBranchInstructionAddress = 0;
             }
-            catch (AddressErrorException exception) {
-                // Silently ignore these exceptions
+
+            // If current instruction is branch instruction
+            if (isBranchInstruction(statement)) {
+                this.handlePreBranchInst(statement);
+                this.lastBranchTaken = willBranch(statement);
+                this.pendingBranchInstructionAddress = statement.getAddress();
+                clearTextFields = false;
+            }
+
+            // Clear text fields and selection
+            if (clearTextFields) {
+                this.gui.getInstructionTextField().setText("");
+                this.gui.getInstructionAddressTextField().setText("");
+                this.gui.getInstructionIndexTextField().setText("");
+                this.gui.getTable().clearSelection();
+            }
+        }
+        else {
+            // Check if there's a pending branch to handle
+            if (this.pendingBranchInstructionAddress != 0) {
+                this.handleExecuteBranchInstruction(this.pendingBranchInstructionAddress, this.lastBranchTaken);
+                this.pendingBranchInstructionAddress = 0;
             }
         }
     }

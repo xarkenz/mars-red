@@ -1,10 +1,6 @@
 package mars.venus.actions.run;
 
 import mars.Application;
-import mars.mips.hardware.Coprocessor0;
-import mars.mips.hardware.Coprocessor1;
-import mars.mips.hardware.Memory;
-import mars.mips.hardware.RegisterFile;
 import mars.venus.RegistersPane;
 import mars.venus.execute.ExecuteTab;
 import mars.venus.actions.VenusAction;
@@ -63,14 +59,14 @@ public class RunStepBackwardAction extends VenusAction {
         if (Application.isBackSteppingEnabled()) {
             boolean inDelaySlot = Application.program.getBackStepper().isInDelaySlot(); // Added 25 June 2007
 
-            Memory.getInstance().addObserver(executeTab.getDataSegmentWindow());
+            executeTab.getDataSegmentWindow().startObservingMemory();
             registersPane.getRegistersWindow().startObservingRegisters();
             registersPane.getCoprocessor0Window().startObservingRegisters();
             registersPane.getCoprocessor1Window().startObservingRegisters();
 
             Application.program.getBackStepper().backStep();
 
-            Memory.getInstance().deleteObserver(executeTab.getDataSegmentWindow());
+            executeTab.getDataSegmentWindow().stopObservingMemory();
             registersPane.getRegistersWindow().stopObservingRegisters();
             registersPane.getCoprocessor0Window().stopObservingRegisters();
             registersPane.getCoprocessor1Window().stopObservingRegisters();

@@ -52,7 +52,7 @@ public class MemoryConfiguration {
         this.configurationItemValues = itemValues;
     }
 
-    public String getConfigurationIdentifier() {
+    public String getIdentifier() {
         return configurationIdentifier;
     }
 

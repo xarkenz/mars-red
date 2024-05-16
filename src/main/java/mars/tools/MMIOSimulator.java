@@ -3,6 +3,7 @@ package mars.tools;
 import mars.Application;
 import mars.mips.hardware.*;
 import mars.simulator.ExceptionCause;
+import mars.simulator.Simulator;
 import mars.util.Binary;
 import mars.venus.AbstractFontSettingDialog;
 import mars.venus.VenusUI;
@@ -15,7 +16,6 @@ import javax.swing.text.DefaultCaret;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Arrays;
-import java.util.Observable;
 import java.util.Random;
 
 /*
@@ -174,15 +174,81 @@ public class MMIOSimulator extends AbstractMarsTool {
         // Set transmitter Control ready bit to 1, means we're ready to accept display character.
         updateMMIOControl(transmitterControl, readyBitSet(transmitterControl));
         // We want to be an observer only of MIPS reads from RECEIVER_DATA and writes to TRANSMITTER_DATA.
-        // Use the Globals.memory.addObserver() methods instead of inherited method to achieve this.
-        startObserving(receiverData, receiverData);
-        startObserving(transmitterData, transmitterData);
+        Memory.getInstance().addListener(this.receiverListener, receiverData);
+        Memory.getInstance().addListener(this.transmitterListener, transmitterData);
         // We want to be notified of each instruction execution, because instruction count is the
         // basis for delay in re-setting (literally) the TRANSMITTER_CONTROL register.  SPIM does
-        // this too.  This simulates the time required for the display unit to process the
-        // TRANSMITTER_DATA.
-        startObserving(Memory.textBaseAddress, Memory.textLimitAddress);
-        startObserving(Memory.kernelTextBaseAddress, Memory.kernelTextLimitAddress);
+        // this too.  This simulates the time required for the display unit to process the TRANSMITTER_DATA.
+        Memory.getInstance().addListener(this, Memory.textBaseAddress, Memory.textLimitAddress - 1);
+        Memory.getInstance().addListener(this, Memory.kernelTextBaseAddress, Memory.kernelTextLimitAddress - 1);
+    }
+
+    @Override
+    protected void stopObserving() {
+        Memory.getInstance().removeListener(this.receiverListener);
+        Memory.getInstance().removeListener(this.transmitterListener);
+        Memory.getInstance().removeListener(this);
+    }
+
+    private final Memory.Listener receiverListener = new Memory.Listener() {
+        @Override
+        public void memoryRead(int address, int length, int value, int wordAddress, int wordValue) {
+            // If MIPS program has just read (loaded) the receiver (keyboard) data register,
+            // then clear the Ready bit to indicate there is no longer a keystroke available.
+            // If Ready bit was initially clear, they'll get the old keystroke -- serves 'em right
+            // for not checking!
+            updateMMIOControl(receiverControl, readyBitCleared(receiverControl));
+        }
+    };
+
+    private final Memory.Listener transmitterListener = new Memory.Listener() {
+        @Override
+        public void memoryWritten(int address, int length, int value, int wordAddress, int wordValue) {
+            // MIPS program has just written (stored) the transmitter (display) data register.  If transmitter
+            // Ready bit is clear, device is not ready yet so ignore this event -- serves 'em right for not checking!
+            // If transmitter Ready bit is set, then clear it to indicate the display device is processing the character.
+            // Also start an intruction counter that will simulate the delay of the slower
+            // display device processing the character.
+            if (isReadyBitSet(transmitterControl)) {
+                updateMMIOControl(transmitterControl, readyBitCleared(transmitterControl));
+                intWithCharacterToDisplay = value;
+                if (!displayAfterDelay) {
+                    displayCharacter(intWithCharacterToDisplay);
+                }
+                countingInstructions = true;
+                instructionCount = 0;
+                transmitDelayInstructionCountLimit = generateDelay();
+            }
+        }
+    };
+
+    /**
+     * Update display when connected MIPS program reads an instruction from the text or kernel text segments.
+     */
+    @Override
+    public void memoryRead(int address, int length, int value, int wordAddress, int wordValue) {
+        // We have been notified of a MIPS instruction execution.
+        // If we are in transmit delay period, increment instruction count and if limit
+        // has been reached, set the transmitter Ready flag to indicate the MIPS program
+        // can write another character to the transmitter data register.  If the Interrupt-Enabled
+        // bit had been set by the MIPS program, generate an interrupt!
+        if (this.countingInstructions) {
+            this.instructionCount++;
+            if (this.instructionCount >= this.transmitDelayInstructionCountLimit) {
+                if (displayAfterDelay) {
+                    displayCharacter(intWithCharacterToDisplay);
+                }
+                this.countingInstructions = false;
+                int updatedTransmitterControl = readyBitSet(transmitterControl);
+                updateMMIOControl(transmitterControl, updatedTransmitterControl);
+                if (updatedTransmitterControl != 1 && (Coprocessor0.getValue(Coprocessor0.STATUS) & 2) == 0  // Added by Carl Hauser Nov 2008
+                    && (Coprocessor0.getValue(Coprocessor0.STATUS) & 1) == 1) {
+                    // interrupt-enabled bit is set in both Tranmitter Control and in
+                    // Coprocessor0 Status register, and Interrupt Level Bit is 0, so trigger external interrupt.
+                    Simulator.externalInterruptingDevice = ExceptionCause.EXTERNAL_INTERRUPT_DISPLAY;
+                }
+            }
+        }
     }
 
     /**
@@ -211,63 +277,8 @@ public class MMIOSimulator extends AbstractMarsTool {
         return keyboardAndDisplay;
     }
 
-    /**
-     * Update display when connected MIPS program accesses (data) memory.
-     *
-     * @param observable   The observable.
-     * @param accessNotice information provided by memory in MemoryAccessNotice object.
-     */
-    @Override
-    protected void processMIPSUpdate(Observable observable, AccessNotice accessNotice) {
-        MemoryAccessNotice notice = (MemoryAccessNotice) accessNotice;
-        // If MIPS program has just read (loaded) the receiver (keyboard) data register,
-        // then clear the Ready bit to indicate there is no longer a keystroke available.
-        // If Ready bit was initially clear, they'll get the old keystroke -- serves 'em right
-        // for not checking!
-        if (notice.getAddress() == receiverData && notice.getAccessType() == AccessNotice.READ) {
-            updateMMIOControl(receiverControl, readyBitCleared(receiverControl));
-        }
-        // MIPS program has just written (stored) the transmitter (display) data register.  If transmitter
-        // Ready bit is clear, device is not ready yet so ignore this event -- serves 'em right for not checking!
-        // If transmitter Ready bit is set, then clear it to indicate the display device is processing the character.
-        // Also start an intruction counter that will simulate the delay of the slower
-        // display device processing the character.
-        if (isReadyBitSet(transmitterControl) && notice.getAddress() == transmitterData && notice.getAccessType() == AccessNotice.WRITE) {
-            updateMMIOControl(transmitterControl, readyBitCleared(transmitterControl));
-            intWithCharacterToDisplay = notice.getValue();
-            if (!displayAfterDelay) {
-                displayCharacter(intWithCharacterToDisplay);
-            }
-            this.countingInstructions = true;
-            this.instructionCount = 0;
-            this.transmitDelayInstructionCountLimit = generateDelay();
-        }
-        // We have been notified of a MIPS instruction execution.
-        // If we are in transmit delay period, increment instruction count and if limit
-        // has been reached, set the transmitter Ready flag to indicate the MIPS program
-        // can write another character to the transmitter data register.  If the Interrupt-Enabled
-        // bit had been set by the MIPS program, generate an interrupt!
-        if (this.countingInstructions && notice.getAccessType() == AccessNotice.READ && (Memory.isInTextSegment(notice.getAddress()) || Memory.isInKernelTextSegment(notice.getAddress()))) {
-            this.instructionCount++;
-            if (this.instructionCount >= this.transmitDelayInstructionCountLimit) {
-                if (displayAfterDelay) {
-                    displayCharacter(intWithCharacterToDisplay);
-                }
-                this.countingInstructions = false;
-                int updatedTransmitterControl = readyBitSet(transmitterControl);
-                updateMMIOControl(transmitterControl, updatedTransmitterControl);
-                if (updatedTransmitterControl != 1 && (Coprocessor0.getValue(Coprocessor0.STATUS) & 2) == 0  // Added by Carl Hauser Nov 2008
-                    && (Coprocessor0.getValue(Coprocessor0.STATUS) & 1) == 1) {
-                    // interrupt-enabled bit is set in both Tranmitter Control and in
-                    // Coprocessor0 Status register, and Interrupt Level Bit is 0, so trigger external interrupt.
-                    mars.simulator.Simulator.externalInterruptingDevice = ExceptionCause.EXTERNAL_INTERRUPT_DISPLAY;
-                }
-            }
-        }
-    }
-
     private static final char CLEAR_SCREEN = 12; // ASCII Form Feed
-    private static final char SET_CURSOR_X_Y = 7; // ASCII Bell  (ding ding!)
+    private static final char SET_CURSOR_X_Y = 7; // ASCII Bell (ding ding!)
 
     // Method to display the character stored in the low-order byte of
     // the parameter.  We also recognize two non-printing characters:

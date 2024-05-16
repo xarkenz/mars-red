@@ -2,10 +2,7 @@ package mars.tools;
 
 import mars.Application;
 import mars.ProgramStatement;
-import mars.mips.hardware.AccessNotice;
-import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.MemoryAccessNotice;
 import mars.venus.VenusUI;
 import mars.venus.actions.run.RunAssembleAction;
 import mars.venus.actions.run.RunStepBackwardAction;
@@ -41,14 +38,13 @@ public class MipsXray extends AbstractMarsTool {
     // Address of instruction in memory
     protected int lastAddress = -1;
     protected JLabel label;
-    private final Container painel = this.getContentPane();
 
     private String instructionBinary;
 
     private Action runAssembleAction, runStepAction, runBackstepAction;
 
     private VenusUI gui;
-    private JToolBar toolbar;
+    private JToolBar toolBar;
 
     /**
      * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
@@ -106,7 +102,7 @@ public class MipsXray extends AbstractMarsTool {
     protected JComponent buildMainDisplayArea(String figure) {
         gui = Application.getGUI();
         this.createActionObjects();
-        toolbar = this.setUpToolBar();
+        toolBar = this.setUpToolBar();
 
         GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
         GraphicsConfiguration gc = ge.getDefaultScreenDevice().getDefaultConfiguration();
@@ -130,62 +126,44 @@ public class MipsXray extends AbstractMarsTool {
         icon = new ImageIcon(im);
 
         JLabel label = new JLabel(icon);
-        painel.add(label, BorderLayout.WEST);
-        painel.add(toolbar, BorderLayout.NORTH);
+        this.getContentPane().add(label, BorderLayout.WEST);
+        this.getContentPane().add(toolBar, BorderLayout.NORTH);
         this.setResizable(false);
-        return (JComponent) painel;
+
+        return (JComponent) this.getContentPane();
     }
 
     @Override
     protected void startObserving() {
-        startObserving(Memory.textBaseAddress, Memory.textLimitAddress);
+        Memory.getInstance().addListener(this, Memory.textBaseAddress, Memory.textLimitAddress - 1);
+    }
+
+    @Override
+    protected void stopObserving() {
+        Memory.getInstance().removeListener(this);
     }
 
     /**
      * Function that gets the current instruction in memory and start animation with the selected instruction.
      */
     @Override
-    protected void processMIPSUpdate(Observable resource, AccessNotice notice) {
-        if (!notice.accessIsFromMIPS()) {
+    public void memoryRead(int address, int length, int value, int wordAddress, int wordValue) {
+        if (wordAddress == lastAddress) {
             return;
         }
-        if (notice.getAccessType() != AccessNotice.READ) {
-            return;
-        }
-        MemoryAccessNotice man = (MemoryAccessNotice) notice;
-        int currentAdress = man.getAddress();
+        lastAddress = wordAddress;
 
-        if (currentAdress == lastAddress) {
-            return;
-        }
-        lastAddress = currentAdress;
-        ProgramStatement stmt;
+        ProgramStatement statement = new ProgramStatement(wordValue, wordAddress);
+        instructionBinary = statement.getMachineStatement();
 
-        try {
-            stmt = Memory.getInstance().getStatement(currentAdress);
-            if (stmt == null) {
-                return;
-            }
-
-            instructionBinary = stmt.getMachineStatement();
-
-            painel.removeAll();
-            // Class panel that runs datapath animation
-            DatapathAnimation datapathAnimation = new DatapathAnimation(instructionBinary);
-            this.createActionObjects();
-            toolbar = this.setUpToolBar();
-            painel.add(toolbar, BorderLayout.NORTH);
-            painel.add(datapathAnimation, BorderLayout.WEST);
-            datapathAnimation.startAnimation(instructionBinary);
-        }
-        catch (AddressErrorException exception) {
-            exception.printStackTrace(System.err);
-        }
-    }
-
-    @Override
-    public void updateDisplay() {
-        this.repaint();
+        this.getContentPane().removeAll();
+        // Class panel that runs datapath animation
+        DatapathAnimation datapathAnimation = new DatapathAnimation(instructionBinary);
+        this.createActionObjects();
+        toolBar = this.setUpToolBar();
+        this.getContentPane().add(toolBar, BorderLayout.NORTH);
+        this.getContentPane().add(datapathAnimation, BorderLayout.WEST);
+        datapathAnimation.startAnimation(instructionBinary);
     }
 
     /**
@@ -1540,10 +1518,7 @@ public class MipsXray extends AbstractMarsTool {
             }
         }
 
-        public void updateDisplay() {
-            this.repaint();
-        }
-
+        @Override
         public void paintComponent(Graphics g) {
             super.paintComponent(g);
             g2d = (Graphics2D) g;
