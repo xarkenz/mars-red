@@ -167,14 +167,13 @@ public class Application {
      */
     public static void initialize() {
         if (!initialized) {
+            settings = new Settings();
             memory = Memory.getInstance(); // Clients can still use Memory.getInstance instead of Globals.memory
             instructionSet = new InstructionSet();
             instructionSet.populate();
             globalSymbolTable = new SymbolTable("(global)");
-            settings = new Settings();
             initialized = true;
             debug = false;
-            memory.clear(); // Will establish memory configuration from setting
         }
     }
 

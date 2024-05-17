@@ -94,7 +94,6 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
             dialogPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
             JPanel configInfo = new JPanel(new FlowLayout());
-            MemoryConfigurations.buildConfigurationCollection();
             configInfo.add(buildConfigChooser());
             configInfo.add(buildConfigDisplay());
             dialogPanel.add(configInfo);
@@ -122,7 +121,7 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
         private Component buildConfigDisplay() {
             JPanel displayPanel = new JPanel();
             MemoryConfiguration config = MemoryConfigurations.getCurrentConfiguration();
-            String[] configurationItemNames = config.getConfigurationItemNames();
+            String[] configurationItemNames = config.addressNames();
             int numItems = configurationItemNames.length;
             JPanel namesPanel = new JPanel(new GridLayout(numItems, 1));
             JPanel valuesPanel = new JPanel(new GridLayout(numItems, 1));
@@ -199,7 +198,7 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
 
         private void performApply() {
             if (MemoryConfigurations.setCurrentConfiguration(this.selectedConfigurationButton.getConfiguration())) {
-                Application.getSettings().memoryConfiguration.set(this.selectedConfigurationButton.getConfiguration().getIdentifier());
+                Application.getSettings().memoryConfiguration.set(this.selectedConfigurationButton.getConfiguration().identifier());
                 gui.getRegistersPane().getRegistersWindow().clearHighlighting();
                 gui.getRegistersPane().getRegistersWindow().updateRegisters();
                 gui.getMainPane().getExecuteTab().getDataSegmentWindow().updateBaseAddressComboBox();
@@ -228,8 +227,8 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
 
         // Set name values in JLabels and address values in the JTextFields
         private void setConfigDisplay(MemoryConfiguration config) {
-            String[] configurationItemNames = config.getConfigurationItemNames();
-            int[] configurationItemValues = config.getConfigurationItemValues();
+            String[] configurationItemNames = config.addressNames();
+            int[] configurationItemValues = config.addresses();
             // Will use TreeMap to extract list of address-name pairs sorted by
             // hex-stringified address. This will correctly handle kernel addresses,
             // whose int values are negative and thus normal sorting yields incorrect
@@ -255,7 +254,7 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
         private final MemoryConfiguration configuration;
 
         public ConfigurationButton(MemoryConfiguration config) {
-            super(config.getConfigurationName(), config == MemoryConfigurations.getCurrentConfiguration());
+            super(config.name(), config == MemoryConfigurations.getCurrentConfiguration());
             this.configuration = config;
         }
 

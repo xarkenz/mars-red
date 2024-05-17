@@ -51,34 +51,23 @@ public class BitmapDisplay extends AbstractMarsTool {
     private static final Integer[] UNIT_SIZE_CHOICES = { 1, 2, 4, 8, 16, 32 };
     private static final int DEFAULT_UNIT_WIDTH_INDEX = 0;
     private static final int DEFAULT_UNIT_HEIGHT_INDEX = 0;
-    private static final Integer[] BITMAP_SIZE_CHOICES = { 64, 128, 256, 512, 1024, 2048 };
-    private static final int DEFAULT_BITMAP_WIDTH_INDEX = 3;
-    private static final int DEFAULT_BITMAP_HEIGHT_INDEX = 3;
-
-    // Values for display canvas.  Note their initialization uses the identifiers just above.
-    private int unitWidth = UNIT_SIZE_CHOICES[DEFAULT_UNIT_WIDTH_INDEX];
-    private int unitHeight = UNIT_SIZE_CHOICES[DEFAULT_UNIT_HEIGHT_INDEX];
-    private int bitmapWidth = BITMAP_SIZE_CHOICES[DEFAULT_BITMAP_WIDTH_INDEX];
-    private int bitmapHeight = BITMAP_SIZE_CHOICES[DEFAULT_BITMAP_HEIGHT_INDEX];
+    private static final Integer[] DISPLAY_SIZE_CHOICES = { 64, 128, 256, 512, 1024, 2048 };
+    private static final int DEFAULT_DISPLAY_WIDTH_INDEX = 3;
+    private static final int DEFAULT_DISPLAY_HEIGHT_INDEX = 3;
 
     // The base addresses are lazy-initialized
     private static final String[] BASE_ADDRESS_NAMES = { "global data", "$gp", "static data", "heap", "MMIO" };
     private static final int DEFAULT_BASE_ADDRESS_INDEX = 2; // Static data
     private int[] baseAddresses;
-    private int firstAddress;
     private String[] baseAddressChoices;
 
     // Major GUI components
     private JComboBox<Integer> unitWidthSelector;
     private JComboBox<Integer> unitHeightSelector;
-    private JComboBox<Integer> bitmapWidthSelector;
-    private JComboBox<Integer> bitmapHeightSelector;
+    private JComboBox<Integer> displayWidthSelector;
+    private JComboBox<Integer> displayHeightSelector;
     private JComboBox<String> baseAddressSelector;
     private BitmapCanvas canvas;
-    private BufferedImage image;
-
-    // Ideally, we could synchronize on the image itself, but it can't be final, so a separate object is used instead.
-    private final Object imageLock = new Object();
 
     /**
      * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
@@ -98,35 +87,28 @@ public class BitmapDisplay extends AbstractMarsTool {
         return NAME;
     }
 
-    /**
-     * Override the inherited method, which registers us as an Observer over the static data segment
-     * (starting address 0x10010000) only.  This version will register us as observer over the
-     * the memory range as selected by the base address combo box and capacity of the visualization display
-     * (number of visualization elements times the number of memory words each one represents).
-     * It does so by calling the inherited 2-parameter overload of this method.
-     * If you use the inherited GUI buttons, this
-     * method is invoked when you click "Connect" button on MarsTool or the
-     * "Assemble and Run" button on a Mars-based app.
-     */
-    @Override
-    protected void startObserving() {
-        if (this.image == null) {
-            return;
-        }
-
-        int lastAddress = this.firstAddress + this.image.getWidth() * this.image.getHeight() * Memory.BYTES_PER_WORD - 1;
-        // If lastAddress < firstAddress, the range probably crosses the unsigned 32-bit integer limit
-        if (Integer.compareUnsigned(lastAddress, this.firstAddress) < 0) {
-            // Just cap lastAddress at the unsigned 32-bit integer limit
-            lastAddress = 0xFFFFFFFF;
-        }
-
-        Memory.getInstance().addListener(this, this.firstAddress, lastAddress);
-    }
-
     @Override
     protected void stopObserving() {
-        Memory.getInstance().removeListener(this);
+        this.canvas.stopObserving();
+    }
+
+    /**
+     * Initialize all JComboBox choice structures not already initialized at declaration.
+     * Overrides inherited method that does nothing.
+     */
+    @Override
+    protected void initializePreGUI() {
+        this.baseAddresses = new int[] {
+            Memory.dataSegmentBaseAddress,
+            Memory.globalPointer,
+            Memory.dataBaseAddress,
+            Memory.heapBaseAddress,
+            Memory.mmioBaseAddress,
+        };
+        this.baseAddressChoices = new String[BASE_ADDRESS_NAMES.length];
+        for (int choice = 0; choice < BASE_ADDRESS_NAMES.length; choice++) {
+            this.baseAddressChoices[choice] = Binary.intToHexString(this.baseAddresses[choice]) + " (" + BASE_ADDRESS_NAMES[choice] + ")";
+        }
     }
 
     @Override
@@ -150,7 +132,13 @@ public class BitmapDisplay extends AbstractMarsTool {
      */
     @Override
     protected JComponent buildMainDisplayArea() {
-        this.canvas = new BitmapCanvas();
+        this.canvas = new BitmapCanvas(
+            this.baseAddresses[DEFAULT_BASE_ADDRESS_INDEX],
+            UNIT_SIZE_CHOICES[DEFAULT_UNIT_WIDTH_INDEX],
+            UNIT_SIZE_CHOICES[DEFAULT_UNIT_HEIGHT_INDEX],
+            DISPLAY_SIZE_CHOICES[DEFAULT_DISPLAY_WIDTH_INDEX],
+            DISPLAY_SIZE_CHOICES[DEFAULT_DISPLAY_HEIGHT_INDEX]
+        );
 
         Box mainArea = Box.createVerticalBox();
         mainArea.add(new JScrollPane(this.canvas, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED));
@@ -161,59 +149,7 @@ public class BitmapDisplay extends AbstractMarsTool {
     }
 
     /**
-     * When memory pertaining to the bitmap is modified, change the color of the corresponding pixel and update.
-     */
-    @Override
-    public void memoryWritten(int address, int length, int value, int wordAddress, int wordValue) {
-        int offset = (wordAddress - this.firstAddress) / Memory.BYTES_PER_WORD;
-        synchronized (BitmapDisplay.this.imageLock) {
-            if (0 <= offset && offset < this.image.getWidth() * this.image.getHeight()) {
-                this.image.setRGB(offset % this.image.getWidth(), offset / this.image.getWidth(), wordValue);
-            }
-        }
-        // Update the canvas
-        this.canvas.repaint();
-    }
-
-    /**
-     * Initialize all JComboBox choice structures not already initialized at declaration.
-     * Overrides inherited method that does nothing.
-     */
-    @Override
-    protected void initializePreGUI() {
-        this.baseAddresses = new int[] {
-            Memory.dataSegmentBaseAddress,
-            Memory.globalPointer,
-            Memory.dataBaseAddress,
-            Memory.heapBaseAddress,
-            Memory.mmioBaseAddress,
-        };
-        this.firstAddress = this.baseAddresses[DEFAULT_BASE_ADDRESS_INDEX];
-        this.baseAddressChoices = new String[BASE_ADDRESS_NAMES.length];
-        for (int choice = 0; choice < BASE_ADDRESS_NAMES.length; choice++) {
-            this.baseAddressChoices[choice] = Binary.intToHexString(this.baseAddresses[choice]) + " (" + BASE_ADDRESS_NAMES[choice] + ")";
-        }
-    }
-
-    /**
-     * The post-GUI initialization updates the canvas size, which will also handle generating the initial image.
-     */
-    @Override
-    protected void initializePostGUI() {
-        this.canvas.updateSize();
-    }
-
-    /**
-     * Method to reset counters and display when the Reset button selected.
-     * Overrides inherited method that does nothing.
-     */
-    @Override
-    protected void reset() {
-        this.canvas.repaint();
-    }
-
-    /**
-     * Provide a Help button for this tool/app.
+     * Provide a Help button for this tool.
      */
     @Override
     protected JComponent getHelpComponent() {
@@ -242,12 +178,13 @@ public class BitmapDisplay extends AbstractMarsTool {
             questions or comments.
             """;
         JButton help = new JButton("Help");
+        help.putClientProperty("JButton.buttonType", "help");
         help.addActionListener(event -> JOptionPane.showMessageDialog(this.dialog, helpContent));
         return help;
     }
 
     /**
-     * UI components and layout for left half of GUI, where the settings are located.
+     * Build the layout for the part of the GUI where the settings are located.
      */
     private JComponent buildSettingsArea() {
         JPanel organization = new JPanel(new GridLayout(5, 1, 6, 6));
@@ -257,8 +194,7 @@ public class BitmapDisplay extends AbstractMarsTool {
         this.unitWidthSelector.setSelectedIndex(DEFAULT_UNIT_WIDTH_INDEX);
         this.unitWidthSelector.setToolTipText("Width, in pixels, of each rectangle representing a word in memory");
         this.unitWidthSelector.addActionListener(event -> {
-            this.unitWidth = UNIT_SIZE_CHOICES[this.unitWidthSelector.getSelectedIndex()];
-            this.canvas.resetImage();
+            this.canvas.setUnitWidth(UNIT_SIZE_CHOICES[this.unitWidthSelector.getSelectedIndex()]);
         });
         organization.add(this.createSettingsRow("Unit width (px):", this.unitWidthSelector));
 
@@ -267,44 +203,36 @@ public class BitmapDisplay extends AbstractMarsTool {
         this.unitHeightSelector.setSelectedIndex(DEFAULT_UNIT_HEIGHT_INDEX);
         this.unitHeightSelector.setToolTipText("Height, in pixels, of each rectangle representing a word in memory");
         this.unitHeightSelector.addActionListener(event -> {
-            this.unitHeight = UNIT_SIZE_CHOICES[this.unitHeightSelector.getSelectedIndex()];
-            this.canvas.resetImage();
+            this.canvas.setUnitHeight(UNIT_SIZE_CHOICES[this.unitHeightSelector.getSelectedIndex()]);
         });
         organization.add(this.createSettingsRow("Unit height (px):", this.unitHeightSelector));
 
-        this.bitmapWidthSelector = new JComboBox<>(BITMAP_SIZE_CHOICES);
-        this.bitmapWidthSelector.setEditable(false);
-        this.bitmapWidthSelector.setSelectedIndex(DEFAULT_BITMAP_WIDTH_INDEX);
-        this.bitmapWidthSelector.setToolTipText("Total width, in pixels, of the displayed bitmap");
-        this.bitmapWidthSelector.addActionListener(event -> {
-            this.bitmapWidth = BITMAP_SIZE_CHOICES[this.bitmapWidthSelector.getSelectedIndex()];
-            this.canvas.updateSize();
+        this.displayWidthSelector = new JComboBox<>(DISPLAY_SIZE_CHOICES);
+        this.displayWidthSelector.setEditable(false);
+        this.displayWidthSelector.setSelectedIndex(DEFAULT_DISPLAY_WIDTH_INDEX);
+        this.displayWidthSelector.setToolTipText("Total width, in pixels, of the bitmap display");
+        this.displayWidthSelector.addActionListener(event -> {
+            this.canvas.setDisplayWidth(DISPLAY_SIZE_CHOICES[this.displayWidthSelector.getSelectedIndex()]);
+            this.ensureCanvasVisible();
         });
-        organization.add(this.createSettingsRow("Bitmap width (px):", this.bitmapWidthSelector));
+        organization.add(this.createSettingsRow("Display width (px):", this.displayWidthSelector));
 
-        this.bitmapHeightSelector = new JComboBox<>(BITMAP_SIZE_CHOICES);
-        this.bitmapHeightSelector.setEditable(false);
-        this.bitmapHeightSelector.setSelectedIndex(DEFAULT_BITMAP_HEIGHT_INDEX);
-        this.bitmapHeightSelector.setToolTipText("Total height, in pixels, of the displayed bitmap");
-        this.bitmapHeightSelector.addActionListener(event -> {
-            this.bitmapHeight = BITMAP_SIZE_CHOICES[this.bitmapHeightSelector.getSelectedIndex()];
-            this.canvas.updateSize();
+        this.displayHeightSelector = new JComboBox<>(DISPLAY_SIZE_CHOICES);
+        this.displayHeightSelector.setEditable(false);
+        this.displayHeightSelector.setSelectedIndex(DEFAULT_DISPLAY_HEIGHT_INDEX);
+        this.displayHeightSelector.setToolTipText("Total height, in pixels, of the bitmap display");
+        this.displayHeightSelector.addActionListener(event -> {
+            this.canvas.setDisplayHeight(DISPLAY_SIZE_CHOICES[this.displayHeightSelector.getSelectedIndex()]);
+            this.ensureCanvasVisible();
         });
-        organization.add(this.createSettingsRow("Bitmap height (px):", this.bitmapHeightSelector));
+        organization.add(this.createSettingsRow("Display height (px):", this.displayHeightSelector));
 
         this.baseAddressSelector = new JComboBox<>(this.baseAddressChoices);
         this.baseAddressSelector.setEditable(false);
         this.baseAddressSelector.setSelectedIndex(DEFAULT_BASE_ADDRESS_INDEX);
-        this.baseAddressSelector.setToolTipText("Address of the top-left corner pixel of the bitmap");
+        this.baseAddressSelector.setToolTipText("Address of the top-left corner unit of the bitmap");
         this.baseAddressSelector.addActionListener(event -> {
-            // This may also affect what address range we should be registered as an Observer
-            // for.  The default (inherited) address range is the MIPS static data segment
-            // starting at 0x10010000. To change this requires override of
-            // AbstractMarsToolAndApplication.addAsObserver().  The no-argument version of
-            // that method is called automatically  when "Connect" button is clicked for MarsTool
-            // and when "Assemble and Run" button is clicked for Mars application.
-            this.firstAddress = this.baseAddresses[this.baseAddressSelector.getSelectedIndex()];
-            this.canvas.resetImage();
+            this.canvas.setFirstAddress(this.baseAddresses[this.baseAddressSelector.getSelectedIndex()]);
         });
         organization.add(this.createSettingsRow("Base memory address:", this.baseAddressSelector));
 
@@ -319,72 +247,159 @@ public class BitmapDisplay extends AbstractMarsTool {
         return settingsRow;
     }
 
+    private void ensureCanvasVisible() {
+        this.dialog.pack();
+        this.dialog.setLocationRelativeTo(Application.getGUI());
+    }
+
     /**
      * Custom component class for the central bitmap display canvas.
      */
-    private class BitmapCanvas extends JPanel {
-        public BitmapCanvas() {
+    private static class BitmapCanvas extends JPanel implements Memory.Listener {
+        // Ideally, we could synchronize on the image itself, but it can't be final,
+        // so a separate object is used instead.
+        private final Object imageLock = new Object();
+        private BufferedImage image;
+
+        private int firstAddress;
+        private int unitWidth;
+        private int unitHeight;
+        private int displayWidth;
+        private int displayHeight;
+
+        public BitmapCanvas(int firstAddress, int unitWidth, int unitHeight, int displayWidth, int displayHeight) {
+            super();
+
+            this.firstAddress = firstAddress;
+            this.unitWidth = unitWidth;
+            this.unitHeight = unitHeight;
+            this.displayWidth = displayWidth;
+            this.displayHeight = displayHeight;
             // Ensure the background is drawn correctly
             this.setOpaque(false);
             this.setToolTipText("Live display of the bitmap based on values currently in memory");
+            // Set the component size and initialize the image (this also starts listening to memory)
+            this.updateDisplaySize();
+        }
+
+        public int getBitmapMemorySize() {
+            return Memory.BYTES_PER_WORD * this.image.getWidth() * this.image.getHeight();
+        }
+
+        public void startObserving() {
+            int lastAddress = this.firstAddress + this.getBitmapMemorySize() - 1;
+            // If lastAddress < firstAddress, the range probably crosses the unsigned 32-bit integer limit
+            if (Integer.compareUnsigned(lastAddress, this.firstAddress) < 0) {
+                // Just cap lastAddress at the unsigned 32-bit integer limit
+                lastAddress = 0xFFFFFFFF;
+            }
+
+            Memory.getInstance().addListener(this, this.firstAddress, lastAddress);
+
             this.resetImage();
         }
 
-        @Override
-        public void paintComponent(Graphics graphics) {
-            // Draw the image in the center of the component bounds
-            int x = Math.max(0, this.getWidth() - BitmapDisplay.this.bitmapWidth) / 2;
-            int y = Math.max(0, this.getHeight() - BitmapDisplay.this.bitmapHeight) / 2;
-            synchronized (BitmapDisplay.this.imageLock) {
-                graphics.drawImage(BitmapDisplay.this.image, x, y, BitmapDisplay.this.bitmapWidth, BitmapDisplay.this.bitmapHeight, null);
-            }
+        public void stopObserving() {
+            Memory.getInstance().removeListener(this);
         }
 
-        public void updateSize() {
-            Dimension size = new Dimension(BitmapDisplay.this.bitmapWidth, BitmapDisplay.this.bitmapHeight);
-            // Just, like, make it very clear that we want the canvas to be this size
+        /**
+         * When memory pertaining to the bitmap is modified, change the color of the corresponding pixel and update.
+         */
+        @Override
+        public void memoryWritten(int address, int length, int value, int wordAddress, int wordValue) {
+            int offset = (wordAddress - this.firstAddress) / Memory.BYTES_PER_WORD;
+            synchronized (this.imageLock) {
+                if (0 <= offset && offset < this.image.getWidth() * this.image.getHeight()) {
+                    this.image.setRGB(offset % this.image.getWidth(), offset / this.image.getWidth(), wordValue);
+                }
+            }
+            // Repaint with the updated image
+            this.repaint();
+        }
+
+        public void setFirstAddress(int address) {
+            this.firstAddress = address;
+            // Update the active memory range and reinitialize the image contents
+            this.stopObserving();
+            this.startObserving();
+        }
+
+        public void setUnitWidth(int pixels) {
+            this.unitWidth = pixels;
+            this.updateImageSize();
+        }
+
+        public void setUnitHeight(int pixels) {
+            this.unitHeight = pixels;
+            this.updateImageSize();
+        }
+
+        public void setDisplayWidth(int pixels) {
+            this.displayWidth = pixels;
+            this.updateDisplaySize();
+        }
+
+        public void setDisplayHeight(int pixels) {
+            this.displayHeight = pixels;
+            this.updateDisplaySize();
+        }
+
+        private void updateDisplaySize() {
+            Dimension size = new Dimension(this.displayWidth, this.displayHeight);
+            // Just, like, make it very clear that we want the canvas to be this size (still not guaranteed!)
             this.setSize(size);
             this.setPreferredSize(size);
             this.setMinimumSize(size);
             this.setMaximumSize(size);
 
-            // Reset the image since the size has changed
-            this.resetImage();
-
-            // Reshape the window to fit the new size
-            BitmapDisplay.this.dialog.pack();
-            BitmapDisplay.this.dialog.setLocationRelativeTo(Application.getGUI());
+            // Update the component since its size changed
+            this.revalidate();
+            // The image size depends on the display size, so update that as well
+            this.updateImageSize();
         }
 
-        public void resetImage() {
-            // If something has changed, we can delete and add ourselves as an observer to refresh the memory range
-            BitmapDisplay.this.stopObserving();
-            BitmapDisplay.this.startObserving();
-
-            synchronized (BitmapDisplay.this.imageLock) {
-                // Regenerate the contents of the image from scratch
-                BitmapDisplay.this.image = new BufferedImage(
-                    BitmapDisplay.this.bitmapWidth / BitmapDisplay.this.unitWidth,
-                    BitmapDisplay.this.bitmapHeight / BitmapDisplay.this.unitHeight,
+        private void updateImageSize() {
+            // Regenerate the contents of the image from scratch
+            synchronized (this.imageLock) {
+                this.image = new BufferedImage(
+                    this.displayWidth / this.unitWidth,
+                    this.displayHeight / this.unitHeight,
                     BufferedImage.TYPE_INT_RGB
                 );
-                try {
-                    int offset = 0;
-                    for (int y = 0; y < BitmapDisplay.this.image.getHeight(); y++) {
-                        for (int x = 0; x < BitmapDisplay.this.image.getWidth(); x++) {
-                            BitmapDisplay.this.image.setRGB(x, y, Memory.getInstance().getWordNoNotify(BitmapDisplay.this.firstAddress + offset));
-                            offset += Memory.BYTES_PER_WORD;
+            }
+            // Update the active memory range and initialize the image contents
+            this.stopObserving();
+            this.startObserving();
+        }
+
+        private void resetImage() {
+            try {
+                synchronized (this.imageLock) {
+                    int address = this.firstAddress;
+                    for (int y = 0; y < this.image.getHeight(); y++) {
+                        for (int x = 0; x < this.image.getWidth(); x++) {
+                            this.image.setRGB(x, y, Memory.getInstance().getWordNoNotify(address));
+                            address += Memory.BYTES_PER_WORD;
                         }
                     }
                 }
-                catch (AddressErrorException exception) {
-                    // The base address must not be aligned properly, so keep the image in its default state
-                }
             }
-
-            // Update the canvas component and repaint the image
-            this.revalidate();
+            catch (AddressErrorException exception) {
+                // The base address must not be aligned properly, so keep the image in its default state
+            }
+            // Repaint the image
             this.repaint();
+        }
+
+        @Override
+        public void paintComponent(Graphics graphics) {
+            // Draw the image in the center of the component bounds
+            int x = Math.max(0, this.getWidth() - this.displayWidth) / 2;
+            int y = Math.max(0, this.getHeight() - this.displayHeight) / 2;
+            synchronized (this.imageLock) {
+                graphics.drawImage(this.image, x, y, this.displayWidth, this.displayHeight, null);
+            }
         }
     }
 }

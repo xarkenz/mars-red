@@ -42,16 +42,32 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @version August 2009
  */
 public class MemoryConfigurations {
-    private static List<MemoryConfiguration> configurations = null;
-    private static MemoryConfiguration defaultConfiguration;
-    private static MemoryConfiguration currentConfiguration;
+    public static final int TEXT_BASE = 0;
+    public static final int DATA_SEGMENT_BASE = 1;
+    public static final int EXTERN_BASE = 2;
+    public static final int GLOBAL_POINTER = 3;
+    public static final int DATA_BASE = 4;
+    public static final int HEAP_BASE = 5;
+    public static final int STACK_POINTER = 6;
+    public static final int STACK_BASE = 7;
+    public static final int USER_HIGH = 8;
+    public static final int KERNEL_BASE = 9;
+    public static final int KERNEL_TEXT_BASE = 10;
+    public static final int EXCEPTION_HANDLER = 11;
+    public static final int KERNEL_DATA_BASE = 12;
+    public static final int MMIO_BASE = 13;
+    public static final int KERNEL_HIGH = 14;
+    public static final int DATA_SEGMENT_LIMIT = 15;
+    public static final int TEXT_LIMIT = 16;
+    public static final int KERNEL_DATA_LIMIT = 17;
+    public static final int KERNEL_TEXT_LIMIT = 18;
+    public static final int STACK_LIMIT = 19;
+    public static final int MMIO_LIMIT = 20;
 
     // Be careful, these arrays are parallel and position-sensitive.
-    // The getters in this and in MemoryConfiguration depend on this
-    // sequence.  Should be refactored...  The order comes from the
-    // original listed order in Memory.java, where most of these were
-    // "final" until Mars 3.7 and changeable memory configurations.
-    private static final String[] configurationItemNames = {
+    // The getters in this and in MemoryConfiguration depend on this sequence.
+
+    private static final String[] ADDRESS_NAMES = {
         ".text base address",
         "data segment base address",
         ".extern base address",
@@ -72,11 +88,13 @@ public class MemoryConfigurations {
         "kernel data segment limit address",
         "kernel text limit address",
         "stack limit address",
-        "memory map limit address",
+        "MMIO limit address",
     };
 
-    // Default configuration comes from SPIM
-    private static final int[] defaultConfigurationItemValues = {
+    /**
+     * Default configuration comes from SPIM.
+     */
+    private static final int[] DEFAULT_ADDRESSES = {
         0x00400000, // .text Base Address
         0x10000000, // Data Segment base address
         0x10000000, // .extern Base Address
@@ -99,9 +117,10 @@ public class MemoryConfigurations {
         0x10040000, // stack limit address
         0xffffffff, // memory map limit address
     };
-
-    // Compact allows 16 bit addressing, data segment starts at 0
-    private static final int[] dataBasedCompactConfigurationItemValues = {
+    /**
+     * Compact allows 16 bit addressing, data segment starts at 0.
+     */
+    private static final int[] DATA_BASED_COMPACT_ADDRESSES = {
         0x00003000, // .text Base Address
         0x00000000, // Data Segment base address
         0x00001000, // .extern Base Address
@@ -122,11 +141,12 @@ public class MemoryConfigurations {
         0x00007eff, // kernel data segment limit address
         0x00004ffc, // kernel text limit address
         0x00002000, // stack limit address
-        0x00007fff, // memory map limit address
+        0x00007fff, // MMIO limit address
     };
-
-    // Compact allows 16 bit addressing, text segment starts at 0
-    private static final int[] textBasedCompactConfigurationItemValues = {
+    /**
+     * Compact allows 16 bit addressing, text segment starts at 0.
+     */
+    private static final int[] TEXT_BASED_COMPACT_ADDRESSES = {
         0x00000000, // .text Base Address
         0x00001000, // Data Segment base address
         0x00001000, // .extern Base Address
@@ -147,35 +167,31 @@ public class MemoryConfigurations {
         0x00007eff, // kernel data segment limit address
         0x00004ffc, // kernel text limit address
         0x00003000, // stack limit address
-        0x00007fff, // memory map limit address
+        0x00007fff, // MMIO limit address
     };
 
-    // Prevent instances of this class
-    private MemoryConfigurations() {}
-
-    public static void buildConfigurationCollection() {
-        if (configurations == null) {
-            configurations = new ArrayList<>();
-            configurations.add(new MemoryConfiguration("Default", "Default", configurationItemNames, defaultConfigurationItemValues));
-            configurations.add(new MemoryConfiguration("CompactDataAtZero", "Compact, Data at Address 0", configurationItemNames, dataBasedCompactConfigurationItemValues));
-            configurations.add(new MemoryConfiguration("CompactTextAtZero", "Compact, Text at Address 0", configurationItemNames, textBasedCompactConfigurationItemValues));
-            defaultConfiguration = configurations.get(0);
-            currentConfiguration = defaultConfiguration;
-            // Get current config from settings
-            setCurrentConfiguration(getConfigurationByName(Application.getSettings().memoryConfiguration.get()));
-        }
-    }
+    private static List<MemoryConfiguration> configurations = null;
+    private static MemoryConfiguration defaultConfiguration;
+    private static MemoryConfiguration currentConfiguration;
 
     public static List<MemoryConfiguration> getConfigurations() {
         if (configurations == null) {
-            buildConfigurationCollection();
+            defaultConfiguration = new MemoryConfiguration("Default", "Default", ADDRESS_NAMES, DEFAULT_ADDRESSES);
+            currentConfiguration = defaultConfiguration;
+
+            configurations = new ArrayList<>();
+            configurations.add(defaultConfiguration);
+            configurations.add(new MemoryConfiguration("CompactDataAtZero", "Compact, Data at Address 0", ADDRESS_NAMES, DATA_BASED_COMPACT_ADDRESSES));
+            configurations.add(new MemoryConfiguration("CompactTextAtZero", "Compact, Text at Address 0", ADDRESS_NAMES, TEXT_BASED_COMPACT_ADDRESSES));
+            // Get current config from settings
+            setCurrentConfiguration(getConfiguration(Application.getSettings().memoryConfiguration.get()));
         }
         return configurations;
     }
 
-    public static MemoryConfiguration getConfigurationByName(String name) {
+    public static MemoryConfiguration getConfiguration(String identifier) {
         for (MemoryConfiguration config : getConfigurations()) {
-            if (name.equals(config.getIdentifier())) {
+            if (config.identifier().equals(identifier)) {
                 return config;
             }
         }
@@ -183,16 +199,12 @@ public class MemoryConfigurations {
     }
 
     public static MemoryConfiguration getDefaultConfiguration() {
-        if (defaultConfiguration == null) {
-            buildConfigurationCollection();
-        }
+        getConfigurations();
         return defaultConfiguration;
     }
 
     public static MemoryConfiguration getCurrentConfiguration() {
-        if (currentConfiguration == null) {
-            buildConfigurationCollection();
-        }
+        getConfigurations();
         return currentConfiguration;
     }
 
@@ -202,102 +214,15 @@ public class MemoryConfigurations {
         }
         if (config != currentConfiguration) {
             currentConfiguration = config;
-            Application.memory.clear();
-            RegisterFile.getRegisters()[RegisterFile.GLOBAL_POINTER].setDefaultValue(config.getGlobalPointer());
-            RegisterFile.getRegisters()[RegisterFile.STACK_POINTER].setDefaultValue(config.getStackPointer());
-            RegisterFile.getProgramCounterRegister().setDefaultValue(config.getTextBaseAddress());
-            RegisterFile.initializeProgramCounter(config.getTextBaseAddress());
+            Application.memory.reset();
+            RegisterFile.getRegisters()[RegisterFile.GLOBAL_POINTER].setDefaultValue(config.getAddress(GLOBAL_POINTER));
+            RegisterFile.getRegisters()[RegisterFile.STACK_POINTER].setDefaultValue(config.getAddress(STACK_POINTER));
+            RegisterFile.getProgramCounterRegister().setDefaultValue(config.getAddress(TEXT_BASE));
             RegisterFile.resetRegisters();
             return true;
         }
         else {
             return false;
         }
-    }
-
-    //  Use these to initialize Memory static variables at launch
-
-    public static int getDefaultTextBaseAddress() {
-        return defaultConfigurationItemValues[0];
-    }
-
-    public static int getDefaultDataSegmentBaseAddress() {
-        return defaultConfigurationItemValues[1];
-    }
-
-    public static int getDefaultExternBaseAddress() {
-        return defaultConfigurationItemValues[2];
-    }
-
-    public static int getDefaultGlobalPointer() {
-        return defaultConfigurationItemValues[3];
-    }
-
-    public static int getDefaultDataBaseAddress() {
-        return defaultConfigurationItemValues[4];
-    }
-
-    public static int getDefaultHeapBaseAddress() {
-        return defaultConfigurationItemValues[5];
-    }
-
-    public static int getDefaultStackPointer() {
-        return defaultConfigurationItemValues[6];
-    }
-
-    public static int getDefaultStackBaseAddress() {
-        return defaultConfigurationItemValues[7];
-    }
-
-    public static int getDefaultUserHighAddress() {
-        return defaultConfigurationItemValues[8];
-    }
-
-    public static int getDefaultKernelBaseAddress() {
-        return defaultConfigurationItemValues[9];
-    }
-
-    public static int getDefaultKernelTextBaseAddress() {
-        return defaultConfigurationItemValues[10];
-    }
-
-    public static int getDefaultExceptionHandlerAddress() {
-        return defaultConfigurationItemValues[11];
-    }
-
-    public static int getDefaultKernelDataBaseAddress() {
-        return defaultConfigurationItemValues[12];
-    }
-
-    public static int getDefaultMemoryMapBaseAddress() {
-        return defaultConfigurationItemValues[13];
-    }
-
-    public static int getDefaultKernelHighAddress() {
-        return defaultConfigurationItemValues[14];
-    }
-
-    public int getDefaultDataSegmentLimitAddress() {
-        return defaultConfigurationItemValues[15];
-    }
-
-    public int getDefaultTextLimitAddress() {
-        return defaultConfigurationItemValues[16];
-    }
-
-    public int getDefaultKernelDataSegmentLimitAddress() {
-        return defaultConfigurationItemValues[17];
-    }
-
-    public int getDefaultKernelTextLimitAddress() {
-        return defaultConfigurationItemValues[18];
-    }
-
-    public int getDefaultStackLimitAddress() {
-        return defaultConfigurationItemValues[19];
-    }
-
-    public int getMemoryMapLimitAddress() {
-        return defaultConfigurationItemValues[20];
     }
 }

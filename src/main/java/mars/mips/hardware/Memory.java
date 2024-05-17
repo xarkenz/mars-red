@@ -54,65 +54,65 @@ public class Memory {
     }
 
     /**
-     * base address for (user) text segment: 0x00400000
+     * base address for (user) text segment
      */
-    public static int textBaseAddress = MemoryConfigurations.getDefaultTextBaseAddress(); //0x00400000;
+    public static int textBaseAddress;
     /**
-     * base address for (user) data segment: 0x10000000
+     * base address for (user) data segment
      */
-    public static int dataSegmentBaseAddress = MemoryConfigurations.getDefaultDataSegmentBaseAddress(); //0x10000000;
+    public static int dataSegmentBaseAddress;
     /**
-     * base address for .extern directive: 0x10000000
+     * base address for .extern directive
      */
-    public static int externBaseAddress = MemoryConfigurations.getDefaultExternBaseAddress(); //0x10000000;
+    public static int externBaseAddress;
     /**
      * base address for storing globals
      */
-    public static int globalPointer = MemoryConfigurations.getDefaultGlobalPointer(); //0x10008000;
+    public static int globalPointer;
     /**
-     * base address for storage of non-global static data in data segment: 0x10010000 (from SPIM)
+     * base address for storage of non-global static data in data segment
      */
-    public static int dataBaseAddress = MemoryConfigurations.getDefaultDataBaseAddress(); //0x10010000; // from SPIM not MIPS
+    public static int dataBaseAddress;
     /**
-     * base address for heap: 0x10040000 (I think from SPIM not MIPS)
+     * base address for heap
      */
-    public static int heapBaseAddress = MemoryConfigurations.getDefaultHeapBaseAddress(); //0x10040000; // I think from SPIM not MIPS
+    public static int heapBaseAddress;
     /**
-     * starting address for stack: 0x7fffeffc (this is from SPIM not MIPS)
+     * starting address for stack
      */
-    public static int stackPointer = MemoryConfigurations.getDefaultStackPointer(); //0x7fffeffc;
+    public static int stackPointer;
     /**
-     * base address for stack: 0x7ffffffc (this is mine - start of highest word below kernel space)
+     * base address for stack
      */
-    public static int stackBaseAddress = MemoryConfigurations.getDefaultStackBaseAddress(); //0x7ffffffc;
+    public static int stackBaseAddress;
     /**
      * highest address accessible in user (not kernel) mode.
      */
-    public static int userHighAddress = MemoryConfigurations.getDefaultUserHighAddress(); //0x7fffffff;
+    public static int userHighAddress;
     /**
      * kernel boundary.  Only OS can access this or higher address
      */
-    public static int kernelBaseAddress = MemoryConfigurations.getDefaultKernelBaseAddress(); //0x80000000;
+    public static int kernelBaseAddress;
     /**
-     * base address for kernel text segment: 0x80000000
+     * base address for kernel text segment
      */
-    public static int kernelTextBaseAddress = MemoryConfigurations.getDefaultKernelTextBaseAddress(); //0x80000000;
+    public static int kernelTextBaseAddress;
     /**
-     * starting address for exception handlers: 0x80000180
+     * starting address for exception handlers
      */
-    public static int exceptionHandlerAddress = MemoryConfigurations.getDefaultExceptionHandlerAddress(); //0x80000180;
+    public static int exceptionHandlerAddress;
     /**
-     * base address for kernel data segment: 0x90000000
+     * base address for kernel data segment
      */
-    public static int kernelDataBaseAddress = MemoryConfigurations.getDefaultKernelDataBaseAddress(); //0x90000000;
+    public static int kernelDataBaseAddress;
     /**
-     * starting address for memory mapped I/O: 0xffff0000 (-65536)
+     * starting address for memory mapped I/O
      */
-    public static int mmioBaseAddress = MemoryConfigurations.getDefaultMemoryMapBaseAddress(); //0xffff0000;
+    public static int mmioBaseAddress;
     /**
      * highest address acessible in kernel mode.
      */
-    public static int kernelHighAddress = MemoryConfigurations.getDefaultKernelHighAddress(); //0xffffffff;
+    public static int kernelHighAddress;
 
     /**
      * MIPS word length in bytes.
@@ -131,18 +131,21 @@ public class Memory {
      * Constant representing byte order of each memory word.  Little-endian means lowest
      * numbered byte is right most [3][2][1][0].
      */
-    public static final boolean LITTLE_ENDIAN = true;
+    public static final int LITTLE_ENDIAN = 1;
     /**
      * Constant representing byte order of each memory word.  Big-endian means lowest
      * numbered byte is left most [0][1][2][3].
      */
-    public static final boolean BIG_ENDIAN = false;
-    /**
-     * Current setting for endian (default LITTLE_ENDIAN)
-     */
-    private static boolean byteOrder = LITTLE_ENDIAN;
+    public static final int BIG_ENDIAN = 0;
 
-    public int heapAddress;
+    /**
+     * Current setting for endianness (default is {@link #LITTLE_ENDIAN}).
+     */
+    private int endianness = LITTLE_ENDIAN;
+    /**
+     * The next address on the heap which will be used for dynamic memory allocation.
+     */
+    private int nextHeapAddress;
 
     /**
      * Memory will maintain a collection of observables.  Each one is associated
@@ -230,22 +233,19 @@ public class Memory {
     // on the table structures described above (except memory mapped IO, limited to 64KB by range).
     public static int dataSegmentLimitAddress = dataSegmentBaseAddress + BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * BYTES_PER_WORD;
     public static int textLimitAddress = textBaseAddress + TEXT_BLOCK_LENGTH_WORDS * TEXT_BLOCK_TABLE_LENGTH * BYTES_PER_WORD;
-    public static int kernelDataSegmentLimitAddress = kernelDataBaseAddress + BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * BYTES_PER_WORD;
+    public static int kernelDataLimitAddress = kernelDataBaseAddress + BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * BYTES_PER_WORD;
     public static int kernelTextLimitAddress = kernelTextBaseAddress + TEXT_BLOCK_LENGTH_WORDS * TEXT_BLOCK_TABLE_LENGTH * BYTES_PER_WORD;
     public static int stackLimitAddress = stackBaseAddress - BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * BYTES_PER_WORD;
     public static int mmioLimitAddress = mmioBaseAddress + BLOCK_LENGTH_WORDS * MMIO_TABLE_LENGTH * BYTES_PER_WORD;
 
-    // This will be a Singleton class, only one instance is ever created.  Since I know the 
+    // This will be a Singleton class, only one instance is ever created.  Since I know the
     // Memory object is always needed, I'll go ahead and create it at the time of class loading.
     // (greedy rather than lazy instantiation).  The constructor is private and getInstance()
     // always returns this instance.
     private static final Memory instance = new Memory();
 
-    /**
-     * Private constructor for Memory.  Separate data structures for text and data segments.
-     */
     private Memory() {
-        initialize();
+        this.reset();
     }
 
     /**
@@ -256,42 +256,32 @@ public class Memory {
     }
 
     /**
-     * Explicitly clear the contents of memory.  Typically done at start of assembly.
-     */
-    public void clear() {
-        setConfiguration();
-        initialize();
-    }
-
-    /**
      * Sets current memory configuration for simulated MIPS.  Configuration is
      * collection of memory segment addresses. e.g. text segment starting at
      * address 0x00400000.  Configuration can be modified starting with MARS 3.7.
      */
-    public static void setConfiguration() {
-        MemoryConfiguration config = MemoryConfigurations.getCurrentConfiguration();
-
-        textBaseAddress = config.getTextBaseAddress(); //0x00400000;
-        dataSegmentBaseAddress = config.getDataSegmentBaseAddress(); //0x10000000;
-        externBaseAddress = config.getExternBaseAddress(); //0x10000000;
-        globalPointer = config.getGlobalPointer(); //0x10008000;
-        dataBaseAddress = config.getDataBaseAddress(); //0x10010000; // from SPIM not MIPS
-        heapBaseAddress = config.getHeapBaseAddress(); //0x10040000; // I think from SPIM not MIPS
-        stackPointer = config.getStackPointer(); //0x7fffeffc;
-        stackBaseAddress = config.getStackBaseAddress(); //0x7ffffffc;
-        userHighAddress = config.getUserHighAddress(); //0x7fffffff;
-        kernelBaseAddress = config.getKernelBaseAddress(); //0x80000000;
-        kernelTextBaseAddress = config.getKernelTextBaseAddress(); //0x80000000;
-        exceptionHandlerAddress = config.getExceptionHandlerAddress(); //0x80000180;
-        kernelDataBaseAddress = config.getKernelDataBaseAddress(); //0x90000000;
-        mmioBaseAddress = config.getMemoryMapBaseAddress(); //0xffff0000;
-        kernelHighAddress = config.getKernelHighAddress(); //0xffffffff;
-        dataSegmentLimitAddress = Math.min(config.getDataSegmentLimitAddress(), dataSegmentBaseAddress + BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * BYTES_PER_WORD);
-        textLimitAddress = Math.min(config.getTextLimitAddress(), textBaseAddress + TEXT_BLOCK_LENGTH_WORDS * TEXT_BLOCK_TABLE_LENGTH * BYTES_PER_WORD);
-        kernelDataSegmentLimitAddress = Math.min(config.getKernelDataSegmentLimitAddress(), kernelDataBaseAddress + BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * BYTES_PER_WORD);
-        kernelTextLimitAddress = Math.min(config.getKernelTextLimitAddress(), kernelTextBaseAddress + TEXT_BLOCK_LENGTH_WORDS * TEXT_BLOCK_TABLE_LENGTH * BYTES_PER_WORD);
-        stackLimitAddress = Math.max(config.getStackLimitAddress(), stackBaseAddress - BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * BYTES_PER_WORD);
-        mmioLimitAddress = Math.min(config.getMemoryMapLimitAddress(), mmioBaseAddress + BLOCK_LENGTH_WORDS * MMIO_TABLE_LENGTH * BYTES_PER_WORD);
+    public void setConfiguration(MemoryConfiguration config) {
+        textBaseAddress = config.getAddress(MemoryConfigurations.TEXT_BASE);
+        dataSegmentBaseAddress = config.getAddress(MemoryConfigurations.DATA_SEGMENT_BASE);
+        externBaseAddress = config.getAddress(MemoryConfigurations.EXTERN_BASE);
+        globalPointer = config.getAddress(MemoryConfigurations.GLOBAL_POINTER);
+        dataBaseAddress = config.getAddress(MemoryConfigurations.DATA_BASE);
+        heapBaseAddress = config.getAddress(MemoryConfigurations.HEAP_BASE);
+        stackPointer = config.getAddress(MemoryConfigurations.STACK_POINTER);
+        stackBaseAddress = config.getAddress(MemoryConfigurations.STACK_BASE);
+        userHighAddress = config.getAddress(MemoryConfigurations.USER_HIGH);
+        kernelBaseAddress = config.getAddress(MemoryConfigurations.KERNEL_BASE);
+        kernelTextBaseAddress = config.getAddress(MemoryConfigurations.KERNEL_TEXT_BASE);
+        exceptionHandlerAddress = config.getAddress(MemoryConfigurations.EXCEPTION_HANDLER);
+        kernelDataBaseAddress = config.getAddress(MemoryConfigurations.KERNEL_DATA_BASE);
+        mmioBaseAddress = config.getAddress(MemoryConfigurations.MMIO_BASE);
+        kernelHighAddress = config.getAddress(MemoryConfigurations.KERNEL_HIGH);
+        dataSegmentLimitAddress = Math.min(config.getAddress(MemoryConfigurations.DATA_SEGMENT_LIMIT), dataSegmentBaseAddress + BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * BYTES_PER_WORD);
+        textLimitAddress = Math.min(config.getAddress(MemoryConfigurations.TEXT_LIMIT), textBaseAddress + TEXT_BLOCK_LENGTH_WORDS * TEXT_BLOCK_TABLE_LENGTH * BYTES_PER_WORD);
+        kernelDataLimitAddress = Math.min(config.getAddress(MemoryConfigurations.KERNEL_DATA_LIMIT), kernelDataBaseAddress + BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * BYTES_PER_WORD);
+        kernelTextLimitAddress = Math.min(config.getAddress(MemoryConfigurations.KERNEL_TEXT_LIMIT), kernelTextBaseAddress + TEXT_BLOCK_LENGTH_WORDS * TEXT_BLOCK_TABLE_LENGTH * BYTES_PER_WORD);
+        stackLimitAddress = Math.max(config.getAddress(MemoryConfigurations.STACK_LIMIT), stackBaseAddress - BLOCK_LENGTH_WORDS * BLOCK_TABLE_LENGTH * BYTES_PER_WORD);
+        mmioLimitAddress = Math.min(config.getAddress(MemoryConfigurations.MMIO_LIMIT), mmioBaseAddress + BLOCK_LENGTH_WORDS * MMIO_TABLE_LENGTH * BYTES_PER_WORD);
     }
 
     /**
@@ -300,25 +290,60 @@ public class Memory {
      *
      * @return true if maximum address can be stored in 16 bits or less, false otherwise
      */
-    public static boolean usingCompactMemoryConfiguration() {
+    public boolean isUsing16BitAddressSpace() {
         return (kernelHighAddress & 0x00007fff) == kernelHighAddress;
     }
 
-    private void initialize() {
-        this.heapAddress = heapBaseAddress;
+    /**
+     * Initialize the memory tables and other instance variables.
+     */
+    public void reset() {
+        this.setConfiguration(MemoryConfigurations.getCurrentConfiguration());
+        this.nextHeapAddress = heapBaseAddress;
+
         this.textBlockTable = new ProgramStatement[TEXT_BLOCK_TABLE_LENGTH][];
         this.dataBlockTable = new int[BLOCK_TABLE_LENGTH][];
         this.kernelTextBlockTable = new ProgramStatement[TEXT_BLOCK_TABLE_LENGTH][];
         this.kernelDataBlockTable = new int[BLOCK_TABLE_LENGTH][];
         this.stackBlockTable = new int[BLOCK_TABLE_LENGTH][];
         this.memoryMapBlockTable = new int[MMIO_TABLE_LENGTH][];
+
         // Encourage the garbage collector to clean up any arrays we just threw away
         System.gc();
     }
 
     /**
-     * Returns the next available word-aligned heap address.  There is no recycling and
-     * no heap management!  There is however nearly 4MB of heap space available in Mars.
+     * Get the current endianness (i.e. byte ordering) in use.
+     * Unless {@link #setEndianness} is called, the default setting is {@link #LITTLE_ENDIAN}.
+     *
+     * @return Either {@link #LITTLE_ENDIAN} or {@link #BIG_ENDIAN}.
+     */
+    public int getEndianness() {
+        return this.endianness;
+    }
+
+    /**
+     * Set the endianness (i.e. byte ordering) for memory to use.
+     * Before this method is called, the default setting is {@link #LITTLE_ENDIAN}.
+     *
+     * @param endianness Either {@link #LITTLE_ENDIAN} or {@link #BIG_ENDIAN}.
+     */
+    public void setEndianness(int endianness) {
+        this.endianness = endianness;
+    }
+
+    /**
+     * Get the next address on the heap which will be used for dynamic memory allocation.
+     *
+     * @return The next heap address.
+     */
+    public int getNextHeapAddress() {
+        return nextHeapAddress;
+    }
+
+    /**
+     * Returns the next available word-aligned heap address.
+     * There is nearly 4MB of heap space available, although there is currently no way to deallocate space.
      *
      * @param numBytes Number of bytes requested.
      * @return Address of the allocated heap storage.
@@ -326,47 +351,29 @@ public class Memory {
      *         or exceeds available heap storage.
      */
     public int allocateHeapSpace(int numBytes) throws IllegalArgumentException {
-        int result = this.heapAddress;
+        int result = this.nextHeapAddress;
         if (numBytes < 0) {
             throw new IllegalArgumentException("invalid heap allocation of " + numBytes + " bytes requested");
         }
-        int newHeapAddress = alignToNext(this.heapAddress + numBytes, BYTES_PER_WORD);
+        int newHeapAddress = alignToNext(this.nextHeapAddress + numBytes, BYTES_PER_WORD);
         if (newHeapAddress > dataSegmentLimitAddress) {
             throw new IllegalArgumentException("heap allocation of " + numBytes + " bytes failed due to insufficient heap space");
         }
-        this.heapAddress = newHeapAddress;
+        this.nextHeapAddress = newHeapAddress;
         return result;
     }
 
     /**
-     * Set byte order to either LITTLE_ENDIAN or BIG_ENDIAN.  Default is {@link #LITTLE_ENDIAN}.
-     *
-     * @param order either {@link #LITTLE_ENDIAN} or {@link #BIG_ENDIAN}
-     */
-    public void setByteOrder(boolean order) {
-        byteOrder = order;
-    }
-
-    /**
-     * Retrieve memory byte order.  Default is {@link #LITTLE_ENDIAN} (like PCs).
-     *
-     * @return either {@link #LITTLE_ENDIAN} or {@link #BIG_ENDIAN}
-     */
-    public boolean getByteOrder() {
-        return byteOrder;
-    }
-
-    /**
      * Starting at the given address, write the given value over the given number of bytes.
-     * This one does not check for word boundaries, and copies one byte at a time.
-     * If length == 1, takes value from low order byte.  If 2, takes from low order half-word.
+     * Ignores alignment boundaries, and copies one byte at a time.
+     * If <code>length == 1</code>, takes value from low order byte.
+     * If <code>length == 2</code>, takes from low order half-word.
      *
-     * @param address Starting address of Memory address to be set.
+     * @param address Starting address where memory will be written.
      * @param value   Value to be stored starting at that address.
      * @param length  Number of bytes to be written.
-     * @return old value that was replaced by the set operation
+     * @return Old value that was replaced by the write operation.
      */
-    // Allocates blocks if necessary.
     public int set(int address, int value, int length) throws AddressErrorException {
         int oldValue = 0;
         int relativeByteAddress;
@@ -966,7 +973,7 @@ public class Memory {
      *     false otherwise.
      */
     public static boolean isInKernelDataSegment(int address) {
-        return address >= kernelDataBaseAddress && address < kernelDataSegmentLimitAddress;
+        return address >= kernelDataBaseAddress && address < kernelDataLimitAddress;
     }
 
     /**
@@ -1226,7 +1233,7 @@ public class Memory {
                     return 0;
                 }
             }
-            if (byteOrder == LITTLE_ENDIAN) {
+            if (endianness == LITTLE_ENDIAN) {
                 bytePositionInMemory = 3 - bytePositionInMemory;
             }
             if (doStore) {

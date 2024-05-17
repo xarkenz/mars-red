@@ -1497,6 +1497,7 @@ public class InstructionSet {
                     String pseudoOp = tokenizer.nextToken();
                     StringBuilder template = new StringBuilder();
                     String firstTemplate = null;
+
                     while (tokenizer.hasMoreTokens()) {
                         String token = tokenizer.nextToken();
                         if (token.startsWith("#")) {
@@ -1515,8 +1516,13 @@ public class InstructionSet {
                             template.append("\n");
                         }
                     }
-                    ExtendedInstruction instruction = (firstTemplate == null) ? new ExtendedInstruction(pseudoOp, template.toString(), description) : new ExtendedInstruction(pseudoOp, firstTemplate, template.toString(), description);
-                    instructionList.add(instruction);
+
+                    if (firstTemplate != null) {
+                        instructionList.add(new ExtendedInstruction(pseudoOp, firstTemplate, template.toString(), description));
+                    }
+                    else {
+                        instructionList.add(new ExtendedInstruction(pseudoOp, template.toString(), description));
+                    }
                 }
             }
             inputReader.close();

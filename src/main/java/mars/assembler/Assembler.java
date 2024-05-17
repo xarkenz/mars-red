@@ -162,7 +162,7 @@ public class Assembler {
         currentFileDataSegmentForwardReferences = new DataSegmentForwardReferences();
         accumulatedDataSegmentForwardReferences = new DataSegmentForwardReferences();
         Application.globalSymbolTable.clear();
-        Application.memory.clear();
+        Application.memory.reset();
         this.machineList = new ArrayList<>();
         this.errors = new ErrorList();
         if (Application.debug) {
@@ -545,20 +545,25 @@ public class Assembler {
         }
     }
 
-    // Determine whether or not a compact (16-bit) translation from
-    // pseudo-instruction to basic instruction can be applied. If
-    // the argument is a basic instruction, obviously not. If an
-    // extended instruction, we have to be operating under a 16-bit
-    // memory model and the instruction has to have defined an
-    // alternate compact translation.
+    /**
+     * Determine whether or not a compact (16-bit) translation from
+     * pseudo-instruction to basic instruction can be applied. If
+     * the argument is a basic instruction, obviously not. If an
+     * extended instruction, we have to be operating under a 16-bit
+     * memory model and the instruction has to have defined an
+     * alternate compact translation.
+     */
     private boolean compactTranslationCanBeApplied(ProgramStatement statement) {
-        return (statement.getInstruction() instanceof ExtendedInstruction && Application.memory.usingCompactMemoryConfiguration() && ((ExtendedInstruction) statement.getInstruction()).hasCompactTranslation());
+        return statement.getInstruction() instanceof ExtendedInstruction
+            && Memory.getInstance().isUsing16BitAddressSpace()
+            && ((ExtendedInstruction) statement.getInstruction()).hasCompactTranslation();
     }
 
-    // //////////////////////////////////////////////////////////////////////////////////
-    // Pre-process the token list for a statement by stripping off any comment.
-    // NOTE: the ArrayList parameter is not modified; a new one is cloned and
-    // returned.
+    /**
+     * Pre-process the token list for a statement by stripping off any comment.
+     * NOTE: the ArrayList parameter is not modified; a new one is cloned and
+     * returned.
+     */
     private TokenList stripComment(TokenList tokenList) {
         if (tokenList.isEmpty()) {
             return tokenList;
@@ -570,7 +575,7 @@ public class Assembler {
             tokens.remove(last);
         }
         return tokens;
-    } // stripComment()
+    }
 
     /**
      * Pre-process the token list for a statement by stripping off any label, if

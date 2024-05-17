@@ -312,7 +312,7 @@ public class MarsLauncher {
             }
             if (args[i].equalsIgnoreCase("mc")) {
                 String configName = args[++i];
-                MemoryConfiguration config = MemoryConfigurations.getConfigurationByName(configName);
+                MemoryConfiguration config = MemoryConfigurations.getConfiguration(configName);
                 if (config == null) {
                     out.println("Invalid memory configuration: " + configName);
                     argsOK = false;
