@@ -7,6 +7,8 @@ import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.RegisterFile;
 import mars.simulator.Simulator;
 
+import java.nio.file.Path;
+
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
 
@@ -81,7 +83,7 @@ public class SyscallOpen extends AbstractSyscall {
             throw new ProcessingException(statement, exception);
         }
 
-        int descriptor = Simulator.getInstance().getSystemIO().openFile(filename, RegisterFile.getValue(5));
+        int descriptor = Simulator.getInstance().getSystemIO().openFile(Path.of(filename), RegisterFile.getValue(5));
 
         RegisterFile.updateRegister(2, descriptor); // Set returned descriptor in register
     }

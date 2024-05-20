@@ -3,9 +3,12 @@ package mars.simulator;
 import mars.Application;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.nio.ByteBuffer;
+import java.nio.channels.*;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.*;
 
 /*
 Copyright (c) 2003-2013,  Pete Sanderson and Kenneth Vollmar
@@ -58,17 +61,28 @@ public class SystemIO {
      */
     public static final int O_RDWR = 0x00000002;
     /**
-     * Always write data to the end of the file.
+     * Start writing data at the end of the file.
      */
     public static final int O_APPEND = 0x00000008;
     /**
-     * Create the file if it doesn't already exist.
+     * Fail write if the file already exists.
      */
-    public static final int O_CREAT = 0x00000200;
-    /**
-     * Fail if the file already exists. (Used in conjunction with {@link #O_CREAT}.)
-     */
-    public static final int O_EXCL = 0x00000800;
+    public static final int O_EXCL = 0x00000010;
+
+    public enum SeekWhence {
+        /**
+         * The file offset is set to <code>offset</code> bytes.
+         */
+        SEEK_SET,
+        /**
+         * The file offset is set to its current position plus <code>offset</code> bytes.
+         */
+        SEEK_CUR,
+        /**
+         * The file offset is set to the size of the file plus <code>offset</code> bytes.
+         */
+        SEEK_END
+    }
 
     /**
      * File descriptor for standard input ({@link System#in}).
@@ -86,6 +100,8 @@ public class SystemIO {
      * The first file descriptor that will be allocated to the user.
      */
     public static final int FIRST_USER_DESCRIPTOR = 3;
+
+    private static final boolean DEBUG_PRINT_HANDLES = false;
 
     private static BufferedReader inputReader = null;
 
@@ -135,9 +151,9 @@ public class SystemIO {
 
     private void initHandles() {
         this.handles = new ArrayList<>(3);
-        this.handles.add(new FileHandle("(stdin)", System.in, O_RDONLY));
-        this.handles.add(new FileHandle("(stdout)", System.out, O_WRONLY));
-        this.handles.add(new FileHandle("(stderr)", System.err, O_WRONLY));
+        this.handles.add(new FileHandle("(stdin)", Channels.newChannel(System.in), O_RDONLY));
+        this.handles.add(new FileHandle("(stdout)", Channels.newChannel(System.out), O_WRONLY));
+        this.handles.add(new FileHandle("(stderr)", Channels.newChannel(System.err), O_WRONLY));
         System.out.flush();
         System.err.flush();
         this.nextDescriptor = this.handles.size();
@@ -169,72 +185,101 @@ public class SystemIO {
     }
 
     /**
-     * Retrieve the input stream corresponding to the given file descriptor.
+     * Retrieve the byte channel corresponding to the given file descriptor.
      *
-     * @param descriptor The file descriptor for the desired stream.
-     * @return The stream, if the descriptor corresponds to a valid input stream, or null otherwise.
+     * @param descriptor The file descriptor for the desired byte channel.
+     * @return The byte channel, if the descriptor corresponds to a valid file handle, or null otherwise.
      */
-    public InputStream getInputStream(int descriptor) {
+    public Channel getChannel(int descriptor) {
         FileHandle handle = this.getOpenHandle(descriptor);
-        if (handle != null) {
-            return handle.getInputStream();
-        }
-        else {
-            return null;
-        }
+        return (handle != null) ? handle.getChannel() : null;
     }
 
     /**
-     * Retrieve the output stream corresponding to the given file descriptor.
+     * Retrieve the readable byte channel corresponding to the given file descriptor.
      *
-     * @param descriptor The file descriptor for the desired stream.
-     * @return The stream, if the descriptor corresponds to a valid output stream, or null otherwise.
+     * @param descriptor The file descriptor for the desired readable byte channel.
+     * @return The readable byte channel, if the descriptor corresponds to a valid readable
+     *         file handle, or null otherwise.
      */
-    public OutputStream getOutputStream(int descriptor) {
-        FileHandle handle = this.getOpenHandle(descriptor);
-        if (handle != null) {
-            return handle.getOutputStream();
-        }
-        else {
-            return null;
-        }
+    public ReadableByteChannel getReadableChannel(int descriptor) {
+        Channel channel = this.getChannel(descriptor);
+        return (channel instanceof ReadableByteChannel readChannel) ? readChannel : null;
     }
 
     /**
-     * Open a file for either reading or writing. Note that read/write combined flag is NOT
-     * IMPLEMENTED.  Also note that file permission modes are also NOT IMPLEMENTED.
+     * Retrieve the writable byte channel corresponding to the given file descriptor.
+     *
+     * @param descriptor The file descriptor for the desired writable byte channel.
+     * @return The writable byte channel, if the descriptor corresponds to a valid writable
+     *         file handle, or null otherwise.
+     */
+    public WritableByteChannel getWritableChannel(int descriptor) {
+        Channel channel = this.getChannel(descriptor);
+        return (channel instanceof WritableByteChannel writeChannel) ? writeChannel : null;
+    }
+
+    /**
+     * Open a file for either reading or writing. Also note that file permission
+     * modes are also NOT IMPLEMENTED.
      *
      * @param filename The path of the file to open.
-     * @param flags    One of {@link #O_RDONLY}, {@link #O_WRONLY}, {@link #O_WRONLY} | {@link #O_APPEND}.
+     * @param flags    One of {@link #O_RDONLY}, {@link #O_WRONLY}, {@link #O_WRONLY} | {@link #O_APPEND}, {@link #O_RDWR}.
      * @return File descriptor for the file opened, or -1 if an error occurred.
      * @author Ken Vollmar
      */
-    public int openFile(String filename, int flags) {
-        Closeable stream;
-        if (flags == O_RDONLY) {
+    public int openFile(Path filename, int flags) {
+        FileChannel channel;
+        Set<OpenOption> options = new HashSet<>();
+        String mode;
+
+        boolean readOnly = (flags == O_RDONLY),
+                writeOnly = ((flags & O_WRONLY) != 0),
+                readWrite = ((flags & O_RDWR) != 0),
+                append = ((flags & O_APPEND) != 0),
+                createNew = ((flags & O_EXCL) != 0);
+
+        if (readOnly) {
             // Open for reading only
-            try {
-                // Attempt to set up input stream from file on disk
-                stream = new FileInputStream(filename);
-            }
-            catch (FileNotFoundException exception) {
-                fileOperationMessage = "File \"" + filename + "\" not found; unable to open for reading.";
-                return -1;
-            }
+            options.add(StandardOpenOption.READ);
+            mode = "reading";
         }
-        else if ((flags & O_WRONLY) != 0) {
-            // Open for writing only
-            try {
-                // Attempt to set up output stream to file on disk
-                stream = new FileOutputStream(filename, ((flags & O_APPEND) != 0));
+        else if (writeOnly || readWrite) {
+            // Open for at least writing
+            options.add(StandardOpenOption.WRITE);
+            if (readWrite) {
+                // Both writing and reading
+                options.add(StandardOpenOption.READ);
+                mode = "reading and writing";
             }
-            catch (FileNotFoundException exception) {
-                fileOperationMessage = "File \"" + filename + "\" not found; unable to open for writing.";
-                return -1;
+            else {
+                // Write-only, check for append
+                if (append) {
+                    options.add(StandardOpenOption.APPEND);
+                    mode = "appending";
+                }
+                else {
+                    mode = "writing";
+                }
+            }
+            if (createNew) {
+                options.add(StandardOpenOption.CREATE_NEW);
+                mode += " (requiring new file)";
+            }
+            else {
+                options.add(StandardOpenOption.CREATE);
             }
         }
         else {
             fileOperationMessage = "Invalid flags for opening file \"" + filename + "\": " + flags + ".";
+            return -1;
+        }
+
+        try {
+            channel = FileChannel.open(filename, options);
+        }
+        catch (IOException exception) {
+            fileOperationMessage = "File \"" + filename + "\" unable to open for " + mode + ".";
             return -1;
         }
 
@@ -247,7 +292,9 @@ public class SystemIO {
         int descriptor = this.nextDescriptor;
         FileHandle handle = this.handles.get(descriptor);
         this.nextDescriptor = handle.getNextDescriptor();
-        handle.open(filename, stream, flags);
+        handle.open(filename.toString(), channel, flags);
+
+        printHandlesForDebug();
 
         fileOperationMessage = "Successfully opened file \"" + filename + "\".";
         return descriptor;
@@ -258,9 +305,30 @@ public class SystemIO {
      */
     public void closeFile(int descriptor) {
         // Can't close STDIN, STDOUT, STDERR, or invalid descriptor
-        if (FIRST_USER_DESCRIPTOR <= descriptor || descriptor < this.handles.size()) {
+        if (FIRST_USER_DESCRIPTOR <= descriptor && descriptor < this.handles.size()) {
             this.handles.get(descriptor).close(this.nextDescriptor);
             this.nextDescriptor = descriptor;
+
+            printHandlesForDebug();
+
+            fileOperationMessage = "Successfully closed file descriptor \"" + descriptor + "\".";
+        }
+        else {
+            fileOperationMessage = "Couldn't close file descriptor \"" + descriptor + "\".";
+        }
+    }
+
+    /**
+     * Print debug information to console about the handle list and next descriptor. Only
+     * prints if {@link #DEBUG_PRINT_HANDLES} is <code>true</code>.
+     */
+    private void printHandlesForDebug() {
+        if (DEBUG_PRINT_HANDLES) {
+            System.out.println("Handles: ");
+            for (int i = 0; i < this.handles.size(); i++) {
+                System.out.println(" " + i + ": " + this.handles.get(i));
+            }
+            System.out.println("Next desc: " + this.nextDescriptor);
         }
     }
 
@@ -268,93 +336,83 @@ public class SystemIO {
      * Write bytes to file.
      *
      * @param descriptor      Target file descriptor.
-     * @param buffer          Byte array containing characters to write.
-     * @param lengthRequested Number of bytes to write.
+     * @param buffer          Byte buffer containing characters to write.
      * @return Number of bytes written, or -1 on error.
      */
-    public int writeToFile(int descriptor, byte[] buffer, int lengthRequested) {
+    public int writeToFile(int descriptor, ByteBuffer buffer) {
         /////////////// DPS 8-Jan-2013  ////////////////////////////////////////////////////
         // Write to STDOUT or STDERR file descriptor while using IDE - write to Messages pane.
         if ((descriptor == STDOUT_DESCRIPTOR || descriptor == STDERR_DESCRIPTOR) && Application.getGUI() != null) {
-            String data = new String(buffer);
+            String data = new String(buffer.array());
             Application.getGUI().getMessagesPane().writeToConsole(data);
             return data.length();
         }
         ///////////////////////////////////////////////////////////////////////////////////
         // When running in command mode, code below works for either regular file or STDOUT/STDERR.
 
-        // Retrieve the output stream corresponding to the descriptor
-        OutputStream outputStream = this.getOutputStream(descriptor);
+        // Retrieve the writable channel corresponding to the descriptor
+        WritableByteChannel channel = this.getWritableChannel(descriptor);
         // Ensure the file descriptor has been opened for writing
-        if (outputStream == null) {
-            this.fileOperationMessage = "File with descriptor " + descriptor + " cannot be written to";
+        if (channel == null) {
+            this.fileOperationMessage = "File with descriptor " + descriptor + " is not open for writing";
             return -1;
         }
         try {
-            // Oct. 9 2005 Ken Vollmar
-            // Observation: made a call to outputStream.write(buffer, 0, lengthRequested)
-            //     with buffer containing 6(ten) 32-bit-words <---> 24(ten) bytes, where the
-            //     words are MIPS integers with values such that many of the bytes are ZEROES.
-            //     The effect is apparently that the write stops after encountering a zero-valued
-            //     byte. (The method write does not return a value and so this can't be verified
-            //     by the return value.)
-            // Writes up to lengthRequested bytes of data to this output stream from an array of bytes.
-            // outputStream.write(buffer, 0, lengthRequested); // write is a void method -- no verification value returned
-
-            // Oct. 9 2005 Ken Vollmar  Force the write statement to write exactly
-            // the number of bytes requested, even though those bytes include many ZERO values.
-            for (int index = 0; index < lengthRequested; index++) {
-                outputStream.write(buffer[index]);
-            }
-            outputStream.flush(); // DPS 7-Jan-2013
+            // From testing, this does not stop writing on zero-bytes.
+            return channel.write(buffer);
+        }
+        catch (NonWritableChannelException exception) {
+            this.fileOperationMessage = "File with descriptor " + descriptor + " is not open for writing";
+            return -1;
         }
         catch (IOException exception) {
-            fileOperationMessage = "IO Exception on write of file with descriptor " + descriptor;
+            this.fileOperationMessage = "IO Exception on write of file with descriptor " + descriptor;
             return -1;
         }
         catch (IndexOutOfBoundsException exception) {
-            fileOperationMessage = "IndexOutOfBoundsException on write of file with descriptor" + descriptor;
+            this.fileOperationMessage = "IndexOutOfBoundsException on write of file with descriptor" + descriptor;
             return -1;
         }
-
-        return lengthRequested;
     }
 
     /**
      * Read bytes from file.
      *
      * @param descriptor      Target file descriptor.
-     * @param buffer          Byte array to contain bytes read.
-     * @param lengthRequested Maximum number of bytes to read.
+     * @param buffer          Byte buffer to contain bytes read. Capacity should be maximum number of bytes to read.
      * @return Number of bytes read, 0 on EOF, or -1 on error.
      */
-    public int readFromFile(int descriptor, byte[] buffer, int lengthRequested) throws InterruptedException {
+    public int readFromFile(int descriptor, ByteBuffer buffer) throws InterruptedException {
         /////////////// DPS 8-Jan-2013  //////////////////////////////////////////////////
         // Read from STDIN file descriptor while using IDE - get input from Messages pane.
         if (descriptor == STDIN_DESCRIPTOR && Application.getGUI() != null) {
-            String input = Application.getGUI().getMessagesPane().getInputString(lengthRequested);
+            String input = Application.getGUI().getMessagesPane().getInputString(buffer.capacity());
             byte[] bytesRead = input.getBytes();
-            for (int index = 0; index < buffer.length; index++) {
-                buffer[index] = (index < bytesRead.length) ? bytesRead[index] : 0;
+            for (int index = 0; index < buffer.remaining(); index++) {
+                buffer.put(index, (index < bytesRead.length) ? bytesRead[index] : 0);
             }
-            return Math.min(buffer.length, bytesRead.length);
+            return Math.min(buffer.remaining(), bytesRead.length);
         }
         ////////////////////////////////////////////////////////////////////////////////////
         // When running in command mode, code below works for either regular file or STDIN.
 
-        // Retrieve the input stream corresponding to the descriptor
-        InputStream inputStream = this.getInputStream(descriptor);
-        if (inputStream == null) {
-            // Check the existence of the "read" descriptor
+        // Retrieve the readable channel corresponding to the descriptor
+        ReadableByteChannel channel = this.getReadableChannel(descriptor);
+        // Ensure the file descriptor has been opened for reading
+        if (channel == null) {
             fileOperationMessage = "File descriptor " + descriptor + " is not open for reading";
             return -1;
         }
         try {
-            // Reads up to lengthRequested bytes of data from this input stream into an array of bytes.
-            int lengthRead = inputStream.read(buffer, 0, lengthRequested);
+            // Reads up to buffer.remaining() bytes of data from this input stream into an array of bytes.
+            int lengthRead = channel.read(buffer);
             // This method will return -1 upon EOF, but our spec says that negative
             // value represents an error, so we return 0 for EOF.  DPS 10-July-2008.
             return lengthRead == -1 ? 0 : lengthRead;
+        }
+        catch (NonReadableChannelException exception) {
+            fileOperationMessage = "File descriptor " + descriptor + " is not open for reading";
+            return -1;
         }
         catch (IOException exception) {
             fileOperationMessage = "IOException on read of file with descriptor " + descriptor;
@@ -362,6 +420,40 @@ public class SystemIO {
         }
         catch (IndexOutOfBoundsException exception) {
             fileOperationMessage = "IndexOutOfBoundsException on read of file with descriptor " + descriptor;
+            return -1;
+        }
+    }
+
+    /**
+     * Seek position in file.
+     *
+     * @param descriptor    Target file descriptor.
+     * @param offset        Offset from position specified by whence.
+     * @param whence        Directive indicating where in the file to start the offset from.
+     * @return New position in file, or -1 on error.
+     */
+    public long seekFile(int descriptor, long offset, SeekWhence whence) {
+        Channel channel = this.getChannel(descriptor);
+        if (!(channel instanceof SeekableByteChannel seekableChannel)) {
+            fileOperationMessage = "File descriptor " + descriptor + " cannot be seeked";
+            return -1;
+        }
+        try {
+            long curPosition = seekableChannel.position();
+            long newPosition = switch (whence) {
+                case SEEK_SET -> offset;
+                case SEEK_CUR -> curPosition + offset;
+                case SEEK_END -> seekableChannel.size() + offset;
+            };
+            seekableChannel.position(newPosition);
+            return newPosition;
+        }
+        catch (IllegalArgumentException exception) {
+            fileOperationMessage = "New position cannot be negative for file descriptor " + descriptor;
+            return -1;
+        }
+        catch (IOException exception) {
+            fileOperationMessage = "IOException on seeking file with descriptor " + descriptor;
             return -1;
         }
     }
@@ -381,7 +473,7 @@ public class SystemIO {
      */
     public static class FileHandle {
         private String name;
-        private Closeable stream;
+        private Channel channel;
         private int flagsOrNextDescriptor;
 
         /**
@@ -391,34 +483,34 @@ public class SystemIO {
          */
         public FileHandle(int nextDescriptor) {
             this.name = null;
-            this.stream = null;
+            this.channel = null;
             this.flagsOrNextDescriptor = nextDescriptor;
         }
 
         /**
-         * Create a new <b>open</b> handle with the given stream information.
+         * Create a new <b>open</b> handle with the given byte channel information.
          *
-         * @param name   The name of the stream.
-         * @param stream The input/output stream.
-         * @param flags  The opening flags for this stream.
+         * @param name    The name of the byte channel.
+         * @param channel The corresponding byte channel.
+         * @param flags   The opening flags for this byte channel.
          */
-        public FileHandle(String name, Closeable stream, int flags) {
-            this.open(name, stream, flags);
+        public FileHandle(String name, Channel channel, int flags) {
+            this.open(name, channel, flags);
         }
 
         /**
-         * Open this handle with the given stream information.
+         * Open this handle with the given byte channel information.
          * <p>
-         * Note: this does not attempt to close an existing stream. Ensure {@link #close(int)} is called
+         * Note: this does not attempt to close an existing byte channel. Ensure {@link #close(int)} is called
          * beforehand if this handle is already open.
          *
-         * @param name   The name of the stream.
-         * @param stream The input/output stream.
-         * @param flags  The opening flags for this stream.
+         * @param name    The name of the byte channel.
+         * @param channel The corresponding byte channel.
+         * @param flags   The opening flags for this byte channel.
          */
-        public void open(String name, Closeable stream, int flags) {
+        public void open(String name, Channel channel, int flags) {
             this.name = name;
-            this.stream = stream;
+            this.channel = channel;
             this.flagsOrNextDescriptor = flags;
         }
 
@@ -428,14 +520,14 @@ public class SystemIO {
          * @param nextDescriptor The descriptor of the next closed handle following this one.
          */
         public void close(int nextDescriptor) {
-            if (this.stream != null) {
+            if (this.channel != null) {
                 try {
-                    this.stream.close();
+                    this.channel.close();
                 }
                 catch (IOException exception) {
                     // Ignore
                 }
-                this.stream = null;
+                this.channel = null;
             }
             this.flagsOrNextDescriptor = nextDescriptor;
         }
@@ -446,30 +538,30 @@ public class SystemIO {
          * @return <code>true</code> if this handle is <b>open</b>, or <code>false</code> otherwise.
          */
         public boolean isOpen() {
-            return this.stream != null;
+            return this.channel != null;
         }
 
         /**
-         * Get the name of the stream used by this handle.
+         * Get the name of the byte channel used by this handle.
          * <p>
          * Note: only call this method if this handle is <b>open</b>.
          *
-         * @return The name of the stream.
+         * @return The name of the byte channel.
          */
         public String getName() {
-            Objects.requireNonNull(this.stream);
+            Objects.requireNonNull(this.channel);
             return this.name;
         }
 
         /**
-         * Get the flags the stream was opened with.
+         * Get the flags the byte channel was opened with.
          * <p>
          * Note: only call this method if this handle is <b>open</b>.
          *
          * @return The integer flags.
          */
         public int getFlags() {
-            Objects.requireNonNull(this.stream);
+            Objects.requireNonNull(this.channel);
             return this.flagsOrNextDescriptor;
         }
 
@@ -484,36 +576,13 @@ public class SystemIO {
             return this.flagsOrNextDescriptor;
         }
 
-        /**
-         * Get the input stream used by this handle.
-         * <p>
-         * Note: only call this method if this handle is <b>open</b>.
-         *
-         * @return The input stream, or <code>null</code> if this handle uses an output stream instead.
-         */
-        public InputStream getInputStream() {
-            if (this.stream instanceof InputStream inputStream) {
-                return inputStream;
-            }
-            else {
-                return null;
-            }
+        public Channel getChannel() {
+            return this.channel;
         }
 
-        /**
-         * Get the output stream used by this handle.
-         * <p>
-         * Note: only call this method if this handle is <b>open</b>.
-         *
-         * @return The output stream, or <code>null</code> if this handle uses an input stream instead.
-         */
-        public OutputStream getOutputStream() {
-            if (this.stream instanceof OutputStream outputStream) {
-                return outputStream;
-            }
-            else {
-                return null;
-            }
+        @Override
+        public String toString() {
+            return "Handle " + this.name + " : " + this.channel + " : Flags / next desc : " + this.flagsOrNextDescriptor;
         }
     }
 
@@ -677,16 +746,8 @@ public class SystemIO {
                 input = Application.getGUI().getMessagesPane().getInputString(1);
             }
         }
-        // The whole try-catch is not really necessary in this case since I'm
-        // just propagating the runtime exception (the default behavior), but
-        // I want to make it explicit.  The client needs to catch it.
-        try {
-            return input.charAt(0); // first character input
-        }
-        catch (IndexOutOfBoundsException exception) {
-            // no chars present
-            throw exception; // was: returnValue = 0;
-        }
+        // Throws index-out-of-bounds exception!
+        return input.charAt(0); // first character input
     }
 }
 

@@ -7,6 +7,8 @@ import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.RegisterFile;
 import mars.simulator.Simulator;
 
+import java.nio.ByteBuffer;
+
 /*
 Copyright (c) 2003-2009,  Pete Sanderson and Kenneth Vollmar
 
@@ -63,15 +65,18 @@ public class SyscallRead extends AbstractSyscall {
         if (maxLength < 0) {
             throw new ProcessingException(statement, "Length value in $a2 cannot be negative for " + getName() + " (syscall " + getNumber() + ")");
         }
-        byte[] buffer = new byte[maxLength];
+        ByteBuffer buffer = ByteBuffer.allocateDirect(maxLength);
 
-        int readLength = Simulator.getInstance().getSystemIO().readFromFile(descriptor, buffer, maxLength);
+        int readLength = Simulator.getInstance().getSystemIO().readFromFile(descriptor, buffer);
         RegisterFile.updateRegister(2, readLength); // Put return value in $v0
+
+        // Flip buffer from put-mode to get-mode
+        buffer.flip();
 
         // Copy bytes from intermediate buffer into MARS memory
         try {
             for (int index = 0; index < readLength; index++) {
-                Application.memory.setByte(byteAddress++, buffer[index]);
+                Application.memory.setByte(byteAddress++, buffer.get(index));
             }
         }
         catch (AddressErrorException exception) {
