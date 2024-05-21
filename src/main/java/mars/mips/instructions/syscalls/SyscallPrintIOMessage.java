@@ -22,8 +22,7 @@ public class SyscallPrintIOMessage extends AbstractSyscall {
     public void simulate(ProgramStatement statement) throws ProcessingException {
         String fileOperationMessage = Simulator.getInstance().getSystemIO().getFileOperationMessage();
         if (Application.getGUI() != null) {
-            Application.getGUI().getMessagesPane().writeToConsole(fileOperationMessage);
-            Application.getGUI().getMessagesPane().writeToConsole("\n");
+            Application.getGUI().getMessagesPane().writeToConsole(fileOperationMessage + "\n");
         }
         else {
             System.out.println(fileOperationMessage);

@@ -82,9 +82,9 @@
         <tr><td>Print Character</td>  <td>11</td>  <td><code>$a0</code> &mdash; character to print</td>  <td>Prints an ASCII character corresponding to the lowest-order byte of <code>$a0</code>.</td></tr>
         <tr><td>Read Character</td>   <td>12</td>  <td></td>  <td><code>$v0</code> &mdash; character read from user input</td></tr>
         <tr><td>Open File</td>        <td>13</td>  <td><code>$a0</code> &mdash; address of null-terminated string containing filename<br><code>$a1</code> &mdash; flags<br><code>$a2</code> &mdash; mode (currently ignored)</td>  <td><code>$v0</code> &mdash; file descriptor (negative if an error occurred)<p>
-            MARS implements three flag values: 0 for read-only, 1 for write-only with create, and 9 for write-only with create and append.
+            MARS implements several flag values: 0 for read-only, 1 for write-only, 2 for read-write, 8 for append, and 16 for create-new. By default, write opens will create the file if it doesn't exist; if create-new is specified, the file must not exist.
             It ignores mode. The returned file descriptor will be negative if the operation failed.
-            The underlying file I/O implementation uses <code>java.io.FileInputStream.read()</code> to read and <code>java.io.FileOutputStream.write()</code> to write.
+            The underlying file I/O implementation uses the <code>java.nio.channels.FileChannel</code> class to read and write.
             MARS maintains file descriptors internally and allocates them starting with 3.
             File descriptors 0, 1 and 2 are always open for reading from standard input, writing to standard output, and writing to standard error, respectively.
         </p></td></tr>
@@ -157,6 +157,10 @@
         <tr><td>Message Dialog Float</td>    <td>57</td>  <td><code>$a0</code> &mdash; address of null-terminated string message for the user<br><code>$f12</code> &mdash; float value to append to the message</td>  <td></td></tr>
         <tr><td>Message Dialog Double</td>   <td>58</td>  <td><code>$a0</code> &mdash; address of null-terminated string message for the user<br><code>$f12</code> / <code>$f13</code> &mdash; double value to append to the message</td>  <td></td></tr>
         <tr><td>Message Dialog String</td>   <td>59</td>  <td><code>$a0</code> &mdash; address of null-terminated string message for the user<br><code>$a1</code> &mdash; address of null-terminated string to append to the message</td>  <td></td></tr>
+        <tr><td>Print Last I/O Message</td>    <td>60</td>  <td></td>  <td><p>
+            The most recent file operation message is printed to the message console if MARS is ran with a GUI, or the terminal if ran from the command line.
+        </p></td></tr>
+        <tr><td>Seek File</td>       <td>61</td>  <td><code>$a0</code> &mdash; file descriptor<br><code>$a1</code> &mdash; offset to add to position specified by whence<br><code>$a2</code> &mdash; whence to add the offset to (can be 0 for beginning of file, 1 for current position, or 2 for end of file)</td>  <td><code>$v0</code> &mdash; new position in file (-1 if an error occurred)</td></tr>
         </tbody>
     </table>
 
@@ -177,7 +181,7 @@
     # Open (for writing) a file that does not exist
         <b>li</b>      $v0, 13       # "Open File" system call
         <b>la</b>      $a0, fout     # output file name
-        <b>li</b>      $a1, 1        # Open for writing (flags are 0: read, 1: write, 9: append)
+        <b>li</b>      $a1, 1        # Open for writing (flags are 0: read, 1: write, 2: read-write, 8: append, 16: create-new)
         <b>li</b>      $a2, 0        # mode is currently ignored
         <b>syscall</b>               # open a file (file descriptor returned in $v0)
         <b>move</b>    $s6, $v0      # save the file descriptor
