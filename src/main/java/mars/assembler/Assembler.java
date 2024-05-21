@@ -3,6 +3,7 @@ package mars.assembler;
 import mars.*;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
+import mars.mips.hardware.MemoryConfigurations;
 import mars.mips.instructions.BasicInstruction;
 import mars.mips.instructions.ExtendedInstruction;
 import mars.mips.instructions.Instruction;
@@ -156,9 +157,15 @@ public class Assembler {
         if (tokenizedProgramFiles == null || tokenizedProgramFiles.isEmpty()) {
             return null;
         }
-        textAddress = new UserKernelAddressSpace(Memory.textBaseAddress, Memory.kernelTextBaseAddress);
-        dataAddress = new UserKernelAddressSpace(Memory.dataBaseAddress, Memory.kernelDataBaseAddress);
-        externAddress = Memory.externBaseAddress;
+        textAddress = new UserKernelAddressSpace(
+            Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW),
+            Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_TEXT_LOW)
+        );
+        dataAddress = new UserKernelAddressSpace(
+            Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW),
+            Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_DATA_LOW)
+        );
+        externAddress = Memory.getInstance().getAddress(MemoryConfigurations.EXTERN_LOW);
         currentFileDataSegmentForwardReferences = new DataSegmentForwardReferences();
         accumulatedDataSegmentForwardReferences = new DataSegmentForwardReferences();
         Application.globalSymbolTable.clear();
@@ -385,7 +392,7 @@ public class Assembler {
                         + NumberDisplayBaseChooser.formatUnsignedInteger(statement2.getAddress(), (Application.getSettings().displayAddressesInHex.get()) ? 16 : 10)
                         + " already occupied by " + statement1.getSourceFile()
                         + " line " + statement1.getSourceLine()
-                        + " (caused by use of " + ((Memory.isInTextSegment(statement2.getAddress())) ? ".text" : ".ktext") + " operand)"
+                        + " (caused by use of " + ((Memory.getInstance().isInTextSegment(statement2.getAddress())) ? ".text" : ".ktext") + " operand)"
                 ));
             }
         }

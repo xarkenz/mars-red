@@ -35,7 +35,7 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
 
     @Override
     public void initializePreGUI() {
-        this.oldStackPtrValue = Memory.stackPointer;
+        this.oldStackPtrValue = Memory.getInstance().getAddress(MemoryConfigurations.STACK_POINTER);
     }
 
     @Override
@@ -86,7 +86,11 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
 
     @Override
     protected void startObserving() {
-        Memory.getInstance().addListener(this, Memory.stackLimitAddress, Memory.stackBaseAddress + Memory.BYTES_PER_WORD - 1);
+        Memory.getInstance().addListener(
+            this,
+            Memory.getInstance().getAddress(MemoryConfigurations.DYNAMIC_LOW),
+            Memory.getInstance().getAddress(MemoryConfigurations.DYNAMIC_HIGH)
+        );
         RegisterFile.getRegisters()[RegisterFile.STACK_POINTER].addListener(this);
     }
 
@@ -114,7 +118,7 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
             return;
         }
 
-        int position = (Memory.stackPointer - address) / Memory.BYTES_PER_WORD;
+        int position = (Memory.getInstance().getAddress(MemoryConfigurations.STACK_POINTER) - address) / Memory.BYTES_PER_WORD;
         if (position < 0) {
             this.handleError("Data was pushed to an address greater than stack base!");
         }
@@ -153,7 +157,7 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
     }
 
     private synchronized boolean isReturnAddress(int address) {
-        if (Memory.isInTextSegment(address)) {
+        if (Memory.getInstance().isInTextSegment(address)) {
             try {
                 ProgramStatement statement = Memory.getInstance().getStatementNoNotify(address - Instruction.BYTES_PER_INSTRUCTION);
                 return statement.getBasicAssemblyStatement().startsWith("jal");
@@ -173,7 +177,7 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
         this.statusLabel.setForeground(null);
         this.statusLabel.setText("Stack status: OK");
         this.stackViewer.advanceStackPointer(0);
-        this.oldStackPtrValue = Memory.stackPointer;
+        this.oldStackPtrValue = Memory.getInstance().getAddress(MemoryConfigurations.STACK_POINTER);
         this.stackOK = true;
         this.repaint();
     }
@@ -219,7 +223,7 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
             this.imageWriter.fillRect(0, 0, this.getWidth(), 39);
             this.imageWriter.setColor(Color.WHITE);
             this.imageWriter.setRenderingHints(new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON));
-            this.printStringCentered("$sp: " + Binary.intToHexString(Memory.stackPointer - position * 4), 116, 0, 24);
+            this.printStringCentered("$sp: " + Binary.intToHexString(Memory.getInstance().getAddress(MemoryConfigurations.STACK_POINTER) - position * 4), 116, 0, 24);
         }
 
         public void advanceStackPointer(int numPositions) {

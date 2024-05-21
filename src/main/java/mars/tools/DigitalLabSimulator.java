@@ -4,6 +4,7 @@ import mars.Application;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Coprocessor0;
 import mars.mips.hardware.Memory;
+import mars.mips.hardware.MemoryConfigurations;
 import mars.simulator.Simulator;
 
 import javax.swing.*;
@@ -18,11 +19,11 @@ import java.awt.event.MouseEvent;
 public class DigitalLabSimulator extends AbstractMarsTool {
     private static final String NAME = "Digital Lab Simulator";
     private static final String VERSION = "Version 1.0 (Didier Teifreto)";
-    private static final int IN_ADDRESS_DISPLAY_1 = Memory.mmioBaseAddress + 0x10;
-    private static final int IN_ADDRESS_DISPLAY_2 = Memory.mmioBaseAddress + 0x11;
-    private static final int IN_ADDRESS_HEXADECIMAL_KEYBOARD = Memory.mmioBaseAddress + 0x12;
-    private static final int IN_ADDRESS_COUNTER = Memory.mmioBaseAddress + 0x13;
-    private static final int OUT_ADDRESS_HEXADECIMAL_KEYBOARD = Memory.mmioBaseAddress + 0x14;
+    private static final int IN_OFFSET_DISPLAY_1 = 0x10;
+    private static final int IN_OFFSET_DISPLAY_2 = 0x11;
+    private static final int IN_OFFSET_HEXADECIMAL_KEYBOARD = 0x12;
+    private static final int IN_OFFSET_COUNTER = 0x13;
+    private static final int OUT_OFFSET_HEXADECIMAL_KEYBOARD = 0x14;
 
     public static final int EXTERNAL_INTERRUPT_TIMER = 0x00000100;
     public static final int EXTERNAL_INTERRUPT_HEXADECIMAL_KEYBOARD = 0x00000200;
@@ -54,8 +55,7 @@ public class DigitalLabSimulator extends AbstractMarsTool {
 
     @Override
     protected void startObserving() {
-        Memory.getInstance().addListener(this, IN_ADDRESS_DISPLAY_1);
-        Memory.getInstance().addListener(this, Memory.textBaseAddress, Memory.textLimitAddress - 1);
+        Memory.getInstance().addListener(this, Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW) + IN_OFFSET_DISPLAY_1);
     }
 
     @Override
@@ -65,16 +65,17 @@ public class DigitalLabSimulator extends AbstractMarsTool {
 
     @Override
     public void memoryWritten(int address, int length, int value, int wordAddress, int wordValue) {
-        if (address == IN_ADDRESS_DISPLAY_1) {
+        int mmioBaseAddress = Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW);
+        if (address == mmioBaseAddress + IN_OFFSET_DISPLAY_1) {
             sevenSegmentPanel.modifyDisplay(1, (byte) value);
         }
-        else if (address == IN_ADDRESS_DISPLAY_2) {
+        else if (address == mmioBaseAddress + IN_OFFSET_DISPLAY_2) {
             sevenSegmentPanel.modifyDisplay(0, (byte) value);
         }
-        else if (address == IN_ADDRESS_HEXADECIMAL_KEYBOARD) {
+        else if (address == mmioBaseAddress + IN_OFFSET_HEXADECIMAL_KEYBOARD) {
             updateHexadecimalKeyboard(value);
         }
-        else if (address == IN_ADDRESS_COUNTER) {
+        else if (address == mmioBaseAddress + IN_OFFSET_COUNTER) {
             updateOneSecondCounter(value);
         }
         if (counterInterruptOnOff) {
@@ -108,10 +109,10 @@ public class DigitalLabSimulator extends AbstractMarsTool {
         return panelTools;
     }
 
-    private synchronized void updateMMIOControlAndData(int address, int value) {
+    private synchronized void updateMMIOControlAndData(int value) {
         synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
             try {
-                Memory.getInstance().setByte(address, value);
+                Memory.getInstance().setByte(Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW) + OUT_OFFSET_HEXADECIMAL_KEYBOARD, value);
             }
             catch (AddressErrorException exception) {
                 System.err.println("Tool author specified incorrect MMIO address!");
@@ -276,10 +277,10 @@ public class DigitalLabSimulator extends AbstractMarsTool {
     public void updateHexadecimalKeyboard(int row) {
         int key = keyboardValueButtonClick;
         if ((key != -1) && ((1 << (key / 4)) == (row & 0xF))) {
-            updateMMIOControlAndData(OUT_ADDRESS_HEXADECIMAL_KEYBOARD, (1 << (key / 4)) | (1 << (4 + (key % 4))));
+            updateMMIOControlAndData((1 << (key / 4)) | (1 << (4 + (key % 4))));
         }
         else {
-            updateMMIOControlAndData(OUT_ADDRESS_HEXADECIMAL_KEYBOARD, 0);
+            updateMMIOControlAndData(0);
         }
         keyboardInterruptOnOff = (row & 0xF0) != 0;
     }
@@ -319,7 +320,7 @@ public class DigitalLabSimulator extends AbstractMarsTool {
                 int i;
                 if (keyboardValueButtonClick != -1) { // Button already pressed -> now realease
                     keyboardValueButtonClick = -1;
-                    updateMMIOControlAndData(OUT_ADDRESS_HEXADECIMAL_KEYBOARD, 0);
+                    updateMMIOControlAndData(0);
                     for (i = 0; i < 16; i++) {
                         buttons[i].setBackground(null);
                     }

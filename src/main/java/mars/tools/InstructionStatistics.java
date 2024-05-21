@@ -31,6 +31,7 @@ package mars.tools;
 import mars.ProgramStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
+import mars.mips.hardware.MemoryConfigurations;
 
 import javax.swing.*;
 import java.awt.*;
@@ -193,7 +194,16 @@ public class InstructionStatistics extends AbstractMarsTool {
      */
     @Override
     protected void startObserving() {
-        Memory.getInstance().addListener(this, Memory.textBaseAddress, Memory.textLimitAddress - 1);
+        Memory.getInstance().addListener(
+            this,
+            Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW),
+            Memory.getInstance().getAddress(MemoryConfigurations.TEXT_HIGH)
+        );
+        Memory.getInstance().addListener(
+            this,
+            Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_TEXT_LOW),
+            Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_TEXT_HIGH)
+        );
     }
 
     @Override

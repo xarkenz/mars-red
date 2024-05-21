@@ -1,10 +1,7 @@
 package mars.venus.actions.run;
 
 import mars.*;
-import mars.mips.hardware.Coprocessor0;
-import mars.mips.hardware.Coprocessor1;
-import mars.mips.hardware.Memory;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.*;
 import mars.util.FilenameFinder;
 import mars.venus.*;
 import mars.venus.actions.VenusAction;
@@ -119,7 +116,7 @@ public class RunAssembleAction extends VenusAction {
             Coprocessor0.resetRegisters();
             executeTab.getTextSegmentWindow().setupTable();
             executeTab.getDataSegmentWindow().setupTable();
-            executeTab.getDataSegmentWindow().highlightCellForAddress(Memory.dataBaseAddress);
+            executeTab.getDataSegmentWindow().highlightCellForAddress(Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW));
             executeTab.getDataSegmentWindow().clearHighlighting();
             executeTab.getLabelsWindow().setupTable();
             executeTab.getTextSegmentWindow().setCodeHighlighting(true);

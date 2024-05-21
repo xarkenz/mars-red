@@ -103,7 +103,16 @@ public class BHTSimulator extends AbstractMarsTool {
      */
     @Override
     protected void startObserving() {
-        Memory.getInstance().addListener(this, Memory.textBaseAddress, Memory.textLimitAddress - 1);
+        Memory.getInstance().addListener(
+            this,
+            Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW),
+            Memory.getInstance().getAddress(MemoryConfigurations.TEXT_HIGH)
+        );
+        Memory.getInstance().addListener(
+            this,
+            Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_TEXT_LOW),
+            Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_TEXT_HIGH)
+        );
     }
 
     @Override

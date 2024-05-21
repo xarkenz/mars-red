@@ -659,7 +659,11 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
      * Convenience method to add this as a listener of the text segment in memory.
      */
     public void startObservingMemory() {
-        Memory.getInstance().addListener(this, Memory.textBaseAddress, Memory.textLimitAddress - 1);
+        Memory.getInstance().addListener(
+            this,
+            Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW),
+            Memory.getInstance().getAddress(MemoryConfigurations.TEXT_HIGH)
+        );
     }
 
     /**

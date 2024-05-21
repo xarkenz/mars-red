@@ -49,7 +49,7 @@ public class AddressErrorException extends Exception {
      * @param address The erroneous memory address.
      */
     public AddressErrorException(String message, int type, int address) {
-        super(message + Binary.intToHexString(address));
+        super(message + ": " + Binary.intToHexString(address));
         this.type = type;
         this.address = address;
     }

@@ -556,7 +556,7 @@ public class MarsLauncher {
      */
     private void establishObserver() {
         if (countInstructions) {
-            Memory.getInstance().addListener(new Memory.Listener() {
+            Memory.Listener instructionCounter = new Memory.Listener() {
                 private int lastAddress = -1;
 
                 @Override
@@ -566,7 +566,17 @@ public class MarsLauncher {
                         MarsLauncher.this.instructionCount++;
                     }
                 }
-            }, Memory.textBaseAddress, Memory.textLimitAddress - 1);
+            };
+            Memory.getInstance().addListener(
+                instructionCounter,
+                Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW),
+                Memory.getInstance().getAddress(MemoryConfigurations.TEXT_HIGH)
+            );
+            Memory.getInstance().addListener(
+                instructionCounter,
+                Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_TEXT_LOW),
+                Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_TEXT_HIGH)
+            );
         }
     }
 
@@ -664,21 +674,21 @@ public class MarsLauncher {
      * Displays requested memory range or ranges
      */
     private void displayMemoryPostMortem() {
-        int value;
         // Display requested memory range contents
         Iterator<String> memIter = memoryDisplayList.iterator();
         int addressStart = 0, addressEnd = 0;
         while (memIter.hasNext()) {
-            try { // This will succeed; error would have been caught during command arg parse
+            try {
                 addressStart = Binary.decodeInteger(memIter.next());
                 addressEnd = Binary.decodeInteger(memIter.next());
             }
-            catch (NumberFormatException ignored) {
+            catch (NumberFormatException exception) {
+                // Should never happen; error would have been caught during command arg parse
             }
             int valuesDisplayed = 0;
             for (int addr = addressStart; addr <= addressEnd; addr += Memory.BYTES_PER_WORD) {
                 if (addr < 0 && addressEnd > 0) {
-                    break;  // happens only if addressEnd is 0x7ffffffc
+                    break; // Happens only if addressEnd is 0x7ffffffc
                 }
                 if (valuesDisplayed % MEMORY_WORDS_PER_LINE == 0) {
                     out.print((valuesDisplayed > 0) ? "\n" : "");
@@ -688,12 +698,13 @@ public class MarsLauncher {
                 }
                 try {
                     // Allow display of binary text segment (machine code) DPS 14-July-2008
-                    if (Memory.isInTextSegment(addr) || Memory.isInKernelTextSegment(addr)) {
-                        Integer iValue = Application.memory.getRawWordOrNull(addr);
-                        value = (iValue == null) ? 0 : iValue;
+                    int value;
+                    if (Memory.getInstance().isInTextSegment(addr) || Memory.getInstance().isInKernelTextSegment(addr)) {
+                        Integer valueOrNull = Memory.getInstance().getRawWordOrNull(addr);
+                        value = (valueOrNull == null) ? 0 : valueOrNull;
                     }
                     else {
-                        value = Application.memory.getWord(addr);
+                        value = Memory.getInstance().getWord(addr);
                     }
                     out.print(formatIntForDisplay(value) + "\t");
                 }

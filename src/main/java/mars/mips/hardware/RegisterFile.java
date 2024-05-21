@@ -5,8 +5,6 @@ import mars.assembler.SymbolTable;
 import mars.mips.instructions.Instruction;
 import mars.util.Binary;
 
-import java.util.Observer;
-
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
 
@@ -42,6 +40,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @version June 2003
  */
 public class RegisterFile {
+    public static final int RETURN_VALUE_0 = 2;
+    public static final int RETURN_VALUE_1 = 3;
+    public static final int ARGUMENT_0 = 4;
+    public static final int ARGUMENT_1 = 5;
+    public static final int ARGUMENT_2 = 6;
+    public static final int ARGUMENT_3 = 7;
     public static final int GLOBAL_POINTER = 28;
     public static final int STACK_POINTER = 29;
     public static final int FRAME_POINTER = 30;
@@ -80,13 +84,13 @@ public class RegisterFile {
         new Register("$t9", 25, 0),
         new Register("$k0", 26, 0),
         new Register("$k1", 27, 0),
-        new Register("$gp", GLOBAL_POINTER, Memory.globalPointer),
-        new Register("$sp", STACK_POINTER, Memory.stackPointer),
+        new Register("$gp", GLOBAL_POINTER, 0),
+        new Register("$sp", STACK_POINTER, 0),
         new Register("$fp", FRAME_POINTER, 0),
         new Register("$ra", RETURN_ADDRESS, 0),
     };
 
-    private static final Register PROGRAM_COUNTER_REGISTER = new Register("pc", PROGRAM_COUNTER, Memory.textBaseAddress);
+    private static final Register PROGRAM_COUNTER_REGISTER = new Register("pc", PROGRAM_COUNTER, 0);
     private static final Register HIGH_ORDER_REGISTER = new Register("hi", HIGH_ORDER, 0);
     private static final Register LOW_ORDER_REGISTER = new Register("lo", LOW_ORDER, 0);
 
@@ -204,9 +208,9 @@ public class RegisterFile {
      *                    will set program counter to default reset value.
      */
     public static void initializeProgramCounter(boolean startAtMain) {
-        int mainAddr = Application.globalSymbolTable.getAddress(SymbolTable.getStartLabel());
-        if (startAtMain && mainAddr != SymbolTable.NOT_FOUND && (Memory.isInTextSegment(mainAddr) || Memory.isInKernelTextSegment(mainAddr))) {
-            initializeProgramCounter(mainAddr);
+        int mainAddress = Application.globalSymbolTable.getAddress(SymbolTable.getStartLabel());
+        if (startAtMain && mainAddress != SymbolTable.NOT_FOUND && (Memory.getInstance().isInTextSegment(mainAddress) || Memory.getInstance().isInKernelTextSegment(mainAddress))) {
+            initializeProgramCounter(mainAddress);
         }
         else {
             initializeProgramCounter(PROGRAM_COUNTER_REGISTER.getDefaultValue());
@@ -297,6 +301,8 @@ public class RegisterFile {
         for (Register register : REGISTERS) {
             register.resetValueToDefault();
         }
+        HIGH_ORDER_REGISTER.resetValueToDefault();
+        LOW_ORDER_REGISTER.resetValueToDefault();
         // Replaces "programCounter.resetValue()", DPS 3/3/09
         initializeProgramCounter(Application.getSettings().startAtMain.get());
     }

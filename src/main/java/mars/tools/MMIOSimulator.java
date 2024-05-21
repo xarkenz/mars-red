@@ -149,10 +149,14 @@ public class MMIOSimulator extends AbstractMarsTool {
      */
     @Override
     protected void initializePreGUI() {
-        receiverControl = Memory.mmioBaseAddress; //0xffff0000; // keyboard Ready in low-order bit
-        receiverData = Memory.mmioBaseAddress + 4; //0xffff0004; // keyboard character in low-order byte
-        transmitterControl = Memory.mmioBaseAddress + 8; //0xffff0008; // display Ready in low-order bit
-        transmitterData = Memory.mmioBaseAddress + 12; //0xffff000c; // display character in low-order byte
+        int address = Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW);
+        receiverControl = address; // keyboard Ready in low-order bit
+        address += Memory.BYTES_PER_WORD;
+        receiverData = address; // keyboard character in low-order byte
+        address += Memory.BYTES_PER_WORD;
+        transmitterControl = address; // display Ready in low-order bit
+        address += Memory.BYTES_PER_WORD;
+        transmitterData = address; // display character in low-order byte
         displayPanelTitle = "DISPLAY: Store to Transmitter Data " + Binary.intToHexString(transmitterData);
         keyboardPanelTitle = "KEYBOARD: Characters typed here are stored to Receiver Data " + Binary.intToHexString(receiverData);
     }
@@ -179,8 +183,16 @@ public class MMIOSimulator extends AbstractMarsTool {
         // We want to be notified of each instruction execution, because instruction count is the
         // basis for delay in re-setting (literally) the TRANSMITTER_CONTROL register.  SPIM does
         // this too.  This simulates the time required for the display unit to process the TRANSMITTER_DATA.
-        Memory.getInstance().addListener(this, Memory.textBaseAddress, Memory.textLimitAddress - 1);
-        Memory.getInstance().addListener(this, Memory.kernelTextBaseAddress, Memory.kernelTextLimitAddress - 1);
+        Memory.getInstance().addListener(
+            this,
+            Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW),
+            Memory.getInstance().getAddress(MemoryConfigurations.TEXT_HIGH)
+        );
+        Memory.getInstance().addListener(
+            this,
+            Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_TEXT_LOW),
+            Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_TEXT_HIGH)
+        );
     }
 
     @Override
@@ -569,13 +581,13 @@ public class MMIOSimulator extends AbstractMarsTool {
     private synchronized void updateMMIOControlAndData(int controlAddr, int controlValue, int dataAddr, int dataValue, boolean controlOnly) {
         synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
             try {
-                Application.memory.setRawWord(controlAddr, controlValue);
+                Memory.getInstance().setWord(controlAddr, controlValue);
                 if (!controlOnly) {
-                    Application.memory.setRawWord(dataAddr, dataValue);
+                    Memory.getInstance().setWord(dataAddr, dataValue);
                 }
             }
-            catch (AddressErrorException aee) {
-                System.err.println("Tool author specified incorrect MMIO address!" + aee);
+            catch (AddressErrorException exception) {
+                System.err.println("Tool author specified incorrect MMIO address!\n" + exception);
                 System.exit(0);
             }
         }
@@ -594,10 +606,10 @@ public class MMIOSimulator extends AbstractMarsTool {
      */
     private static boolean isReadyBitSet(int mmioControlRegister) {
         try {
-            return (Application.memory.get(mmioControlRegister, Memory.BYTES_PER_WORD) & 1) == 1;
+            return (Memory.getInstance().getWord(mmioControlRegister) & 1) == 1;
         }
-        catch (AddressErrorException aee) {
-            System.out.println("Tool author specified incorrect MMIO address!" + aee);
+        catch (AddressErrorException exception) {
+            System.err.println("Tool author specified incorrect MMIO address!\n" + exception);
             System.exit(0);
         }
         return false; // to satisfy the compiler -- this will never happen.
@@ -609,10 +621,10 @@ public class MMIOSimulator extends AbstractMarsTool {
      */
     private static int readyBitSet(int mmioControlRegister) {
         try {
-            return Application.memory.get(mmioControlRegister, Memory.BYTES_PER_WORD) | 1;
+            return Memory.getInstance().getWord(mmioControlRegister) | 1;
         }
-        catch (AddressErrorException aee) {
-            System.out.println("Tool author specified incorrect MMIO address!" + aee);
+        catch (AddressErrorException exception) {
+            System.err.println("Tool author specified incorrect MMIO address!\n" + exception);
             System.exit(0);
         }
         return 1; // to satisfy the compiler -- this will never happen.
@@ -624,10 +636,10 @@ public class MMIOSimulator extends AbstractMarsTool {
      */
     private static int readyBitCleared(int mmioControlRegister) {
         try {
-            return Application.memory.get(mmioControlRegister, Memory.BYTES_PER_WORD) & 2;
+            return Memory.getInstance().getWord(mmioControlRegister) & 2;
         }
-        catch (AddressErrorException aee) {
-            System.out.println("Tool author specified incorrect MMIO address!" + aee);
+        catch (AddressErrorException exception) {
+            System.err.println("Tool author specified incorrect MMIO address!\n" + exception);
             System.exit(0);
         }
         return 0; // to satisfy the compiler -- this will never happen.

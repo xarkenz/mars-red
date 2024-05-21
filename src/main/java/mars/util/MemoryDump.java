@@ -3,6 +3,7 @@ package mars.util;
 import mars.Application;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
+import mars.mips.hardware.MemoryConfigurations;
 
 import java.util.ArrayList;
 
@@ -81,8 +82,8 @@ public class MemoryDump {
      * @return Array of int containing corresponding base addresses.
      */
     public static int[] getBaseAddresses(String[] segments) {
-        baseAddresses[0] = Memory.textBaseAddress;
-        baseAddresses[1] = Memory.dataBaseAddress;
+        baseAddresses[0] = Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW);
+        baseAddresses[1] = Memory.getInstance().getAddress(MemoryConfigurations.DATA_LOW);
         return baseAddresses;
     }
 
@@ -95,8 +96,8 @@ public class MemoryDump {
      * @return Array of int containing corresponding limit addresses.
      */
     public static int[] getLimitAddresses(String[] segments) {
-        limitAddresses[0] = Memory.textLimitAddress;
-        limitAddresses[1] = Memory.dataSegmentLimitAddress;
+        limitAddresses[0] = Memory.getInstance().getAddress(MemoryConfigurations.TEXT_HIGH);
+        limitAddresses[1] = Memory.getInstance().getAddress(MemoryConfigurations.DATA_HIGH);
         return limitAddresses;
     }
 

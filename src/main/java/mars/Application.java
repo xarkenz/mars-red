@@ -4,7 +4,7 @@ import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 import mars.assembler.SymbolTable;
-import mars.mips.hardware.Memory;
+import mars.mips.hardware.*;
 import mars.mips.instructions.InstructionSet;
 import mars.settings.Settings;
 import mars.util.PropertiesFile;
@@ -174,6 +174,8 @@ public class Application {
             globalSymbolTable = new SymbolTable("(global)");
             initialized = true;
             debug = false;
+
+            MemoryConfigurations.getConfigurations();
         }
     }
 

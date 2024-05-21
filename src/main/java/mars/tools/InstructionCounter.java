@@ -30,6 +30,7 @@ package mars.tools;
 import mars.ProgramStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
+import mars.mips.hardware.MemoryConfigurations;
 import mars.mips.instructions.BasicInstruction;
 import mars.mips.instructions.BasicInstructionFormat;
 
@@ -172,7 +173,16 @@ public class InstructionCounter extends AbstractMarsTool {
 
     @Override
     protected void startObserving() {
-        Memory.getInstance().addListener(this, Memory.textBaseAddress, Memory.textLimitAddress - 1);
+        Memory.getInstance().addListener(
+            this,
+            Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW),
+            Memory.getInstance().getAddress(MemoryConfigurations.TEXT_HIGH)
+        );
+        Memory.getInstance().addListener(
+            this,
+            Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_TEXT_LOW),
+            Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_TEXT_HIGH)
+        );
     }
 
     @Override
@@ -221,24 +231,24 @@ public class InstructionCounter extends AbstractMarsTool {
     }
 
     private void updateDisplay() {
-        counterField.setText(String.valueOf(counter));
+        counterField.setText(Integer.toString(counter));
 
-        counterRField.setText(String.valueOf(counterR));
+        counterRField.setText(Integer.toString(counterR));
         progressbarR.setMaximum(counter);
         progressbarR.setValue(counterR);
 
-        counterIField.setText(String.valueOf(counterI));
+        counterIField.setText(Integer.toString(counterI));
         progressbarI.setMaximum(counter);
         progressbarI.setValue(counterI);
 
-        counterJField.setText(String.valueOf(counterJ));
+        counterJField.setText(Integer.toString(counterJ));
         progressbarJ.setMaximum(counter);
         progressbarJ.setValue(counterJ);
 
         if (counter == 0) {
-            progressbarR.setString("0%");
-            progressbarI.setString("0%");
-            progressbarJ.setString("0%");
+            progressbarR.setString("n/a");
+            progressbarI.setString("n/a");
+            progressbarJ.setString("n/a");
         }
         else {
             progressbarR.setString((counterR * 100) / counter + "%");

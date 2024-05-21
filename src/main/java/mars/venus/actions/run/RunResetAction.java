@@ -2,10 +2,7 @@ package mars.venus.actions.run;
 
 import mars.Application;
 import mars.ProcessingException;
-import mars.mips.hardware.Coprocessor0;
-import mars.mips.hardware.Coprocessor1;
-import mars.mips.hardware.Memory;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.*;
 import mars.venus.RegistersPane;
 import mars.venus.execute.ExecuteTab;
 import mars.venus.actions.VenusAction;
@@ -86,7 +83,7 @@ public class RunResetAction extends VenusAction {
         registersPane.setSelectedComponent(registersPane.getRegistersWindow());
 
         ExecuteTab executeTab = gui.getMainPane().getExecuteTab();
-        executeTab.getDataSegmentWindow().highlightCellForAddress(Memory.dataBaseAddress);
+        executeTab.getDataSegmentWindow().highlightCellForAddress(Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW));
         executeTab.getDataSegmentWindow().clearHighlighting();
         executeTab.getTextSegmentWindow().resetModifiedSourceCode();
         executeTab.getTextSegmentWindow().setCodeHighlighting(true);

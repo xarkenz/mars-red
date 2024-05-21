@@ -3,6 +3,7 @@ package mars.tools;
 import mars.Application;
 import mars.ProgramStatement;
 import mars.mips.hardware.Memory;
+import mars.mips.hardware.MemoryConfigurations;
 import mars.venus.VenusUI;
 import mars.venus.actions.run.RunAssembleAction;
 import mars.venus.actions.run.RunStepBackwardAction;
@@ -135,7 +136,16 @@ public class MipsXray extends AbstractMarsTool {
 
     @Override
     protected void startObserving() {
-        Memory.getInstance().addListener(this, Memory.textBaseAddress, Memory.textLimitAddress - 1);
+        Memory.getInstance().addListener(
+            this,
+            Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW),
+            Memory.getInstance().getAddress(MemoryConfigurations.TEXT_HIGH)
+        );
+        Memory.getInstance().addListener(
+            this,
+            Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_TEXT_LOW),
+            Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_TEXT_HIGH)
+        );
     }
 
     @Override

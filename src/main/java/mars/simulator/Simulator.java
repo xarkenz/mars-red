@@ -1,10 +1,7 @@
 package mars.simulator;
 
 import mars.*;
-import mars.mips.hardware.AddressErrorException;
-import mars.mips.hardware.Coprocessor0;
-import mars.mips.hardware.Memory;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.*;
 import mars.mips.instructions.BasicInstruction;
 import mars.util.Binary;
 import mars.venus.execute.RunSpeedPanel;
@@ -465,20 +462,20 @@ public class Simulator {
                         }
 
                         // See if an exception handler is present.  Assume this is the case
-                        // if and only if memory location Memory.exceptionHandlerAddress
+                        // if and only if memory location exceptionHandlerAddress
                         // (e.g. 0x80000180) contains an instruction.  If so, then set the
                         // program counter there and continue.  Otherwise terminate the
                         // MIPS program with appropriate error message.
+                        int exceptionHandlerAddress = Memory.getInstance().getAddress(MemoryConfigurations.EXCEPTION_HANDLER);
                         ProgramStatement exceptionHandler = null;
                         try {
-                            exceptionHandler = Memory.getInstance().getStatement(Memory.exceptionHandlerAddress);
+                            exceptionHandler = Memory.getInstance().getStatement(exceptionHandlerAddress);
                         }
                         catch (AddressErrorException ignored) {
-                            // Will not occur with this well-known address
+                            // Will only occur if the exception handler address is improperly configured
                         }
-
                         if (exceptionHandler != null) {
-                            RegisterFile.setProgramCounter(Memory.exceptionHandlerAddress);
+                            RegisterFile.setProgramCounter(exceptionHandlerAddress);
                         }
                         else {
                             throw exception;

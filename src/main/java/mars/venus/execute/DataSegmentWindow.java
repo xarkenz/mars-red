@@ -76,7 +76,7 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
     public static final boolean USER_MODE = false;
     public static final boolean KERNEL_MODE = true;
 
-    private boolean addressHighlighting = false;
+    private boolean addressHighlighting;
     private boolean asciiDisplay = false;
     private int addressRowFirstAddress;
     private int addressColumn;
@@ -105,14 +105,14 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
     private static final int MMIO_BASE_ADDRESS_INDEX = 7;
     // Must agree with above in number and order...
     private final int[] baseAddresses = {
-        Memory.externBaseAddress,
-        Memory.dataBaseAddress,
-        Memory.heapBaseAddress,
-        -1 /*Memory.globalPointer*/,
-        -1 /*Memory.stackPointer*/,
-        Memory.textBaseAddress,
-        Memory.kernelDataBaseAddress,
-        Memory.mmioBaseAddress,
+        Memory.getInstance().getAddress(MemoryConfigurations.EXTERN_LOW),
+        Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW),
+        Memory.getInstance().getAddress(MemoryConfigurations.DYNAMIC_LOW),
+        -1, // Global pointer placeholder
+        -1, // Stack pointer placeholder
+        Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW),
+        Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_DATA_LOW),
+        Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW),
     };
     // Must agree with above in number and order...
     private static final String[] LOCATION_DESCRIPTIONS = {
@@ -136,7 +136,7 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
         this.setFrameIcon(null);
 
         this.gui = gui;
-        this.homeAddress = Memory.dataBaseAddress;
+        this.homeAddress = this.baseAddresses[DATA_BASE_ADDRESS_INDEX];
         this.firstAddress = homeAddress;
         this.userOrKernelMode = USER_MODE;
         this.addressHighlighting = false;
@@ -192,14 +192,14 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
     }
 
     public void updateBaseAddressComboBox() {
-        this.baseAddresses[EXTERN_BASE_ADDRESS_INDEX] = Memory.externBaseAddress;
-        this.baseAddresses[GLOBAL_POINTER_BASE_ADDRESS_INDEX] = -1; /*Memory.globalPointer*/
-        this.baseAddresses[DATA_BASE_ADDRESS_INDEX] = Memory.dataBaseAddress;
-        this.baseAddresses[HEAP_BASE_ADDRESS_INDEX] = Memory.heapBaseAddress;
-        this.baseAddresses[STACK_POINTER_BASE_ADDRESS_INDEX] = -1; /*Memory.stackPointer*/
-        this.baseAddresses[KERNEL_DATA_BASE_ADDRESS_INDEX] = Memory.kernelDataBaseAddress;
-        this.baseAddresses[MMIO_BASE_ADDRESS_INDEX] = Memory.mmioBaseAddress;
-        this.baseAddresses[TEXT_BASE_ADDRESS_INDEX] = Memory.textBaseAddress;
+        this.baseAddresses[EXTERN_BASE_ADDRESS_INDEX] = Memory.getInstance().getAddress(MemoryConfigurations.EXTERN_LOW);
+        this.baseAddresses[DATA_BASE_ADDRESS_INDEX] = Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW);
+        this.baseAddresses[HEAP_BASE_ADDRESS_INDEX] = Memory.getInstance().getAddress(MemoryConfigurations.DYNAMIC_LOW);
+        this.baseAddresses[GLOBAL_POINTER_BASE_ADDRESS_INDEX] = -1; // Global pointer placeholder
+        this.baseAddresses[STACK_POINTER_BASE_ADDRESS_INDEX] = -1; // Stack pointer placeholder
+        this.baseAddresses[TEXT_BASE_ADDRESS_INDEX] = Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW);
+        this.baseAddresses[KERNEL_DATA_BASE_ADDRESS_INDEX] = Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_DATA_LOW);
+        this.baseAddresses[MMIO_BASE_ADDRESS_INDEX] = Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW);
         this.updateBaseAddressChoices();
         this.baseAddressSelector.setModel(new CustomComboBoxModel(this.baseAddressChoices));
         this.baseAddressSelector.setSelectedIndex(this.defaultBaseAddressIndex);
@@ -290,10 +290,10 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
         int baseAddress = this.baseAddresses[desiredComboBoxIndex];
         if (baseAddress == -1) {
             if (desiredComboBoxIndex == GLOBAL_POINTER_BASE_ADDRESS_INDEX) {
-                baseAddress = RegisterFile.getValue(RegisterFile.GLOBAL_POINTER) - (RegisterFile.getValue(RegisterFile.GLOBAL_POINTER) % BYTES_PER_ROW);
+                baseAddress = Memory.alignToPrevious(RegisterFile.getValue(RegisterFile.GLOBAL_POINTER), BYTES_PER_ROW);
             }
             else if (desiredComboBoxIndex == STACK_POINTER_BASE_ADDRESS_INDEX) {
-                baseAddress = RegisterFile.getValue(RegisterFile.STACK_POINTER) - (RegisterFile.getValue(RegisterFile.STACK_POINTER) % BYTES_PER_ROW);
+                baseAddress = Memory.alignToPrevious(RegisterFile.getValue(RegisterFile.STACK_POINTER), BYTES_PER_ROW);
             }
             else {
                 // Shouldn't happen since these are the only two
@@ -350,47 +350,65 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
      */
     private int getBaseAddressIndexForAddress(int address) {
         int desiredComboBoxIndex = -1; // Assume not a data address
-        if (Memory.isInKernelDataSegment(address)) {
+        if (Memory.getInstance().isInKernelDataSegment(address)) {
             return KERNEL_DATA_BASE_ADDRESS_INDEX;
         }
-        else if (Memory.isInMemoryMapSegment(address)) {
+        else if (Memory.getInstance().isInMemoryMappedIO(address)) {
             return MMIO_BASE_ADDRESS_INDEX;
         }
-        else if (Memory.isInTextSegment(address)) { // DPS 8-July-2013
+        else if (Memory.getInstance().isInTextSegment(address)) { // DPS 8-July-2013
             return TEXT_BASE_ADDRESS_INDEX;
         }
 
-        int shortDistance = Integer.MAX_VALUE;
+        int shortestDistance = Integer.MAX_VALUE;
         int testDistance;
         // Check distance from .extern base.  Cannot be below it
-        testDistance = address - Memory.externBaseAddress;
-        if (testDistance >= 0 && testDistance < shortDistance) {
-            shortDistance = testDistance;
+        testDistance = address - Memory.getInstance().getAddress(MemoryConfigurations.EXTERN_LOW);
+        if (testDistance >= 0 && testDistance < shortestDistance) {
+            shortestDistance = testDistance;
             desiredComboBoxIndex = EXTERN_BASE_ADDRESS_INDEX;
         }
-        // Check distance from global pointer; can be either side of it...
-        testDistance = Math.abs(address - RegisterFile.getValue(RegisterFile.GLOBAL_POINTER));
-        if (testDistance < shortDistance) {
-            shortDistance = testDistance;
-            desiredComboBoxIndex = GLOBAL_POINTER_BASE_ADDRESS_INDEX;
-        }
         // Check distance from .data base.  Cannot be below it
-        testDistance = address - Memory.dataBaseAddress;
-        if (testDistance >= 0 && testDistance < shortDistance) {
-            shortDistance = testDistance;
+        testDistance = address - Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW);
+        if (testDistance >= 0 && testDistance < shortestDistance) {
+            shortestDistance = testDistance;
             desiredComboBoxIndex = DATA_BASE_ADDRESS_INDEX;
         }
-        // Check distance from heap base.  Cannot be below it
-        testDistance = address - Memory.heapBaseAddress;
-        if (testDistance >= 0 && testDistance < shortDistance) {
-            shortDistance = testDistance;
+        // Check distance from heap base; cannot be below it
+        testDistance = address - Memory.getInstance().getAddress(MemoryConfigurations.DYNAMIC_LOW);
+        if (testDistance >= 0 && testDistance < shortestDistance) {
+            shortestDistance = testDistance;
             desiredComboBoxIndex = HEAP_BASE_ADDRESS_INDEX;
         }
-        // Check distance from stack pointer.  Can be on either side of it...
+        // Check distance from global pointer; can be either side of it
+        testDistance = Math.abs(address - RegisterFile.getValue(RegisterFile.GLOBAL_POINTER));
+        if (testDistance < shortestDistance) {
+            shortestDistance = testDistance;
+            desiredComboBoxIndex = GLOBAL_POINTER_BASE_ADDRESS_INDEX;
+        }
+        // Check distance from stack pointer; can be on either side of it
         testDistance = Math.abs(address - RegisterFile.getValue(RegisterFile.STACK_POINTER));
-        if (testDistance < shortDistance) {
-            shortDistance = testDistance;
+        if (testDistance < shortestDistance) {
+            shortestDistance = testDistance;
             desiredComboBoxIndex = STACK_POINTER_BASE_ADDRESS_INDEX;
+        }
+        // Check distance from .text base; cannot be below it
+        testDistance = address - Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW);
+        if (testDistance >= 0 && testDistance < shortestDistance) {
+            shortestDistance = testDistance;
+            desiredComboBoxIndex = TEXT_BASE_ADDRESS_INDEX;
+        }
+        // Check distance from .kdata base; cannot be below it
+        testDistance = address - Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_DATA_LOW);
+        if (testDistance >= 0 && testDistance < shortestDistance) {
+            shortestDistance = testDistance;
+            desiredComboBoxIndex = KERNEL_DATA_BASE_ADDRESS_INDEX;
+        }
+        // Check distance from MMIO base; cannot be below it
+        testDistance = address - Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW);
+        if (testDistance >= 0 && testDistance < shortestDistance) {
+            shortestDistance = testDistance;
+            desiredComboBoxIndex = MMIO_BASE_ADDRESS_INDEX;
         }
 
         return desiredComboBoxIndex;
@@ -508,32 +526,8 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
                     ((MemoryTableModel) dataModel).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(Memory.getInstance().getWordNoNotify(address), valueBase), row, column);
                 }
                 catch (AddressErrorException exception) {
-                    // Bit of a hack here.  Memory will throw an exception if you try to read directly from text segment when the
-                    // self-modifying code setting is disabled.  This is a good thing if it is the executing MIPS program trying to
-                    // read.  But not a good thing if it is the DataSegmentDisplay trying to read.  I'll trick Memory by
-                    // temporarily enabling the setting as "non persistent" so it won't write through to the registry.
-                    if (Memory.isInTextSegment(address)) {
-                        int displayValue = 0;
-                        if (!this.gui.getSettings().selfModifyingCodeEnabled.get()) {
-                            this.gui.getSettings().selfModifyingCodeEnabled.setNonPersistent(true);
-                            try {
-                                displayValue = Memory.getInstance().getWordNoNotify(address);
-                            }
-                            catch (AddressErrorException exception1) {
-                                // Still got an exception?  Doesn't seem possible but if we drop through it will write default value 0.
-                            }
-                            this.gui.getSettings().selfModifyingCodeEnabled.setNonPersistent(false);
-                        }
-                        ((MemoryTableModel) dataModel).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(displayValue, valueBase), row, column);
-                    }
-                    // Bug Fix: the following line of code disappeared during the release 4.4 mods, but is essential to
-                    // display values of 0 for valid MIPS addresses that are outside the MARS simulated address space.  Such
-                    // addresses cause an AddressErrorException.  Prior to 4.4, they performed this line of code unconditionally.
-                    // With 4.4, I added the above IF statement to work with the text segment but inadvertently removed this line!
-                    // Now it becomes the "else" part, executed when not in text segment.  DPS 8-July-2014.
-                    else {
-                        ((MemoryTableModel) dataModel).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(0, valueBase), row, column);
-                    }
+                    // Display 0 for values outside of the valid address range
+                    ((MemoryTableModel) dataModel).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(0, valueBase), row, column);
                 }
                 address += BYTES_PER_VALUE;
             }
@@ -546,7 +540,8 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
      */
     public void updateDataAddresses() {
         if (this.tablePanel.getComponentCount() == 0) {
-            return; // ignore if no content to change
+            // Ignore if no content to change
+            return;
         }
         int addressBase = this.gui.getMainPane().getExecuteTab().getAddressDisplayBase();
         int address = this.firstAddress;
@@ -556,7 +551,7 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
             ((MemoryTableModel) this.table.getModel()).setDisplayAndModelValueAt(formattedAddress, row, 0);
             address += BYTES_PER_ROW;
         }
-        // Column headers include address offsets, so translate them too
+        // Column headers include address offsets, so update them too
         for (int column = 1; column < COLUMN_COUNT; column++) {
             this.table.getColumnModel().getColumn(column).setHeaderValue(getColumnName(column, addressBase));
         }
@@ -619,72 +614,70 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
         // NOTE: For buttons that are now combo box items, the tool tips are not displayed w/o custom renderer.
         this.baseAddressButtons[GLOBAL_POINTER_BASE_ADDRESS_INDEX].setToolTipText("View memory around global pointer ($gp)");
         this.baseAddressButtons[STACK_POINTER_BASE_ADDRESS_INDEX].setToolTipText("View memory around stack pointer ($sp)");
-        this.baseAddressButtons[HEAP_BASE_ADDRESS_INDEX].setToolTipText("View memory around heap starting at " + Binary.intToHexString(Memory.heapBaseAddress));
-        this.baseAddressButtons[KERNEL_DATA_BASE_ADDRESS_INDEX].setToolTipText("View memory around kernel data starting at " + Binary.intToHexString(Memory.kernelDataBaseAddress));
-        this.baseAddressButtons[EXTERN_BASE_ADDRESS_INDEX].setToolTipText("View memory around static globals starting at " + Binary.intToHexString(Memory.externBaseAddress));
-        this.baseAddressButtons[MMIO_BASE_ADDRESS_INDEX].setToolTipText("View memory around memory-mapped I/O starting at " + Binary.intToHexString(Memory.mmioBaseAddress));
-        this.baseAddressButtons[TEXT_BASE_ADDRESS_INDEX].setToolTipText("View memory around program code starting at " + Binary.intToHexString(Memory.textBaseAddress));
-        this.baseAddressButtons[DATA_BASE_ADDRESS_INDEX].setToolTipText("View memory around program data starting at " + Binary.intToHexString(Memory.dataBaseAddress));
-        this.prevButton.setToolTipText("View the previous (lower) memory range (hold down for rapid fire)");
-        this.nextButton.setToolTipText("View the next (higher) memory range (hold down for rapid fire)");
+        this.baseAddressButtons[HEAP_BASE_ADDRESS_INDEX].setToolTipText("View memory around heap starting at " + Binary.intToHexString(Memory.getInstance().getAddress(MemoryConfigurations.DYNAMIC_LOW)));
+        this.baseAddressButtons[KERNEL_DATA_BASE_ADDRESS_INDEX].setToolTipText("View memory around kernel data starting at " + Binary.intToHexString(Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_DATA_LOW)));
+        this.baseAddressButtons[EXTERN_BASE_ADDRESS_INDEX].setToolTipText("View memory around static globals starting at " + Binary.intToHexString(Memory.getInstance().getAddress(MemoryConfigurations.EXTERN_LOW)));
+        this.baseAddressButtons[MMIO_BASE_ADDRESS_INDEX].setToolTipText("View memory around memory-mapped I/O starting at " + Binary.intToHexString(Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW)));
+        this.baseAddressButtons[TEXT_BASE_ADDRESS_INDEX].setToolTipText("View memory around program code starting at " + Binary.intToHexString(Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW)));
+        this.baseAddressButtons[DATA_BASE_ADDRESS_INDEX].setToolTipText("View memory around program data starting at " + Binary.intToHexString(Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW)));
+        this.prevButton.setToolTipText("View previous/lower memory range (hold down for rapid fire)");
+        this.nextButton.setToolTipText("View next/higher memory range (hold down for rapid fire)");
 
         // Add the action listeners to maintain button state and table contents
         // Currently there is no memory upper bound so next button always enabled.
         this.baseAddressButtons[GLOBAL_POINTER_BASE_ADDRESS_INDEX].addActionListener(event -> {
             this.userOrKernelMode = USER_MODE;
-            // Get $gp global pointer, but guard against it having value below data segment
-            this.firstAddress = Math.max(Memory.dataSegmentBaseAddress, RegisterFile.getValue(RegisterFile.GLOBAL_POINTER));
+            this.firstAddress = RegisterFile.getValue(RegisterFile.GLOBAL_POINTER);
             // updateModelForMemoryRange requires argument to be multiple of 4,
             // but for cleaner display we'll make it a multiple of 32 (last nibble is 0).
             // This makes it easier to mentally calculate address from row address + column offset.
-            this.firstAddress -= this.firstAddress % BYTES_PER_ROW;
+            this.firstAddress = Memory.alignToPrevious(this.firstAddress, BYTES_PER_ROW);
             this.homeAddress = this.firstAddress;
             this.updateFirstAddress(this.firstAddress);
             this.updateModelForMemoryRange(this.firstAddress);
         });
         this.baseAddressButtons[STACK_POINTER_BASE_ADDRESS_INDEX].addActionListener(event -> {
             this.userOrKernelMode = USER_MODE;
-            // Get $sp stack pointer, but guard against it having value below data segment
-            this.firstAddress = Math.max(Memory.dataSegmentBaseAddress, RegisterFile.getValue(RegisterFile.STACK_POINTER));
-            // See comment above for baseAddressButtons[GLOBAL_POINTER_BASE_ADDRESS_INDEX]...
-            this.firstAddress -= this.firstAddress % BYTES_PER_ROW;
-            this.homeAddress = Memory.stackBaseAddress;
+            this.firstAddress = RegisterFile.getValue(RegisterFile.STACK_POINTER);
+            // See comment above for baseAddressButtons[GLOBAL_POINTER_BASE_ADDRESS_INDEX]
+            this.firstAddress = Memory.alignToPrevious(this.firstAddress, BYTES_PER_ROW);
+            this.homeAddress = Memory.getInstance().getAddress(MemoryConfigurations.STACK_POINTER);
             this.updateFirstAddress(this.firstAddress);
             this.updateModelForMemoryRange(this.firstAddress);
         });
         this.baseAddressButtons[HEAP_BASE_ADDRESS_INDEX].addActionListener(event -> {
             this.userOrKernelMode = USER_MODE;
-            this.homeAddress = Memory.heapBaseAddress;
+            this.homeAddress = Memory.getInstance().getAddress(MemoryConfigurations.DYNAMIC_LOW);
             this.updateFirstAddress(this.homeAddress);
             this.updateModelForMemoryRange(this.firstAddress);
         });
         this.baseAddressButtons[EXTERN_BASE_ADDRESS_INDEX].addActionListener(event -> {
             this.userOrKernelMode = USER_MODE;
-            this.homeAddress = Memory.externBaseAddress;
+            this.homeAddress = Memory.getInstance().getAddress(MemoryConfigurations.EXTERN_LOW);
             this.updateFirstAddress(this.homeAddress);
             this.updateModelForMemoryRange(this.firstAddress);
         });
         this.baseAddressButtons[KERNEL_DATA_BASE_ADDRESS_INDEX].addActionListener(event -> {
             this.userOrKernelMode = KERNEL_MODE;
-            this.homeAddress = Memory.kernelDataBaseAddress;
+            this.homeAddress = Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_DATA_LOW);
             this.updateFirstAddress(this.homeAddress);
             this.updateModelForMemoryRange(this.firstAddress);
         });
         this.baseAddressButtons[MMIO_BASE_ADDRESS_INDEX].addActionListener(event -> {
             this.userOrKernelMode = KERNEL_MODE;
-            this.homeAddress = Memory.mmioBaseAddress;
+            this.homeAddress = Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW);
             this.updateFirstAddress(this.homeAddress);
             this.updateModelForMemoryRange(this.firstAddress);
         });
         this.baseAddressButtons[TEXT_BASE_ADDRESS_INDEX].addActionListener(event -> {
             this.userOrKernelMode = USER_MODE;
-            this.homeAddress = Memory.textBaseAddress;
+            this.homeAddress = Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW);
             this.updateFirstAddress(this.homeAddress);
             this.updateModelForMemoryRange(this.firstAddress);
         });
         baseAddressButtons[DATA_BASE_ADDRESS_INDEX].addActionListener(event -> {
             this.userOrKernelMode = USER_MODE;
-            this.homeAddress = Memory.dataBaseAddress;
+            this.homeAddress = Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW);
             this.updateFirstAddress(this.homeAddress);
             this.updateModelForMemoryRange(this.firstAddress);
         });
@@ -703,8 +696,8 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
      * <code>prevButton</code> and <code>nextButton</code> are also enabled/disabled appropriately.
      */
     private void updateFirstAddress(int address) {
-        int lowLimit = (this.userOrKernelMode == USER_MODE) ? Math.min(Math.min(Memory.textBaseAddress, Memory.dataSegmentBaseAddress), Memory.dataBaseAddress) : Memory.kernelDataBaseAddress;
-        int highLimit = (this.userOrKernelMode == USER_MODE) ? Memory.userHighAddress : Memory.kernelHighAddress;
+        int lowLimit = Memory.getInstance().getAddress((this.userOrKernelMode == USER_MODE) ? MemoryConfigurations.USER_LOW : MemoryConfigurations.MAPPED_LOW);
+        int highLimit = Memory.getInstance().getAddress((this.userOrKernelMode == USER_MODE) ? MemoryConfigurations.USER_HIGH : MemoryConfigurations.MAPPED_HIGH);
 
         this.firstAddress = address;
         if (this.firstAddress <= lowLimit) {

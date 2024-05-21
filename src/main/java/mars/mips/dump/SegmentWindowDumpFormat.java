@@ -85,7 +85,7 @@ public class SegmentWindowDumpFormat extends AbstractDumpFormat {
         boolean hexAddresses = Application.getSettings().displayAddressesInHex.get();
 
         // If address in data segment, print in same format as Data Segment Window
-        if (Memory.isInDataSegment(firstAddress)) {
+        if (Memory.getInstance().isInDataSegment(firstAddress)) {
             boolean hexValues = Application.getSettings().displayValuesInHex.get();
             int offset = 0;
             StringBuilder string = new StringBuilder();
@@ -113,7 +113,7 @@ public class SegmentWindowDumpFormat extends AbstractDumpFormat {
             return;
         }
 
-        if (!Memory.isInTextSegment(firstAddress)) {
+        if (!Memory.getInstance().isInTextSegment(firstAddress)) {
             return;
         }
         // If address in text segment, print in same format as Text Segment Window

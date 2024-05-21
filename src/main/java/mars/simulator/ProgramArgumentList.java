@@ -3,6 +3,7 @@ package mars.simulator;
 import mars.Application;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
+import mars.mips.hardware.MemoryConfigurations;
 import mars.mips.hardware.RegisterFile;
 
 import java.util.ArrayList;
@@ -147,43 +148,46 @@ public class ProgramArgumentList {
         // Previous-to-that contains last character of second arg
         // Etc down to first character of second arg.
         // Follow this pattern for all remaining arguments.
-        int highAddress = Memory.stackBaseAddress; // highest non-kernel address, sits "under" stack
+
+        // Highest non-kernel address, sits "under" stack
+        int highAddress = Memory.alignToPrevious(Memory.getInstance().getAddress(MemoryConfigurations.DYNAMIC_HIGH), Memory.BYTES_PER_WORD);
         int[] argStartAddress = new int[programArgumentList.size()];
         try {
             for (int i = 0; i < programArgumentList.size(); i++) {
                 String programArgument = programArgumentList.get(i);
-                Application.memory.set(highAddress, 0, 1);  // trailing null byte for each argument
+                Memory.getInstance().set(highAddress, 0, 1);  // trailing null byte for each argument
                 highAddress--;
                 for (int j = programArgument.length() - 1; j >= 0; j--) {
-                    Application.memory.set(highAddress, programArgument.charAt(j), 1);
+                    Memory.getInstance().set(highAddress, programArgument.charAt(j), 1);
                     highAddress--;
                 }
                 argStartAddress[i] = highAddress + 1;
             }
-            // now place a null word, the arg starting addresses, and arg count onto stack.
-            int stackAddress = Memory.stackPointer;  // base address for runtime stack.
-            if (highAddress < Memory.stackPointer) {
+            // Now place a null word, the arg starting addresses, and arg count onto stack.
+            // Base address for runtime stack
+            int stackAddress = Memory.getInstance().getAddress(MemoryConfigurations.STACK_POINTER);
+            if (highAddress < stackAddress) {
                 // Based on current values for stackBaseAddress and stackPointer, this will
                 // only happen if the combined lengths of program arguments is greater than
                 // 0x7ffffffc - 0x7fffeffc = 0x00001000 = 4096 bytes.  In this case, set
                 // stackAddress to next lower word boundary minus 4 for clearance (since every
                 // byte from highAddress+1 is filled).
-                stackAddress = highAddress - (highAddress % Memory.BYTES_PER_WORD) - Memory.BYTES_PER_WORD;
+                stackAddress = Memory.alignToPrevious(highAddress, Memory.BYTES_PER_WORD) - Memory.BYTES_PER_WORD;
             }
-            Application.memory.set(stackAddress, 0, Memory.BYTES_PER_WORD);  // null word for end of argv array
+            Memory.getInstance().set(stackAddress, 0, Memory.BYTES_PER_WORD); // null word for end of argv array
             stackAddress -= Memory.BYTES_PER_WORD;
             for (int i = argStartAddress.length - 1; i >= 0; i--) {
-                Application.memory.set(stackAddress, argStartAddress[i], Memory.BYTES_PER_WORD);
+                Memory.getInstance().set(stackAddress, argStartAddress[i], Memory.BYTES_PER_WORD);
                 stackAddress -= Memory.BYTES_PER_WORD;
             }
-            Application.memory.set(stackAddress, argStartAddress.length, Memory.BYTES_PER_WORD); // argc
+            Memory.getInstance().set(stackAddress, argStartAddress.length, Memory.BYTES_PER_WORD); // argc
             stackAddress -= Memory.BYTES_PER_WORD;
 
             // Set $sp register to stack address, $a0 to argc, $a1 to argv
             // Bypass the backstepping mechanism by using Register.setValue() instead of RegisterFile.updateRegister()
-            RegisterFile.getUserRegister("$sp").setValue(stackAddress + Memory.BYTES_PER_WORD);
-            RegisterFile.getUserRegister("$a0").setValue(argStartAddress.length); // argc
-            RegisterFile.getUserRegister("$a1").setValue(stackAddress + Memory.BYTES_PER_WORD + Memory.BYTES_PER_WORD); // argv
+            RegisterFile.getRegisters()[RegisterFile.STACK_POINTER].setValue(stackAddress + Memory.BYTES_PER_WORD);
+            RegisterFile.getRegisters()[RegisterFile.ARGUMENT_0].setValue(argStartAddress.length); // argc
+            RegisterFile.getRegisters()[RegisterFile.ARGUMENT_1].setValue(stackAddress + 2 * Memory.BYTES_PER_WORD); // argv
         }
         catch (AddressErrorException e) {
             System.out.println("Internal Error: Memory write error occurred while storing program arguments! " + e);

@@ -306,8 +306,12 @@ public class SymbolTableWindow extends JInternalFrame {
                 // Cannot happen because address is generated internally
             }
             // Scroll to this address, either in Text Segment display or Data Segment display
-            if (Memory.isInTextSegment(address) || Memory.isInKernelTextSegment(address)) {
+            if (Memory.getInstance().isInTextSegment(address) || Memory.getInstance().isInKernelTextSegment(address)) {
                 SymbolTableWindow.this.gui.getMainPane().getExecuteTab().getTextSegmentWindow().selectStepAtAddress(address);
+                // If self-modifying code is enabled, scroll to the address in the Data Segment display as well
+                if (SymbolTableWindow.this.gui.getSettings().selfModifyingCodeEnabled.get()) {
+                    SymbolTableWindow.this.gui.getMainPane().getExecuteTab().getDataSegmentWindow().selectCellForAddress(address);
+                }
             }
             else {
                 SymbolTableWindow.this.gui.getMainPane().getExecuteTab().getDataSegmentWindow().selectCellForAddress(address);
