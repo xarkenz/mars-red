@@ -8,6 +8,8 @@ import mars.mips.hardware.RegisterFile;
 import mars.simulator.Simulator;
 import mars.simulator.SystemIO;
 
+import java.nio.ByteBuffer;
+
 /*
 Copyright (c) 2003-2009,  Pete Sanderson and Kenneth Vollmar
 
@@ -64,25 +66,25 @@ public class SyscallWrite extends AbstractSyscall {
         if (maxLength < 0) {
             throw new ProcessingException(statement, "Length value in $a2 cannot be negative for " + getName() + " (syscall " + getNumber() + ")");
         }
-        byte[] buffer = new byte[maxLength + 1]; // Leave room for a possible null terminator
+        ByteBuffer buffer = ByteBuffer.allocateDirect(maxLength + 1); // Leave room for a possible null terminator
 
         try {
-            byte byteValue = (byte) Application.memory.getByte(byteAddress);
             // Stop at requested length, with no special treatment of null bytes
-            int index;
-            for (index = 0; index < maxLength; index++) {
-                buffer[index] = byteValue;
-                byteAddress++;
-                byteValue = (byte) Application.memory.getByte(byteAddress);
+            for (int index = 0; index < maxLength; index++, byteAddress++) {
+                buffer.put((byte) Application.memory.getByte(byteAddress));
             }
             // Add null terminator
-            buffer[index] = 0;
+            // Probably not needed? - CW
+            // buffer.put((byte) 0);
         }
         catch (AddressErrorException exception) {
             throw new ProcessingException(statement, exception);
         }
 
-        int writtenLength = Simulator.getInstance().getSystemIO().writeToFile(descriptor, buffer, maxLength);
+        // Flip buffer from put-mode to get-mode
+        buffer.flip();
+
+        int writtenLength = Simulator.getInstance().getSystemIO().writeToFile(descriptor, buffer);
         RegisterFile.updateRegister(2, writtenLength); // Put return value in $v0
     }
 }
