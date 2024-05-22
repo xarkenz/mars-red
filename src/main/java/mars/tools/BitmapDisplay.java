@@ -266,6 +266,7 @@ public class BitmapDisplay extends AbstractMarsTool {
         // so a separate object is used instead.
         private final Object imageLock = new Object();
         private BufferedImage image;
+        private boolean imageIsDirty;
 
         private int firstAddress;
         private int unitWidth;
@@ -281,6 +282,7 @@ public class BitmapDisplay extends AbstractMarsTool {
             this.unitHeight = unitHeight;
             this.displayWidth = displayWidth;
             this.displayHeight = displayHeight;
+            this.imageIsDirty = false;
             // Ensure the background is drawn correctly
             this.setOpaque(false);
             this.setToolTipText("Live display of the bitmap based on values currently in memory");
@@ -316,12 +318,17 @@ public class BitmapDisplay extends AbstractMarsTool {
         public void memoryWritten(int address, int length, int value, int wordAddress, int wordValue) {
             int offset = (wordAddress - this.firstAddress) / Memory.BYTES_PER_WORD;
             synchronized (this.imageLock) {
+                int x = offset % this.image.getWidth();
+                int y = offset / this.image.getWidth();
                 if (0 <= offset && offset < this.image.getWidth() * this.image.getHeight()) {
-                    this.image.setRGB(offset % this.image.getWidth(), offset / this.image.getWidth(), wordValue);
+                    this.image.setRGB(x, y, wordValue);
+                }
+                // Schedule repaint with the updated image if there is not already a repaint scheduled
+                if (!this.imageIsDirty) {
+                    this.imageIsDirty = true;
+                    this.repaint();
                 }
             }
-            // Repaint with the updated image
-            this.repaint();
         }
 
         @Override
@@ -404,12 +411,13 @@ public class BitmapDisplay extends AbstractMarsTool {
         }
 
         @Override
-        public void paintComponent(Graphics graphics) {
+        public void paint(Graphics graphics) {
             // Draw the image in the center of the component bounds
             int x = Math.max(0, this.getWidth() - this.displayWidth) / 2;
             int y = Math.max(0, this.getHeight() - this.displayHeight) / 2;
             synchronized (this.imageLock) {
                 graphics.drawImage(this.image, x, y, this.displayWidth, this.displayHeight, null);
+                this.imageIsDirty = false;
             }
         }
     }

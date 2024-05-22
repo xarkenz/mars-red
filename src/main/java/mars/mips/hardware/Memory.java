@@ -1300,11 +1300,15 @@ public class Memory {
     }
 
     private List<ListenerRange> getListeners(int address, int length) {
+        List<ListenerRange> listeners = new ArrayList<>();
         synchronized (this.listenerRanges) {
-            return this.listenerRanges.stream()
-                .filter(range -> range.contains(address, length))
-                .toList();
+            for (ListenerRange range : this.listenerRanges) {
+                if (range.contains(address, length)) {
+                    listeners.add(range);
+                }
+            }
         }
+        return listeners;
     }
 
     private void dispatchReadEvent(int address, int length, int value, int wordAddress, int wordValue) {
