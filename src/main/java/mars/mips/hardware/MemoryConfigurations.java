@@ -42,28 +42,97 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @version August 2009
  */
 public class MemoryConfigurations {
+    /**
+     * Lowest mapped address.
+     */
     public static final int MAPPED_LOW = 0;
+    /**
+     * Highest mapped address.
+     */
     public static final int MAPPED_HIGH = 1;
+    /**
+     * Lowest user space address.
+     */
     public static final int USER_LOW = 2;
+    /**
+     * Highest user space address.
+     */
     public static final int USER_HIGH = 3;
+    /**
+     * Lowest text segment address.
+     */
     public static final int TEXT_LOW = 4;
+    /**
+     * Highest text segment address.
+     */
     public static final int TEXT_HIGH = 5;
+    /**
+     * Lowest data segment address.
+     */
     public static final int DATA_LOW = 6;
+    /**
+     * Highest data segment address.
+     */
     public static final int DATA_HIGH = 7;
+    /**
+     * Lowest extern data address.
+     */
     public static final int EXTERN_LOW = 8;
+    /**
+     * Highest extern data address.
+     */
     public static final int EXTERN_HIGH = 9;
+    /**
+     * Lowest static data address.
+     */
     public static final int STATIC_LOW = 10;
+    /**
+     * Highest static data address.
+     */
     public static final int STATIC_HIGH = 11;
+    /**
+     * Lowest heap/stack data address.
+     */
     public static final int DYNAMIC_LOW = 12;
+    /**
+     * Highest heap/stack data address.
+     */
     public static final int DYNAMIC_HIGH = 13;
+    /**
+     * Lowest kernel text segment address.
+     */
     public static final int KERNEL_TEXT_LOW = 14;
+    /**
+     * Highest kernel text segment address.
+     */
     public static final int KERNEL_TEXT_HIGH = 15;
+    /**
+     * Lowest kernel data segment address.
+     */
     public static final int KERNEL_DATA_LOW = 16;
+    /**
+     * Highest kernel data segment address.
+     */
     public static final int KERNEL_DATA_HIGH = 17;
+    /**
+     * Lowest memory-mapped I/O address.
+     */
     public static final int MMIO_LOW = 18;
+    /**
+     * Highest memory-mapped I/O address.
+     */
     public static final int MMIO_HIGH = 19;
+    /**
+     * Exception handler address.
+     */
     public static final int EXCEPTION_HANDLER = 20;
+    /**
+     * Initial global pointer ($gp).
+     */
     public static final int GLOBAL_POINTER = 21;
+    /**
+     * Initial stack pointer ($sp).
+     */
     public static final int STACK_POINTER = 22;
 
     // Be careful, these arrays are parallel and position-sensitive.

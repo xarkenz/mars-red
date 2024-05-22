@@ -355,7 +355,7 @@ public class Assembler {
             }
             catch (AddressErrorException e) {
                 Token t = statement.getOriginalTokenList().get(0);
-                errors.add(new ErrorMessage(t.getSourceMIPSprogram(), t.getSourceLine(), t.getStartPos(), "Invalid address for text segment: " + e.getAddress()));
+                errors.add(new ErrorMessage(t.getSourceProgram(), t.getSourceLine(), t.getStartPos(), "Invalid address for text segment: " + e.getAddress()));
             }
         }
         // DPS 6 Dec 2006:
@@ -494,7 +494,7 @@ public class Assembler {
         // so this will catch anything, including a misspelling of a valid directive (which is
         // a nice thing to do).
         if (tokenType == TokenType.IDENTIFIER && token.getValue().charAt(0) == '.') {
-            errors.add(new ErrorMessage(ErrorMessage.WARNING, token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "MARS does not recognize the " + token.getValue() + " directive.  Ignored."));
+            errors.add(new ErrorMessage(ErrorMessage.WARNING, token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "MARS does not recognize the " + token.getValue() + " directive.  Ignored."));
             return null;
         }
 
@@ -527,7 +527,7 @@ public class Assembler {
             // Here's the place to flag use of extended (pseudo) instructions
             // when setting disabled.
             if (instruction instanceof ExtendedInstruction && !extendedAssemblerEnabled) {
-                errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "Extended (pseudo) instruction or format not permitted.  See Settings."));
+                errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "Extended (pseudo) instruction or format not permitted.  See Settings."));
             }
             if (OperandFormat.tokenOperandMatch(tokens, instruction, errors)) {
                 ProgramStatement statement = new ProgramStatement(this.fileCurrentlyBeingAssembled, source, tokenList, tokens, instruction, textAddress.get(), sourceLineNumber);
@@ -562,7 +562,7 @@ public class Assembler {
      */
     private boolean compactTranslationCanBeApplied(ProgramStatement statement) {
         return statement.getInstruction() instanceof ExtendedInstruction
-            && Memory.getInstance().isUsing16BitAddressSpace()
+            && Memory.getInstance().isUsingCompactAddressSpace()
             && ((ExtendedInstruction) statement.getInstruction()).hasCompactTranslation();
     }
 
@@ -640,22 +640,22 @@ public class Assembler {
             System.out.println("line " + token.getSourceLine() + " is directive " + direct);
         }
         if (direct == null) {
-            errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" directive is invalid or not implemented in MARS"));
+            errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" directive is invalid or not implemented in MARS"));
         }
         else if (direct == Directive.EQV) { /* EQV added by DPS 11 July 2012 */
             // Do nothing.  This was vetted and processed during tokenizing.
         }
         else if (direct == Directive.MACRO) {
             if (tokens.size() < 2) {
-                errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" directive requires at least one argument."));
+                errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" directive requires at least one argument."));
                 return;
             }
             if (tokens.get(1).getType() != TokenType.IDENTIFIER) {
-                errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), tokens.get(1).getStartPos(), "Invalid Macro name \"" + tokens.get(1).getValue() + "\""));
+                errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), tokens.get(1).getStartPos(), "Invalid Macro name \"" + tokens.get(1).getValue() + "\""));
                 return;
             }
             if (inMacroSegment) {
-                errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "Nested macros are not allowed"));
+                errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "Nested macros are not allowed"));
                 return;
             }
             inMacroSegment = true;
@@ -667,7 +667,7 @@ public class Assembler {
                     continue;
                 }
                 if (!Macro.tokenIsMacroParameter(arg.getValue(), true)) {
-                    errors.add(new ErrorMessage(arg.getSourceMIPSprogram(), arg.getSourceLine(), arg.getStartPos(), "Invalid macro argument '" + arg.getValue() + "'"));
+                    errors.add(new ErrorMessage(arg.getSourceProgram(), arg.getSourceLine(), arg.getStartPos(), "Invalid macro argument '" + arg.getValue() + "'"));
                     return;
                 }
                 pool.getCurrent().addArg(arg.getValue());
@@ -675,11 +675,11 @@ public class Assembler {
         }
         else if (direct == Directive.END_MACRO) {
             if (tokens.size() > 1) {
-                errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "invalid text after .END_MACRO"));
+                errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "invalid text after .END_MACRO"));
                 return;
             }
             if (!inMacroSegment) {
-                errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), ".END_MACRO without .MACRO"));
+                errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), ".END_MACRO without .MACRO"));
                 return;
             }
             inMacroSegment = false;
@@ -719,11 +719,11 @@ public class Assembler {
         else if (direct == Directive.ALIGN) {
             if (passesDataSegmentCheck(token)) {
                 if (tokens.size() != 2) {
-                    errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" requires one operand"));
+                    errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" requires one operand"));
                     return;
                 }
                 if (!TokenType.isIntegerTokenType(tokens.get(1).getType()) || Binary.decodeInteger(tokens.get(1).getValue()) < 0) {
-                    errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" requires a non-negative integer"));
+                    errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" requires a non-negative integer"));
                     return;
                 }
                 int value = Binary.decodeInteger(tokens.get(1).getValue()); // KENV 1/6/05
@@ -738,11 +738,11 @@ public class Assembler {
         else if (direct == Directive.SPACE) {
             if (passesDataSegmentCheck(token)) {
                 if (tokens.size() != 2) {
-                    errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" requires one operand"));
+                    errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" requires one operand"));
                     return;
                 }
                 if (!TokenType.isIntegerTokenType(tokens.get(1).getType()) || Binary.decodeInteger(tokens.get(1).getValue()) < 0) {
-                    errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" requires a non-negative integer"));
+                    errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" requires a non-negative integer"));
                     return;
                 }
                 int value = Binary.decodeInteger(tokens.get(1).getValue()); // KENV 1/6/05
@@ -751,11 +751,11 @@ public class Assembler {
         }
         else if (direct == Directive.EXTERN) {
             if (tokens.size() != 3) {
-                errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" directive requires two operands (label and size)."));
+                errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" directive requires two operands (label and size)."));
                 return;
             }
             if (!TokenType.isIntegerTokenType(tokens.get(2).getType()) || Binary.decodeInteger(tokens.get(2).getValue()) < 0) {
-                errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" requires a non-negative integer size"));
+                errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" requires a non-negative integer size"));
                 return;
             }
             int size = Binary.decodeInteger(tokens.get(2).getValue());
@@ -766,11 +766,11 @@ public class Assembler {
             }
         }
         else if (direct == Directive.SET) {
-            errors.add(new ErrorMessage(ErrorMessage.WARNING, token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "MARS currently ignores the .set directive."));
+            errors.add(new ErrorMessage(ErrorMessage.WARNING, token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "MARS currently ignores the .set directive."));
         }
         else if (direct == Directive.GLOBL) {
             if (tokens.size() < 2) {
-                errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" directive requires at least one argument."));
+                errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" directive requires at least one argument."));
                 return;
             }
             // SPIM limits .globl list to one label, why not extend it to a list?
@@ -780,14 +780,14 @@ public class Assembler {
                 // local symbol table to global symbol table.
                 Token label = tokens.get(i);
                 if (label.getType() != TokenType.IDENTIFIER) {
-                    errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" directive argument must be label."));
+                    errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" directive argument must be label."));
                     return;
                 }
                 globalDeclarationList.add(label);
             }
         }
         else {
-            errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" directive recognized but not yet implemented."));
+            errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" directive recognized but not yet implemented."));
         }
     }
 
@@ -839,17 +839,17 @@ public class Assembler {
      */
     private ArrayList<Instruction> matchInstruction(Token token) {
         if (token.getType() != TokenType.OPERATOR) {
-            if (token.getSourceMIPSprogram().getLocalMacroPool().matchesAnyMacroName(token.getValue())) {
-                this.errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "forward reference or invalid parameters for macro \"" + token.getValue() + "\""));
+            if (token.getSourceProgram().getLocalMacroPool().matchesAnyMacroName(token.getValue())) {
+                this.errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "forward reference or invalid parameters for macro \"" + token.getValue() + "\""));
             }
             else {
-                this.errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" is not a recognized operator"));
+                this.errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" is not a recognized operator"));
             }
             return null;
         }
         ArrayList<Instruction> instructionMatches = Application.instructionSet.matchOperator(token.getValue());
         if (instructionMatches == null) { // This should NEVER happen...
-            this.errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "Internal Assembler error: \"" + token.getValue() + "\" tokenized OPERATOR then not recognized"));
+            this.errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "Internal Assembler error: \"" + token.getValue() + "\" tokenized OPERATOR then not recognized"));
         }
         return instructionMatches;
     }
@@ -945,7 +945,7 @@ public class Assembler {
             }
 
             if (DataTypes.outOfRange(directive, fullvalue)) {
-                errors.add(new ErrorMessage(ErrorMessage.WARNING, token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" is out-of-range for a signed value and possibly truncated"));
+                errors.add(new ErrorMessage(ErrorMessage.WARNING, token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" is out-of-range for a signed value and possibly truncated"));
             }
             if (this.inDataSegment) {
                 writeToDataSegment(value, lengthInBytes, token, errors);
@@ -965,7 +965,7 @@ public class Assembler {
                     Memory.getInstance().store(this.textAddress.get(), value, lengthInBytes, true);
                 }
                 catch (AddressErrorException e) {
-                    errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + this.textAddress.get() + "\" is not a valid text segment address"));
+                    errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + this.textAddress.get() + "\" is not a valid text segment address"));
                     return;
                 }
                 this.textAddress.increment(lengthInBytes);
@@ -985,11 +985,11 @@ public class Assembler {
             } // Data segment check done previously, so this "else" will not be.
             // See 11/20/06 note above.
             else {
-                errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" label as directive operand not permitted in text segment"));
+                errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" label as directive operand not permitted in text segment"));
             }
         } // end of "if label"
         else {
-            errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" is not a valid integer constant or label"));
+            errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" is not a valid integer constant or label"));
         }
     }
 
@@ -1006,16 +1006,16 @@ public class Assembler {
                 value = Double.parseDouble(token.getValue());
             }
             catch (NumberFormatException nfe) {
-                errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" is not a valid floating point constant"));
+                errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" is not a valid floating point constant"));
                 return;
             }
             if (DataTypes.outOfRange(directive, value)) {
-                errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" is an out-of-range value"));
+                errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" is an out-of-range value"));
                 return;
             }
         }
         else {
-            errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" is not a valid floating point constant"));
+            errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" is not a valid floating point constant"));
             return;
         }
 
@@ -1044,21 +1044,21 @@ public class Assembler {
         for (int i = tokenStart; i < tokens.size(); i++) {
             token = tokens.get(i);
             if (token.getType() != TokenType.QUOTED_STRING) {
-                errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" is not a valid character string"));
+                errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" is not a valid character string"));
             }
             else {
                 String quote = token.getValue();
                 for (int j = 1; j < quote.length() - 1; j++) {
-                    char theChar = quote.charAt(j);
-                    if (theChar == '\\') {
-                        theChar = quote.charAt(++j);
+                    char ch = quote.charAt(j);
+                    if (ch == '\\') {
+                        ch = quote.charAt(++j);
                         // Not implemented:
                         // \ N = octal character (n is number)
                         // \ x N = hex character (n is number)
                         // \ u N = unicode character (n is number)
                         // There are of course no spaces in these escape
                         // codes...
-                        theChar = switch (theChar) {
+                        ch = switch (ch) {
                             case 'n' -> '\n';
                             case 't' -> '\t';
                             case 'r' -> '\r';
@@ -1068,23 +1068,23 @@ public class Assembler {
                             case 'b' -> '\b';
                             case 'f' -> '\f';
                             case '0' -> '\0';
-                            default -> theChar;
+                            default -> ch;
                         };
                     }
                     try {
-                        Memory.getInstance().store(this.dataAddress.get(), theChar, DataTypes.CHAR_SIZE, true);
+                        Memory.getInstance().store(this.dataAddress.get(), ch, DataTypes.CHAR_SIZE, true);
                     }
-                    catch (AddressErrorException e) {
-                        errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + this.dataAddress.get() + "\" is not a valid data segment address"));
+                    catch (AddressErrorException exception) {
+                        errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + this.dataAddress.get() + "\" is not a valid data segment address"));
                     }
                     this.dataAddress.increment(DataTypes.CHAR_SIZE);
                 }
                 if (direct == Directive.ASCIIZ) {
                     try {
-                        Application.memory.store(this.dataAddress.get(), 0, DataTypes.CHAR_SIZE, true);
+                        Memory.getInstance().store(this.dataAddress.get(), 0, DataTypes.CHAR_SIZE, true);
                     }
-                    catch (AddressErrorException e) {
-                        errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + this.dataAddress.get() + "\" is not a valid data segment address"));
+                    catch (AddressErrorException exception) {
+                        errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + this.dataAddress.get() + "\" is not a valid data segment address"));
                     }
                     this.dataAddress.increment(DataTypes.CHAR_SIZE);
                 }
@@ -1097,7 +1097,7 @@ public class Assembler {
      */
     private boolean passesDataSegmentCheck(Token token) {
         if (!this.inDataSegment) {
-            errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" directive cannot appear in text segment"));
+            errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" directive cannot appear in text segment"));
             return false;
         }
         else {
@@ -1117,8 +1117,8 @@ public class Assembler {
         try {
             Memory.getInstance().store(this.dataAddress.get(), value, lengthInBytes, true);
         }
-        catch (AddressErrorException e) {
-            errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + this.dataAddress.get() + "\" is not a valid data segment address"));
+        catch (AddressErrorException exception) {
+            errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + this.dataAddress.get() + "\" is not a valid data segment address"));
             return this.dataAddress.get();
         }
         int address = this.dataAddress.get();
@@ -1128,9 +1128,7 @@ public class Assembler {
 
     /**
      * Writes the given double value into current data segment address. Works
-     * only for DOUBLE floating
-     * point values -- Memory class doesn't have method for writing 8 bytes, so
-     * use setWord twice.
+     * only for DOUBLE floating point values.
      */
     private void writeDoubleToDataSegment(double value, Token token, ErrorList errors) {
         int lengthInBytes = DataTypes.DOUBLE_SIZE;
@@ -1138,10 +1136,10 @@ public class Assembler {
             this.dataAddress.set(this.alignToBoundary(this.dataAddress.get(), lengthInBytes));
         }
         try {
-            Application.memory.storeDoubleword(this.dataAddress.get(), Double.doubleToLongBits(value));
+            Memory.getInstance().storeDoubleword(this.dataAddress.get(), Double.doubleToRawLongBits(value), true);
         }
-        catch (AddressErrorException e) {
-            errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + this.dataAddress.get() + "\" is not a valid data segment address"));
+        catch (AddressErrorException exception) {
+            errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + this.dataAddress.get() + "\" is not a valid data segment address"));
             return;
         }
         this.dataAddress.increment(lengthInBytes);
@@ -1322,7 +1320,7 @@ public class Assembler {
          */
         private void generateErrorMessages(ErrorList errors) {
             for (DataSegmentForwardReference entry : forwardReferenceList) {
-                errors.add(new ErrorMessage(entry.token.getSourceMIPSprogram(), entry.token.getSourceLine(), entry.token.getStartPos(), "Symbol \"" + entry.token.getValue() + "\" not found in symbol table."));
+                errors.add(new ErrorMessage(entry.token.getSourceProgram(), entry.token.getSourceLine(), entry.token.getStartPos(), "Symbol \"" + entry.token.getValue() + "\" not found in symbol table."));
             }
         }
 

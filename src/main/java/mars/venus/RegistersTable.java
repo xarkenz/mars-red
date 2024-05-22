@@ -138,7 +138,7 @@ public class RegistersTable extends JTable {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             Settings settings = Application.getSettings();
-            boolean isHighlighted = settings.highlightRegisters.get() && isUpdating && row == highlightedRow;
+            boolean isHighlighted = settings.registerHighlightingEnabled.get() && isUpdating && row == highlightedRow;
 
             this.setHorizontalAlignment(alignment);
             if (isHighlighted) {

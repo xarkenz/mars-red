@@ -118,7 +118,7 @@ public class OperandFormat {
             // added 2-July-2010 DPS
             // Not an error if instruction calls for identifier and candidate is operator, since operator names can be used as labels.
             if (expectedType == TokenType.IDENTIFIER && candidateType == TokenType.OPERATOR) {
-                Token replacement = new Token(TokenType.IDENTIFIER, candidateToken.getValue(), candidateToken.getSourceMIPSprogram(), candidateToken.getSourceLine(), candidateToken.getStartPos());
+                Token replacement = new Token(TokenType.IDENTIFIER, candidateToken.getValue(), candidateToken.getSourceProgram(), candidateToken.getSourceLine(), candidateToken.getStartPos());
                 tokenList.set(i, replacement);
                 continue;
             }
@@ -173,6 +173,6 @@ public class OperandFormat {
 
     // Handy utility for all parse errors...
     private static void generateMessage(Token token, String message, ErrorList errors) {
-        errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\": " + message));
+        errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\": " + message));
     }
 }

@@ -90,8 +90,7 @@ public class Settings {
     // BOOLEAN SETTINGS
 
     /**
-     * Flag to determine whether or not program being assembled is limited to
-     * basic MIPS instructions and formats.
+     * Flag to control whether the assembler will be limited to basic MIPS instructions and formats.
      */
     public final BooleanSetting extendedAssemblerEnabled = new BooleanSetting(
         this,
@@ -100,8 +99,8 @@ public class Settings {
         false
     );
     /**
-     * Flag to determine whether or not a file is immediately and automatically assembled
-     * upon opening. Handy when using an external editor.
+     * Flag to control whether a file is immediately and automatically assembled upon opening.
+     * Handy when using an external editor, for example.
      */
     public final BooleanSetting assembleOnOpenEnabled = new BooleanSetting(
         this,
@@ -110,8 +109,8 @@ public class Settings {
         false
     );
     /**
-     * Flag to determine whether only the current editor source file (enabled false) or
-     * all files in its directory (enabled true) will be assembled when assembly is selected.
+     * Flag to control whether only the current editor source file (if false) or
+     * all files in its parent directory (if true) will be assembled when the assembler is run.
      */
     public final BooleanSetting assembleAllEnabled = new BooleanSetting(
         this,
@@ -120,8 +119,7 @@ public class Settings {
         false
     );
     /**
-     * Flag for visibility of the label window (symbol table).  Default only, dynamic status
-     * maintained by ExecutePane.
+     * Flag to control whether the symbol table window will be visible upon successful assembly in the Execute tab.
      */
     public final BooleanSetting labelWindowVisible = new BooleanSetting(
         this,
@@ -130,7 +128,8 @@ public class Settings {
         false
     );
     /**
-     * Flag for displaying addresses in hexadecimal or decimal in the Execute pane.
+     * Flag to control whether memory addresses are displayed in hexadecimal.
+     * If this flag is set to false, they are displayed in decimal.
      */
     public final BooleanSetting displayAddressesInHex = new BooleanSetting(
         this,
@@ -139,7 +138,8 @@ public class Settings {
         true
     );
     /**
-     * Flag for displaying values in hexadecimal or decimal in the Execute pane.
+     * Flag to control whether operand, memory, and register values are displayed in hexadecimal.
+     * If this flag is set to false, they are displayed in decimal.
      */
     public final BooleanSetting displayValuesInHex = new BooleanSetting(
         this,
@@ -148,7 +148,7 @@ public class Settings {
         true
     );
     /**
-     * Flag to determine whether the currently selected exception handler source file will
+     * Flag to control whether the currently selected exception handler source file will
      * be included in each assembly operation.
      */
     public final BooleanSetting exceptionHandlerEnabled = new BooleanSetting(
@@ -158,9 +158,12 @@ public class Settings {
         false
     );
     /**
-     * Flag to determine whether or not delayed branching is in effect at MIPS execution.
-     * This means we simulate the pipeline and statement FOLLOWING a successful branch
-     * is executed before branch is taken. DPS 14 June 2007.
+     * Flag to control whether delayed branching is simulated. Delayed branching is a feature of actual hardware
+     * where the instruction immediately following a branch instruction is <i>always</i> executed, even if the
+     * branch is taken, due to CPU pipelining. Thus, with delayed branching disabled, there is effectively
+     * a hidden <code>nop</code> after every branch instruction.
+     * <p>
+     * DPS 14 June 2007
      */
     public final BooleanSetting delayedBranchingEnabled = new BooleanSetting(
         this,
@@ -169,7 +172,7 @@ public class Settings {
         true
     );
     /**
-     * Flag to determine whether or not the editor will display line numbers.
+     * Flag to control whether the editor will display line numbers on the side.
      */
     public final BooleanSetting displayEditorLineNumbers = new BooleanSetting(
         this,
@@ -178,7 +181,7 @@ public class Settings {
         true
     );
     /**
-     * Flag to determine whether or not assembler warnings are considered errors.
+     * Flag to control whether assembler warnings are automatically promoted to errors.
      */
     public final BooleanSetting warningsAreErrors = new BooleanSetting(
         this,
@@ -187,7 +190,7 @@ public class Settings {
         false
     );
     /**
-     * Flag to determine whether or not to display and use program arguments
+     * Flag to control whether to accept and use program arguments.
      */
     public final BooleanSetting useProgramArguments = new BooleanSetting(
         this,
@@ -196,25 +199,26 @@ public class Settings {
         true
     );
     /**
-     * Flag to control whether or not highlighting is applied to data segment window
+     * Flag to control whether values in the memory viewer are highlighted during stepped execution.
      */
-    public final BooleanSetting highlightDataSegment = new BooleanSetting(
+    public final BooleanSetting memoryHighlightingEnabled = new BooleanSetting(
         this,
         "DataSegmentHighlighting",
         true,
         true
     );
     /**
-     * Flag to control whether or not highlighting is applied to register windows
+     * Flag to control whether registers in the register window are highlighted during stepped execution.
      */
-    public final BooleanSetting highlightRegisters = new BooleanSetting(
+    public final BooleanSetting registerHighlightingEnabled = new BooleanSetting(
         this,
         "RegistersHighlighting",
         true,
         true
     );
     /**
-     * Flag to control whether or not assembler automatically initializes program counter to 'main's address
+     * Flag to control whether the assembler automatically initializes program counter to the address
+     * of global label <code>main</code>, if defined.
      */
     public final BooleanSetting startAtMain = new BooleanSetting(
         this,
@@ -223,7 +227,7 @@ public class Settings {
         false
     );
     /**
-     * Flag to control whether or not editor will highlight the line currently being edited
+     * Flag to control whether the editor will highlight the line currently being edited.
      */
     public final BooleanSetting highlightCurrentEditorLine = new BooleanSetting(
         this,
@@ -232,7 +236,7 @@ public class Settings {
         true
     );
     /**
-     * Flag to control whether or not editor will provide popup instruction guidance while typing
+     * Flag to control whether the editor will provide popup instruction guidance while typing.
      */
     public final BooleanSetting popupInstructionGuidance = new BooleanSetting(
         this,
@@ -241,7 +245,7 @@ public class Settings {
         true
     );
     /**
-     * Flag to control whether or not simulator will use popup dialog for input syscalls
+     * Flag to control whether the simulator will use popup dialogs for input syscalls.
      */
     public final BooleanSetting popupSyscallInput = new BooleanSetting(
         this,
@@ -250,7 +254,7 @@ public class Settings {
         false
     );
     /**
-     * Flag to control whether or not language-aware editor will use auto-indent feature
+     * Flag to control whether the editor will use the auto-indent feature.
      */
     public final BooleanSetting autoIndentEnabled = new BooleanSetting(
         this,
@@ -259,14 +263,24 @@ public class Settings {
         false
     );
     /**
-     * Flag to determine whether a program can write binary code to the text or data segment and
-     * execute that code.
+     * Flag to control whether a program can write binary code to the text or data segment and execute that code.
      */
     public final BooleanSetting selfModifyingCodeEnabled = new BooleanSetting(
         this,
         "SelfModifyingCode",
         false,
         true
+    );
+    /**
+     * Flag to control whether the big-endian byte ordering is used in memory and register addressing.
+     * If true, big-endian is used, meaning bytes of values are stored from most to least significant.
+     * If false, little-endian is used instead, meaning bytes are stored from least to most significant.
+     */
+    public final BooleanSetting useBigEndian = new BooleanSetting(
+        this,
+        "BigEndian",
+        false,
+        false
     );
 
     public final BooleanSetting[] booleanSettings = {
@@ -281,14 +295,15 @@ public class Settings {
         this.displayEditorLineNumbers,
         this.warningsAreErrors,
         this.useProgramArguments,
-        this.highlightDataSegment,
-        this.highlightRegisters,
+        this.memoryHighlightingEnabled,
+        this.registerHighlightingEnabled,
         this.startAtMain,
         this.highlightCurrentEditorLine,
         this.popupInstructionGuidance,
         this.popupSyscallInput,
         this.autoIndentEnabled,
         this.selfModifyingCodeEnabled,
+        this.useBigEndian,
     };
 
     // INTEGER SETTINGS

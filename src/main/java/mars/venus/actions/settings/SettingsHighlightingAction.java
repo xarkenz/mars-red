@@ -284,8 +284,8 @@ public class SettingsHighlightingAction extends VenusAction {
             foregroundButtons[row].setEnabled(!usingDefaults);
         }
 
-        currentDataHighlightSetting = initialDataHighlightSetting = Application.getSettings().highlightDataSegment.get();
-        currentRegisterHighlightSetting = initialRegisterHighlightSetting = Application.getSettings().highlightRegisters.get();
+        currentDataHighlightSetting = initialDataHighlightSetting = Application.getSettings().memoryHighlightingEnabled.get();
+        currentRegisterHighlightSetting = initialRegisterHighlightSetting = Application.getSettings().registerHighlightingEnabled.get();
     }
 
     /**
@@ -297,8 +297,8 @@ public class SettingsHighlightingAction extends VenusAction {
             backgroundSettings[i].set(backgroundButtons[i].getBackground());
             foregroundSettings[i].set(foregroundButtons[i].getBackground());
         }
-        settings.highlightDataSegment.set(currentDataHighlightSetting);
-        settings.highlightRegisters.set(currentRegisterHighlightSetting);
+        settings.memoryHighlightingEnabled.set(currentDataHighlightSetting);
+        settings.registerHighlightingEnabled.set(currentRegisterHighlightSetting);
         RegistersPane registersPane = Application.getGUI().getRegistersPane();
         ExecuteTab executeTab = Application.getGUI().getMainPane().getExecuteTab();
         registersPane.getRegistersWindow().refresh();

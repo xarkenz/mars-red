@@ -1307,7 +1307,7 @@ public class InstructionSet {
         instructionList.add(new BasicInstruction("sdc1 $f2,-100($t2)", "Store double word from Coprocessor 1 (FPU) : Store 64 bit value in $f2 to effective memory doubleword address", BasicInstructionFormat.I_FORMAT, "111101 ttttt fffff ssssssssssssssss", statement -> {
             int[] operands = statement.getOperands();
             try {
-                Memory.getInstance().storeDoubleword(RegisterFile.getValue(operands[2]) + operands[1], Coprocessor1.getLongFromRegisterPair(operands[0]));
+                Memory.getInstance().storeDoubleword(RegisterFile.getValue(operands[2]) + operands[1], Coprocessor1.getLongFromRegisterPair(operands[0]), true);
             }
             catch (AddressErrorException exception) {
                 throw new ProcessingException(statement, exception);

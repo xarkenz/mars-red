@@ -50,6 +50,6 @@ public class SettingsEndiannessAction extends VenusAction {
 
     @Override
     public void actionPerformed(ActionEvent event) {
-        Memory.getInstance().setEndianness(((JCheckBoxMenuItem) event.getSource()).isSelected() ? Endianness.BIG_ENDIAN : Endianness.LITTLE_ENDIAN);
+        Application.getSettings().useBigEndian.set(((JCheckBoxMenuItem) event.getSource()).isSelected());
     }
 }

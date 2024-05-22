@@ -28,6 +28,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
 */
 
+import mars.mips.hardware.Memory;
+
 /**
  * Information about MIPS data types.
  *
@@ -38,19 +40,19 @@ public final class DataTypes {
     /**
      * Number of bytes occupied by MIPS double.
      */
-    public static final int DOUBLE_SIZE = 8;
+    public static final int DOUBLE_SIZE = Memory.BYTES_PER_DOUBLEWORD;
     /**
      * Number of bytes occupied by MIPS float.
      */
-    public static final int FLOAT_SIZE = 4;
+    public static final int FLOAT_SIZE = Memory.BYTES_PER_WORD;
     /**
      * Number of bytes occupied by MIPS word.
      */
-    public static final int WORD_SIZE = 4;
+    public static final int WORD_SIZE = Memory.BYTES_PER_WORD;
     /**
      * Number of bytes occupied by MIPS halfword.
      */
-    public static final int HALF_SIZE = 2;
+    public static final int HALF_SIZE = Memory.BYTES_PER_HALFWORD;
     /**
      * Number of bytes occupied by MIPS byte.
      */
@@ -58,7 +60,7 @@ public final class DataTypes {
     /**
      * Number of bytes occupied by MIPS character.
      */
-    public static final int CHAR_SIZE = 1;
+    public static final int CHAR_SIZE = BYTE_SIZE;
     /**
      * Maximum value that can be stored in a MIPS word.
      */

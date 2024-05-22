@@ -880,7 +880,7 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             int rowFirstAddress = Binary.decodeInteger(table.getValueAt(row, ADDRESS_COLUMN).toString());
-            boolean isHighlighted = DataSegmentWindow.this.gui.getSettings().highlightDataSegment.get() && DataSegmentWindow.this.addressHighlighting
+            boolean isHighlighted = DataSegmentWindow.this.gui.getSettings().memoryHighlightingEnabled.get() && DataSegmentWindow.this.addressHighlighting
                 && rowFirstAddress == DataSegmentWindow.this.addressRowFirstAddress && column == DataSegmentWindow.this.addressColumn;
 
             this.setHorizontalAlignment(SwingConstants.CENTER);

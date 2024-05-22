@@ -80,7 +80,7 @@ public class SymbolTable {
         String label = token.getValue();
         Symbol previousSymbol = table.put(label, new Symbol(label, address, isData));
         if (previousSymbol != null) {
-            errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "label \"" + label + "\" already defined"));
+            errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "label \"" + label + "\" already defined"));
         }
         if (Application.debug) {
             System.out.println("The symbol " + label + " with address " + address + " has been added to the " + this.filename + " symbol table.");

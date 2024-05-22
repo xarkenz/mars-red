@@ -93,6 +93,11 @@ public class BitmapDisplay extends AbstractMarsTool {
         this.canvas.stopObserving();
     }
 
+    @Override
+    protected void reset() {
+        this.canvas.resetImage();
+    }
+
     /**
      * Initialize all JComboBox choice structures not already initialized at declaration.
      * Overrides inherited method that does nothing.
@@ -317,6 +322,11 @@ public class BitmapDisplay extends AbstractMarsTool {
             }
             // Repaint with the updated image
             this.repaint();
+        }
+
+        @Override
+        public void memoryReset() {
+            this.resetImage();
         }
 
         public void setFirstAddress(int address) {

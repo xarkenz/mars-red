@@ -144,7 +144,7 @@ public class Token {
      *
      * @return MIPSprogram object associated with this token.
      */
-    public Program getSourceMIPSprogram() {
+    public Program getSourceProgram() {
         return sourceProgram;
     }
 
