@@ -135,6 +135,7 @@ public class VenusUI extends JFrame {
     private SettingsHighlightingAction settingsHighlightingAction;
     private SettingsMemoryConfigurationAction settingsMemoryConfigurationAction;
     private SettingsSelfModifyingCodeAction settingsSelfModifyingCodeAction;
+    private SettingsEndiannessAction settingsEndiannessAction;
     private SettingsPreferencesAction settingsPreferencesAction;
 
     private HelpHelpAction helpHelpAction;
@@ -351,6 +352,7 @@ public class VenusUI extends JFrame {
         settingsProgramArgumentsAction = new SettingsProgramArgumentsAction(this, "Allow program arguments", null, "If set, program arguments for MIPS program can be entered in border of Text Segment window.", null, null);
         settingsDelayedBranchingAction = new SettingsDelayedBranchingAction(this, "Delayed branching", null, "If set, delayed branching will occur during MIPS execution.", null, null);
         settingsSelfModifyingCodeAction = new SettingsSelfModifyingCodeAction(this, "Self-modifying code", null, "If set, the MIPS program can write and branch to both text and data segments.", null, null);
+        settingsEndiannessAction = new SettingsEndiannessAction(this, "Use big-endian byte ordering", null, "If set, the bytes in a word will be ordered from most to least significant.", null, null);
         settingsDarkThemeAction = new SettingsDarkThemeAction(this, "Enable dark theme", null, "If set, the application will launch with a dark theme.", null, null);
         settingsEditorAction = new SettingsEditorAction(this, "Editor Settings...", null, "View and modify text editor settings", null, null);
         settingsHighlightingAction = new SettingsHighlightingAction(this, "Highlighting...", null, "View and modify Execute tab highlighting colors", null, null);
@@ -432,6 +434,7 @@ public class VenusUI extends JFrame {
         settingsMenu.add(createMenuCheckBox(settingsPopupInputAction, this.settings.popupSyscallInput.get()));
         settingsMenu.add(createMenuCheckBox(settingsDelayedBranchingAction, this.settings.delayedBranchingEnabled.get()));
         settingsMenu.add(createMenuCheckBox(settingsSelfModifyingCodeAction, this.settings.selfModifyingCodeEnabled.get()));
+        settingsMenu.add(createMenuCheckBox(settingsEndiannessAction, false));
         settingsMenu.addSeparator();
         settingsMenu.add(createMenuCheckBox(settingsDarkThemeAction, this.settings.lookAndFeelName.get().equals("FlatDarkLaf")));
         settingsMenu.addSeparator();

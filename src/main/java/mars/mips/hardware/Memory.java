@@ -421,17 +421,13 @@ public class Memory {
      * @param value   Value to be stored starting at that address.
      * @param length  Number of bytes to be written.
      */
-    public void storeUnaligned(int address, int value, int length) throws AddressErrorException {
-        DataRegion dataRegion;
-        if ((dataRegion = this.getDataRegionForAddress(address)) != null) {
-            // Write one byte at a time, w/o regard to alignment boundaries.
-            dataRegion.storeBytes(address, length, value);
+    public void store(int address, int value, int length, boolean notify) throws AddressErrorException {
+        switch (length) {
+            case 1 -> this.storeByte(address, value, notify);
+            case BYTES_PER_HALFWORD -> this.storeHalfword(address, value, notify);
+            case BYTES_PER_WORD -> this.storeWord(address, value, notify);
+            default -> throw new IllegalArgumentException("invalid number of bytes: " + length);
         }
-        else {
-            // Falls outside mapped addressing range
-            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
-        }
-        this.dispatchWriteEvent(address, length, value);
     }
 
     /**
@@ -469,7 +465,7 @@ public class Memory {
             throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
         }
         if (notify) {
-            this.dispatchWriteEvent(address, BYTES_PER_WORD, value);
+            this.dispatchWriteEvent(address, BYTES_PER_WORD, value, address, value);
         }
         if (Application.isBackSteppingEnabled()) {
             Application.program.getBackStepper().addMemoryRestoreWord(address, oldValue);
@@ -588,21 +584,13 @@ public class Memory {
      * @param length  Number of bytes to be read.
      * @return Value stored starting at that address.
      */
-    public int fetchUnaligned(int address, int length, boolean notify) throws AddressErrorException {
-        int value;
-        DataRegion dataRegion;
-        if ((dataRegion = this.getDataRegionForAddress(address)) != null) {
-            // Read one byte at a time, w/o regard to alignment boundaries.
-            value = dataRegion.fetchBytes(address, length);
-        }
-        else {
-            // Falls outside mapped addressing range
-            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_EXCEPTION_FETCH, address);
-        }
-        if (notify) {
-            this.dispatchReadEvent(address, length, value);
-        }
-        return value;
+    public int fetch(int address, int length, boolean notify) throws AddressErrorException {
+        return switch (length) {
+            case 1 -> this.fetchByte(address, notify);
+            case BYTES_PER_HALFWORD -> this.fetchHalfword(address, notify);
+            case BYTES_PER_WORD -> this.fetchWord(address, notify);
+            default -> throw new IllegalArgumentException("invalid number of bytes: " + length);
+        };
     }
 
     /**
@@ -831,7 +819,7 @@ public class Memory {
     // (I don't have a reference for that offhand...)  Using my scheme, 0x10040000 falls at
     // the start of the 65th block -- table entry 64.  That leaves (1024-64) * 4096 = 3,932,160
     // bytes of space available without going indirect.
-    private class DataRegion {
+    private static class DataRegion {
         private static final int WORDS_PER_BLOCK = 1024; // allocated blocksize 1024 words == 4K bytes
         private static final int BLOCKS_PER_TABLE = 1024; // Each entry of table points to a block
         private static final int WORDS_PER_TABLE = WORDS_PER_BLOCK * BLOCKS_PER_TABLE;
@@ -856,82 +844,6 @@ public class Memory {
             this.baseAddress = alignToPrevious(firstAddress, BYTES_PER_TABLE);
             int tableCount = (lastAddress - this.baseAddress) / BYTES_PER_TABLE + 1;
             this.tables = new int[tableCount][][];
-        }
-
-        /**
-         * Helper method to store 1, 2 or 4 byte value in table that represents MIPS
-         * memory.
-         * <p>
-         * Modified 29 Dec 2005 to return old value of replaced bytes.
-         */
-        public int storeBytes(int address, int length, int value) {
-            return this.storeOrFetchBytes(address, length, value, true);
-        }
-
-        /**
-         * Helper method to fetch 1, 2 or 4 byte value from table that represents MIPS
-         * memory.
-         */
-        public int fetchBytes(int address, int length) {
-            return this.storeOrFetchBytes(address, length, 0, false);
-        }
-
-        /**
-         * The helper's helper.  Works for either storing or fetching, little or big endian.
-         * When storing/fetching bytes, most of the work is calculating the correct array element(s)
-         * and element byte(s).  This method performs either store or fetch, as directed by its
-         * client using STORE or FETCH in last arg.
-         * <p>
-         * Modified 29 Dec 2005 to return old value of replaced bytes, for STORE.
-         */
-        private synchronized int storeOrFetchBytes(int address, int length, int value, boolean doStore) {
-            int oldValue = 0; // for STORE, return old values of replaced bytes
-
-            int byteOffset = address - this.baseAddress;
-            for (int bytePositionInValue = BYTES_PER_WORD - 1; bytePositionInValue >= BYTES_PER_WORD - length; bytePositionInValue--) {
-                int bytePositionInMemory = byteOffset % BYTES_PER_WORD;
-                if (Memory.this.endianness == Endianness.BIG_ENDIAN) {
-                    bytePositionInMemory = (BYTES_PER_WORD - 1) - bytePositionInMemory;
-                }
-
-                int wordOffset = byteOffset >>> 2;
-                int wordIndex = getWordIndex(wordOffset);
-                int blockIndex = getBlockIndex(wordOffset);
-                int tableIndex = getTableIndex(wordOffset);
-
-                if (this.tables[tableIndex] == null) {
-                    if (doStore) {
-                        this.tables[tableIndex] = new int[BLOCKS_PER_TABLE][];
-                    }
-                    else {
-                        byteOffset++;
-                        continue;
-                    }
-                }
-
-                if (this.tables[tableIndex][blockIndex] == null) {
-                    if (doStore) {
-                        this.tables[tableIndex][blockIndex] = new int[WORDS_PER_BLOCK];
-                    }
-                    else {
-                        byteOffset++;
-                        continue;
-                    }
-                }
-
-                int[] block = this.tables[tableIndex][blockIndex];
-                if (doStore) {
-                    oldValue = replaceByte(block[wordIndex], bytePositionInMemory, oldValue, bytePositionInValue);
-                    block[wordIndex] = replaceByte(value, bytePositionInValue, block[wordIndex], bytePositionInMemory);
-                }
-                else {
-                    value = replaceByte(block[wordIndex], bytePositionInMemory, value, bytePositionInValue);
-                }
-
-                byteOffset++;
-            }
-
-            return (doStore) ? oldValue : value;
         }
 
         /**
@@ -1008,7 +920,7 @@ public class Memory {
     // I'll provide table of blocks with similar capacity.  This differs from data segment
     // somewhat in that the block entries do not contain int's, but instead contain
     // references to ProgramStatement objects.
-    private class TextRegion {
+    private static class TextRegion {
         private static final int WORDS_PER_BLOCK = 1024; // allocated blocksize 1024 words == 4K bytes (likely 8K bytes in reality)
         private static final int BLOCKS_PER_TABLE = 1024; // Each entry of table points to a block
         private static final int WORDS_PER_TABLE = WORDS_PER_BLOCK * BLOCKS_PER_TABLE;
@@ -1076,21 +988,6 @@ public class Memory {
                 return this.tables[tableIndex][blockIndex][wordIndex];
             }
         }
-    }
-
-    /**
-     * Returns result of substituting specified byte of source value into specified byte
-     * of destination value. Byte positions are 0-1-2-3, listed from most to least
-     * significant.  No endian issues.  This is a private helper method used by get() & set().
-     */
-    private static int replaceByte(int sourceValue, int bytePosInSource, int destValue, int bytePosInDest) {
-        return
-            // Set source byte value into destination byte position; set other 24 bits to 0's...
-            ((sourceValue >>> ((3 - bytePosInSource) << 3) & 0xFF) << ((3 - bytePosInDest) << 3))
-                // and bitwise-OR it with...
-                |
-                // Set 8 bits in destination byte position to 0's, other 24 bits are unchanged.
-                (destValue & ~(0xFF << ((3 - bytePosInDest) << 3)));
     }
 
     /**
@@ -1201,33 +1098,11 @@ public class Memory {
         }
     }
 
-    private void dispatchReadEvent(int address, int length, int value) {
-        try {
-            int wordAddress = alignToPrevious(address, BYTES_PER_WORD);
-            int wordValue = this.fetchWord(wordAddress, false);
-            this.dispatchReadEvent(address, length, value, wordAddress, wordValue);
-        }
-        catch (AddressErrorException exception) {
-            // This should not happen since wordAddress is word-aligned
-        }
-    }
-
     private void dispatchReadEvent(int address, int length, int value, int wordAddress, int wordValue) {
         if (Application.program != null || Application.getGUI() == null) {
             for (ListenerRange range : this.getListeners(address, length)) {
                 range.listener.memoryRead(address, length, value, wordAddress, wordValue);
             }
-        }
-    }
-
-    private void dispatchWriteEvent(int address, int length, int value) {
-        try {
-            int wordAddress = alignToPrevious(address, BYTES_PER_WORD);
-            int wordValue = this.fetchWord(wordAddress, false);
-            this.dispatchWriteEvent(address, length, value, wordAddress, wordValue);
-        }
-        catch (AddressErrorException exception) {
-            // This should not happen since wordAddress is word-aligned
         }
     }
 

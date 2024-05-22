@@ -962,7 +962,7 @@ public class Assembler {
              */
             else {
                 try {
-                    Memory.getInstance().storeUnaligned(this.textAddress.get(), value, lengthInBytes);
+                    Memory.getInstance().store(this.textAddress.get(), value, lengthInBytes, true);
                 }
                 catch (AddressErrorException e) {
                     errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + this.textAddress.get() + "\" is not a valid text segment address"));
@@ -1072,7 +1072,7 @@ public class Assembler {
                         };
                     }
                     try {
-                        Application.memory.storeUnaligned(this.dataAddress.get(), theChar, DataTypes.CHAR_SIZE);
+                        Memory.getInstance().store(this.dataAddress.get(), theChar, DataTypes.CHAR_SIZE, true);
                     }
                     catch (AddressErrorException e) {
                         errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + this.dataAddress.get() + "\" is not a valid data segment address"));
@@ -1081,7 +1081,7 @@ public class Assembler {
                 }
                 if (direct == Directive.ASCIIZ) {
                     try {
-                        Application.memory.storeUnaligned(this.dataAddress.get(), 0, DataTypes.CHAR_SIZE);
+                        Application.memory.store(this.dataAddress.get(), 0, DataTypes.CHAR_SIZE, true);
                     }
                     catch (AddressErrorException e) {
                         errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + this.dataAddress.get() + "\" is not a valid data segment address"));
@@ -1115,7 +1115,7 @@ public class Assembler {
             this.dataAddress.set(this.alignToBoundary(this.dataAddress.get(), lengthInBytes));
         }
         try {
-            Memory.getInstance().storeUnaligned(this.dataAddress.get(), value, lengthInBytes);
+            Memory.getInstance().store(this.dataAddress.get(), value, lengthInBytes, true);
         }
         catch (AddressErrorException e) {
             errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + this.dataAddress.get() + "\" is not a valid data segment address"));
@@ -1304,7 +1304,7 @@ public class Assembler {
                 if (labelAddress != SymbolTable.NOT_FOUND) {
                     // patch address has to be valid b/c we already stored there...
                     try {
-                        Application.memory.storeUnaligned(entry.patchAddress, labelAddress, entry.length);
+                        Memory.getInstance().store(entry.patchAddress, labelAddress, entry.length, true);
                     }
                     catch (AddressErrorException ignored) {
                     }
