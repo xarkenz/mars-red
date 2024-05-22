@@ -6,7 +6,6 @@ import mars.mips.instructions.Instruction;
 import mars.simulator.ExceptionCause;
 import mars.util.Binary;
 
-import java.nio.ByteOrder;
 import java.util.*;
 
 /*
@@ -42,7 +41,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Pete Sanderson, August 2003
  */
-// NOTE: This implementation is purely big-endian.  MIPS can handle either one.
 public class Memory {
     public interface Listener {
         default void memoryWritten(int address, int length, int value, int wordAddress, int wordValue) {
@@ -69,9 +67,129 @@ public class Memory {
     public static final int BYTES_PER_DOUBLEWORD = BYTES_PER_WORD * 2;
 
     /**
-     * Current setting for endianness (default is {@link ByteOrder#LITTLE_ENDIAN}).
+     * Determine whether a given address is aligned on a word boundary.
+     *
+     * @param address The address to check.
+     * @return True if address is word-aligned, false otherwise.
      */
-    private ByteOrder endianness = ByteOrder.LITTLE_ENDIAN;
+    public static boolean isWordAligned(int address) {
+        return (address & (BYTES_PER_WORD - 1)) == 0;
+    }
+
+    public static void enforceWordAlignment(int address, int exceptionCause) throws AddressErrorException {
+        if (!isWordAligned(address)) {
+            throw new AddressErrorException("address not aligned on word boundary", exceptionCause, address);
+        }
+    }
+
+    /**
+     * Determine whether a given address is aligned on a halfword boundary.
+     *
+     * @param address The address to check.
+     * @return True if address is halfword-aligned, false otherwise.
+     */
+    public static boolean isHalfwordAligned(int address) {
+        return (address & (BYTES_PER_HALFWORD - 1)) == 0;
+    }
+
+    public static void enforceHalfwordAlignment(int address, int exceptionCause) throws AddressErrorException {
+        if (!isHalfwordAligned(address)) {
+            throw new AddressErrorException("address not aligned on halfword boundary", exceptionCause, address);
+        }
+    }
+
+    /**
+     * Determine whether a given address is aligned on a doubleword boundary.
+     *
+     * @param address The address to check.
+     * @return True if address is doubleword-aligned, false otherwise.
+     */
+    public static boolean isDoublewordAligned(int address) {
+        return (address & (BYTES_PER_DOUBLEWORD - 1)) == 0;
+    }
+
+    public static void enforceDoublewordAlignment(int address, int exceptionCause) throws AddressErrorException {
+        if (!isDoublewordAligned(address)) {
+            throw new AddressErrorException("address not aligned on doubleword boundary", exceptionCause, address);
+        }
+    }
+
+    /**
+     * Align the given address to the next alignment boundary.
+     * If the address is already aligned, it is left unchanged.
+     *
+     * @param address   The memory address to align.
+     * @param alignment The alignment required in bytes, which must be a power of 2.
+     * @return The next address divisible by <code>alignment</code>.
+     */
+    public static int alignToNext(int address, int alignment) {
+        int excess = address & (alignment - 1);
+        if (excess == 0) {
+            return address;
+        }
+        else {
+            return address + alignment - excess;
+        }
+    }
+
+    /**
+     * Align the given address to the previous alignment boundary.
+     * If the address is already aligned, it is left unchanged.
+     *
+     * @param address   The memory address to align.
+     * @param alignment The alignment required in bytes, which must be a power of 2.
+     * @return The previous address divisible by <code>alignment</code>.
+     */
+    public static int alignToPrevious(int address, int alignment) {
+        return address & -alignment; // Simplified from "address & ~(alignment - 1)"
+    }
+
+    /**
+     * Determine whether two <i>inclusive</i> ranges of <i>unsigned</i> integers intersect.
+     * In order for the ranges to intersect, they must share at least one integer between them;
+     * thus, ranges that "touch" but do not overlap are not considered to intersect.
+     * <p>
+     * For meaningful results, it should hold that <code>start1</code> &le; <code>end1</code> and
+     * <code>start2</code> &le; <code>end2</code> (when treated as unsigned integers).
+     *
+     * @param start1 The first unsigned integer specified by the first range.
+     * @param end1 The last unsigned integer specified by the first range.
+     * @param start2 The first unsigned integer specified by the second range.
+     * @param end2 The last unsigned integer specified by the second range.
+     * @return <code>true</code> if the ranges <code>[start1, end1]</code> and <code>[start2, end2]</code>
+     *         share any elements, or <code>false</code> otherwise.
+     * @see #rangesMergeable(int, int, int, int)
+     */
+    public static boolean rangesIntersect(int start1, int end1, int start2, int end2) {
+        return Integer.compareUnsigned(end1, start2) >= 0
+            && Integer.compareUnsigned(start1, end2) <= 0;
+    }
+
+    /**
+     * Determine whether two <i>inclusive</i> ranges of <i>unsigned</i> integers can be merged into a single range.
+     * In order for the ranges to be mergeable, they must either intersect or be adjacent.
+     * This is different than the condition for {@link #rangesIntersect(int, int, int, int)} since ranges
+     * that only "touch" are also considered mergeable.
+     * <p>
+     * For meaningful results, it should hold that <code>start1</code> &le; <code>end1</code> and
+     * <code>start2</code> &le; <code>end2</code> (when treated as unsigned integers).
+     *
+     * @param start1 The first unsigned integer specified by the first range.
+     * @param end1 The last unsigned integer specified by the first range.
+     * @param start2 The first unsigned integer specified by the second range.
+     * @param end2 The last unsigned integer specified by the second range.
+     * @return <code>true</code> if the ranges <code>[start1, end1]</code> and <code>[start2, end2]</code>
+     *         can be merged into a single range, or <code>false</code> otherwise.
+     * @see #rangesIntersect(int, int, int, int)
+     */
+    public static boolean rangesMergeable(int start1, int end1, int start2, int end2) {
+        return rangesIntersect(start1, end1, start2, end2) || end1 + 1 == start2 || end2 + 1 == start1;
+    }
+
+    /**
+     * Current setting for endianness (default is {@link Endianness#LITTLE_ENDIAN}).
+     */
+    private Endianness endianness = Endianness.LITTLE_ENDIAN;
     /**
      * Current memory configuration, updated upon memory reset.
      */
@@ -96,55 +214,11 @@ public class Memory {
      */
     private final List<ListenerRange> listenerRanges = new ArrayList<>();
 
-    // The data segment is allocated in blocks of 1024 ints (4096 bytes).  Each block is
-    // referenced by a "block table" entry, and the table has 1024 entries.  The capacity
-    // is thus 1024 entries * 4096 bytes = 4 MB.  Should be enough to cover most
-    // programs!!  Beyond that it would go to an "indirect" block (similar to Unix i-nodes),
-    // which is not implemented.
-    //
-    // Although this scheme is an array of arrays, it is relatively space-efficient since
-    // only the table is created initially. A 4096-byte block is not allocated until a value 
-    // is written to an address within it.  Thus most small programs will use only 8K bytes 
-    // of space (the table plus one block).  The index into both arrays is easily computed 
-    // from the address; access time is constant.
-    //
-    // SPIM stores statically allocated data (following first .data directive) starting
-    // at location 0x10010000.  This is the first Data Segment word beyond the reach of $gp
-    // used in conjunction with signed 16 bit immediate offset.  $gp has value 0x10008000
-    // and with the signed 16 bit offset can reach from 0x10008000 - 0xFFFF = 0x10000000 
-    // (Data Segment base) to 0x10008000 + 0x7FFF = 0x1000FFFF (the byte preceding 0x10010000).
-    //
-    // Using my scheme, 0x10010000 falls at the beginning of the 17th block -- table entry 16.
-    // SPIM uses a heap base address of 0x10040000 which is not part of the MIPS specification.
-    // (I don't have a reference for that offhand...)  Using my scheme, 0x10040000 falls at
-    // the start of the 65th block -- table entry 64.  That leaves (1024-64) * 4096 = 3,932,160
-    // bytes of space available without going indirect.
-
-    private static final int DATA_WORDS_PER_BLOCK = 1024; // allocated blocksize 1024 words == 4K bytes
-    private static final int DATA_BLOCKS_PER_TABLE = 1024; // Each entry of table points to a block
-    private static final int DATA_BYTES_PER_TABLE = BYTES_PER_WORD * DATA_WORDS_PER_BLOCK * DATA_BLOCKS_PER_TABLE;
-
-    private int dataSegmentBaseAddress;
-    private int[][][] dataSegmentTables;
-    private int kernelDataSegmentBaseAddress;
-    private int[][][] kernelDataSegmentTables;
-    private int mmioBaseAddress;
-    private int[][][] mmioTables;
-
-    // I use a similar scheme for storing instructions.  MIPS text segment ranges from
-    // 0x00400000 all the way to data segment (0x10000000) a range of about 250 MB!  So
-    // I'll provide table of blocks with similar capacity.  This differs from data segment
-    // somewhat in that the block entries do not contain int's, but instead contain
-    // references to ProgramStatement objects.
-
-    private static final int TEXT_WORDS_PER_BLOCK = 1024; // allocated blocksize 1024 words == 4K bytes (likely 8K bytes in reality)
-    private static final int TEXT_BLOCKS_PER_TABLE = 1024; // Each entry of table points to a block
-    private static final int TEXT_BYTES_PER_TABLE = BYTES_PER_WORD * TEXT_WORDS_PER_BLOCK * TEXT_BLOCKS_PER_TABLE;
-
-    private int textSegmentBaseAddress;
-    private ProgramStatement[][][] textSegmentTables;
-    private int kernelTextSegmentBaseAddress;
-    private ProgramStatement[][][] kernelTextSegmentTables;
+    private DataRegion dataSegmentRegion;
+    private DataRegion kernelDataSegmentRegion;
+    private DataRegion mmioRegion;
+    private TextRegion textSegmentRegion;
+    private TextRegion kernelTextSegmentRegion;
 
     private static Memory instance = null;
 
@@ -158,20 +232,6 @@ public class Memory {
         return instance;
     }
 
-    public int getAddress(int key) {
-        return this.configuration.getAddress(key);
-    }
-
-    /**
-     * Determine whether the current memory configuration has a maximum address that can be stored
-     * in 16 bits.
-     *
-     * @return true if maximum address can be stored in 16 bits or less, false otherwise.
-     */
-    public boolean isUsing16BitAddressSpace() {
-        return Integer.compareUnsigned(this.getAddress(MemoryConfigurations.MAPPED_HIGH), 0xFFFF) <= 0;
-    }
-
     /**
      * Initialize the memory tables and other instance variables.
      */
@@ -179,47 +239,37 @@ public class Memory {
         this.configuration = MemoryConfigurations.getCurrentConfiguration();
         this.nextHeapAddress = alignToNext(this.getAddress(MemoryConfigurations.DYNAMIC_LOW), BYTES_PER_WORD);
 
-        this.dataSegmentBaseAddress = alignToPrevious(this.getAddress(MemoryConfigurations.DATA_LOW), DATA_BYTES_PER_TABLE);
-        int dataSegmentTableCount = (this.getAddress(MemoryConfigurations.DATA_HIGH) - this.dataSegmentBaseAddress) / DATA_BYTES_PER_TABLE + 1;
-        this.dataSegmentTables = new int[dataSegmentTableCount][][];
+        this.dataSegmentRegion = new DataRegion(this.getAddress(MemoryConfigurations.DATA_LOW), this.getAddress(MemoryConfigurations.DATA_HIGH));
+        this.kernelDataSegmentRegion = new DataRegion(this.getAddress(MemoryConfigurations.KERNEL_DATA_LOW), this.getAddress(MemoryConfigurations.KERNEL_DATA_HIGH));
+        this.mmioRegion = new DataRegion(this.getAddress(MemoryConfigurations.MMIO_LOW), this.getAddress(MemoryConfigurations.MMIO_HIGH));
+        this.textSegmentRegion = new TextRegion(this.getAddress(MemoryConfigurations.TEXT_LOW), this.getAddress(MemoryConfigurations.TEXT_HIGH));
+        this.kernelTextSegmentRegion = new TextRegion(this.getAddress(MemoryConfigurations.KERNEL_TEXT_LOW), this.getAddress(MemoryConfigurations.KERNEL_TEXT_HIGH));
 
-        this.kernelDataSegmentBaseAddress = alignToPrevious(this.getAddress(MemoryConfigurations.KERNEL_DATA_LOW), DATA_BYTES_PER_TABLE);
-        int kernelDataSegmentTableCount = (this.getAddress(MemoryConfigurations.KERNEL_DATA_HIGH) - this.kernelDataSegmentBaseAddress) / DATA_BYTES_PER_TABLE + 1;
-        this.kernelDataSegmentTables = new int[kernelDataSegmentTableCount][][];
-
-        this.mmioBaseAddress = alignToPrevious(this.getAddress(MemoryConfigurations.MMIO_LOW), DATA_BYTES_PER_TABLE);
-        int mmioTableCount = (this.getAddress(MemoryConfigurations.MMIO_HIGH) - this.mmioBaseAddress) / DATA_BYTES_PER_TABLE + 1;
-        this.mmioTables = new int[mmioTableCount][][];
-
-        this.textSegmentBaseAddress = alignToPrevious(this.getAddress(MemoryConfigurations.TEXT_LOW), TEXT_BYTES_PER_TABLE);
-        int textSegmentTableCount = (this.getAddress(MemoryConfigurations.TEXT_HIGH) - this.textSegmentBaseAddress) / TEXT_BYTES_PER_TABLE + 1;
-        this.textSegmentTables = new ProgramStatement[textSegmentTableCount][][];
-
-        this.kernelTextSegmentBaseAddress = alignToPrevious(this.getAddress(MemoryConfigurations.KERNEL_TEXT_LOW), TEXT_BYTES_PER_TABLE);
-        int kernelTextSegmentTableCount = (this.getAddress(MemoryConfigurations.KERNEL_TEXT_HIGH) - this.kernelTextSegmentBaseAddress) / TEXT_BYTES_PER_TABLE + 1;
-        this.kernelTextSegmentTables = new ProgramStatement[kernelTextSegmentTableCount][][];
-
-        // Encourage the garbage collector to clean up any arrays we just orphaned
+        // Encourage the garbage collector to clean up any region objects now orphaned
         System.gc();
+    }
+
+    public int getAddress(int key) {
+        return this.configuration.getAddress(key);
     }
 
     /**
      * Get the current endianness (i.e. byte ordering) in use.
-     * Unless {@link #setEndianness} is called, the default setting is {@link ByteOrder#LITTLE_ENDIAN}.
+     * Unless {@link #setEndianness} is called, the default setting is {@link Endianness#LITTLE_ENDIAN}.
      *
-     * @return Either {@link ByteOrder#LITTLE_ENDIAN} or {@link ByteOrder#BIG_ENDIAN}.
+     * @return Either {@link Endianness#LITTLE_ENDIAN} or {@link Endianness#BIG_ENDIAN}.
      */
-    public ByteOrder getEndianness() {
+    public Endianness getEndianness() {
         return this.endianness;
     }
 
     /**
      * Set the endianness (i.e. byte ordering) for memory to use.
-     * Before this method is called, the default setting is {@link ByteOrder#LITTLE_ENDIAN}.
+     * Before this method is called, the default setting is {@link Endianness#LITTLE_ENDIAN}.
      *
-     * @param endianness Either {@link ByteOrder#LITTLE_ENDIAN} or {@link ByteOrder#BIG_ENDIAN}.
+     * @param endianness Either {@link Endianness#LITTLE_ENDIAN} or {@link Endianness#BIG_ENDIAN}.
      */
-    public void setEndianness(ByteOrder endianness) {
+    public void setEndianness(Endianness endianness) {
         this.endianness = endianness;
     }
 
@@ -247,7 +297,7 @@ public class Memory {
             throw new IllegalArgumentException("invalid heap allocation of " + numBytes + " bytes requested");
         }
         int newHeapAddress = alignToNext(this.nextHeapAddress + numBytes, BYTES_PER_WORD);
-        if (newHeapAddress > this.getAddress(MemoryConfigurations.DYNAMIC_HIGH)) {
+        if (Integer.compareUnsigned(newHeapAddress, this.getAddress(MemoryConfigurations.DYNAMIC_HIGH)) > 0) {
             throw new IllegalArgumentException("heap allocation of " + numBytes + " bytes failed due to insufficient heap space");
         }
         this.nextHeapAddress = newHeapAddress;
@@ -255,535 +305,13 @@ public class Memory {
     }
 
     /**
-     * Starting at the given address, write the given value over the given number of bytes.
-     * Ignores alignment boundaries, and copies one byte at a time.
-     * If <code>length == 1</code>, takes value from low order byte.
-     * If <code>length == 2</code>, takes from low order half-word.
+     * Determine whether the current memory configuration has a maximum address that can be stored
+     * in 16 bits.
      *
-     * @param address Starting address where memory will be written.
-     * @param value   Value to be stored starting at that address.
-     * @param length  Number of bytes to be written.
-     * @return Old value that was replaced by the write operation.
+     * @return true if maximum address can be stored in 16 bits or less, false otherwise.
      */
-    public int set(int address, int value, int length) throws AddressErrorException {
-        int oldValue = 0;
-        int relativeByteAddress;
-        if (this.isInDataSegment(address)) {
-            // In data segment.  Will write one byte at a time, w/o regard to alignment boundaries.
-            relativeByteAddress = address - this.dataSegmentBaseAddress;
-            oldValue = this.storeBytesInTable(this.dataSegmentTables, relativeByteAddress, length, value);
-        }
-        else if (this.isInKernelDataSegment(address)) {
-            // In kernel data segment.  Will write one byte at a time, w/o regard to alignment boundaries.
-            relativeByteAddress = address - this.kernelDataSegmentBaseAddress;
-            oldValue = this.storeBytesInTable(this.kernelDataSegmentTables, relativeByteAddress, length, value);
-        }
-        else if (this.isInMemoryMappedIO(address)) {
-            // In memory-mapped I/O.  Will write one byte at a time, w/o regard to alignment boundaries.
-            relativeByteAddress = address - this.mmioBaseAddress;
-            oldValue = this.storeBytesInTable(this.mmioTables, relativeByteAddress, length, value);
-        }
-        else if (this.isInTextSegment(address) || this.isInKernelTextSegment(address)) {
-            // Burch Mod (Jan 2013): replace throw with call to setStatement
-            // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
-            if (!Application.getSettings().selfModifyingCodeEnabled.get()) {
-                throw new AddressErrorException("cannot write to text segment unless self-modifying code is enabled", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
-            }
-            ProgramStatement oldStatement = this.setStatement(address, new ProgramStatement(value, address));
-            if (oldStatement != null) {
-                oldValue = oldStatement.getBinaryStatement();
-            }
-        }
-        else {
-            // Falls outside mapped addressing range
-            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
-        }
-        this.dispatchWriteEvent(address, length, value);
-        if (Application.debug) {
-            System.out.println("memory[" + address + "] set to " + value + "(" + length + " bytes)");
-        }
-        return oldValue;
-    }
-
-    /**
-     * Starting at the given word address, write the given value over 4 bytes (a word).
-     * It must be written as is, without adjusting for byte order (little vs big endian).
-     * Address must be word-aligned.
-     *
-     * @param address Starting address of Memory address to be set.
-     * @param value   Value to be stored starting at that address.
-     * @throws AddressErrorException Thrown if address is not on word boundary.
-     */
-    public void setRawWord(int address, int value) throws AddressErrorException {
-        if (!isWordAligned(address)) {
-            throw new AddressErrorException("address not aligned on word boundary", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
-        }
-        int oldValue = 0;
-        int relative;
-        if (this.isInDataSegment(address)) {
-            relative = (address - this.dataSegmentBaseAddress) >> 2; // Convert byte address to words
-            oldValue = this.storeWordInTable(this.dataSegmentTables, relative, value);
-        }
-        else if (this.isInKernelDataSegment(address)) {
-            relative = (address - this.kernelDataSegmentBaseAddress) >> 2; // Convert byte address to words
-            oldValue = this.storeWordInTable(this.kernelDataSegmentTables, relative, value);
-        }
-        else if (this.isInMemoryMappedIO(address)) {
-            relative = (address - this.mmioBaseAddress) >> 2; // Convert byte address to words
-            oldValue = this.storeWordInTable(this.mmioTables, relative, value);
-        }
-        else if (this.isInTextSegment(address) | this.isInKernelTextSegment(address)) {
-            // Burch Mod (Jan 2013): replace throw with call to setStatement
-            // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
-            if (!Application.getSettings().selfModifyingCodeEnabled.get()) {
-                throw new AddressErrorException("cannot write to text segment unless self-modifying code is enabled", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
-            }
-            ProgramStatement oldStatement = this.setStatement(address, new ProgramStatement(value, address));
-            if (oldStatement != null) {
-                oldValue = oldStatement.getBinaryStatement();
-            }
-        }
-        else {
-            // Falls outside mapped addressing range
-            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
-        }
-        this.dispatchWriteEvent(address, BYTES_PER_WORD, value);
-        if (Application.isBackSteppingEnabled()) {
-            Application.program.getBackStepper().addMemoryRestoreRawWord(address, oldValue);
-        }
-    }
-
-    /**
-     * Starting at the given word address, write the given value over 4 bytes (a word).
-     * The address must be word-aligned.
-     *
-     * @param address Starting address of Memory address to be set.
-     * @param value   Value to be stored starting at that address.
-     * @throws AddressErrorException Thrown if address is not on word boundary.
-     */
-    public void setWord(int address, int value) throws AddressErrorException {
-        this.setRawWord(address, (this.endianness == ByteOrder.LITTLE_ENDIAN) ? Integer.reverseBytes(value) : value);
-    }
-
-    /**
-     * Starting at the given halfword address, write the lower 16 bits of given value
-     * into 2 bytes (a halfword).
-     *
-     * @param address Starting address of Memory address to be set.
-     * @param value   Value to be stored starting at that address.  Only low order 16 bits used.
-     * @throws AddressErrorException Thrown if address is not on halfword boundary.
-     */
-    public void setHalfword(int address, int value) throws AddressErrorException {
-        if (!isHalfwordAligned(address)) {
-            throw new AddressErrorException("store address not aligned on halfword boundary", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
-        }
-        int oldValue = this.set(address, value, BYTES_PER_HALFWORD);
-        if (Application.isBackSteppingEnabled()) {
-            Application.program.getBackStepper().addMemoryRestoreHalf(address, oldValue);
-        }
-    }
-
-    /**
-     * Writes low order 8 bits of given value into specified Memory byte.
-     *
-     * @param address Address of Memory byte to be set.
-     * @param value   Value to be stored at that address.  Only low order 8 bits used.
-     */
-    public void setByte(int address, int value) throws AddressErrorException {
-        int oldValue = this.set(address, value, 1);
-        if (Application.isBackSteppingEnabled()) {
-            Application.program.getBackStepper().addMemoryRestoreByte(address, oldValue);
-        }
-    }
-
-    /**
-     * Writes 64 bit double value starting at specified Memory address.  Note that
-     * high-order 32 bits are stored in higher (second) memory word regardless
-     * of "endianness".
-     *
-     * @param address Starting address of Memory address to be set.
-     * @param value   Value to be stored at that address.
-     * @throws AddressErrorException Thrown if address is not on word boundary.
-     */
-    public void setDoubleword(int address, double value) throws AddressErrorException {
-        long longValue = Double.doubleToLongBits(value);
-        this.setWord(address + BYTES_PER_WORD, Binary.highOrderLongToInt(longValue));
-        this.setWord(address, Binary.lowOrderLongToInt(longValue));
-    }
-
-    /**
-     * Stores ProgramStatement in Text Segment.
-     *
-     * @param address   Starting address of Memory address to be set.  Must be word boundary.
-     * @param statement Machine code to be stored starting at that address -- for simulation
-     *                  purposes, actually stores reference to ProgramStatement instead of 32-bit machine code.
-     * @return The previous statement stored at this address.
-     * @throws AddressErrorException If address is not on word boundary or is outside Text Segment.
-     */
-    public ProgramStatement setStatement(int address, ProgramStatement statement) throws AddressErrorException {
-        if (!isWordAligned(address)) {
-            throw new AddressErrorException("store address not aligned on word boundary", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
-        }
-        ProgramStatement oldValue;
-        if (this.isInTextSegment(address)) {
-            oldValue = this.storeProgramStatement(address, statement, this.textSegmentBaseAddress, this.textSegmentTables);
-        }
-        else if (this.isInKernelTextSegment(address)) {
-            oldValue = this.storeProgramStatement(address, statement, this.kernelTextSegmentBaseAddress, this.kernelTextSegmentTables);
-        }
-        else {
-            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
-        }
-        if (Application.debug) {
-            System.out.println("memory[" + address + "] set to " + statement.getBinaryStatement());
-        }
-        return oldValue;
-    }
-
-    /**
-     * Starting at the given word address, read the given number of bytes (max 4).
-     * This one does not check for word boundaries, and copies one byte at a time.
-     * If length == 1, puts value in low order byte.  If 2, puts into low order half-word.
-     *
-     * @param address Starting address of Memory address to be read.
-     * @param length  Number of bytes to be read.
-     * @return Value stored starting at that address.
-     */
-    public int getUnaligned(int address, int length) throws AddressErrorException {
-        return this.getUnaligned(address, length, true);
-    }
-
-    // Does the real work, but includes option to NOT notify observers.
-    private int getUnaligned(int address, int length, boolean notify) throws AddressErrorException {
-        int value;
-        int relativeByteAddress;
-        if (this.isInDataSegment(address)) {
-            // In data segment.  Will read one byte at a time, w/o regard to alignment boundaries.
-            relativeByteAddress = address - this.dataSegmentBaseAddress;
-            value = this.fetchBytesFromTable(this.dataSegmentTables, relativeByteAddress, length);
-        }
-        else if (this.isInKernelDataSegment(address)) {
-            // In kernel data segment.  Will read one byte at a time, w/o regard to alignment boundaries.
-            relativeByteAddress = address - this.kernelDataSegmentBaseAddress;
-            value = this.fetchBytesFromTable(this.kernelDataSegmentTables, relativeByteAddress, length);
-        }
-        else if (this.isInMemoryMappedIO(address)) {
-            // In memory-mapped I/O.  Will read one byte at a time, w/o regard to alignment boundaries.
-            relativeByteAddress = address - this.mmioBaseAddress;
-            value = this.fetchBytesFromTable(this.mmioTables, relativeByteAddress, length);
-        }
-        else if (this.isInTextSegment(address) || this.isInKernelTextSegment(address)) {
-            // Burch Mod (Jan 2013): replace throw with calls to getStatementNoNotify & getBinaryStatement
-            // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
-            // Sean Clarke (05/2024): don't throw, reading should be fine regardless of self-modifying code setting
-            ProgramStatement statement = this.getStatementNoNotify(address);
-            value = statement == null ? 0 : statement.getBinaryStatement();
-        }
-        else {
-            // Falls outside mapped addressing range
-            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_EXCEPTION_LOAD, address);
-        }
-        if (notify) {
-            this.dispatchReadEvent(address, length, value);
-        }
-        return value;
-    }
-
-    /**
-     * Starting at the given word address, read a 4 byte word as an int without notifying listeners.
-     * It transfers the 32 bit value "raw" as stored in memory, and does not adjust
-     * for byte order (big or little endian).  Address must be word-aligned.
-     *
-     * @param address Starting address of word to be read.
-     * @return Word (4-byte value) stored starting at that address.
-     * @throws AddressErrorException If address is not on word boundary.
-     */
-    // Note: the logic here is repeated in getRawWordOrNull() below.  Logic is
-    // simplified by having this method just call getRawWordOrNull() then 
-    // return either the int of its return value, or 0 if it returns null.
-    // Doing so would be detrimental to simulation runtime performance, so
-    // I decided to keep the duplicate logic.
-    public int getRawWord(int address) throws AddressErrorException {
-        if (!isWordAligned(address)) {
-            throw new AddressErrorException("address for fetch not aligned on word boundary", ExceptionCause.ADDRESS_EXCEPTION_LOAD, address);
-        }
-        int value;
-        int relative;
-        if (this.isInDataSegment(address)) {
-            relative = (address - this.dataSegmentBaseAddress) >> 2; // Convert byte address to words
-            value = this.fetchWordFromTable(this.dataSegmentTables, relative);
-        }
-        else if (this.isInKernelDataSegment(address)) {
-            relative = (address - this.kernelDataSegmentBaseAddress) >> 2; // Convert byte address to words
-            value = this.fetchWordFromTable(this.kernelDataSegmentTables, relative);
-        }
-        else if (this.isInMemoryMappedIO(address)) {
-            relative = (address - this.mmioBaseAddress) >> 2; // Convert byte address to words
-            value = this.fetchWordFromTable(this.mmioTables, relative);
-        }
-        else if (this.isInTextSegment(address) || this.isInKernelTextSegment(address)) {
-            // Burch Mod (Jan 2013): replace throw with calls to getStatementNoNotify & getBinaryStatement
-            // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
-            // Sean Clarke (05/2024): don't throw, reading should be fine regardless of self-modifying code setting
-            ProgramStatement statement = this.getStatementNoNotify(address);
-            value = statement == null ? 0 : statement.getBinaryStatement();
-        }
-        else {
-            // Falls outside mapped addressing range
-            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_EXCEPTION_LOAD, address);
-        }
-        return value;
-    }
-
-    /**
-     * Starting at the given word address, read a 4 byte word as an <code>Integer</code> without notifying listeners.
-     * It transfers the 32 bit value "raw" as stored in memory, and does not adjust
-     * for byte order (big or little endian).  Address must be word-aligned.
-     * <p>
-     * Returns null if reading from text segment and there is no instruction at the
-     * requested address. Returns null if reading from data segment and this is the
-     * first reference to the MARS 4K memory allocation block (i.e., an array to
-     * hold the memory has not been allocated).
-     * <p>
-     * This method was developed by Greg Giberling of UC Berkeley to support the memory
-     * dump feature that he implemented in Fall 2007.
-     *
-     * @param address Starting address of word to be read.
-     * @return Word (4-byte value) stored starting at that address as an Integer.  Conditions
-     *     that cause return value null are described above.
-     * @throws AddressErrorException If address is not on word boundary.
-     */
-    // See note above, with getRawWord(), concerning duplicated logic.
-    public Integer getRawWordOrNull(int address) throws AddressErrorException {
-        if (!isWordAligned(address)) {
-            throw new AddressErrorException("address for fetch not aligned on word boundary", ExceptionCause.ADDRESS_EXCEPTION_LOAD, address);
-        }
-        Integer value = null;
-        int relative;
-        if (this.isInDataSegment(address)) {
-            relative = (address - this.dataSegmentBaseAddress) >> 2; // Convert byte address to words
-            value = this.fetchWordOrNullFromTable(this.dataSegmentTables, relative);
-        }
-        else if (this.isInKernelDataSegment(address)) {
-            relative = (address - this.kernelDataSegmentBaseAddress) >> 2; // Convert byte address to words
-            value = this.fetchWordOrNullFromTable(this.kernelDataSegmentTables, relative);
-        }
-        else if (this.isInMemoryMappedIO(address)) {
-            relative = (address - this.mmioBaseAddress) >> 2; // Convert byte address to words
-            value = this.fetchWordOrNullFromTable(this.mmioTables, relative);
-        }
-        else if (this.isInTextSegment(address) || this.isInKernelTextSegment(address)) {
-            ProgramStatement statement = this.getStatementNoNotify(address);
-            if (statement != null) {
-                value = statement.getBinaryStatement();
-            }
-        }
-        else {
-            // Falls outside mapped addressing range
-            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_EXCEPTION_LOAD, address);
-        }
-        // Do not notify listeners.  This read operation is initiated by the
-        // dump feature, not the executing MIPS program.
-        return value;
-    }
-
-    /**
-     * Look for first "null" memory value in an address range.  For text segment (binary code), this
-     * represents a word that does not contain an instruction.  Normally use this to find the end of
-     * the program.  For data segment, this represents the first block of simulated memory (block length
-     * currently 4K words) that has not been referenced by an assembled/executing program.
-     *
-     * @param baseAddress  lowest MIPS address to be searched; the starting point
-     * @param limitAddress highest MIPS address to be searched
-     * @return lowest address within specified range that contains "null" value as described above.
-     * @throws AddressErrorException if the base address is not on a word boundary
-     */
-    public int getAddressOfFirstNull(int baseAddress, int limitAddress) throws AddressErrorException {
-        int address;
-        for (address = baseAddress; address < limitAddress; address += BYTES_PER_WORD) {
-            if (this.getRawWordOrNull(address) == null) {
-                break;
-            }
-        }
-        return address;
-    }
-
-    /**
-     * Starting at the given word address, read a 4 byte word as an int. Observers are notified.
-     *
-     * @param address Starting address of word to be read.
-     * @return Word (4-byte value) stored starting at that address.
-     * @throws AddressErrorException If address is not on word boundary.
-     */
-    public int getWord(int address) throws AddressErrorException {
-        int value = this.getRawWord(address);
-        if (this.endianness == ByteOrder.LITTLE_ENDIAN) {
-            value = Integer.reverseBytes(value);
-        }
-        this.dispatchReadEvent(address, BYTES_PER_WORD, value, address, value);
-        return value;
-    }
-
-    /**
-     * Starting at the given word address, read a 4 byte word as an int. Observers are NOT notified.
-     *
-     * @param address Starting address of word to be read.
-     * @return Word (4-byte value) stored starting at that address.
-     * @throws AddressErrorException If address is not on word boundary.
-     */
-    public int getWordNoNotify(int address) throws AddressErrorException {
-        int value = this.getRawWord(address);
-        return (this.endianness == ByteOrder.LITTLE_ENDIAN) ? Integer.reverseBytes(value) : value;
-    }
-
-    /**
-     * Starting at the given word address, read a 2 byte word into lower 16 bits of int.
-     *
-     * @param address Starting address of word to be read.
-     * @return Halfword (2-byte value) stored starting at that address, stored in lower 16 bits.
-     * @throws AddressErrorException If address is not on halfword boundary.
-     */
-    public int getHalfword(int address) throws AddressErrorException {
-        if (!isHalfwordAligned(address)) {
-            throw new AddressErrorException("fetch address not aligned on halfword boundary", ExceptionCause.ADDRESS_EXCEPTION_LOAD, address);
-        }
-        return this.getUnaligned(address, BYTES_PER_HALFWORD);
-    }
-
-    /**
-     * Reads specified Memory byte into low order 8 bits of int.
-     *
-     * @param address Address of Memory byte to be read.
-     * @return Value stored at that address.  Only low order 8 bits used.
-     */
-    public int getByte(int address) throws AddressErrorException {
-        return this.getUnaligned(address, 1);
-    }
-
-    /**
-     * Gets ProgramStatement from Text Segment.
-     *
-     * @param address Starting address of Memory address to be read.  Must be word boundary.
-     * @return reference to ProgramStatement object associated with that address, or null if none.
-     * @throws AddressErrorException If address is not on word boundary or is outside Text Segment.
-     * @see ProgramStatement
-     */
-    public ProgramStatement getStatement(int address) throws AddressErrorException {
-        return this.getStatement(address, true);
-    }
-
-    /**
-     * Gets ProgramStatement from Text Segment without notifying observers.
-     *
-     * @param address Starting address of Memory address to be read.  Must be word boundary.
-     * @return reference to ProgramStatement object associated with that address, or null if none.
-     * @throws AddressErrorException If address is not on word boundary or is outside Text Segment.
-     * @see ProgramStatement
-     */
-    public ProgramStatement getStatementNoNotify(int address) throws AddressErrorException {
-        return this.getStatement(address, false);
-    }
-
-    private ProgramStatement getStatement(int address, boolean notify) throws AddressErrorException {
-        if (!isWordAligned(address)) {
-            throw new AddressErrorException("fetch address for text segment not aligned to word boundary", ExceptionCause.ADDRESS_EXCEPTION_LOAD, address);
-        }
-        ProgramStatement statement;
-        if (this.isInTextSegment(address)) {
-            statement = this.fetchProgramStatement(address, this.textSegmentBaseAddress, this.textSegmentTables);
-        }
-        else if (this.isInKernelTextSegment(address)) {
-            statement = this.fetchProgramStatement(address, this.kernelTextSegmentBaseAddress, this.kernelTextSegmentTables);
-        }
-        else if (!Application.getSettings().selfModifyingCodeEnabled.get()) {
-            throw new AddressErrorException("cannot execute data segment unless self-modifying code is enabled", ExceptionCause.ADDRESS_EXCEPTION_LOAD, address);
-        }
-        else {
-            statement = new ProgramStatement(this.getWordNoNotify(address), address);
-        }
-        if (notify) {
-            this.dispatchReadEvent(address, Instruction.BYTES_PER_INSTRUCTION, statement == null ? 0 : statement.getBinaryStatement());
-        }
-        return statement;
-    }
-
-    /**
-     * Reads a null-terminated string from memory starting at the given address.
-     *
-     * @param address The address of the first byte in the string.
-     * @return The string from memory, excluding the null terminator.
-     * @throws AddressErrorException If a byte cannot be read at any point.
-     */
-    public String getNullTerminatedString(int address) throws AddressErrorException {
-        StringBuilder content = new StringBuilder();
-
-        char ch = (char) this.getByte(address);
-        while (ch != 0) {
-            content.append(ch);
-            ch = (char) this.getByte(++address);
-        }
-
-        return content.toString();
-    }
-
-    /**
-     * Utility to determine if given address is word-aligned.
-     *
-     * @param address the address to check
-     * @return true if address is word-aligned, false otherwise
-     */
-    public static boolean isWordAligned(int address) {
-        return (address & (BYTES_PER_WORD - 1)) == 0;
-    }
-
-    /**
-     * Utility to determine if given address is halfword-aligned.
-     *
-     * @param address the address to check
-     * @return true if address is halfword-aligned, false otherwise
-     */
-    public static boolean isHalfwordAligned(int address) {
-        return (address & (BYTES_PER_HALFWORD - 1)) == 0;
-    }
-
-    /**
-     * Utility to determine if given address is doubleword-aligned.
-     *
-     * @param address the address to check
-     * @return true if address is doubleword-aligned, false otherwise
-     */
-    public static boolean isDoublewordAligned(int address) {
-        return (address & (BYTES_PER_DOUBLEWORD - 1)) == 0;
-    }
-
-    /**
-     * Align the given address to the next alignment boundary.
-     * If the address is already aligned, it is left unchanged.
-     *
-     * @param address   The memory address to align.
-     * @param alignment The alignment required in bytes.
-     * @return The next address divisible by <code>alignment</code>.
-     */
-    public static int alignToNext(int address, int alignment) {
-        int excess = Integer.remainderUnsigned(address, alignment);
-        if (excess == 0) {
-            return address;
-        }
-        else {
-            return address + alignment - excess;
-        }
-    }
-
-    /**
-     * Align the given address to the previous alignment boundary.
-     * If the address is already aligned, it is left unchanged.
-     *
-     * @param address   The memory address to align.
-     * @param alignment The alignment required in bytes.
-     * @return The previous address divisible by <code>alignment</code>.
-     */
-    public static int alignToPrevious(int address, int alignment) {
-        return address - Integer.remainderUnsigned(address, alignment);
+    public boolean isUsing16BitAddressSpace() {
+        return Integer.compareUnsigned(this.getAddress(MemoryConfigurations.MAPPED_HIGH), 0xFFFF) <= 0;
     }
 
     /**
@@ -856,46 +384,735 @@ public class Memory {
             && Integer.compareUnsigned(address, this.getAddress(MemoryConfigurations.MMIO_HIGH)) <= 0;
     }
 
-    /**
-     * Determine whether two <i>inclusive</i> ranges of <i>unsigned</i> integers intersect.
-     * In order for the ranges to intersect, they must share at least one integer between them;
-     * thus, ranges that "touch" but do not overlap are not considered to intersect.
-     * <p>
-     * For meaningful results, it should hold that <code>start1</code> &le; <code>end1</code> and
-     * <code>start2</code> &le; <code>end2</code> (when treated as unsigned integers).
-     *
-     * @param start1 The first unsigned integer specified by the first range.
-     * @param end1 The last unsigned integer specified by the first range.
-     * @param start2 The first unsigned integer specified by the second range.
-     * @param end2 The last unsigned integer specified by the second range.
-     * @return <code>true</code> if the ranges <code>[start1, end1]</code> and <code>[start2, end2]</code>
-     *         share any elements, or <code>false</code> otherwise.
-     * @see #rangesMergeable(int, int, int, int)
-     */
-    public static boolean rangesIntersect(int start1, int end1, int start2, int end2) {
-        return Integer.compareUnsigned(end1, start2) >= 0
-            && Integer.compareUnsigned(start1, end2) <= 0;
+    private DataRegion getDataRegionForAddress(int address) {
+        if (this.isInDataSegment(address)) {
+            return this.dataSegmentRegion;
+        }
+        else if (this.isInKernelDataSegment(address)) {
+            return this.kernelDataSegmentRegion;
+        }
+        else if (this.isInMemoryMappedIO(address)) {
+            return this.mmioRegion;
+        }
+        else {
+            return null;
+        }
+    }
+
+    private TextRegion getTextRegionForAddress(int address) {
+        if (this.isInTextSegment(address)) {
+            return this.textSegmentRegion;
+        }
+        else if (this.isInKernelTextSegment(address)) {
+            return this.kernelTextSegmentRegion;
+        }
+        else {
+            return null;
+        }
     }
 
     /**
-     * Determine whether two <i>inclusive</i> ranges of <i>unsigned</i> integers can be merged into a single range.
-     * In order for the ranges to be mergeable, they must either intersect or be adjacent.
-     * This is different than the condition for {@link #rangesIntersect(int, int, int, int)} since ranges
-     * that only "touch" are also considered mergeable.
-     * <p>
-     * For meaningful results, it should hold that <code>start1</code> &le; <code>end1</code> and
-     * <code>start2</code> &le; <code>end2</code> (when treated as unsigned integers).
+     * Starting at the given address, write the given value over the given number of bytes.
+     * Ignores alignment boundaries, and copies one byte at a time.
+     * If <code>length == 1</code>, takes value from low order byte.
+     * If <code>length == 2</code>, takes from low order half-word.
      *
-     * @param start1 The first unsigned integer specified by the first range.
-     * @param end1 The last unsigned integer specified by the first range.
-     * @param start2 The first unsigned integer specified by the second range.
-     * @param end2 The last unsigned integer specified by the second range.
-     * @return <code>true</code> if the ranges <code>[start1, end1]</code> and <code>[start2, end2]</code>
-     *         can be merged into a single range, or <code>false</code> otherwise.
-     * @see #rangesIntersect(int, int, int, int)
+     * @param address Starting address where memory will be written.
+     * @param value   Value to be stored starting at that address.
+     * @param length  Number of bytes to be written.
      */
-    public static boolean rangesMergeable(int start1, int end1, int start2, int end2) {
-        return rangesIntersect(start1, end1, start2, end2) || end1 + 1 == start2 || end2 + 1 == start1;
+    public void storeUnaligned(int address, int value, int length) throws AddressErrorException {
+        DataRegion dataRegion;
+        if ((dataRegion = this.getDataRegionForAddress(address)) != null) {
+            // Write one byte at a time, w/o regard to alignment boundaries.
+            dataRegion.storeBytes(address, length, value);
+        }
+        else {
+            // Falls outside mapped addressing range
+            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
+        }
+        this.dispatchWriteEvent(address, length, value);
+    }
+
+    /**
+     * Starting at the given word address, write the given value over 4 bytes (a word).
+     * It must be written as is, without adjusting for byte order (little vs big endian).
+     * Address must be word-aligned.
+     *
+     * @param address Starting address of Memory address to be set.
+     * @param value   Value to be stored starting at that address.
+     * @param notify  Whether to notify listeners of the write operation.
+     * @throws AddressErrorException Thrown if address is not on word boundary.
+     */
+    public void storeWord(int address, int value, boolean notify) throws AddressErrorException {
+        enforceWordAlignment(address, ExceptionCause.ADDRESS_EXCEPTION_STORE);
+        int oldValue = 0;
+        DataRegion dataRegion;
+        TextRegion textRegion;
+        if ((dataRegion = this.getDataRegionForAddress(address)) != null) {
+            oldValue = dataRegion.storeWord(address, value);
+        }
+        else if ((textRegion = this.getTextRegionForAddress(address)) != null) {
+            // Burch Mod (Jan 2013): replace throw with call to setStatement
+            // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
+            if (!Application.getSettings().selfModifyingCodeEnabled.get()) {
+                throw new AddressErrorException("cannot write to text segment unless self-modifying code is enabled", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
+            }
+            ProgramStatement oldStatement = textRegion.storeStatement(address, new ProgramStatement(value, address));
+            // TODO: make a separate restore type for program statements in the backstepper
+            if (oldStatement != null) {
+                oldValue = oldStatement.getBinaryStatement();
+            }
+        }
+        else {
+            // Falls outside mapped addressing range
+            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
+        }
+        if (notify) {
+            this.dispatchWriteEvent(address, BYTES_PER_WORD, value);
+        }
+        if (Application.isBackSteppingEnabled()) {
+            Application.program.getBackStepper().addMemoryRestoreWord(address, oldValue);
+        }
+    }
+
+    /**
+     * Starting at the given halfword address, write the lower 16 bits of given value
+     * into 2 bytes (a halfword).
+     *
+     * @param address Starting address of Memory address to be set.
+     * @param value   Value to be stored starting at that address.  Only low order 16 bits used.
+     * @throws AddressErrorException Thrown if address is not on halfword boundary.
+     */
+    public void storeHalfword(int address, int value, boolean notify) throws AddressErrorException {
+        value &= 0xFFFF;
+        enforceHalfwordAlignment(address, ExceptionCause.ADDRESS_EXCEPTION_STORE);
+        int wordAddress = alignToPrevious(address, BYTES_PER_WORD);
+        int wordValue = this.fetchWord(wordAddress, false);
+        if ((this.endianness == Endianness.BIG_ENDIAN) == (address == wordAddress)) {
+            // Write to high-order halfword
+            wordValue = (wordValue & 0x0000FFFF) | (value << 16);
+        }
+        else {
+            // Write to low-order halfword
+            wordValue = (wordValue & 0xFFFF0000) | value;
+        }
+        this.storeWord(wordAddress, wordValue, false);
+        if (notify) {
+            this.dispatchWriteEvent(address, 1, value, wordAddress, wordValue);
+        }
+    }
+
+    /**
+     * Writes low order 8 bits of given value into specified Memory byte.
+     *
+     * @param address Address of Memory byte to be set.
+     * @param value   Value to be stored at that address.  Only low order 8 bits used.
+     */
+    public void storeByte(int address, int value, boolean notify) throws AddressErrorException {
+        value &= 0xFF;
+        int wordAddress = alignToPrevious(address, BYTES_PER_WORD);
+        int wordValue = this.fetchWord(wordAddress, false);
+        wordValue = Binary.setByte(wordValue, switch (this.endianness) {
+            case BIG_ENDIAN -> wordAddress - address + (BYTES_PER_WORD - 1);
+            case LITTLE_ENDIAN -> address - wordAddress;
+        }, value);
+        this.storeWord(wordAddress, wordValue, false);
+        if (notify) {
+            this.dispatchWriteEvent(address, 1, value, wordAddress, wordValue);
+        }
+    }
+
+    /**
+     * Writes 64 bit double value starting at specified Memory address.  Note that
+     * high-order 32 bits are stored in higher (second) memory word regardless
+     * of "endianness".
+     *
+     * @param address Starting address of Memory address to be set.
+     * @param value   Value to be stored at that address.
+     * @throws AddressErrorException Thrown if address is not on word boundary.
+     */
+    public void storeDoubleword(int address, long value) throws AddressErrorException {
+        // For some reason, both SPIM and previous versions of MARS enforce only word alignment here,
+        // so I'll keep it that way for backwards compatibility.  Sean Clarke 05/2024
+        enforceWordAlignment(address, ExceptionCause.ADDRESS_EXCEPTION_STORE);
+        switch (this.endianness) {
+            case BIG_ENDIAN -> {
+                this.storeWord(address, Binary.highOrderLongToInt(value), true);
+                this.storeWord(address + BYTES_PER_WORD, Binary.lowOrderLongToInt(value), true);
+            }
+            case LITTLE_ENDIAN -> {
+                this.storeWord(address, Binary.lowOrderLongToInt(value), true);
+                this.storeWord(address + BYTES_PER_WORD, Binary.highOrderLongToInt(value), true);
+            }
+        }
+    }
+
+    /**
+     * Stores ProgramStatement in Text Segment.
+     *
+     * @param address   Starting address of Memory address to be set.  Must be word boundary.
+     * @param statement Machine code to be stored starting at that address -- for simulation
+     *                  purposes, actually stores reference to ProgramStatement instead of 32-bit machine code.
+     * @throws AddressErrorException If address is not on word boundary or is outside Text Segment.
+     */
+    public void storeStatement(int address, ProgramStatement statement, boolean notify) throws AddressErrorException {
+        enforceWordAlignment(address, ExceptionCause.ADDRESS_EXCEPTION_STORE);
+        int binaryStatement = statement.getBinaryStatement();
+        TextRegion textRegion;
+        DataRegion dataRegion;
+        if ((textRegion = this.getTextRegionForAddress(address)) != null) {
+            textRegion.storeStatement(address, statement);
+        }
+        else if ((dataRegion = this.getDataRegionForAddress(address)) != null) {
+            if (!Application.getSettings().selfModifyingCodeEnabled.get()) {
+                throw new AddressErrorException("cannot store code beyond text segment unless self-modifying code is enabled", ExceptionCause.ADDRESS_EXCEPTION_FETCH, address);
+            }
+            dataRegion.storeWord(address, binaryStatement);
+        }
+        else {
+            // Falls outside mapped addressing range
+            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_EXCEPTION_FETCH, address);
+        }
+        if (notify) {
+            this.dispatchWriteEvent(address, BYTES_PER_WORD, binaryStatement, address, binaryStatement);
+        }
+    }
+
+    /**
+     * Starting at the given word address, read the given number of bytes (max 4).
+     * This one does not check for word boundaries, and copies one byte at a time.
+     * If length == 1, puts value in low order byte.  If 2, puts into low order half-word.
+     *
+     * @param address Starting address of Memory address to be read.
+     * @param length  Number of bytes to be read.
+     * @return Value stored starting at that address.
+     */
+    public int fetchUnaligned(int address, int length, boolean notify) throws AddressErrorException {
+        int value;
+        DataRegion dataRegion;
+        if ((dataRegion = this.getDataRegionForAddress(address)) != null) {
+            // Read one byte at a time, w/o regard to alignment boundaries.
+            value = dataRegion.fetchBytes(address, length);
+        }
+        else {
+            // Falls outside mapped addressing range
+            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_EXCEPTION_FETCH, address);
+        }
+        if (notify) {
+            this.dispatchReadEvent(address, length, value);
+        }
+        return value;
+    }
+
+    /**
+     * Starting at the given word address, read a 4 byte word as an int without notifying listeners.
+     * It transfers the 32 bit value "raw" as stored in memory, and does not adjust
+     * for byte order (big or little endian).  Address must be word-aligned.
+     *
+     * @param address Starting address of word to be read.
+     * @return Word (4-byte value) stored starting at that address.
+     * @throws AddressErrorException If address is not on word boundary.
+     */
+    public int fetchWord(int address, boolean notify) throws AddressErrorException {
+        enforceWordAlignment(address, ExceptionCause.ADDRESS_EXCEPTION_FETCH);
+        int value;
+        DataRegion dataRegion;
+        TextRegion textRegion;
+        if ((dataRegion = this.getDataRegionForAddress(address)) != null) {
+            value = dataRegion.fetchWord(address);
+        }
+        else if ((textRegion = this.getTextRegionForAddress(address)) != null) {
+            // Burch Mod (Jan 2013): replace throw with calls to getStatementNoNotify & getBinaryStatement
+            // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
+            // Sean Clarke (05/2024): don't throw, reading should be fine regardless of self-modifying code setting
+            ProgramStatement statement = textRegion.fetchStatement(address);
+            value = statement == null ? 0 : statement.getBinaryStatement();
+        }
+        else {
+            // Falls outside mapped addressing range
+            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_EXCEPTION_FETCH, address);
+        }
+        if (notify) {
+            this.dispatchReadEvent(address, BYTES_PER_WORD, value, address, value);
+        }
+        return value;
+    }
+
+    /**
+     * Starting at the given word address, read a 4 byte word as an <code>Integer</code> without notifying listeners.
+     * It transfers the 32 bit value "raw" as stored in memory, and does not adjust
+     * for byte order (big or little endian).  Address must be word-aligned.
+     * <p>
+     * Returns null if reading from text segment and there is no instruction at the
+     * requested address. Returns null if reading from data segment and this is the
+     * first reference to the MARS 4K memory allocation block (i.e., an array to
+     * hold the memory has not been allocated).
+     * <p>
+     * This method was developed by Greg Giberling of UC Berkeley to support the memory
+     * dump feature that he implemented in Fall 2007.
+     *
+     * @param address Starting address of word to be read.
+     * @return Word (4-byte value) stored starting at that address as an Integer.  Conditions
+     *     that cause return value null are described above.
+     * @throws AddressErrorException If address is not on word boundary.
+     */
+    public Integer fetchWordOrNull(int address) throws AddressErrorException {
+        enforceWordAlignment(address, ExceptionCause.ADDRESS_EXCEPTION_FETCH);
+        DataRegion dataRegion;
+        TextRegion textRegion;
+        if ((dataRegion = this.getDataRegionForAddress(address)) != null) {
+            return dataRegion.fetchWordOrNull(address);
+        }
+        else if ((textRegion = this.getTextRegionForAddress(address)) != null) {
+            // Burch Mod (Jan 2013): replace throw with calls to getStatementNoNotify & getBinaryStatement
+            // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
+            // Sean Clarke (05/2024): don't throw, reading should be fine regardless of self-modifying code setting
+            ProgramStatement statement = textRegion.fetchStatement(address);
+            return statement == null ? null : statement.getBinaryStatement();
+        }
+        else {
+            // Falls outside mapped addressing range
+            return null;
+        }
+    }
+
+    /**
+     * Look for first "null" memory value in an address range.  For text segment (binary code), this
+     * represents a word that does not contain an instruction.  Normally use this to find the end of
+     * the program.  For data segment, this represents the first block of simulated memory (block length
+     * currently 4K words) that has not been referenced by an assembled/executing program.
+     *
+     * @param firstAddress First address to be searched; the starting point.
+     * @param lastAddress Last address to be searched.
+     * @return Lowest address within specified range that contains "null" value as described above.
+     * @throws AddressErrorException if the base address is not on a word boundary.
+     */
+    public int getAddressOfFirstNullWord(int firstAddress, int lastAddress) throws AddressErrorException {
+        int address;
+        for (address = firstAddress; address < lastAddress; address += BYTES_PER_WORD) {
+            if (this.fetchWordOrNull(address) == null) {
+                break;
+            }
+        }
+        return address;
+    }
+
+    /**
+     * Starting at the given word address, read a 2 byte word into lower 16 bits of int.
+     *
+     * @param address Starting address of word to be read.
+     * @return Halfword (2-byte value) stored starting at that address, zero-extended to 32 bits.
+     * @throws AddressErrorException If address is not on halfword boundary.
+     */
+    public int fetchHalfword(int address, boolean notify) throws AddressErrorException {
+        enforceHalfwordAlignment(address, ExceptionCause.ADDRESS_EXCEPTION_FETCH);
+        int wordAddress = alignToPrevious(address, BYTES_PER_WORD);
+        int wordValue = this.fetchWord(wordAddress, false);
+        int value;
+        if ((this.endianness == Endianness.BIG_ENDIAN) == (address == wordAddress)) {
+            // Read from high-order halfword
+            value = wordValue >>> 16;
+        }
+        else {
+            // Read from low-order halfword
+            value = wordValue & 0xFFFF;
+        }
+        if (notify) {
+            this.dispatchReadEvent(address, BYTES_PER_HALFWORD, value, wordAddress, wordValue);
+        }
+        return value;
+    }
+
+    /**
+     * Reads specified Memory byte into low order 8 bits of int.
+     *
+     * @param address Address of Memory byte to be read.
+     * @return Value stored at that address.  Only low order 8 bits used.
+     */
+    public int fetchByte(int address, boolean notify) throws AddressErrorException {
+        int wordAddress = alignToPrevious(address, BYTES_PER_WORD);
+        int wordValue = this.fetchWord(wordAddress, false);
+        int value = Binary.getByte(wordValue, switch (this.endianness) {
+            case BIG_ENDIAN -> wordAddress - address + (BYTES_PER_WORD - 1);
+            case LITTLE_ENDIAN -> address - wordAddress;
+        });
+        if (notify) {
+            this.dispatchReadEvent(address, 1, value, wordAddress, wordValue);
+        }
+        return value;
+    }
+
+    public long fetchDoubleword(int address, boolean notify) throws AddressErrorException {
+        // For some reason, both SPIM and previous versions of MARS enforce only word alignment here,
+        // so I'll keep it that way for backwards compatibility.  Sean Clarke 05/2024
+        enforceWordAlignment(address, ExceptionCause.ADDRESS_EXCEPTION_FETCH);
+        int firstWord = this.fetchWord(address, notify);
+        int secondWord = this.fetchWord(address + BYTES_PER_WORD, notify);
+        return switch (this.endianness) {
+            case BIG_ENDIAN -> Binary.twoIntsToLong(firstWord, secondWord);
+            case LITTLE_ENDIAN -> Binary.twoIntsToLong(secondWord, firstWord);
+        };
+    }
+
+    /**
+     * Gets ProgramStatement from Text Segment.
+     *
+     * @param address Starting address of Memory address to be read.  Must be word boundary.
+     * @return Reference to ProgramStatement object associated with that address, or null if none.
+     * @throws AddressErrorException If address is not on word boundary or is outside Text Segment.
+     * @see ProgramStatement
+     */
+    public ProgramStatement fetchStatement(int address, boolean notify) throws AddressErrorException {
+        enforceWordAlignment(address, ExceptionCause.ADDRESS_EXCEPTION_FETCH);
+        ProgramStatement statement;
+        TextRegion textRegion;
+        DataRegion dataRegion;
+        if ((textRegion = this.getTextRegionForAddress(address)) != null) {
+            statement = textRegion.fetchStatement(address);
+        }
+        else if ((dataRegion = this.getDataRegionForAddress(address)) != null) {
+            if (!Application.getSettings().selfModifyingCodeEnabled.get()) {
+                throw new AddressErrorException("cannot execute beyond text segment unless self-modifying code is enabled", ExceptionCause.ADDRESS_EXCEPTION_FETCH, address);
+            }
+            Integer binaryStatement = dataRegion.fetchWordOrNull(address);
+            statement = (binaryStatement == null) ? null : new ProgramStatement(binaryStatement, address);
+        }
+        else {
+            // Falls outside mapped addressing range
+            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_EXCEPTION_FETCH, address);
+        }
+        if (notify) {
+            int binaryStatement = (statement == null) ? 0 : statement.getBinaryStatement();
+            this.dispatchReadEvent(address, Instruction.BYTES_PER_INSTRUCTION, binaryStatement, address, binaryStatement);
+        }
+        return statement;
+    }
+
+    /**
+     * Reads a null-terminated string from memory starting at the given address.
+     *
+     * @param address The address of the first byte in the string.
+     * @return The string from memory, excluding the null terminator.
+     * @throws AddressErrorException If a byte cannot be read at any point.
+     */
+    public String fetchNullTerminatedString(int address) throws AddressErrorException {
+        StringBuilder content = new StringBuilder();
+
+        char ch = (char) this.fetchByte(address, false);
+        while (ch != 0) {
+            content.append(ch);
+            ch = (char) this.fetchByte(++address, false);
+        }
+
+        return content.toString();
+    }
+
+    // The data segment is allocated in blocks of 1024 ints (4096 bytes).  Each block is
+    // referenced by a "block table" entry, and the table has 1024 entries.  The capacity
+    // is thus 1024 entries * 4096 bytes = 4 MB.  Should be enough to cover most
+    // programs!!  Beyond that it would go to an "indirect" block (similar to Unix i-nodes),
+    // which is not implemented.
+    //
+    // Although this scheme is an array of arrays, it is relatively space-efficient since
+    // only the table is created initially. A 4096-byte block is not allocated until a value
+    // is written to an address within it.  Thus most small programs will use only 8K bytes
+    // of space (the table plus one block).  The index into both arrays is easily computed
+    // from the address; access time is constant.
+    //
+    // SPIM stores statically allocated data (following first .data directive) starting
+    // at location 0x10010000.  This is the first Data Segment word beyond the reach of $gp
+    // used in conjunction with signed 16 bit immediate offset.  $gp has value 0x10008000
+    // and with the signed 16 bit offset can reach from 0x10008000 - 0xFFFF = 0x10000000
+    // (Data Segment base) to 0x10008000 + 0x7FFF = 0x1000FFFF (the byte preceding 0x10010000).
+    //
+    // Using my scheme, 0x10010000 falls at the beginning of the 17th block -- table entry 16.
+    // SPIM uses a heap base address of 0x10040000 which is not part of the MIPS specification.
+    // (I don't have a reference for that offhand...)  Using my scheme, 0x10040000 falls at
+    // the start of the 65th block -- table entry 64.  That leaves (1024-64) * 4096 = 3,932,160
+    // bytes of space available without going indirect.
+    private class DataRegion {
+        private static final int WORDS_PER_BLOCK = 1024; // allocated blocksize 1024 words == 4K bytes
+        private static final int BLOCKS_PER_TABLE = 1024; // Each entry of table points to a block
+        private static final int WORDS_PER_TABLE = WORDS_PER_BLOCK * BLOCKS_PER_TABLE;
+        private static final int BYTES_PER_TABLE = BYTES_PER_WORD * WORDS_PER_TABLE;
+
+        private static int getWordIndex(int wordOffset) {
+            return wordOffset & (WORDS_PER_BLOCK - 1);
+        }
+
+        private static int getBlockIndex(int wordOffset) {
+            return (wordOffset / WORDS_PER_BLOCK) & (BLOCKS_PER_TABLE - 1);
+        }
+
+        private static int getTableIndex(int wordOffset) {
+            return wordOffset / WORDS_PER_TABLE;
+        }
+
+        private final int[][][] tables;
+        private final int baseAddress;
+
+        public DataRegion(int firstAddress, int lastAddress) {
+            this.baseAddress = alignToPrevious(firstAddress, BYTES_PER_TABLE);
+            int tableCount = (lastAddress - this.baseAddress) / BYTES_PER_TABLE + 1;
+            this.tables = new int[tableCount][][];
+        }
+
+        /**
+         * Helper method to store 1, 2 or 4 byte value in table that represents MIPS
+         * memory.
+         * <p>
+         * Modified 29 Dec 2005 to return old value of replaced bytes.
+         */
+        public int storeBytes(int address, int length, int value) {
+            return this.storeOrFetchBytes(address, length, value, true);
+        }
+
+        /**
+         * Helper method to fetch 1, 2 or 4 byte value from table that represents MIPS
+         * memory.
+         */
+        public int fetchBytes(int address, int length) {
+            return this.storeOrFetchBytes(address, length, 0, false);
+        }
+
+        /**
+         * The helper's helper.  Works for either storing or fetching, little or big endian.
+         * When storing/fetching bytes, most of the work is calculating the correct array element(s)
+         * and element byte(s).  This method performs either store or fetch, as directed by its
+         * client using STORE or FETCH in last arg.
+         * <p>
+         * Modified 29 Dec 2005 to return old value of replaced bytes, for STORE.
+         */
+        private synchronized int storeOrFetchBytes(int address, int length, int value, boolean doStore) {
+            int oldValue = 0; // for STORE, return old values of replaced bytes
+
+            int byteOffset = address - this.baseAddress;
+            for (int bytePositionInValue = BYTES_PER_WORD - 1; bytePositionInValue >= BYTES_PER_WORD - length; bytePositionInValue--) {
+                int bytePositionInMemory = byteOffset % BYTES_PER_WORD;
+                if (Memory.this.endianness == Endianness.BIG_ENDIAN) {
+                    bytePositionInMemory = (BYTES_PER_WORD - 1) - bytePositionInMemory;
+                }
+
+                int wordOffset = byteOffset >>> 2;
+                int wordIndex = getWordIndex(wordOffset);
+                int blockIndex = getBlockIndex(wordOffset);
+                int tableIndex = getTableIndex(wordOffset);
+
+                if (this.tables[tableIndex] == null) {
+                    if (doStore) {
+                        this.tables[tableIndex] = new int[BLOCKS_PER_TABLE][];
+                    }
+                    else {
+                        byteOffset++;
+                        continue;
+                    }
+                }
+
+                if (this.tables[tableIndex][blockIndex] == null) {
+                    if (doStore) {
+                        this.tables[tableIndex][blockIndex] = new int[WORDS_PER_BLOCK];
+                    }
+                    else {
+                        byteOffset++;
+                        continue;
+                    }
+                }
+
+                int[] block = this.tables[tableIndex][blockIndex];
+                if (doStore) {
+                    oldValue = replaceByte(block[wordIndex], bytePositionInMemory, oldValue, bytePositionInValue);
+                    block[wordIndex] = replaceByte(value, bytePositionInValue, block[wordIndex], bytePositionInMemory);
+                }
+                else {
+                    value = replaceByte(block[wordIndex], bytePositionInMemory, value, bytePositionInValue);
+                }
+
+                byteOffset++;
+            }
+
+            return (doStore) ? oldValue : value;
+        }
+
+        /**
+         * Helper method to store 4 byte value in table that represents MIPS memory.
+         * Assumes address is word aligned, no endian processing.
+         * <p>
+         * Modified 29 Dec 2005 to return overwritten value.
+         */
+        public synchronized int storeWord(int address, int value) {
+            int wordOffset = (address - this.baseAddress) >>> 2;
+            int wordIndex = getWordIndex(wordOffset);
+            int blockIndex = getBlockIndex(wordOffset);
+            int tableIndex = getTableIndex(wordOffset);
+
+            if (this.tables[tableIndex] == null) {
+                this.tables[tableIndex] = new int[BLOCKS_PER_TABLE][];
+            }
+            if (this.tables[tableIndex][blockIndex] == null) {
+                this.tables[tableIndex][blockIndex] = new int[WORDS_PER_BLOCK];
+            }
+
+            int oldValue = this.tables[tableIndex][blockIndex][wordIndex];
+            this.tables[tableIndex][blockIndex][wordIndex] = value;
+            return oldValue;
+        }
+
+        /**
+         * Helper method to fetch 4 byte value from table that represents MIPS memory.
+         * Assumes word alignment, no endian processing.
+         */
+        public synchronized int fetchWord(int address) {
+            int wordOffset = (address - this.baseAddress) >>> 2;
+            int wordIndex = getWordIndex(wordOffset);
+            int blockIndex = getBlockIndex(wordOffset);
+            int tableIndex = getTableIndex(wordOffset);
+
+            if (this.tables[tableIndex] == null || this.tables[tableIndex][blockIndex] == null) {
+                // The table or block has not been allocated, so assume it is 0 by default
+                return 0;
+            }
+            else {
+                return this.tables[tableIndex][blockIndex][wordIndex];
+            }
+        }
+
+        /**
+         * Helper method to fetch 4 byte value from table that represents MIPS memory.
+         * Originally used just for data segment, but now also used for stack.
+         * Both use different tables but same storage method and same table size
+         * and block size.  Assumes word alignment, no endian processing.
+         * <p>
+         * This differs from "fetchWordFromTable()" in that it returns an Integer and
+         * returns null instead of 0 if the 4K table has not been allocated.  Developed
+         * by Greg Gibeling of UC Berkeley, fall 2007.
+         */
+        public synchronized Integer fetchWordOrNull(int address) {
+            int wordOffset = (address - this.baseAddress) >>> 2;
+            int wordIndex = getWordIndex(wordOffset);
+            int blockIndex = getBlockIndex(wordOffset);
+            int tableIndex = getTableIndex(wordOffset);
+
+            if (this.tables[tableIndex] == null || this.tables[tableIndex][blockIndex] == null) {
+                // The table or block has not been allocated, so return null
+                return null;
+            }
+            else {
+                return this.tables[tableIndex][blockIndex][wordIndex];
+            }
+        }
+    }
+
+    // I use a similar scheme for storing instructions.  MIPS text segment ranges from
+    // 0x00400000 all the way to data segment (0x10000000) a range of about 250 MB!  So
+    // I'll provide table of blocks with similar capacity.  This differs from data segment
+    // somewhat in that the block entries do not contain int's, but instead contain
+    // references to ProgramStatement objects.
+    private class TextRegion {
+        private static final int WORDS_PER_BLOCK = 1024; // allocated blocksize 1024 words == 4K bytes (likely 8K bytes in reality)
+        private static final int BLOCKS_PER_TABLE = 1024; // Each entry of table points to a block
+        private static final int WORDS_PER_TABLE = WORDS_PER_BLOCK * BLOCKS_PER_TABLE;
+        private static final int BYTES_PER_TABLE = BYTES_PER_WORD * WORDS_PER_TABLE;
+
+        private static int getWordIndex(int wordOffset) {
+            return wordOffset & (WORDS_PER_BLOCK - 1);
+        }
+
+        private static int getBlockIndex(int wordOffset) {
+            return (wordOffset / WORDS_PER_BLOCK) & (BLOCKS_PER_TABLE - 1);
+        }
+
+        private static int getTableIndex(int wordOffset) {
+            return wordOffset / WORDS_PER_TABLE;
+        }
+
+        private final ProgramStatement[][][] tables;
+        private final int baseAddress;
+
+        public TextRegion(int firstAddress, int lastAddress) {
+            this.baseAddress = alignToPrevious(firstAddress, BYTES_PER_TABLE);
+            int tableCount = (lastAddress - this.baseAddress) / BYTES_PER_TABLE + 1;
+            this.tables = new ProgramStatement[tableCount][][];
+        }
+
+        /**
+         * Store a program statement at the given address.  Address has already been verified
+         * as valid.  It may be either in user or kernel text segment, as specified by arguments.
+         */
+        public synchronized ProgramStatement storeStatement(int address, ProgramStatement statement) {
+            int wordOffset = (address - this.baseAddress) >>> 2;
+            int wordIndex = getWordIndex(wordOffset);
+            int blockIndex = getBlockIndex(wordOffset);
+            int tableIndex = getTableIndex(wordOffset);
+
+            if (this.tables[tableIndex] == null) {
+                this.tables[tableIndex] = new ProgramStatement[BLOCKS_PER_TABLE][];
+            }
+            if (this.tables[tableIndex][blockIndex] == null) {
+                this.tables[tableIndex][blockIndex] = new ProgramStatement[WORDS_PER_BLOCK];
+            }
+
+            ProgramStatement oldStatement = this.tables[tableIndex][blockIndex][wordIndex];
+            this.tables[tableIndex][blockIndex][wordIndex] = statement;
+            return oldStatement;
+        }
+
+        /**
+         * Read a program statement from the given address.  Address has already been verified
+         * as valid.  It may be either in user or kernel text segment, as specified by arguments.
+         * Returns associated ProgramStatement or null if none.
+         */
+        public synchronized ProgramStatement fetchStatement(int address) {
+            int wordOffset = (address - this.baseAddress) >>> 2;
+            int wordIndex = getWordIndex(wordOffset);
+            int blockIndex = getBlockIndex(wordOffset);
+            int tableIndex = getTableIndex(wordOffset);
+
+            if (this.tables[tableIndex] == null || this.tables[tableIndex][blockIndex] == null) {
+                // The table or block has not been allocated, so return null
+                return null;
+            }
+            else {
+                return this.tables[tableIndex][blockIndex][wordIndex];
+            }
+        }
+    }
+
+    /**
+     * Returns result of substituting specified byte of source value into specified byte
+     * of destination value. Byte positions are 0-1-2-3, listed from most to least
+     * significant.  No endian issues.  This is a private helper method used by get() & set().
+     */
+    private static int replaceByte(int sourceValue, int bytePosInSource, int destValue, int bytePosInDest) {
+        return
+            // Set source byte value into destination byte position; set other 24 bits to 0's...
+            ((sourceValue >>> ((3 - bytePosInSource) << 3) & 0xFF) << ((3 - bytePosInDest) << 3))
+                // and bitwise-OR it with...
+                |
+                // Set 8 bits in destination byte position to 0's, other 24 bits are unchanged.
+                (destValue & ~(0xFF << ((3 - bytePosInDest) << 3)));
+    }
+
+    /**
+     * Record representing a memory listener combined with its range of applicable addresses.
+     *
+     * @param listener     The memory listener itself.
+     * @param firstAddress The first address the listener is registered to.
+     * @param lastAddress  The last address the listener is registered to.
+     */
+    private record ListenerRange(Listener listener, int firstAddress, int lastAddress) {
+        /**
+         * Determine whether a read/write operation starting at <code>address</code> and affecting <code>length</code>
+         * bytes should notify the listener bound to this range.
+         *
+         * @param address The address of the first byte affected.
+         * @param length  The number of bytes affected.
+         * @return <code>true</code> if the range formed by the address and length intersects this range,
+         *         or <code>false</code> otherwise.
+         */
+        public boolean contains(int address, int length) {
+            return rangesIntersect(address, address + length - 1, this.firstAddress, this.lastAddress);
+        }
     }
 
     /**
@@ -976,28 +1193,6 @@ public class Memory {
         }
     }
 
-    /**
-     * Record representing a memory listener combined with its range of applicable addresses.
-     *
-     * @param listener     The memory listener itself.
-     * @param firstAddress The first address the listener is registered to.
-     * @param lastAddress  The last address the listener is registered to.
-     */
-    private record ListenerRange(Listener listener, int firstAddress, int lastAddress) {
-        /**
-         * Determine whether a read/write operation starting at <code>address</code> and affecting <code>length</code>
-         * bytes should notify the listener bound to this range.
-         *
-         * @param address The address of the first byte affected.
-         * @param length  The number of bytes affected.
-         * @return <code>true</code> if the range formed by the address and length intersects this range,
-         *         or <code>false</code> otherwise.
-         */
-        public boolean contains(int address, int length) {
-            return rangesIntersect(address, address + length - 1, this.firstAddress, this.lastAddress);
-        }
-    }
-
     private List<ListenerRange> getListeners(int address, int length) {
         synchronized (this.listenerRanges) {
             return this.listenerRanges.stream()
@@ -1009,7 +1204,7 @@ public class Memory {
     private void dispatchReadEvent(int address, int length, int value) {
         try {
             int wordAddress = alignToPrevious(address, BYTES_PER_WORD);
-            int wordValue = this.getWordNoNotify(wordAddress);
+            int wordValue = this.fetchWord(wordAddress, false);
             this.dispatchReadEvent(address, length, value, wordAddress, wordValue);
         }
         catch (AddressErrorException exception) {
@@ -1028,7 +1223,7 @@ public class Memory {
     private void dispatchWriteEvent(int address, int length, int value) {
         try {
             int wordAddress = alignToPrevious(address, BYTES_PER_WORD);
-            int wordValue = this.getWordNoNotify(wordAddress);
+            int wordValue = this.fetchWord(wordAddress, false);
             this.dispatchWriteEvent(address, length, value, wordAddress, wordValue);
         }
         catch (AddressErrorException exception) {
@@ -1041,203 +1236,6 @@ public class Memory {
             for (ListenerRange range : this.getListeners(address, length)) {
                 range.listener.memoryWritten(address, length, value, wordAddress, wordValue);
             }
-        }
-    }
-
-    /**
-     * Helper method to store 1, 2 or 4 byte value in table that represents MIPS
-     * memory.
-     * <p>
-     * Modified 29 Dec 2005 to return old value of replaced bytes.
-     */
-    private int storeBytesInTable(int[][][] tables, int relativeByteAddress, int length, int value) {
-        return this.storeOrFetchBytesInTable(tables, relativeByteAddress, length, value, true);
-    }
-
-    /**
-     * Helper method to fetch 1, 2 or 4 byte value from table that represents MIPS
-     * memory.
-     */
-    private int fetchBytesFromTable(int[][][] tables, int relativeByteAddress, int length) {
-        return this.storeOrFetchBytesInTable(tables, relativeByteAddress, length, 0, false);
-    }
-
-    /**
-     * The helper's helper.  Works for either storing or fetching, little or big endian.
-     * When storing/fetching bytes, most of the work is calculating the correct array element(s)
-     * and element byte(s).  This method performs either store or fetch, as directed by its
-     * client using STORE or FETCH in last arg.
-     * <p>
-     * Modified 29 Dec 2005 to return old value of replaced bytes, for STORE.
-     */
-    private synchronized int storeOrFetchBytesInTable(int[][][] tables, int relativeByteAddress, int length, int value, boolean doStore) {
-        int oldValue = 0; // for STORE, return old values of replaced bytes
-
-        for (int bytePositionInValue = BYTES_PER_WORD - 1; bytePositionInValue >= BYTES_PER_WORD - length; bytePositionInValue--) {
-            int bytePositionInMemory = relativeByteAddress % BYTES_PER_WORD;
-            if (this.endianness == ByteOrder.BIG_ENDIAN) {
-                bytePositionInMemory = (BYTES_PER_WORD - 1) - bytePositionInMemory;
-            }
-
-            int relativeWordAddress = relativeByteAddress >> 2; // Convert byte address to words
-            int wordIndex = relativeWordAddress % DATA_WORDS_PER_BLOCK;
-            int blockIndex = (relativeWordAddress / DATA_WORDS_PER_BLOCK) % DATA_BLOCKS_PER_TABLE;
-            int tableIndex = relativeWordAddress / (DATA_WORDS_PER_BLOCK * DATA_BLOCKS_PER_TABLE);
-
-            if (tables[tableIndex] == null) {
-                if (doStore) {
-                    tables[tableIndex] = new int[DATA_BLOCKS_PER_TABLE][];
-                }
-                else {
-                    relativeByteAddress++;
-                    continue;
-                }
-            }
-
-            if (tables[tableIndex][blockIndex] == null) {
-                if (doStore) {
-                    tables[tableIndex][blockIndex] = new int[DATA_WORDS_PER_BLOCK];
-                }
-                else {
-                    relativeByteAddress++;
-                    continue;
-                }
-            }
-
-            int[] block = tables[tableIndex][blockIndex];
-            if (doStore) {
-                oldValue = replaceByte(block[wordIndex], bytePositionInMemory, oldValue, bytePositionInValue);
-                block[wordIndex] = replaceByte(value, bytePositionInValue, block[wordIndex], bytePositionInMemory);
-            }
-            else {
-                value = replaceByte(block[wordIndex], bytePositionInMemory, value, bytePositionInValue);
-            }
-
-            relativeByteAddress++;
-        }
-
-        return (doStore) ? oldValue : value;
-    }
-
-    /**
-     * Helper method to store 4 byte value in table that represents MIPS memory.
-     * Assumes address is word aligned, no endian processing.
-     * <p>
-     * Modified 29 Dec 2005 to return overwritten value.
-     */
-    private synchronized int storeWordInTable(int[][][] tables, int relative, int value) {
-        int wordIndex = relative % DATA_WORDS_PER_BLOCK;
-        int blockIndex = (relative / DATA_WORDS_PER_BLOCK) % DATA_BLOCKS_PER_TABLE;
-        int tableIndex = relative / (DATA_WORDS_PER_BLOCK * DATA_BLOCKS_PER_TABLE);
-
-        if (tables[tableIndex] == null) {
-            tables[tableIndex] = new int[DATA_BLOCKS_PER_TABLE][];
-        }
-        if (tables[tableIndex][blockIndex] == null) {
-            tables[tableIndex][blockIndex] = new int[DATA_WORDS_PER_BLOCK];
-        }
-
-        int oldValue = tables[tableIndex][blockIndex][wordIndex];
-        tables[tableIndex][blockIndex][wordIndex] = value;
-        return oldValue;
-    }
-
-    /**
-     * Helper method to fetch 4 byte value from table that represents MIPS memory.
-     * Assumes word alignment, no endian processing.
-     */
-    private synchronized int fetchWordFromTable(int[][][] tables, int relative) {
-        int wordIndex = relative % DATA_WORDS_PER_BLOCK;
-        int blockIndex = (relative / DATA_WORDS_PER_BLOCK) % DATA_BLOCKS_PER_TABLE;
-        int tableIndex = relative / (DATA_WORDS_PER_BLOCK * DATA_BLOCKS_PER_TABLE);
-
-        if (tables[tableIndex] == null || tables[tableIndex][blockIndex] == null) {
-            // The table or block has not been allocated, so assume it is 0 by default
-            return 0;
-        }
-        else {
-            return tables[tableIndex][blockIndex][wordIndex];
-        }
-    }
-
-    /**
-     * Helper method to fetch 4 byte value from table that represents MIPS memory.
-     * Originally used just for data segment, but now also used for stack.
-     * Both use different tables but same storage method and same table size
-     * and block size.  Assumes word alignment, no endian processing.
-     * <p>
-     * This differs from "fetchWordFromTable()" in that it returns an Integer and
-     * returns null instead of 0 if the 4K table has not been allocated.  Developed
-     * by Greg Gibeling of UC Berkeley, fall 2007.
-     */
-    private synchronized Integer fetchWordOrNullFromTable(int[][][] tables, int relative) {
-        int wordIndex = relative % DATA_WORDS_PER_BLOCK;
-        int blockIndex = (relative / DATA_WORDS_PER_BLOCK) % DATA_BLOCKS_PER_TABLE;
-        int tableIndex = relative / (DATA_WORDS_PER_BLOCK * DATA_BLOCKS_PER_TABLE);
-
-        if (tables[tableIndex] == null || tables[tableIndex][blockIndex] == null) {
-            // The table or block has not been allocated, so return null
-            return null;
-        }
-        else {
-            return tables[tableIndex][blockIndex][wordIndex];
-        }
-    }
-
-    /**
-     * Returns result of substituting specified byte of source value into specified byte
-     * of destination value. Byte positions are 0-1-2-3, listed from most to least
-     * significant.  No endian issues.  This is a private helper method used by get() & set().
-     */
-    private static int replaceByte(int sourceValue, int bytePosInSource, int destValue, int bytePosInDest) {
-        return
-            // Set source byte value into destination byte position; set other 24 bits to 0's...
-            ((sourceValue >>> ((3 - bytePosInSource) << 3) & 0xFF) << ((3 - bytePosInDest) << 3))
-                // and bitwise-OR it with...
-                |
-                // Set 8 bits in destination byte position to 0's, other 24 bits are unchanged.
-                (destValue & ~(0xFF << ((3 - bytePosInDest) << 3)));
-    }
-
-    /**
-     * Store a program statement at the given address.  Address has already been verified
-     * as valid.  It may be either in user or kernel text segment, as specified by arguments.
-     */
-    private ProgramStatement storeProgramStatement(int address, ProgramStatement statement, int baseAddress, ProgramStatement[][][] tables) {
-        int relative = (address - baseAddress) >> 2; // Convert byte address to words
-        int wordIndex = relative % TEXT_WORDS_PER_BLOCK;
-        int blockIndex = (relative / TEXT_WORDS_PER_BLOCK) % TEXT_BLOCKS_PER_TABLE;
-        int tableIndex = relative / (TEXT_WORDS_PER_BLOCK * TEXT_BLOCKS_PER_TABLE);
-
-        if (tables[tableIndex] == null) {
-            tables[tableIndex] = new ProgramStatement[DATA_BLOCKS_PER_TABLE][];
-        }
-        if (tables[tableIndex][blockIndex] == null) {
-            tables[tableIndex][blockIndex] = new ProgramStatement[DATA_WORDS_PER_BLOCK];
-        }
-
-        ProgramStatement oldStatement = tables[tableIndex][blockIndex][wordIndex];
-        tables[tableIndex][blockIndex][wordIndex] = statement;
-        return oldStatement;
-    }
-
-    /**
-     * Read a program statement from the given address.  Address has already been verified
-     * as valid.  It may be either in user or kernel text segment, as specified by arguments.
-     * Returns associated ProgramStatement or null if none.
-     */
-    private ProgramStatement fetchProgramStatement(int address, int baseAddress, ProgramStatement[][][] tables) {
-        int relative = (address - baseAddress) >> 2; // Convert byte address to words
-        int wordIndex = relative % TEXT_WORDS_PER_BLOCK;
-        int blockIndex = (relative / TEXT_WORDS_PER_BLOCK) % TEXT_BLOCKS_PER_TABLE;
-        int tableIndex = relative / (TEXT_WORDS_PER_BLOCK * TEXT_BLOCKS_PER_TABLE);
-
-        if (tables[tableIndex] == null || tables[tableIndex][blockIndex] == null) {
-            // The table or block has not been allocated, so return null
-            return null;
-        }
-        else {
-            return tables[tableIndex][blockIndex][wordIndex];
         }
     }
 }

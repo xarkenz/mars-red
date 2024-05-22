@@ -581,9 +581,9 @@ public class MMIOSimulator extends AbstractMarsTool {
     private synchronized void updateMMIOControlAndData(int controlAddr, int controlValue, int dataAddr, int dataValue, boolean controlOnly) {
         synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
             try {
-                Memory.getInstance().setWord(controlAddr, controlValue);
+                Memory.getInstance().storeWord(controlAddr, controlValue, true);
                 if (!controlOnly) {
-                    Memory.getInstance().setWord(dataAddr, dataValue);
+                    Memory.getInstance().storeWord(dataAddr, dataValue, true);
                 }
             }
             catch (AddressErrorException exception) {
@@ -606,7 +606,7 @@ public class MMIOSimulator extends AbstractMarsTool {
      */
     private static boolean isReadyBitSet(int mmioControlRegister) {
         try {
-            return (Memory.getInstance().getWord(mmioControlRegister) & 1) == 1;
+            return (Memory.getInstance().fetchWord(mmioControlRegister, true) & 1) == 1;
         }
         catch (AddressErrorException exception) {
             System.err.println("Tool author specified incorrect MMIO address!\n" + exception);
@@ -621,7 +621,7 @@ public class MMIOSimulator extends AbstractMarsTool {
      */
     private static int readyBitSet(int mmioControlRegister) {
         try {
-            return Memory.getInstance().getWord(mmioControlRegister) | 1;
+            return Memory.getInstance().fetchWord(mmioControlRegister, false) | 1;
         }
         catch (AddressErrorException exception) {
             System.err.println("Tool author specified incorrect MMIO address!\n" + exception);
@@ -636,7 +636,7 @@ public class MMIOSimulator extends AbstractMarsTool {
      */
     private static int readyBitCleared(int mmioControlRegister) {
         try {
-            return Memory.getInstance().getWord(mmioControlRegister) & 2;
+            return Memory.getInstance().fetchWord(mmioControlRegister, false) & 2;
         }
         catch (AddressErrorException exception) {
             System.err.println("Tool author specified incorrect MMIO address!\n" + exception);

@@ -281,37 +281,65 @@ public class Binary {
     }
 
     /**
-     * Returns int representing the bit values of the high order 32 bits of given
-     * 64 bit long value.
+     * Returns a 32-bit integer representing the high-order 32 bits of a given 64-bit integer.
      *
-     * @param longValue The long value from which to extract bits.
-     * @return int containing high order 32 bits of argument
+     * @param longValue The value from which to extract bits.
+     * @return The high-order 32 bits of the given value.
      */
     public static int highOrderLongToInt(long longValue) {
-        return (int) (longValue >> 32);  // high order 32 bits
+        return (int) (longValue >>> Integer.SIZE);
     }
 
     /**
-     * Returns int representing the bit values of the low order 32 bits of given
-     * 64 bit long value.
+     * Returns a 32-bit integer representing the low-order 32 bits of a given 64-bit integer.
      *
-     * @param longValue The long value from which to extract bits.
-     * @return int containing low order 32 bits of argument
+     * @param longValue The value from which to extract bits.
+     * @return The low-order 32 bits of the given value.
      */
     public static int lowOrderLongToInt(long longValue) {
-        return (int) (longValue << 32 >> 32);  // low order 32 bits
+        return (int) longValue;
     }
 
     /**
-     * Returns long (64 bit integer) combining the bit values of two given 32 bit
-     * integer values.
+     * Returns a 64-bit integer representing the concatenation of two given 32-bit integers.
      *
-     * @param highOrder Integer to form the high-order 32 bits of result.
-     * @param lowOrder  Integer to form the high-order 32 bits of result.
-     * @return long containing concatenated 32 bit int values.
+     * @param highOrder The high-order 32 bits of the result.
+     * @param lowOrder  The low-order 32 bits of the result.
+     * @return The 64-bit concatenation of the two arguments.
      */
     public static long twoIntsToLong(int highOrder, int lowOrder) {
-        return (Integer.toUnsignedLong(highOrder) << 32) | Integer.toUnsignedLong(lowOrder);
+        return (Integer.toUnsignedLong(highOrder) << Integer.SIZE) | Integer.toUnsignedLong(lowOrder);
+    }
+
+    /**
+     * Returns a 16-bit integer representing the high-order 16 bits of a given 32-bit integer.
+     *
+     * @param intValue The value from which to extract bits.
+     * @return The high-order 16 bits of the given value.
+     */
+    public static short highOrderIntToShort(int intValue) {
+        return (short) (intValue >>> Short.SIZE);
+    }
+
+    /**
+     * Returns a 16-bit integer representing the low-order 16 bits of a given 32-bit integer.
+     *
+     * @param intValue The value from which to extract bits.
+     * @return The low-order 16 bits of the given value.
+     */
+    public static short lowOrderIntToShort(int intValue) {
+        return (short) intValue;
+    }
+
+    /**
+     * Returns a 32-bit integer representing the concatenation of two given 16-bit integers.
+     *
+     * @param highOrder The high-order 16 bits of the result.
+     * @param lowOrder  The low-order 16 bits of the result.
+     * @return The 32-bit concatenation of the two arguments.
+     */
+    public static int twoShortsToInt(short highOrder, short lowOrder) {
+        return (Short.toUnsignedInt(highOrder) << Short.SIZE) | Short.toUnsignedInt(lowOrder);
     }
 
     /**
@@ -362,26 +390,26 @@ public class Binary {
      * Sets the specified byte of the specified value to the low order 8 bits of
      * specified replacement value, and returns the result.
      *
-     * @param value   The value in which the byte is to be set.
-     * @param bite    Byte position in range 0 (least significant) to 3 (most).
-     * @param replace Value to place into that byte position - use low order 8 bits.
+     * @param value    The value in which the byte is to be set.
+     * @param position Byte position in range 0 (least significant) to 3 (most).
+     * @param replace  Value to place into that byte position - use low order 8 bits.
      * @return Modified value.
      * @author DPS 12 July 2006
      */
-    public static int setByte(int value, int bite, int replace) {
-        return value & ~(0xFF << (bite << 3)) | ((replace & 0xFF) << (bite << 3));
+    public static int setByte(int value, int position, int replace) {
+        return value & ~(0xFF << (position << 3)) | ((replace & 0xFF) << (position << 3));
     }
 
     /**
      * Gets the specified byte of the specified value.
      *
-     * @param value The value in which the byte is to be retrieved.
-     * @param bite  Byte position in range 0 (least significant) to 3 (most)
+     * @param value    The value in which the byte is to be retrieved.
+     * @param position Byte position in range 0 (least significant) to 3 (most significant).
      * @return Zero-extended byte value in low order byte.
      * @author DPS 12 July 2006
      */
-    public static int getByte(int value, int bite) {
-        return value << ((3 - bite) << 3) >>> 24;
+    public static int getByte(int value, int position) {
+        return (value >>> (position << 3)) & 0xFF;
     }
 
     /**

@@ -811,7 +811,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
             // occur only between MIPS instructions.
             synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
                 try {
-                    Memory.getInstance().setRawWord(address, intValue);
+                    Memory.getInstance().storeWord(address, intValue, true);
                 }
                 catch (AddressErrorException exception) {
                     // Somehow, user was able to display out-of-range address.  Most likely to occur between

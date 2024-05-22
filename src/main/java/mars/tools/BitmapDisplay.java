@@ -380,7 +380,7 @@ public class BitmapDisplay extends AbstractMarsTool {
                     int address = this.firstAddress;
                     for (int y = 0; y < this.image.getHeight(); y++) {
                         for (int x = 0; x < this.image.getWidth(); x++) {
-                            this.image.setRGB(x, y, Memory.getInstance().getWordNoNotify(address));
+                            this.image.setRGB(x, y, Memory.getInstance().fetchWord(address, false));
                             address += Memory.BYTES_PER_WORD;
                         }
                     }

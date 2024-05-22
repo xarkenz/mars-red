@@ -1,9 +1,9 @@
 package mars.mips.instructions.syscalls;
 
-import mars.Application;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.AddressErrorException;
+import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
 import mars.simulator.Simulator;
 
@@ -68,14 +68,14 @@ public class SyscallReadString extends AbstractSyscall {
         int stringLength = Math.min(maxLength, inputString.length());
         try {
             for (int index = 0; index < stringLength; index++) {
-                Application.memory.setByte(buf + index, inputString.charAt(index));
+                Memory.getInstance().storeByte(buf + index, inputString.charAt(index), true);
             }
             if (stringLength < maxLength) {
-                Application.memory.setByte(buf + stringLength, '\n');
+                Memory.getInstance().storeByte(buf + stringLength, '\n', true);
                 stringLength++;
             }
             if (addNullByte) {
-                Application.memory.setByte(buf + stringLength, 0);
+                Memory.getInstance().storeByte(buf + stringLength, 0, true);
             }
         }
         catch (AddressErrorException exception) {

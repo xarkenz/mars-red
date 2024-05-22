@@ -196,9 +196,10 @@ public class InstructionCounter extends AbstractMarsTool {
 			return;
 		}
         lastAddress = wordAddress;
+
         counter++;
         try {
-            ProgramStatement stmt = Memory.getInstance().getStatementNoNotify(wordAddress);
+            ProgramStatement stmt = Memory.getInstance().fetchStatement(wordAddress, false);
             BasicInstruction instr = (BasicInstruction) stmt.getInstruction();
             BasicInstructionFormat format = instr.getInstructionFormat();
 			if (format == BasicInstructionFormat.R_FORMAT) {

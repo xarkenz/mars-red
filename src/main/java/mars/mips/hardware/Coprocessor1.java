@@ -144,12 +144,7 @@ public class Coprocessor1 {
      * @throws InvalidRegisterAccessException if register ID is invalid or odd-numbered.
      */
     public static void setRegisterPairToDouble(int reg, double val) throws InvalidRegisterAccessException {
-        if (reg % 2 != 0) {
-            throw new InvalidRegisterAccessException();
-        }
-        long bits = Double.doubleToRawLongBits(val);
-        REGISTERS[reg + 1].setValue(Binary.highOrderLongToInt(bits));  // high order 32 bits
-        REGISTERS[reg].setValue(Binary.lowOrderLongToInt(bits)); // low order 32 bits
+        setRegisterPairToLong(reg, Double.doubleToRawLongBits(val));
     }
 
     /**
@@ -179,8 +174,16 @@ public class Coprocessor1 {
         if (reg % 2 != 0) {
             throw new InvalidRegisterAccessException();
         }
-        REGISTERS[reg + 1].setValue(Binary.highOrderLongToInt(val));  // high order 32 bits
-        REGISTERS[reg].setValue(Binary.lowOrderLongToInt(val)); // low order 32 bits
+        switch (Memory.getInstance().getEndianness()) {
+            case BIG_ENDIAN -> {
+                REGISTERS[reg].setValue(Binary.highOrderLongToInt(val));
+                REGISTERS[reg + 1].setValue(Binary.lowOrderLongToInt(val));
+            }
+            case LITTLE_ENDIAN -> {
+                REGISTERS[reg].setValue(Binary.lowOrderLongToInt(val));
+                REGISTERS[reg + 1].setValue(Binary.highOrderLongToInt(val));
+            }
+        }
     }
 
     /**
@@ -255,11 +258,7 @@ public class Coprocessor1 {
      * @throws InvalidRegisterAccessException if register ID is invalid or odd-numbered.
      */
     public static double getDoubleFromRegisterPair(int reg) throws InvalidRegisterAccessException {
-        if (reg % 2 != 0) {
-            throw new InvalidRegisterAccessException();
-        }
-        long bits = Binary.twoIntsToLong(REGISTERS[reg + 1].getValue(), REGISTERS[reg].getValue());
-        return Double.longBitsToDouble(bits);
+        return Double.longBitsToDouble(getLongFromRegisterPair(reg));
     }
 
     /**
@@ -285,7 +284,12 @@ public class Coprocessor1 {
         if (reg % 2 != 0) {
             throw new InvalidRegisterAccessException();
         }
-        return Binary.twoIntsToLong(REGISTERS[reg + 1].getValue(), REGISTERS[reg].getValue());
+        int firstValue = REGISTERS[reg].getValue();
+        int secondValue = REGISTERS[reg + 1].getValue();
+        return switch (Memory.getInstance().getEndianness()) {
+            case BIG_ENDIAN -> Binary.twoIntsToLong(firstValue, secondValue);
+            case LITTLE_ENDIAN -> Binary.twoIntsToLong(secondValue, firstValue);
+        };
     }
 
     /**

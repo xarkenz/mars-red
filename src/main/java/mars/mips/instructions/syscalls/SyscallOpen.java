@@ -77,7 +77,7 @@ public class SyscallOpen extends AbstractSyscall {
         String filename;
         try {
             // Read a null-terminated string from memory
-            filename = Application.memory.getNullTerminatedString(RegisterFile.getValue(4));
+            filename = Application.memory.fetchNullTerminatedString(RegisterFile.getValue(4));
         }
         catch (AddressErrorException exception) {
             throw new ProcessingException(statement, exception);

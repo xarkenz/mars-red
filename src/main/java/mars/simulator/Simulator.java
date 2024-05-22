@@ -469,7 +469,7 @@ public class Simulator {
                         int exceptionHandlerAddress = Memory.getInstance().getAddress(MemoryConfigurations.EXCEPTION_HANDLER);
                         ProgramStatement exceptionHandler = null;
                         try {
-                            exceptionHandler = Memory.getInstance().getStatement(exceptionHandlerAddress);
+                            exceptionHandler = Memory.getInstance().fetchStatement(exceptionHandlerAddress, true);
                         }
                         catch (AddressErrorException ignored) {
                             // Will only occur if the exception handler address is improperly configured
@@ -546,7 +546,7 @@ public class Simulator {
 
         private ProgramStatement getStatement() throws ProcessingException {
             try {
-                return Memory.getInstance().getStatement(RegisterFile.getProgramCounter());
+                return Memory.getInstance().fetchStatement(RegisterFile.getProgramCounter(), true);
             }
             catch (AddressErrorException exception) {
                 // Next statement is a hack.  Previous statement sets EPC register to (PC - 4)

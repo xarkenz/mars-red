@@ -41,7 +41,7 @@ public class IntelHexDumpFormat extends AbstractDumpFormat {
         try (PrintStream out = new PrintStream(new FileOutputStream(file))) {
             for (int address = firstAddress; address <= lastAddress; address += Memory.BYTES_PER_WORD) {
                 // TODO: This can probably be replaced with a single call to String.format() -Sean Clarke
-                Integer wordOrNull = Application.memory.getRawWordOrNull(address);
+                Integer wordOrNull = Application.memory.fetchWordOrNull(address);
                 if (wordOrNull == null) {
                     break;
                 }

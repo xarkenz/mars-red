@@ -95,7 +95,7 @@ public class SegmentWindowDumpFormat extends AbstractDumpFormat {
                         string = new StringBuilder(((hexAddresses) ? Binary.intToHexString(address) : Integer.toUnsignedString(address)) + "    ");
                     }
                     offset++;
-                    Integer wordOrNull = Application.memory.getRawWordOrNull(address);
+                    Integer wordOrNull = Application.memory.fetchWordOrNull(address);
                     if (wordOrNull == null) {
                         break;
                     }
@@ -124,13 +124,13 @@ public class SegmentWindowDumpFormat extends AbstractDumpFormat {
         try {
             for (int address = firstAddress; address <= lastAddress; address += Memory.BYTES_PER_WORD) {
                 String string = ((hexAddresses) ? Binary.intToHexString(address) : Integer.toUnsignedString(address)) + "  ";
-                Integer temp = Application.memory.getRawWordOrNull(address);
+                Integer temp = Application.memory.fetchWordOrNull(address);
                 if (temp == null) {
                     break;
                 }
                 string += Binary.intToHexString(temp) + "  ";
                 try {
-                    ProgramStatement ps = Application.memory.getStatement(address);
+                    ProgramStatement ps = Memory.getInstance().fetchStatement(address, false);
                     string += (ps.getPrintableBasicAssemblyStatement() + "                      ").substring(0, 22);
                     string += (((ps.getSource().isEmpty()) ? "" : Integer.valueOf(ps.getSourceLine()).toString()) + "     ").substring(0, 5);
                     string += ps.getSource();

@@ -2,10 +2,7 @@ package mars.simulator;
 
 import mars.Application;
 import mars.ProgramStatement;
-import mars.mips.hardware.AddressErrorException;
-import mars.mips.hardware.Coprocessor0;
-import mars.mips.hardware.Coprocessor1;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.*;
 import mars.mips.instructions.Instruction;
 
 /*
@@ -127,10 +124,9 @@ public class BackStepper {
                 }
                 try {
                     switch (step.action) {
-                        case MEMORY_RESTORE_RAW_WORD -> Application.memory.setRawWord(step.param1, step.param2);
-                        case MEMORY_RESTORE_WORD -> Application.memory.setWord(step.param1, step.param2);
-                        case MEMORY_RESTORE_HALF -> Application.memory.setHalfword(step.param1, step.param2);
-                        case MEMORY_RESTORE_BYTE -> Application.memory.setByte(step.param1, step.param2);
+                        case MEMORY_RESTORE_WORD -> Memory.getInstance().storeWord(step.param1, step.param2, true);
+                        case MEMORY_RESTORE_HALF -> Memory.getInstance().storeHalfword(step.param1, step.param2, true);
+                        case MEMORY_RESTORE_BYTE -> Memory.getInstance().storeByte(step.param1, step.param2, true);
                         case REGISTER_RESTORE -> RegisterFile.updateRegister(step.param1, step.param2);
                         case PC_RESTORE -> RegisterFile.setProgramCounter(step.param1);
                         case COPROC0_REGISTER_RESTORE -> Coprocessor0.updateRegister(step.param1, step.param2);
@@ -158,17 +154,6 @@ public class BackStepper {
     private int pc() {
         // PC incremented prior to instruction simulation, so need to adjust for that.
         return RegisterFile.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION;
-    }
-
-    /**
-     * Add a new "back step" (the undo action) to the stack. The action here
-     * is to restore a raw memory word value (setRawWord).
-     *
-     * @param address The affected memory address.
-     * @param value   The "restore" value to be stored there.
-     */
-    public void addMemoryRestoreRawWord(int address, int value) {
-        backSteps.push(BackStepAction.MEMORY_RESTORE_RAW_WORD, pc(), address, value);
     }
 
     /**
@@ -285,9 +270,10 @@ public class BackStepper {
         }
     }
 
-    // The types of "undo" actions.
+    /**
+     * The types of "undo" actions.
+     */
     private enum BackStepAction {
-        MEMORY_RESTORE_RAW_WORD,
         MEMORY_RESTORE_WORD,
         MEMORY_RESTORE_HALF,
         MEMORY_RESTORE_BYTE,
@@ -300,7 +286,9 @@ public class BackStepper {
         DO_NOTHING,
     }
 
-    // Represents a "back step" (undo action) on the stack.
+    /**
+     * Represents a "back step" (undo action) on the stack.
+     */
     private static class BackStep {
         private BackStepAction action; // what "undo" action to perform
         private int programCounter; // program counter value when original step occurred
@@ -309,9 +297,11 @@ public class BackStepper {
         private ProgramStatement statement; // statement whose action is being "undone" here
         private boolean isInDelaySlot; // true if instruction executed in "delay slot" (delayed branching enabled)
 
-        // It is critical that BackStep object get its values by calling this method
-        // rather than assigning to individual members, because of the technique used
-        // to set its ps member (and possibly pc).
+        /**
+         * It is critical that BackStep object get its values by calling this method
+         * rather than assigning to individual members, because of the technique used
+         * to set its statement member (and possibly programCounter).
+         */
         private void assign(BackStepAction action, int programCounter, int param1, int param2) {
             this.action = action;
             this.programCounter = programCounter;
@@ -321,7 +311,7 @@ public class BackStepper {
                 // Client does not have direct access to program statement, and rather than making all
                 // of them go through the methods below to obtain it, we will do it here.
                 // Want the program statement but do not want observers notified.
-                this.statement = Application.memory.getStatementNoNotify(programCounter);
+                this.statement = Memory.getInstance().fetchStatement(programCounter, false);
             }
             catch (AddressErrorException exception) {
                 // The only situation causing this so far: user modifies memory or register
@@ -336,27 +326,31 @@ public class BackStepper {
         }
     }
 
-    // Special purpose stack class for backstepping.  You've heard of circular queues
-    // implemented with an array, right?  This is a circular stack!  When full, the
-    // newly-pushed item overwrites the oldest item, with circular top!  All operations
-    // are constant time.  It's synchronized too, to be safe (is used by both the
-    // simulation thread and the GUI thread for the back-step button).
-    // Upon construction, it is filled with newly-created empty BackStep objects which
-    // will exist for the life of the stack.  Push does not create a BackStep object
-    // but instead overwrites the contents of the existing one.  Thus during MIPS
-    // program (simulated) execution, BackStep objects are never created or junked
-    // regardless of how many steps are executed.  This will speed things up a bit
-    // and make life easier for the garbage collector.
+    /**
+     * Special purpose stack class for backstepping.  You've heard of circular queues
+     * implemented with an array, right?  This is a circular stack!  When full, the
+     * newly-pushed item overwrites the oldest item, with circular top!  All operations
+     * are constant time.  It's synchronized too, to be safe (is used by both the
+     * simulation thread and the GUI thread for the back-step button).
+     * Upon construction, it is filled with newly-created empty BackStep objects which
+     * will exist for the life of the stack.  Push does not create a BackStep object
+     * but instead overwrites the contents of the existing one.  Thus during MIPS
+     * program (simulated) execution, BackStep objects are never created or junked
+     * regardless of how many steps are executed.  This will speed things up a bit
+     * and make life easier for the garbage collector.
+     */
     private static class BackStepStack {
         private final int capacity;
         private int size;
         private int top;
         private final BackStep[] stack;
 
-        // Stack is created upon successful assembly or reset.  The one-time overhead of
-        // creating all the BackStep objects will not be noticed by the user, and enhances
-        // runtime performance by not having to create or recycle them during MIPS
-        // program execution.
+        /**
+         * Stack is created upon successful assembly or reset.  The one-time overhead of
+         * creating all the BackStep objects will not be noticed by the user, and enhances
+         * runtime performance by not having to create or recycle them during MIPS
+         * program execution.
+         */
         private BackStepStack(int capacity) {
             this.capacity = capacity;
             this.size = 0;
@@ -397,8 +391,10 @@ public class BackStepper {
             push(action, programCounter, 0, 0);
         }
 
-        // NO PROTECTION.  This class is used only within this file so there is no excuse
-        // for trying to pop from empty stack.
+        /**
+         * NO PROTECTION.  This class is used only within this file so there is no excuse
+         * for trying to pop from empty stack.
+         */
         private synchronized BackStep pop() {
             BackStep bs;
             bs = stack[top];
@@ -412,8 +408,10 @@ public class BackStepper {
             return bs;
         }
 
-        // NO PROTECTION.  This class is used only within this file so there is no excuse
-        // for trying to peek from empty stack.
+        /**
+         * NO PROTECTION.  This class is used only within this file so there is no excuse
+         * for trying to peek from empty stack.
+         */
         private synchronized BackStep peek() {
             return stack[top];
         }

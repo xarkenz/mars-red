@@ -1,6 +1,5 @@
 package mars.simulator;
 
-import mars.Application;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.MemoryConfigurations;
@@ -8,6 +7,7 @@ import mars.mips.hardware.RegisterFile;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.StringTokenizer;
 	
 /*
@@ -47,7 +47,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @version July 2008
  */
 public class ProgramArgumentList {
-    ArrayList<String> programArgumentList;
+    List<String> programArgumentList;
 
     /**
      * Constructor that parses string to produce list.  Delimiters
@@ -57,20 +57,16 @@ public class ProgramArgumentList {
      * @param args String containing delimiter-separated arguments
      */
     public ProgramArgumentList(String args) {
-        StringTokenizer st = new StringTokenizer(args);
-        programArgumentList = new ArrayList<>(st.countTokens());
-        while (st.hasMoreTokens()) {
-            programArgumentList.add(st.nextToken());
-        }
+        this(args.split("\\s+"));
     }
 
     /**
      * Constructor that gets list from String array, one argument per element.
      *
-     * @param list Array of String, each element containing one argument
+     * @param args Array of String, each element containing one argument
      */
-    public ProgramArgumentList(String[] list) {
-        this(list, 0);
+    public ProgramArgumentList(String[] args) {
+        this(args, 0);
     }
 
     /**
@@ -82,8 +78,8 @@ public class ProgramArgumentList {
      *                      elements are assumed to contain an argument.
      */
     public ProgramArgumentList(String[] args, int startPosition) {
-        programArgumentList = new ArrayList<>(args.length - startPosition);
-        programArgumentList.addAll(Arrays.asList(args).subList(startPosition, args.length));
+        this.programArgumentList = new ArrayList<>(args.length - startPosition);
+        this.programArgumentList.addAll(Arrays.asList(args).subList(startPosition, args.length));
     }
 
     /**
@@ -105,11 +101,11 @@ public class ProgramArgumentList {
      */
     public ProgramArgumentList(ArrayList<String> args, int startPosition) {
         if (args == null || args.size() < startPosition) {
-            programArgumentList = new ArrayList<>(0);
+            this.programArgumentList = new ArrayList<>(0);
         }
         else {
-            programArgumentList = new ArrayList<>(args.size() - startPosition);
-            programArgumentList.addAll(args.subList(startPosition, args.size()));
+            this.programArgumentList = new ArrayList<>(args.size() - startPosition);
+            this.programArgumentList.addAll(args.subList(startPosition, args.size()));
         }
     }
 
@@ -124,7 +120,7 @@ public class ProgramArgumentList {
      * address holding the first argument pointer (argv).
      */
     public void storeProgramArguments() {
-        if (programArgumentList == null || programArgumentList.isEmpty()) {
+        if (this.programArgumentList == null || this.programArgumentList.isEmpty()) {
             return;
         }
 
@@ -151,17 +147,14 @@ public class ProgramArgumentList {
 
         // Highest non-kernel address, sits "under" stack
         int highAddress = Memory.alignToPrevious(Memory.getInstance().getAddress(MemoryConfigurations.DYNAMIC_HIGH), Memory.BYTES_PER_WORD);
-        int[] argStartAddress = new int[programArgumentList.size()];
+        List<Integer> argStartAddresses = new ArrayList<>(this.programArgumentList.size());
         try {
-            for (int i = 0; i < programArgumentList.size(); i++) {
-                String programArgument = programArgumentList.get(i);
-                Memory.getInstance().set(highAddress, 0, 1);  // trailing null byte for each argument
-                highAddress--;
-                for (int j = programArgument.length() - 1; j >= 0; j--) {
-                    Memory.getInstance().set(highAddress, programArgument.charAt(j), 1);
-                    highAddress--;
+            for (String programArgument : this.programArgumentList) {
+                Memory.getInstance().storeByte(highAddress, 0, true);  // trailing null byte for each argument
+                for (int index = programArgument.length() - 1; index >= 0; index--) {
+                    Memory.getInstance().storeByte(--highAddress, programArgument.charAt(index), true);
                 }
-                argStartAddress[i] = highAddress + 1;
+                argStartAddresses.add(highAddress + 1);
             }
             // Now place a null word, the arg starting addresses, and arg count onto stack.
             // Base address for runtime stack
@@ -174,23 +167,23 @@ public class ProgramArgumentList {
                 // byte from highAddress+1 is filled).
                 stackAddress = Memory.alignToPrevious(highAddress, Memory.BYTES_PER_WORD) - Memory.BYTES_PER_WORD;
             }
-            Memory.getInstance().set(stackAddress, 0, Memory.BYTES_PER_WORD); // null word for end of argv array
+            Memory.getInstance().storeWord(stackAddress, 0, true); // null word for end of argv array
             stackAddress -= Memory.BYTES_PER_WORD;
-            for (int i = argStartAddress.length - 1; i >= 0; i--) {
-                Memory.getInstance().set(stackAddress, argStartAddress[i], Memory.BYTES_PER_WORD);
+            for (int index = argStartAddresses.size() - 1; index >= 0; index--) {
+                Memory.getInstance().storeWord(stackAddress, argStartAddresses.get(index), true);
                 stackAddress -= Memory.BYTES_PER_WORD;
             }
-            Memory.getInstance().set(stackAddress, argStartAddress.length, Memory.BYTES_PER_WORD); // argc
+            Memory.getInstance().storeWord(stackAddress, argStartAddresses.size(), true); // argc
             stackAddress -= Memory.BYTES_PER_WORD;
 
             // Set $sp register to stack address, $a0 to argc, $a1 to argv
             // Bypass the backstepping mechanism by using Register.setValue() instead of RegisterFile.updateRegister()
             RegisterFile.getRegisters()[RegisterFile.STACK_POINTER].setValue(stackAddress + Memory.BYTES_PER_WORD);
-            RegisterFile.getRegisters()[RegisterFile.ARGUMENT_0].setValue(argStartAddress.length); // argc
+            RegisterFile.getRegisters()[RegisterFile.ARGUMENT_0].setValue(argStartAddresses.size()); // argc
             RegisterFile.getRegisters()[RegisterFile.ARGUMENT_1].setValue(stackAddress + 2 * Memory.BYTES_PER_WORD); // argv
         }
-        catch (AddressErrorException e) {
-            System.out.println("Internal Error: Memory write error occurred while storing program arguments! " + e);
+        catch (AddressErrorException exception) {
+            System.out.println("Internal Error: Memory write error occurred while storing program arguments! " + exception);
             System.exit(0);
         }
     }

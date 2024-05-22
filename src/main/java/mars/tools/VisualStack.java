@@ -108,7 +108,7 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
 
         int registerDataCameFrom;
         try {
-            ProgramStatement statement = Memory.getInstance().getStatementNoNotify(RegisterFile.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION);
+            ProgramStatement statement = Memory.getInstance().fetchStatement(RegisterFile.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION, false);
             registerDataCameFrom = statement.getBinaryStatement();
             registerDataCameFrom &= 0x1F0000;
             registerDataCameFrom >>= 16;
@@ -159,8 +159,8 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
     private synchronized boolean isReturnAddress(int address) {
         if (Memory.getInstance().isInTextSegment(address)) {
             try {
-                ProgramStatement statement = Memory.getInstance().getStatementNoNotify(address - Instruction.BYTES_PER_INSTRUCTION);
-                return statement.getBasicAssemblyStatement().startsWith("jal");
+                ProgramStatement statement = Memory.getInstance().fetchStatement(address - Instruction.BYTES_PER_INSTRUCTION, false);
+                return statement != null && statement.getBasicAssemblyStatement().startsWith("jal");
             }
             catch (AddressErrorException exception) {
                 return false;

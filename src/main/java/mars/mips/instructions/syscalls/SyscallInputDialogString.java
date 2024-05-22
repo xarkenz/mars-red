@@ -1,9 +1,9 @@
 package mars.mips.instructions.syscalls;
 
-import mars.Application;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.AddressErrorException;
+import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
 
 import javax.swing.*;
@@ -66,7 +66,7 @@ public class SyscallInputDialogString extends AbstractSyscall {
         String message;
         try {
             // Read a null-terminated string from memory
-            message = Application.memory.getNullTerminatedString(RegisterFile.getValue(4));
+            message = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
         }
         catch (AddressErrorException exception) {
             throw new ProcessingException(statement, exception);
@@ -93,14 +93,14 @@ public class SyscallInputDialogString extends AbstractSyscall {
                 // The buffer will contain characters, a '\n' character, and the null character
                 // Copy the input data to buffer as space permits
                 for (int offset = 0; offset < inputString.length() && offset < maxLength - 1; offset++) {
-                    Application.memory.setByte(byteAddress + offset, inputString.charAt(offset));
+                    Memory.getInstance().storeByte(byteAddress + offset, inputString.charAt(offset), true);
                 }
                 if (inputString.length() < maxLength - 1) {
-                    // newline at string end
-                    Application.memory.setByte(byteAddress + Math.min(inputString.length(), maxLength - 2), '\n');
+                    // Newline at string end
+                    Memory.getInstance().storeByte(byteAddress + Math.min(inputString.length(), maxLength - 2), '\n', true);
                 }
-                // null terminator to end string
-                Application.memory.setByte(byteAddress + Math.min((inputString.length() + 1), maxLength - 1), 0);
+                // Null terminator to end string
+                Memory.getInstance().storeByte(byteAddress + Math.min((inputString.length() + 1), maxLength - 1), 0, true);
 
                 if (inputString.length() > maxLength - 1) {
                     // Length of the input string exceeded the specified maximum
@@ -110,8 +110,8 @@ public class SyscallInputDialogString extends AbstractSyscall {
                     RegisterFile.updateRegister(5, 0);  // set $a1 to 0 flag
                 }
             }
-            catch (AddressErrorException e) {
-                throw new ProcessingException(statement, e);
+            catch (AddressErrorException exception) {
+                throw new ProcessingException(statement, exception);
             }
         }
     }

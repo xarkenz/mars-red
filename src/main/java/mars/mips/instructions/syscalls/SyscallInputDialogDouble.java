@@ -64,7 +64,7 @@ public class SyscallInputDialogDouble extends AbstractSyscall {
         String message;
         try {
             // Read a null-terminated string from memory
-            message = Application.memory.getNullTerminatedString(RegisterFile.getValue(4));
+            message = Application.memory.fetchNullTerminatedString(RegisterFile.getValue(4));
         }
         catch (AddressErrorException exception) {
             throw new ProcessingException(statement, exception);

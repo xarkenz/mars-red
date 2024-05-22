@@ -54,7 +54,7 @@ public class SyscallPrintString extends AbstractSyscall {
     public void simulate(ProgramStatement statement) throws ProcessingException {
         try {
             // Read a null-terminated string from memory
-            String stringValue = Application.memory.getNullTerminatedString(RegisterFile.getValue(4));
+            String stringValue = Application.memory.fetchNullTerminatedString(RegisterFile.getValue(4));
             Simulator.getInstance().getSystemIO().printString(stringValue);
         }
         catch (AddressErrorException exception) {

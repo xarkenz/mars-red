@@ -316,7 +316,7 @@ public class BHTSimulator extends AbstractMarsTool {
         ProgramStatement statement;
         try {
             // Access the statement in the text segment without causing an infinite loop
-            statement = Memory.getInstance().getStatementNoNotify(address);
+            statement = Memory.getInstance().fetchStatement(address, false);
         }
         catch (AddressErrorException exception) {
             // Ignore misaligned reads

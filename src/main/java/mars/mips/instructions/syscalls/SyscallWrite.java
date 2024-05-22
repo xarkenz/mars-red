@@ -4,9 +4,9 @@ import mars.Application;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.AddressErrorException;
+import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
 import mars.simulator.Simulator;
-import mars.simulator.SystemIO;
 
 import java.nio.ByteBuffer;
 
@@ -71,7 +71,7 @@ public class SyscallWrite extends AbstractSyscall {
         try {
             // Stop at requested length, with no special treatment of null bytes
             for (int index = 0; index < maxLength; index++, byteAddress++) {
-                buffer.put((byte) Application.memory.getByte(byteAddress));
+                buffer.put((byte) Memory.getInstance().fetchByte(byteAddress, false));
             }
             // Add null terminator
             // Probably not needed? - CW

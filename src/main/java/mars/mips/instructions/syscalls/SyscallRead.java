@@ -1,9 +1,9 @@
 package mars.mips.instructions.syscalls;
 
-import mars.Application;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.AddressErrorException;
+import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
 import mars.simulator.Simulator;
 
@@ -76,7 +76,7 @@ public class SyscallRead extends AbstractSyscall {
         // Copy bytes from intermediate buffer into MARS memory
         try {
             for (int index = 0; index < readLength; index++) {
-                Application.memory.setByte(byteAddress++, buffer.get(index));
+                Memory.getInstance().storeByte(byteAddress++, buffer.get(index), true);
             }
         }
         catch (AddressErrorException exception) {

@@ -226,10 +226,10 @@ public class InstructionStatistics extends AbstractMarsTool {
      * @see InstructionStatistics#CATEGORY_OTHER
      */
     protected int getInstructionCategory(ProgramStatement stmt) {
-        int opCode = stmt.getBinaryStatement() >>> (32 - 6);
+        int opcode = stmt.getBinaryStatement() >>> (32 - 6);
         int funct = stmt.getBinaryStatement() & 0x1F;
 
-        if (opCode == 0x00) {
+        if (opcode == 0x00) {
             if (funct == 0x00) {
                 return InstructionStatistics.CATEGORY_ALU; // sll
             }
@@ -244,7 +244,7 @@ public class InstructionStatistics extends AbstractMarsTool {
             }
             return InstructionStatistics.CATEGORY_OTHER;
         }
-        if (opCode == 0x01) {
+        if (opcode == 0x01) {
             if (0x00 <= funct && funct <= 0x07) {
                 return InstructionStatistics.CATEGORY_BRANCH; // bltz, bgez, bltzl, bgezl
             }
@@ -253,22 +253,22 @@ public class InstructionStatistics extends AbstractMarsTool {
             }
             return InstructionStatistics.CATEGORY_OTHER;
         }
-        if (opCode == 0x02 || opCode == 0x03) {
+        if (opcode == 0x02 || opcode == 0x03) {
             return InstructionStatistics.CATEGORY_JUMP; // j, jal
         }
-        if (0x04 <= opCode && opCode <= 0x07) {
+        if (0x04 <= opcode && opcode <= 0x07) {
             return InstructionStatistics.CATEGORY_BRANCH; // beq, bne, blez, bgtz
         }
-        if (0x08 <= opCode && opCode <= 0x0F) {
+        if (0x08 <= opcode && opcode <= 0x0F) {
             return InstructionStatistics.CATEGORY_ALU; // addi, addiu, slti, sltiu, andi, ori, xori, lui
         }
-        if (0x14 <= opCode && opCode <= 0x17) {
+        if (0x14 <= opcode && opcode <= 0x17) {
             return InstructionStatistics.CATEGORY_BRANCH; // beql, bnel, blezl, bgtzl
         }
-        if (0x20 <= opCode && opCode <= 0x26) {
+        if (0x20 <= opcode && opcode <= 0x26) {
             return InstructionStatistics.CATEGORY_MEM; // lb, lh, lwl, lw, lbu, lhu, lwr
         }
-        if (0x28 <= opCode && opCode <= 0x2E) {
+        if (0x28 <= opcode && opcode <= 0x2E) {
             return InstructionStatistics.CATEGORY_MEM; // sb, sh, swl, sw, swr
         }
 
@@ -283,7 +283,7 @@ public class InstructionStatistics extends AbstractMarsTool {
      */
     @Override
     public void memoryRead(int address, int length, int value, int wordAddress, int wordValue) {
-        // The next three statments are from Felipe Lessa's instruction counter.  Prevents double-counting.
+        // From Felipe Lessa's instruction counter.  Prevents double-counting.
         if (wordAddress == lastAddress) {
             return;
         }
@@ -291,7 +291,7 @@ public class InstructionStatistics extends AbstractMarsTool {
 
         try {
             // Access the statement in the text segment without causing infinite recursion
-            ProgramStatement stmt = Memory.getInstance().getStatementNoNotify(wordAddress);
+            ProgramStatement stmt = Memory.getInstance().fetchStatement(wordAddress, false);
 
             // necessary to handle possible null pointers at the end of the program
             // (e.g., if the simulator tries to execute the next instruction after the last instruction in the text segment)

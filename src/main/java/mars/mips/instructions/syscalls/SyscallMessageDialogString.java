@@ -60,7 +60,7 @@ public class SyscallMessageDialogString extends AbstractSyscall {
         String message;
         try {
             // Read a null-terminated string from memory
-            message = Application.memory.getNullTerminatedString(RegisterFile.getValue(4));
+            message = Application.memory.fetchNullTerminatedString(RegisterFile.getValue(4));
         }
         catch (AddressErrorException exception) {
             throw new ProcessingException(statement, exception);
@@ -69,7 +69,7 @@ public class SyscallMessageDialogString extends AbstractSyscall {
         String stringValue;
         try {
             // Read a null-terminated string from memory
-            stringValue = Application.memory.getNullTerminatedString(RegisterFile.getValue(5));
+            stringValue = Application.memory.fetchNullTerminatedString(RegisterFile.getValue(5));
         }
         catch (AddressErrorException exception) {
             throw new ProcessingException(statement, exception);

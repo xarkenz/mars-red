@@ -124,7 +124,7 @@ public class FileDumpMemoryAction extends VenusAction {
 
         for (int segment = 0; segment < segmentNames.length; segment++) {
             try {
-                highAddresses[segment] = Application.memory.getAddressOfFirstNull(baseAddresses[segment], limitAddresses[segment]) - Memory.BYTES_PER_WORD;
+                highAddresses[segment] = Application.memory.getAddressOfFirstNullWord(baseAddresses[segment], limitAddresses[segment]) - Memory.BYTES_PER_WORD;
             }
             catch (AddressErrorException exception) {
                 // Exception will not happen since the Memory base and limit addresses are on word boundaries!

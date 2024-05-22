@@ -428,7 +428,7 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
             this.tableData[row][ADDRESS_COLUMN] = NumberDisplayBaseChooser.formatUnsignedInteger(address, addressBase);
             for (int column = 1; column < COLUMN_COUNT; column++) {
                 try {
-                    this.tableData[row][column] = NumberDisplayBaseChooser.formatNumber(Memory.getInstance().getRawWord(address), valueBase);
+                    this.tableData[row][column] = NumberDisplayBaseChooser.formatNumber(Memory.getInstance().fetchWord(address, false), valueBase);
                 }
                 catch (AddressErrorException exception) {
                     this.tableData[row][column] = NumberDisplayBaseChooser.formatNumber(0, valueBase);
@@ -505,25 +505,25 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
     }
 
     /**
-     * Update table model with contents of new memory "chunk".  Mars supports megabytes of
+     * Update table model with contents of new memory "chunk".  MARS supports megabytes of
      * data segment space so we only plug a "chunk" at a time into the table.
      *
-     * @param firstAddr the first address in the memory range to be placed in the model.
+     * @param firstAddress The first address in the memory range to be placed in the model.
      */
-    public void updateModelForMemoryRange(int firstAddr) {
+    public void updateModelForMemoryRange(int firstAddress) {
         if (this.tablePanel.getComponentCount() == 0) {
             // Ignore if no content to change
             return;
         }
         int valueBase = getValueDisplayFormat();
         int addressBase = this.gui.getMainPane().getExecuteTab().getAddressDisplayBase();
-        int address = firstAddr;
+        int address = firstAddress;
         TableModel dataModel = this.table.getModel();
         for (int row = 0; row < ROW_COUNT; row++) {
             ((MemoryTableModel) dataModel).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatUnsignedInteger(address, addressBase), row, ADDRESS_COLUMN);
             for (int column = 1; column < COLUMN_COUNT; column++) {
                 try {
-                    ((MemoryTableModel) dataModel).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(Memory.getInstance().getWordNoNotify(address), valueBase), row, column);
+                    ((MemoryTableModel) dataModel).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(Memory.getInstance().fetchWord(address, false), valueBase), row, column);
                 }
                 catch (AddressErrorException exception) {
                     // Display 0 for values outside of the valid address range
@@ -850,7 +850,7 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
             // occur only between MIPS instructions.
             synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
                 try {
-                    Memory.getInstance().setRawWord(address, intValue);
+                    Memory.getInstance().storeWord(address, intValue, true);
                 }
                 // Somehow, user was able to display out-of-range address.  Most likely to occur between
                 // stack base and kernel.  Also text segment with self-modifying-code setting off.

@@ -227,7 +227,7 @@ public class MarsLauncher {
                 continue;
             }
             try {
-                int highAddress = Application.memory.getAddressOfFirstNull(segmentInfo[0], segmentInfo[1]) - Memory.BYTES_PER_WORD;
+                int highAddress = Application.memory.getAddressOfFirstNullWord(segmentInfo[0], segmentInfo[1]) - Memory.BYTES_PER_WORD;
                 if (highAddress < segmentInfo[0]) {
                     out.println("This segment has not been written to, there is nothing to dump.");
                     continue;
@@ -700,11 +700,11 @@ public class MarsLauncher {
                     // Allow display of binary text segment (machine code) DPS 14-July-2008
                     int value;
                     if (Memory.getInstance().isInTextSegment(addr) || Memory.getInstance().isInKernelTextSegment(addr)) {
-                        Integer valueOrNull = Memory.getInstance().getRawWordOrNull(addr);
+                        Integer valueOrNull = Memory.getInstance().fetchWordOrNull(addr);
                         value = (valueOrNull == null) ? 0 : valueOrNull;
                     }
                     else {
-                        value = Memory.getInstance().getWord(addr);
+                        value = Memory.getInstance().fetchWord(addr, false);
                     }
                     out.print(formatIntForDisplay(value) + "\t");
                 }

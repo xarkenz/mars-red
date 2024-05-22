@@ -197,7 +197,7 @@ public class Coprocessor0 {
      * "current" program counter, and set Exception Level bit in STATUS register ($12).
      *
      * @param cause   The cause code (see {@link Coprocessor0} for a list). In this case, should probably be
-     *                {@link ExceptionCause#ADDRESS_EXCEPTION_LOAD} or {@link ExceptionCause#ADDRESS_EXCEPTION_STORE}.
+     *                {@link ExceptionCause#ADDRESS_EXCEPTION_FETCH} or {@link ExceptionCause#ADDRESS_EXCEPTION_STORE}.
      * @param address The address that caused the exception.
      * @author Pete Sanderson, August 2005
      */

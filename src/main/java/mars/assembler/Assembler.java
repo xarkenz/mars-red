@@ -351,7 +351,7 @@ public class Assembler {
                 System.out.println(statement);
             }
             try {
-                Application.memory.setStatement(statement.getAddress(), statement);
+                Memory.getInstance().storeStatement(statement.getAddress(), statement, false);
             }
             catch (AddressErrorException e) {
                 Token t = statement.getOriginalTokenList().get(0);
@@ -598,9 +598,10 @@ public class Assembler {
         }
     }
 
-    // //////////////////////////////////////////////////////////////////////////////////
-    // Parse and record label, if there is one. Note the identifier and its colon are
-    // two separate tokens, since they may be separated by spaces in source code.
+    /**
+     * Parse and record label, if there is one. Note the identifier and its colon are
+     * two separate tokens, since they may be separated by spaces in source code.
+     */
     private boolean parseAndRecordLabel(TokenList tokens) {
         if (tokens.size() < 2) {
             return false;
@@ -619,7 +620,7 @@ public class Assembler {
                 return false;
             }
         }
-    } // parseLabel()
+    }
 
     private boolean tokenListBeginsWithLabel(TokenList tokens) {
         // 2-July-2010. DPS. Remove prohibition of operator names as labels
@@ -629,8 +630,9 @@ public class Assembler {
         return (tokens.get(0).getType() == TokenType.IDENTIFIER || tokens.get(0).getType() == TokenType.OPERATOR) && tokens.get(1).getType() == TokenType.COLON;
     }
 
-    // //////////////////////////////////////////////////////////////////////////////////
-    // This source code line is a directive, not a MIPS instruction. Let's carry it out.
+    /**
+     * This source code line is a directive, not a MIPS instruction. Let's carry it out.
+     */
     private void executeDirective(TokenList tokens) {
         Token token = tokens.get(0);
         Directive direct = Directive.matchDirective(token.getValue());
@@ -689,22 +691,22 @@ public class Assembler {
         else if (direct == Directive.DATA || direct == Directive.KDATA) {
             this.inDataSegment = true;
             this.autoAlign = true;
-            this.dataAddress.setAddressSpace((direct == Directive.DATA) ? this.dataAddress.USER : this.dataAddress.KERNEL);
+            this.dataAddress.setAddressSpace((direct == Directive.DATA) ? UserKernelAddressSpace.USER : UserKernelAddressSpace.KERNEL);
             if (tokens.size() > 1 && TokenType.isIntegerTokenType(tokens.get(1).getType())) {
                 this.dataAddress.set(Binary.decodeInteger(tokens.get(1).getValue())); // KENV 1/6/05
             }
         }
         else if (direct == Directive.TEXT || direct == Directive.KTEXT) {
             this.inDataSegment = false;
-            this.textAddress.setAddressSpace((direct == Directive.TEXT) ? this.textAddress.USER : this.textAddress.KERNEL);
+            this.textAddress.setAddressSpace((direct == Directive.TEXT) ? UserKernelAddressSpace.USER : UserKernelAddressSpace.KERNEL);
             if (tokens.size() > 1 && TokenType.isIntegerTokenType(tokens.get(1).getType())) {
                 this.textAddress.set(Binary.decodeInteger(tokens.get(1).getValue())); // KENV 1/6/05
             }
         }
         else if (direct == Directive.WORD || direct == Directive.HALF || direct == Directive.BYTE || direct == Directive.FLOAT || direct == Directive.DOUBLE) {
             this.dataDirective = direct;
-            if (passesDataSegmentCheck(token) && tokens.size() > 1) { // DPS
-                // 11/20/06, added text segment prohibition
+            if (passesDataSegmentCheck(token) && tokens.size() > 1) {
+                // DPS 11/20/06, added text segment prohibition
                 storeNumeric(tokens, direct, errors);
             }
         }
@@ -789,10 +791,11 @@ public class Assembler {
         }
     }
 
-    // //////////////////////////////////////////////////////////////////////////////
-    // Process the list of .globl labels, if any, declared and defined in this file.
-    // We'll just move their symbol table entries from local symbol table to global
-    // symbol table at the end of the first assembly pass.
+    /**
+     * Process the list of .globl labels, if any, declared and defined in this file.
+     * We'll just move their symbol table entries from local symbol table to global
+     * symbol table at the end of the first assembly pass.
+     */
     private void transferGlobals() {
         for (int i = 0; i < globalDeclarationList.size(); i++) {
             Token label = globalDeclarationList.get(i);
@@ -812,9 +815,10 @@ public class Assembler {
         }
     }
 
-    // //////////////////////////////////////////////////////////////////////////////////
-    // This source code line, if syntactically correct, is a continuation of a
-    // directive list begun on on previous line.
+    /**
+     * This source code line, if syntactically correct, is a continuation of a
+     * directive list begun on on previous line.
+     */
     private void executeDirectiveContinuation(TokenList tokens) {
         Directive direct = this.dataDirective;
         if (direct == Directive.WORD || direct == Directive.HALF || direct == Directive.BYTE || direct == Directive.FLOAT || direct == Directive.DOUBLE) {
@@ -827,11 +831,12 @@ public class Assembler {
                 storeStrings(tokens, direct, errors);
             }
         }
-    } // executeDirectiveContinuation()
+    }
 
-    // //////////////////////////////////////////////////////////////////////////////////
-    // Given token, find the corresponding Instruction object. If token was not
-    // recognized as OPERATOR, there is a problem.
+    /**
+     * Given token, find the corresponding Instruction object. If token was not
+     * recognized as OPERATOR, there is a problem.
+     */
     private ArrayList<Instruction> matchInstruction(Token token) {
         if (token.getType() != TokenType.OPERATOR) {
             if (token.getSourceMIPSprogram().getLocalMacroPool().matchesAnyMacroName(token.getValue())) {
@@ -847,13 +852,14 @@ public class Assembler {
             this.errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "Internal Assembler error: \"" + token.getValue() + "\" tokenized OPERATOR then not recognized"));
         }
         return instructionMatches;
-    } // matchInstruction()
+    }
 
-    // //////////////////////////////////////////////////////////////////////////////////
-    // Processes the .word/.half/.byte/.float/.double directive.
-    // Can also handle "directive continuations", e.g. second or subsequent line
-    // of a multiline list, which does not contain the directive token. Just pass the
-    // current directive as argument.
+    /**
+     * Processes the .word/.half/.byte/.float/.double directive.
+     * Can also handle "directive continuations", e.g. second or subsequent line
+     * of a multiline list, which does not contain the directive token. Just pass the
+     * current directive as argument.
+     */
     private void storeNumeric(TokenList tokens, Directive directive, ErrorList errors) {
         Token token = tokens.get(0);
         // A double-check; should have already been caught...removed ".word" exemption 11/20/06
@@ -914,13 +920,14 @@ public class Assembler {
                 storeRealNumber(token, directive, errors);
             }
         }
-    } // storeNumeric()
+    }
 
-    // //////////////////////////////////////////////////////////////////////////////
-    // Store integer value given integer (word, half, byte) directive.
-    // Called by storeNumeric()
-    // NOTE: The token itself may be a label, in which case the correct action is
-    // to store the address of that label (into however many bytes specified).
+    /**
+     * Store integer value given integer (word, half, byte) directive.
+     * Called by storeNumeric()
+     * NOTE: The token itself may be a label, in which case the correct action is
+     * to store the address of that label (into however many bytes specified).
+     */
     private void storeInteger(Token token, Directive directive, ErrorList errors) {
         int lengthInBytes = DataTypes.getLengthInBytes(directive);
         if (TokenType.isIntegerTokenType(token.getType())) {
@@ -931,10 +938,10 @@ public class Assembler {
             // the leading bits (includes sign bits). This is what SPIM does.
             // But will issue a warning (not error) which SPIM does not do.
             if (directive == Directive.BYTE) {
-                value = value & 0x000000FF;
+                value &= 0xFF;
             }
             else if (directive == Directive.HALF) {
-                value = value & 0x0000FFFF;
+                value &= 0xFFFF;
             }
 
             if (DataTypes.outOfRange(directive, fullvalue)) {
@@ -955,7 +962,7 @@ public class Assembler {
              */
             else {
                 try {
-                    Application.memory.set(this.textAddress.get(), value, lengthInBytes);
+                    Memory.getInstance().storeUnaligned(this.textAddress.get(), value, lengthInBytes);
                 }
                 catch (AddressErrorException e) {
                     errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + this.textAddress.get() + "\" is not a valid text segment address"));
@@ -984,11 +991,12 @@ public class Assembler {
         else {
             errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" is not a valid integer constant or label"));
         }
-    }// storeInteger
+    }
 
-    // //////////////////////////////////////////////////////////////////////////////
-    // Store real (fixed or floating point) value given floating (float, double) directive.
-    // Called by storeNumeric()
+    /**
+     * Store real (fixed or floating point) value given floating (float, double) directive.
+     * Called by storeNumeric()
+     */
     private void storeRealNumber(Token token, Directive directive, ErrorList errors) {
         int lengthInBytes = DataTypes.getLengthInBytes(directive);
         double value;
@@ -1019,12 +1027,13 @@ public class Assembler {
         if (directive == Directive.DOUBLE) {
             writeDoubleToDataSegment(value, token, errors);
         }
-    } // storeRealNumber
+    }
 
-    // //////////////////////////////////////////////////////////////////////////////////
-    // Use directive argument to distinguish between ASCII and ASCIIZ. The
-    // latter stores a terminating null byte. Can handle a list of one or more
-    // strings on a single line.
+    /**
+     * Use directive argument to distinguish between ASCII and ASCIIZ. The
+     * latter stores a terminating null byte. Can handle a list of one or more
+     * strings on a single line.
+     */
     private void storeStrings(TokenList tokens, Directive direct, ErrorList errors) {
         Token token;
         // Correctly handles case where this is a "directive continuation" line.
@@ -1063,7 +1072,7 @@ public class Assembler {
                         };
                     }
                     try {
-                        Application.memory.set(this.dataAddress.get(), theChar, DataTypes.CHAR_SIZE);
+                        Application.memory.storeUnaligned(this.dataAddress.get(), theChar, DataTypes.CHAR_SIZE);
                     }
                     catch (AddressErrorException e) {
                         errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + this.dataAddress.get() + "\" is not a valid data segment address"));
@@ -1072,7 +1081,7 @@ public class Assembler {
                 }
                 if (direct == Directive.ASCIIZ) {
                     try {
-                        Application.memory.set(this.dataAddress.get(), 0, DataTypes.CHAR_SIZE);
+                        Application.memory.storeUnaligned(this.dataAddress.get(), 0, DataTypes.CHAR_SIZE);
                     }
                     catch (AddressErrorException e) {
                         errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + this.dataAddress.get() + "\" is not a valid data segment address"));
@@ -1081,10 +1090,11 @@ public class Assembler {
                 }
             }
         }
-    } // storeStrings()
+    }
 
-    // //////////////////////////////////////////////////////////////////////////////////
-    // Simply check to see if we are in data segment. Generate error if not.
+    /**
+     * Simply check to see if we are in data segment. Generate error if not.
+     */
     private boolean passesDataSegmentCheck(Token token) {
         if (!this.inDataSegment) {
             errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\" directive cannot appear in text segment"));
@@ -1095,16 +1105,17 @@ public class Assembler {
         }
     }
 
-    // //////////////////////////////////////////////////////////////////////////////////
-    // Writes the given int value into current data segment address. Works for
-    // all the integer types plus float (caller is responsible for doing floatToIntBits).
-    // Returns address at which the value was stored.
+    /**
+     * Writes the given int value into current data segment address. Works for
+     * all the integer types plus float (caller is responsible for doing floatToIntBits).
+     * Returns address at which the value was stored.
+     */
     private int writeToDataSegment(int value, int lengthInBytes, Token token, ErrorList errors) {
         if (this.autoAlign) {
             this.dataAddress.set(this.alignToBoundary(this.dataAddress.get(), lengthInBytes));
         }
         try {
-            Application.memory.set(this.dataAddress.get(), value, lengthInBytes);
+            Memory.getInstance().storeUnaligned(this.dataAddress.get(), value, lengthInBytes);
         }
         catch (AddressErrorException e) {
             errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + this.dataAddress.get() + "\" is not a valid data segment address"));
@@ -1115,18 +1126,19 @@ public class Assembler {
         return address;
     }
 
-    // //////////////////////////////////////////////////////////////////////////////////
-    // Writes the given double value into current data segment address. Works
-    // only for DOUBLE floating
-    // point values -- Memory class doesn't have method for writing 8 bytes, so
-    // use setWord twice.
+    /**
+     * Writes the given double value into current data segment address. Works
+     * only for DOUBLE floating
+     * point values -- Memory class doesn't have method for writing 8 bytes, so
+     * use setWord twice.
+     */
     private void writeDoubleToDataSegment(double value, Token token, ErrorList errors) {
         int lengthInBytes = DataTypes.DOUBLE_SIZE;
         if (this.autoAlign) {
             this.dataAddress.set(this.alignToBoundary(this.dataAddress.get(), lengthInBytes));
         }
         try {
-            Application.memory.setDoubleword(this.dataAddress.get(), value);
+            Application.memory.storeDoubleword(this.dataAddress.get(), Double.doubleToLongBits(value));
         }
         catch (AddressErrorException e) {
             errors.add(new ErrorMessage(token.getSourceMIPSprogram(), token.getSourceLine(), token.getStartPos(), "\"" + this.dataAddress.get() + "\" is not a valid data segment address"));
@@ -1135,11 +1147,12 @@ public class Assembler {
         this.dataAddress.increment(lengthInBytes);
     }
 
-    // //////////////////////////////////////////////////////////////////////////////////
-    // If address is multiple of byte boundary, returns address. Otherwise, returns address
-    // which is next higher multiple of the byte boundary. Used for aligning data segment.
-    // For instance if args are 6 and 4, returns 8 (next multiple of 4 higher than 6).
-    // NOTE: it will fix any symbol table entries for this address too. See else part.
+    /**
+     * If address is multiple of byte boundary, returns address. Otherwise, returns address
+     * which is next higher multiple of the byte boundary. Used for aligning data segment.
+     * For instance if args are 6 and 4, returns 8 (next multiple of 4 higher than 6).
+     * NOTE: it will fix any symbol table entries for this address too. See else part.
+     */
     private int alignToBoundary(int address, int byteBoundary) {
         int remainder = address % byteBoundary;
         if (remainder == 0) {
@@ -1152,17 +1165,18 @@ public class Assembler {
         }
     }
 
-    // ///////////////////////////////////////////////////////////////////////////////////
-    // Private class used as Comparator to sort the final ArrayList of
-    // ProgramStatements.
-    // Sorting is based on unsigned integer value of
-    // ProgramStatement.getAddress()
+    /**
+     * Private class used as Comparator to sort the final ArrayList of
+     * ProgramStatements.
+     * Sorting is based on unsigned integer value of
+     * ProgramStatement.getAddress()
+     */
     private static class ProgramStatementComparator implements Comparator<ProgramStatement> {
-        // Will be used to sort the collection. Unsigned int compare, because
-        // all kernel 32-bit
-        // addresses have 1 in high order bit, which makes the int negative.
-        // "Unsigned" compare
-        // is needed when signs of the two operands differ.
+        /**
+         * Will be used to sort the collection. Unsigned int compare, because all kernel 32-bit
+         * addresses have 1 in high order bit, which makes the int negative.
+         * "Unsigned" compare is needed when signs of the two operands differ.
+         */
         public int compare(ProgramStatement statement1, ProgramStatement statement2) {
             int addr1 = statement1.getAddress();
             int addr2 = statement2.getAddress();
@@ -1175,16 +1189,20 @@ public class Assembler {
         }
     }
 
-    // ///////////////////////////////////////////////////////////////////////////////////
-    // Private class to simultaneously track addresses in both user and kernel
-    // address spaces.
-    // Instantiate one for data segment and one for text segment.
+    /**
+     * Private class to simultaneously track addresses in both user and kernel address spaces.
+     * Instantiate one for data segment and one for text segment.
+     */
     private static class UserKernelAddressSpace {
+        private static final int USER = 0;
+        private static final int KERNEL = 1;
+
         int[] address;
         int currentAddressSpace;
-        private final int USER = 0, KERNEL = 1;
 
-        // Initially use user address space, not kernel.
+        /**
+         * Initially use user address space, not kernel.
+         */
         private UserKernelAddressSpace(int userBase, int kernelBase) {
             address = new int[2];
             address[USER] = userBase;
@@ -1214,22 +1232,22 @@ public class Assembler {
         }
     }
 
-    // //////////////////////////////////////////////////////////////////////////
-    // Handy class to handle forward label references appearing as data
-    // segment operands. This is needed because the data segment is comletely
-    // processed by the end of the first assembly pass, and its directives may
-    // contain labels as operands. When this occurs, the label's associated
-    // address becomes the operand value. If it is a forward reference, we will
-    // save the necessary information in this object for finding and patching in
-    // the correct address at the end of the first pass (for this file or for all
-    // files if more than one).
-    //
-    // If such a parsed label refers to a local or global label not defined yet,
-    // pertinent information is added to this object:
-    // - memory address that needs the label's address,
-    // - number of bytes (addresses are 4 bytes but may be used with any of
-    // the integer directives: .word, .half, .byte)
-    // - the label's token. Normally need only the name but error message needs more.
+    /**
+     * Handy class to handle forward label references appearing as data
+     * segment operands. This is needed because the data segment is comletely
+     * processed by the end of the first assembly pass, and its directives may
+     * contain labels as operands. When this occurs, the label's associated
+     * address becomes the operand value. If it is a forward reference, we will
+     * save the necessary information in this object for finding and patching in
+     * the correct address at the end of the first pass (for this file or for all
+     * files if more than one).
+     * If such a parsed label refers to a local or global label not defined yet,
+     * pertinent information is added to this object:
+     * - memory address that needs the label's address,
+     * - number of bytes (addresses are 4 bytes but may be used with any of
+     * the integer directives: .word, .half, .byte)
+     * - the label's token. Normally need only the name but error message needs more.
+     */
     private static class DataSegmentForwardReferences {
         private final ArrayList<DataSegmentForwardReference> forwardReferenceList;
 
@@ -1241,33 +1259,41 @@ public class Assembler {
             return forwardReferenceList.size();
         }
 
-        // Add a new forward reference entry. Client must supply the following:
-        // - memory address to receive the label's address once resolved
-        // - number of address bytes to store (1 for .byte, 2 for .half, 4 for .word)
-        // - the label's token. All its information will be needed if error message generated.
+        /**
+         * Add a new forward reference entry. Client must supply the following:
+         * - memory address to receive the label's address once resolved
+         * - number of address bytes to store (1 for .byte, 2 for .half, 4 for .word)
+         * - the label's token. All its information will be needed if error message generated.
+         */
         private void add(int patchAddress, int length, Token token) {
             forwardReferenceList.add(new DataSegmentForwardReference(patchAddress, length, token));
         }
 
-        // Add the entries of another DataSegmentForwardReferences object to this one.
-        // Can be used at the end of each source file to dump all unresolved references
-        // into a common list to be processed after all source files parsed.
+        /**
+         * Add the entries of another DataSegmentForwardReferences object to this one.
+         * Can be used at the end of each source file to dump all unresolved references
+         * into a common list to be processed after all source files parsed.
+         */
         private void add(DataSegmentForwardReferences another) {
             forwardReferenceList.addAll(another.forwardReferenceList);
         }
 
-        // Clear out the list. Allows you to re-use it.
+        /**
+         * Clear out the list. Allows you to re-use it.
+         */
         private void clear() {
             forwardReferenceList.clear();
         }
 
-        // Will traverse the list of forward references, attempting to resolve them.
-        // For each entry it will first search the provided local symbol table and
-        // failing that, the global one. If passed the global symbol table, it will
-        // perform a second, redundant, search. If search is successful, the patch
-        // is applied and the forward reference removed. If search is not successful,
-        // the forward reference remains (it is either undefined or a global label
-        // defined in a file not yet parsed).
+        /**
+         * Will traverse the list of forward references, attempting to resolve them.
+         * For each entry it will first search the provided local symbol table and
+         * failing that, the global one. If passed the global symbol table, it will
+         * perform a second, redundant, search. If search is successful, the patch
+         * is applied and the forward reference removed. If search is not successful,
+         * the forward reference remains (it is either undefined or a global label
+         * defined in a file not yet parsed).
+         */
         private int resolve(SymbolTable localSymtab) {
             int count = 0;
             int labelAddress;
@@ -1278,7 +1304,7 @@ public class Assembler {
                 if (labelAddress != SymbolTable.NOT_FOUND) {
                     // patch address has to be valid b/c we already stored there...
                     try {
-                        Application.memory.set(entry.patchAddress, labelAddress, entry.length);
+                        Application.memory.storeUnaligned(entry.patchAddress, labelAddress, entry.length);
                     }
                     catch (AddressErrorException ignored) {
                     }
@@ -1290,15 +1316,19 @@ public class Assembler {
             return count;
         }
 
-        // Call this when you are confident that remaining list entries are to
-        // undefined labels.
+        /**
+         * Call this when you are confident that remaining list entries are to
+         * undefined labels.
+         */
         private void generateErrorMessages(ErrorList errors) {
             for (DataSegmentForwardReference entry : forwardReferenceList) {
                 errors.add(new ErrorMessage(entry.token.getSourceMIPSprogram(), entry.token.getSourceLine(), entry.token.getStartPos(), "Symbol \"" + entry.token.getValue() + "\" not found in symbol table."));
             }
         }
 
-        // inner-inner class to hold each entry of the forward reference list.
+        /**
+         * Inner-inner class to hold each entry of the forward reference list.
+         */
         private static class DataSegmentForwardReference {
             int patchAddress;
             int length;

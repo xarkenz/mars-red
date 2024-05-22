@@ -112,7 +112,7 @@ public class DigitalLabSimulator extends AbstractMarsTool {
     private synchronized void updateMMIOControlAndData(int value) {
         synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
             try {
-                Memory.getInstance().setByte(Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW) + OUT_OFFSET_HEXADECIMAL_KEYBOARD, value);
+                Memory.getInstance().storeWord(Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW) + OUT_OFFSET_HEXADECIMAL_KEYBOARD, value, true);
             }
             catch (AddressErrorException exception) {
                 System.err.println("Tool author specified incorrect MMIO address!");
