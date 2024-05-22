@@ -42,22 +42,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Bitmap display simulator.
  *
  * @author Pete Sanderson, 23 December 2010
- * @version 1.0
+ * @version 1.1
  */
 public class BitmapDisplay extends AbstractMarsTool {
     private static final String NAME = "Bitmap Display";
-    private static final String VERSION = "Version 1.0";
+    private static final String VERSION = "1.1";
 
     // Values for Combo Boxes
     private static final Integer[] UNIT_SIZE_CHOICES = { 1, 2, 4, 8, 16, 32 };
-    private static final int DEFAULT_UNIT_WIDTH_INDEX = 0;
-    private static final int DEFAULT_UNIT_HEIGHT_INDEX = 0;
+    private static final int DEFAULT_UNIT_WIDTH_INDEX = 3;
+    private static final int DEFAULT_UNIT_HEIGHT_INDEX = 3;
     private static final Integer[] DISPLAY_SIZE_CHOICES = { 64, 128, 256, 512, 1024, 2048 };
     private static final int DEFAULT_DISPLAY_WIDTH_INDEX = 3;
     private static final int DEFAULT_DISPLAY_HEIGHT_INDEX = 3;
 
     // The base addresses are lazy-initialized
-    private static final String[] BASE_ADDRESS_NAMES = { "global data", "$gp", "static data", "heap", "MMIO" };
+    private static final String[] BASE_ADDRESS_NAMES = { "global data", "default $gp", "static data", "heap", "MMIO" };
     private static final int DEFAULT_BASE_ADDRESS_INDEX = 2; // Static data
     private int[] baseAddresses;
     private String[] baseAddressChoices;
@@ -75,7 +75,7 @@ public class BitmapDisplay extends AbstractMarsTool {
      */
     @SuppressWarnings("unused")
     public BitmapDisplay() {
-        super(NAME + ", " + VERSION);
+        super(NAME + ", Version " + VERSION);
     }
 
     /**
