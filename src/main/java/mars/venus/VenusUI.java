@@ -434,7 +434,7 @@ public class VenusUI extends JFrame {
         settingsMenu.add(createMenuCheckBox(settingsPopupInputAction, this.settings.popupSyscallInput.get()));
         settingsMenu.add(createMenuCheckBox(settingsDelayedBranchingAction, this.settings.delayedBranchingEnabled.get()));
         settingsMenu.add(createMenuCheckBox(settingsSelfModifyingCodeAction, this.settings.selfModifyingCodeEnabled.get()));
-        settingsMenu.add(createMenuCheckBox(settingsEndiannessAction, false));
+        settingsMenu.add(createMenuCheckBox(settingsEndiannessAction, this.settings.useBigEndian.get()));
         settingsMenu.addSeparator();
         settingsMenu.add(createMenuCheckBox(settingsDarkThemeAction, this.settings.lookAndFeelName.get().equals("FlatDarkLaf")));
         settingsMenu.addSeparator();
