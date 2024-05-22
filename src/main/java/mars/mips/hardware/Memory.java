@@ -932,7 +932,7 @@ public class Memory {
         StringBuilder content = new StringBuilder();
 
         char ch;
-        while ((ch = (char) this.fetchByte(address, false)) != 0) {
+        while ((ch = (char) this.fetchByte(address++, false)) != 0) {
             content.append(ch);
         }
 
