@@ -343,9 +343,11 @@ public class SystemIO {
         /////////////// DPS 8-Jan-2013  ////////////////////////////////////////////////////
         // Write to STDOUT or STDERR file descriptor while using IDE - write to Messages pane.
         if ((descriptor == STDOUT_DESCRIPTOR || descriptor == STDERR_DESCRIPTOR) && Application.getGUI() != null) {
-            String data = new String(buffer.array());
-            Application.getGUI().getMessagesPane().writeToConsole(data);
-            return data.length();
+            // Sean Clarke (05/2024): originally used buffer.array() but was getting UnsupportedOperationException
+            byte[] data = new byte[buffer.remaining()];
+            buffer.get(data);
+            Application.getGUI().getMessagesPane().writeToConsole(new String(data));
+            return data.length;
         }
         ///////////////////////////////////////////////////////////////////////////////////
         // When running in command mode, code below works for either regular file or STDOUT/STDERR.

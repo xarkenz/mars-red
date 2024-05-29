@@ -367,8 +367,9 @@ public class FilenameFinder {
             Enumeration<? extends ZipEntry> list = zipFile.entries();
             while (list.hasMoreElements()) {
                 ZipEntry entry = list.nextElement();
-                if (entry.getName().startsWith(directoryPath + "/") && fileExtensionMatch(entry.getName(), fileExtension)) {
-                    nameList.add(entry.getName().substring(entry.getName().lastIndexOf('/') + 1));
+                int lastSlashIndex = entry.getName().lastIndexOf('/');
+                if (entry.getName().substring(0, Math.max(0, lastSlashIndex)).equals(directoryPath) && fileExtensionMatch(entry.getName(), fileExtension)) {
+                    nameList.add(entry.getName().substring(lastSlashIndex + 1));
                 }
             }
         }

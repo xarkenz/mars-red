@@ -147,11 +147,14 @@ public final class DataTypes {
      *     by the given directive (.word, .half, .byte), <code>false</code> otherwise.
      */
     public static boolean outOfRange(Directive direct, int value) {
-        if (direct == Directive.HALF && (value < MIN_HALF_VALUE || value > MAX_HALF_VALUE)) {
-            return true;
+        if (direct == Directive.HALF) {
+            return value < MIN_HALF_VALUE || value > MAX_HALF_VALUE;
+        }
+        else if (direct == Directive.BYTE) {
+            return value < MIN_BYTE_VALUE || value > MAX_BYTE_VALUE;
         }
         else {
-            return direct == Directive.BYTE && (value < MIN_BYTE_VALUE || value > MAX_BYTE_VALUE);
+            return false;
         }
     }
 
