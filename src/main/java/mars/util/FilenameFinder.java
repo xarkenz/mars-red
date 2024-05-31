@@ -430,7 +430,7 @@ public class FilenameFinder {
         private String buildFullDescription(String description) {
             StringBuilder result = new StringBuilder((description == null) ? "" : description);
             if (!extensions.isEmpty()) {
-                result.append("  (")
+                result.append(" (")
                     .append(String.join("; ", extensions.stream().map(extension -> "*." + extension).toList()))
                     .append(")");
             }

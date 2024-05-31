@@ -6,7 +6,7 @@
 
     <groupId>mars</groupId>
     <artifactId>mars-red</artifactId>
-    <version>v5.0-beta5</version>
+    <version>v5.0-beta6</version>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
