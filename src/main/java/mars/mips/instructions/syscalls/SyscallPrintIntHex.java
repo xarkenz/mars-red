@@ -39,9 +39,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class SyscallPrintIntHex extends AbstractSyscall {
     /**
-     * Build an instance of the Print Integer syscall.  Default service number
-     * is 34 and name is "PrintIntHex".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallPrintIntHex() {
         super(34, "PrintIntHex");
     }

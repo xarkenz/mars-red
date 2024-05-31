@@ -1,9 +1,9 @@
 package mars.mips.instructions.syscalls;
 
-import mars.Application;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.AddressErrorException;
+import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
 
 import javax.swing.*;
@@ -43,6 +43,7 @@ public class SyscallConfirmDialog extends AbstractSyscall {
     /**
      * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallConfirmDialog() {
         super(50, "ConfirmDialog");
     }
@@ -58,16 +59,15 @@ public class SyscallConfirmDialog extends AbstractSyscall {
         //   1: No
         //   2: Cancel
 
-        String message;
         try {
             // Read a null-terminated string from memory
-            message = Application.memory.fetchNullTerminatedString(RegisterFile.getValue(4));
+            String message = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
+
+            // Update register $a0 with the value from showConfirmDialog
+            RegisterFile.updateRegister(4, JOptionPane.showConfirmDialog(null, message));
         }
         catch (AddressErrorException exception) {
             throw new ProcessingException(statement, exception);
         }
-
-        // Update register $a0 with the value from showConfirmDialog
-        RegisterFile.updateRegister(4, JOptionPane.showConfirmDialog(null, message));
     }
 }

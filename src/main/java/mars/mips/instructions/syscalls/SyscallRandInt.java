@@ -41,6 +41,7 @@ public class SyscallRandInt extends AbstractSyscall {
     /**
      * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallRandInt() {
         super(41, "RandInt");
     }

@@ -38,12 +38,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * Service to read console input string into buffer starting at address in $a0.
  */
-@SuppressWarnings("unused")
 public class SyscallReadString extends AbstractSyscall {
     /**
-     * Build an instance of the Read String syscall.  Default service number
-     * is 8 and name is "ReadString".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallReadString() {
         super(8, "ReadString");
     }
@@ -64,7 +63,9 @@ public class SyscallReadString extends AbstractSyscall {
             maxLength = 0;
             addNullByte = false;
         }
+
         String inputString = Simulator.getInstance().getSystemIO().readString(maxLength);
+
         int stringLength = Math.min(maxLength, inputString.length());
         try {
             for (int index = 0; index < stringLength; index++) {

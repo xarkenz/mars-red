@@ -51,7 +51,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * not return until the tone duration has elapsed.  By contrast, syscall 31
  * (MidiOut) returns immediately upon generating the tone.
  */
-@SuppressWarnings("unused")
 public class SyscallMidiOutSync extends AbstractSyscall {
     // Endpoints of ranges for the three "byte" parameters.  The duration
     // parameter is limited at the high end only by the int range.
@@ -59,9 +58,9 @@ public class SyscallMidiOutSync extends AbstractSyscall {
     private static final int RANGE_MAX = 127;
 
     /**
-     * Build an instance of the MIDI (simulated) out syscall.  Default service number
-     * is 33 and name is "MidiOutSync".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallMidiOutSync() {
         super(33, "MidiOutSync");
     }
@@ -81,7 +80,7 @@ public class SyscallMidiOutSync extends AbstractSyscall {
      * use the range 1-128.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException {
         int pitch = RegisterFile.getValue(4); // $a0
         int duration = RegisterFile.getValue(5); // $a1
         int instrument = RegisterFile.getValue(6); // $a2
@@ -113,8 +112,8 @@ public class SyscallMidiOutSync extends AbstractSyscall {
                 exception.printStackTrace(System.err);
             }
         }
-        catch (InterruptedException | TimeoutException | CancellationException exception) {
-            // Ignore
+        catch (TimeoutException | CancellationException exception) {
+            // Will not occur, but is ignored if somehow it does
         }
     }
 }

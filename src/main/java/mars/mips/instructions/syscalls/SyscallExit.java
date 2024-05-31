@@ -36,9 +36,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class SyscallExit extends AbstractSyscall {
     /**
-     * Build an instance of the Exit syscall.  Default service number
-     * is 10 and name is "Exit".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallExit() {
         super(10, "Exit");
     }
@@ -48,6 +48,7 @@ public class SyscallExit extends AbstractSyscall {
      */
     @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
-        throw new ProcessingException();  // Empty error list indicates a clean exit
+        // Empty error list indicates a clean exit
+        throw new ProcessingException();
     }
 }

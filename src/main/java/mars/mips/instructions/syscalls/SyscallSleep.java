@@ -40,6 +40,7 @@ public class SyscallSleep extends AbstractSyscall {
     /**
      * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallSleep() {
         super(32, "Sleep");
     }
@@ -49,14 +50,9 @@ public class SyscallSleep extends AbstractSyscall {
      * This timing will not be precise as the Java implementation will add some overhead.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException {
         int duration = RegisterFile.getValue(4); // $a0: length of time to sleep in milliseconds
 
-        try {
-            Thread.sleep(duration);
-        }
-        catch (InterruptedException exception) {
-            // No exception handling
-        }
+        Thread.sleep(duration);
     }
 }

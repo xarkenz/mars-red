@@ -38,9 +38,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class SyscallPrintChar extends AbstractSyscall {
     /**
-     * Build an instance of the Print Char syscall.  Default service number
-     * is 11 and name is "PrintChar".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallPrintChar() {
         super(11, "PrintChar");
     }

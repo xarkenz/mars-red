@@ -150,7 +150,7 @@ public class Coprocessor1Window extends RegistersDisplayTab {
                 // Even numbered double registers
                 long longValue = 0;
                 try {
-                    longValue = Coprocessor1.getLongFromRegisterPair(register.getName());
+                    longValue = Coprocessor1.getLongFromRegisterPair(register.getNumber());
                 }
                 catch (InvalidRegisterAccessException exception) {
                     // Cannot happen since row must be even

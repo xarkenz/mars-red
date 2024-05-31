@@ -1,6 +1,5 @@
 package mars.mips.dump;
 
-import mars.Application;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
 
@@ -15,9 +14,7 @@ import java.io.PrintStream;
  * @author Leo Alterman
  * @version July 2011
  */
-
 public class IntelHexDumpFormat extends AbstractDumpFormat {
-
     /**
      * Constructor.  File extention is "hex".
      */
@@ -41,7 +38,7 @@ public class IntelHexDumpFormat extends AbstractDumpFormat {
         try (PrintStream out = new PrintStream(new FileOutputStream(file))) {
             for (int address = firstAddress; address <= lastAddress; address += Memory.BYTES_PER_WORD) {
                 // TODO: This can probably be replaced with a single call to String.format() -Sean Clarke
-                Integer wordOrNull = Application.memory.fetchWordOrNull(address);
+                Integer wordOrNull = Memory.getInstance().fetchWordOrNull(address);
                 if (wordOrNull == null) {
                     break;
                 }

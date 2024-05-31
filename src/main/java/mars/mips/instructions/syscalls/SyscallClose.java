@@ -4,7 +4,6 @@ import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.RegisterFile;
 import mars.simulator.Simulator;
-import mars.simulator.SystemIO;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -39,9 +38,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class SyscallClose extends AbstractSyscall {
     /**
-     * Build an instance of the Close syscall.  Default service number
-     * is 16 and name is "Close".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallClose() {
         super(16, "Close");
     }

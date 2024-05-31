@@ -1,8 +1,8 @@
 package mars.mips.instructions.syscalls;
 
-import mars.Application;
 import mars.ProcessingException;
 import mars.ProgramStatement;
+import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
 import mars.simulator.ExceptionCause;
 
@@ -39,9 +39,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class SyscallSbrk extends AbstractSyscall {
     /**
-     * Build an instance of the Sbrk syscall.  Default service number
-     * is 9 and name is "Sbrk".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallSbrk() {
         super(9, "Sbrk");
     }
@@ -54,7 +54,7 @@ public class SyscallSbrk extends AbstractSyscall {
         int numBytes = RegisterFile.getValue(4); // $a0: number of bytes to allocate
 
         try {
-            int address = Application.memory.allocateHeapSpace(numBytes);
+            int address = Memory.getInstance().allocateHeapSpace(numBytes);
             RegisterFile.updateRegister(2, address); // Put address into $v0
         }
         catch (IllegalArgumentException exception) {

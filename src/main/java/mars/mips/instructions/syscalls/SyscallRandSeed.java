@@ -4,8 +4,6 @@ import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.RegisterFile;
 
-import java.util.Random;
-
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
 
@@ -41,6 +39,7 @@ public class SyscallRandSeed extends AbstractSyscall {
     /**
      * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallRandSeed() {
         super(40, "RandSeed");
     }

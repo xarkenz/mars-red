@@ -1,9 +1,9 @@
 package mars.mips.instructions.syscalls;
 
-import mars.Application;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.AddressErrorException;
+import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
 
 import javax.swing.*;
@@ -43,6 +43,7 @@ public class SyscallMessageDialogString extends AbstractSyscall {
     /**
      * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallMessageDialogString() {
         super(59, "MessageDialogString");
     }
@@ -57,25 +58,18 @@ public class SyscallMessageDialogString extends AbstractSyscall {
         //   $a1 = address of null-terminated string to display after the first message
         // Output: none
 
-        String message;
         try {
             // Read a null-terminated string from memory
-            message = Application.memory.fetchNullTerminatedString(RegisterFile.getValue(4));
+            String message = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
+
+            // Read a null-terminated string from memory
+            String stringValue = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(5));
+
+            // Display the dialog
+            JOptionPane.showMessageDialog(null, message + stringValue, null, JOptionPane.INFORMATION_MESSAGE);
         }
         catch (AddressErrorException exception) {
             throw new ProcessingException(statement, exception);
         }
-
-        String stringValue;
-        try {
-            // Read a null-terminated string from memory
-            stringValue = Application.memory.fetchNullTerminatedString(RegisterFile.getValue(5));
-        }
-        catch (AddressErrorException exception) {
-            throw new ProcessingException(statement, exception);
-        }
-
-        // Display the dialog
-        JOptionPane.showMessageDialog(null, message + stringValue, null, JOptionPane.INFORMATION_MESSAGE);
     }
 }

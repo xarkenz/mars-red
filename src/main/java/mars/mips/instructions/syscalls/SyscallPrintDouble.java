@@ -3,8 +3,9 @@ package mars.mips.instructions.syscalls;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.Coprocessor1;
+import mars.mips.hardware.InvalidRegisterAccessException;
+import mars.simulator.ExceptionCause;
 import mars.simulator.Simulator;
-import mars.util.Binary;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -40,9 +41,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class SyscallPrintDouble extends AbstractSyscall {
     /**
-     * Build an instance of the Print Double syscall.  Default service number
-     * is 3 and name is "PrintDouble".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallPrintDouble() {
         super(3, "PrintDouble");
     }
@@ -52,9 +53,14 @@ public class SyscallPrintDouble extends AbstractSyscall {
      */
     @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
-        // Note: Higher numbered reg contains high order word so concat 13-12.
-        double doubleValue = Double.longBitsToDouble(Binary.twoIntsToLong(Coprocessor1.getValue(13), Coprocessor1.getValue(12)));
+        try {
+            double doubleValue = Coprocessor1.getDoubleFromRegisterPair(12);
 
-        Simulator.getInstance().getSystemIO().printString(Double.toString(doubleValue));
+            Simulator.getInstance().getSystemIO().printString(Double.toString(doubleValue));
+        }
+        catch (InvalidRegisterAccessException exception) {
+            // This should not occur because $f12 is always a valid double target
+            throw new ProcessingException(statement, "internal error reading double from register (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+        }
     }
 }

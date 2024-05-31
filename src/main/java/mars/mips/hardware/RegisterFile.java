@@ -188,6 +188,50 @@ public class RegisterFile {
     }
 
     /**
+     * Gets a long representing the value stored in the given register as well as the next register.
+     * The register must be even-numbered.
+     *
+     * @param reg Register to get the value of. Must be even number of even/odd pair.
+     * @throws InvalidRegisterAccessException Thrown if register ID is invalid or odd-numbered.
+     */
+    public static long getLongFromRegisterPair(int reg) throws InvalidRegisterAccessException {
+        if (reg % 2 != 0) {
+            throw new InvalidRegisterAccessException();
+        }
+        int firstValue = REGISTERS[reg].getValue();
+        int secondValue = REGISTERS[reg + 1].getValue();
+        return switch (Memory.getInstance().getEndianness()) {
+            case BIG_ENDIAN -> Binary.twoIntsToLong(firstValue, secondValue);
+            case LITTLE_ENDIAN -> Binary.twoIntsToLong(secondValue, firstValue);
+        };
+    }
+
+    /**
+     * Sets the value of the register pair given to the long value containing 64 bit pattern
+     * given.  The register must be even-numbered, and the low order 32 bits from the long are placed in it.
+     * The high order 32 bits from the long are placed in the (odd numbered) register that follows it.
+     *
+     * @param reg Register to set the value of.  Must be even register of even/odd pair.
+     * @param val The desired long value for the register.
+     * @throws InvalidRegisterAccessException Thrown if register ID is invalid or odd-numbered.
+     */
+    public static void setRegisterPairToLong(int reg, long val) throws InvalidRegisterAccessException {
+        if (reg % 2 != 0) {
+            throw new InvalidRegisterAccessException();
+        }
+        switch (Memory.getInstance().getEndianness()) {
+            case BIG_ENDIAN -> {
+                REGISTERS[reg].setValue(Binary.highOrderLongToInt(val));
+                REGISTERS[reg + 1].setValue(Binary.lowOrderLongToInt(val));
+            }
+            case LITTLE_ENDIAN -> {
+                REGISTERS[reg].setValue(Binary.lowOrderLongToInt(val));
+                REGISTERS[reg + 1].setValue(Binary.highOrderLongToInt(val));
+            }
+        }
+    }
+
+    /**
      * Initialize the Program Counter.  Do not use this to implement jumps and
      * branches, as it will NOT record a backstep entry with the restore value.
      * If you need backstepping capability, use {@link #setProgramCounter(int)} instead.

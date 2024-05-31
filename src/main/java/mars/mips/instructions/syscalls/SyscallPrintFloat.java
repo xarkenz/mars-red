@@ -38,9 +38,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class SyscallPrintFloat extends AbstractSyscall {
     /**
-     * Build an instance of the Print Float syscall.  Default service number
-     * is 2 and name is "PrintFloat".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallPrintFloat() {
         super(2, "PrintFloat");
     }
@@ -50,7 +50,7 @@ public class SyscallPrintFloat extends AbstractSyscall {
      */
     @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
-        float floatValue = Float.intBitsToFloat(Coprocessor1.getValue(12));
+        float floatValue = Coprocessor1.getFloatFromRegister(12);
 
         Simulator.getInstance().getSystemIO().printString(Float.toString(floatValue));
     }

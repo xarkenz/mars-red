@@ -42,6 +42,7 @@ public class SyscallRandFloat extends AbstractSyscall {
     /**
      * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallRandFloat() {
         super(43, "RandFloat");
     }

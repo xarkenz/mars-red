@@ -38,9 +38,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class SyscallPrintInt extends AbstractSyscall {
     /**
-     * Build an instance of the Print Integer syscall.  Default service number
-     * is 1 and name is "PrintInt".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallPrintInt() {
         super(1, "PrintInt");
     }

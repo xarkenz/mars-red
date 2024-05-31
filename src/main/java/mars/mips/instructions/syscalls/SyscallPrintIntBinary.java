@@ -39,9 +39,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class SyscallPrintIntBinary extends AbstractSyscall {
     /**
-     * Build an instance of the Print Integer syscall.  Default service number
-     * is 35 and name is "PrintIntBinary".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallPrintIntBinary() {
         super(35, "PrintIntBinary");
     }

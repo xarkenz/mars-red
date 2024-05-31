@@ -1,9 +1,9 @@
 package mars.mips.instructions.syscalls;
 
-import mars.Application;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.AddressErrorException;
+import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
 import mars.simulator.Simulator;
 
@@ -44,9 +44,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class SyscallOpen extends AbstractSyscall {
     /**
-     * Build an instance of the Open file syscall.  Default service number
-     * is 13 and name is "Open".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallOpen() {
         super(13, "Open");
     }
@@ -77,7 +77,7 @@ public class SyscallOpen extends AbstractSyscall {
         String filename;
         try {
             // Read a null-terminated string from memory
-            filename = Application.memory.fetchNullTerminatedString(RegisterFile.getValue(4));
+            filename = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
         }
         catch (AddressErrorException exception) {
             throw new ProcessingException(statement, exception);

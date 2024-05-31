@@ -37,12 +37,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * Service to read the bits of input float into $f0
  */
-@SuppressWarnings("unused")
 public class SyscallReadFloat extends AbstractSyscall {
     /**
-     * Build an instance of the Read Float syscall.  Default service number
-     * is 6 and name is "ReadFloat".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallReadFloat() {
         super(6, "ReadFloat");
     }
@@ -54,6 +53,7 @@ public class SyscallReadFloat extends AbstractSyscall {
     public void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException {
         try {
             float floatValue = Simulator.getInstance().getSystemIO().readFloat();
+
             Coprocessor1.updateRegister(0, Float.floatToRawIntBits(floatValue));
         }
         catch (NumberFormatException exception) {

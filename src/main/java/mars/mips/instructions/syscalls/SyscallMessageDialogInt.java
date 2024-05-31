@@ -1,9 +1,9 @@
 package mars.mips.instructions.syscalls;
 
-import mars.Application;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.AddressErrorException;
+import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
 
 import javax.swing.*;
@@ -43,6 +43,7 @@ public class SyscallMessageDialogInt extends AbstractSyscall {
     /**
      * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallMessageDialogInt() {
         super(56, "MessageDialogInt");
     }
@@ -57,16 +58,17 @@ public class SyscallMessageDialogInt extends AbstractSyscall {
         //   $a1 = int value to display in string form after the first message
         // Output: none
 
-        String message;
         try {
             // Read a null-terminated string from memory
-            message = Application.memory.fetchNullTerminatedString(RegisterFile.getValue(4));
+            String message = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
+
+            int intValue = RegisterFile.getValue(5);
+
+            // Display the dialog
+            JOptionPane.showMessageDialog(null, message + intValue, null, JOptionPane.INFORMATION_MESSAGE);
         }
         catch (AddressErrorException exception) {
             throw new ProcessingException(statement, exception);
         }
-
-        // Display the dialog
-        JOptionPane.showMessageDialog(null, message + RegisterFile.getValue(5), null, JOptionPane.INFORMATION_MESSAGE);
     }
 }

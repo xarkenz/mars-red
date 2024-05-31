@@ -1,6 +1,5 @@
 package mars.mips.instructions.syscalls;
 
-import mars.Application;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.*;
@@ -43,6 +42,7 @@ public class SyscallInputDialogDouble extends AbstractSyscall {
     /**
      * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallInputDialogDouble() {
         super(53, "InputDialogDouble");
     }
@@ -64,7 +64,7 @@ public class SyscallInputDialogDouble extends AbstractSyscall {
         String message;
         try {
             // Read a null-terminated string from memory
-            message = Application.memory.fetchNullTerminatedString(RegisterFile.getValue(4));
+            message = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
         }
         catch (AddressErrorException exception) {
             throw new ProcessingException(statement, exception);

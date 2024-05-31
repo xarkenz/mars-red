@@ -3,9 +3,9 @@ package mars.mips.instructions.syscalls;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.Coprocessor1;
+import mars.mips.hardware.InvalidRegisterAccessException;
 import mars.simulator.ExceptionCause;
 import mars.simulator.Simulator;
-import mars.util.Binary;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -39,12 +39,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Service to read the bits of console input double into $f0 and $f1.
  * $f1 contains high order word of the double.
  */
-@SuppressWarnings("unused")
 public class SyscallReadDouble extends AbstractSyscall {
     /**
-     * Build an instance of the Read Double syscall.  Default service number
-     * is 7 and name is "ReadDouble".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallReadDouble() {
         super(7, "ReadDouble");
     }
@@ -56,13 +55,15 @@ public class SyscallReadDouble extends AbstractSyscall {
     public void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException {
         try {
             double doubleValue = Simulator.getInstance().getSystemIO().readDouble();
-            long longValue = Double.doubleToRawLongBits(doubleValue);
-            // Higher numbered register contains high order word, so order is $f1 - $f0.
-            Coprocessor1.updateRegister(1, Binary.highOrderLongToInt(longValue));
-            Coprocessor1.updateRegister(0, Binary.lowOrderLongToInt(longValue));
+
+            Coprocessor1.setRegisterPairToDouble(0, doubleValue);
         }
         catch (NumberFormatException exception) {
             throw new ProcessingException(statement, "invalid double input (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+        }
+        catch (InvalidRegisterAccessException exception) {
+            // This should not occur because $f0 is always a valid double target
+            throw new ProcessingException(statement, "internal error writing double to register (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
     }
 }

@@ -1,9 +1,9 @@
 package mars.mips.instructions.syscalls;
 
-import mars.Application;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.AddressErrorException;
+import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
 import mars.simulator.Simulator;
 
@@ -40,9 +40,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class SyscallPrintString extends AbstractSyscall {
     /**
-     * Build an instance of the Print String syscall.  Default service number
-     * is 4 and name is "PrintString".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallPrintString() {
         super(4, "PrintString");
     }
@@ -54,7 +54,7 @@ public class SyscallPrintString extends AbstractSyscall {
     public void simulate(ProgramStatement statement) throws ProcessingException {
         try {
             // Read a null-terminated string from memory
-            String stringValue = Application.memory.fetchNullTerminatedString(RegisterFile.getValue(4));
+            String stringValue = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
             Simulator.getInstance().getSystemIO().printString(stringValue);
         }
         catch (AddressErrorException exception) {

@@ -103,8 +103,8 @@ public class FileDumpMemoryAction extends VenusAction {
 
         // A series of parallel arrays representing the memory segments that can be dumped.
         String[] segmentNames = MemoryDump.getSegmentNames();
-        int[] baseAddresses = MemoryDump.getBaseAddresses(segmentNames);
-        int[] limitAddresses = MemoryDump.getLimitAddresses(segmentNames);
+        int[] baseAddresses = MemoryDump.getBaseAddresses();
+        int[] limitAddresses = MemoryDump.getLimitAddresses();
         int[] highAddresses = new int[segmentNames.length];
 
         // These three are allocated and filled by buildDialogPanel() and used by action listeners.
@@ -124,7 +124,7 @@ public class FileDumpMemoryAction extends VenusAction {
 
         for (int segment = 0; segment < segmentNames.length; segment++) {
             try {
-                highAddresses[segment] = Application.memory.getAddressOfFirstNullWord(baseAddresses[segment], limitAddresses[segment]) - Memory.BYTES_PER_WORD;
+                highAddresses[segment] = Memory.getInstance().getAddressOfFirstNullWord(baseAddresses[segment], limitAddresses[segment]) - Memory.BYTES_PER_WORD;
             }
             catch (AddressErrorException exception) {
                 // Exception will not happen since the Memory base and limit addresses are on word boundaries!

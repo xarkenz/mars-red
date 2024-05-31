@@ -38,9 +38,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class SyscallExit2 extends AbstractSyscall {
     /**
-     * Build an instance of the Exit2 syscall.  Default service number
-     * is 17 and name is "Exit2".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallExit2() {
         super(17, "Exit2");
     }
@@ -53,9 +53,11 @@ public class SyscallExit2 extends AbstractSyscall {
     @Override
     public void simulate(ProgramStatement statement) throws ProcessingException {
         int exitCode = RegisterFile.getValue(4);
+
         if (Application.getGUI() == null) {
-            Application.exitCode = RegisterFile.getValue(4);
+            Application.exitCode = exitCode;
         }
-        throw new ProcessingException(exitCode); // Pass exit code to message console
+        // Empty error list indicates a clean exit
+        throw new ProcessingException(exitCode);
     }
 }

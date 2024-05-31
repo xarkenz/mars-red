@@ -43,6 +43,7 @@ public class SyscallInputDialogString extends AbstractSyscall {
     /**
      * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallInputDialogString() {
         super(54, "InputDialogString");
     }

@@ -4,7 +4,6 @@ import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.RegisterFile;
 import mars.simulator.Simulator;
-import mars.util.Binary;
 
 /*
 Copyright (c) 2003-2010,  Pete Sanderson and Kenneth Vollmar
@@ -39,9 +38,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class SyscallPrintIntUnsigned extends AbstractSyscall {
     /**
-     * Build an instance of the Print Integer Unsigned syscall.  Default service number
-     * is 36 and name is "PrintIntUnsigned".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallPrintIntUnsigned() {
         super(36, "PrintIntUnsigned");
     }

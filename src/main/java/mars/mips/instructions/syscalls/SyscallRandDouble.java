@@ -44,6 +44,7 @@ public class SyscallRandDouble extends AbstractSyscall {
     /**
      * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallRandDouble() {
         super(44, "RandDouble");
     }
@@ -67,7 +68,7 @@ public class SyscallRandDouble extends AbstractSyscall {
         }
         catch (InvalidRegisterAccessException exception) {
             // This should not occur because $f0 is always a valid double target
-            throw new ProcessingException(statement, "Internal error storing double to register (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            throw new ProcessingException(statement, "internal error writing double to register (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
     }
 }

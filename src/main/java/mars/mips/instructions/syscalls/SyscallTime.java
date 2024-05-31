@@ -40,9 +40,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class SyscallTime extends AbstractSyscall {
     /**
-     * Build an instance of the Read Char syscall.  Default service number
-     * is 12 and name is "ReadChar".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallTime() {
         super(30, "Time");
     }

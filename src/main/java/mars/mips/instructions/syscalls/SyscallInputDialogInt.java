@@ -1,9 +1,9 @@
 package mars.mips.instructions.syscalls;
 
-import mars.Application;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.AddressErrorException;
+import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
 
 import javax.swing.*;
@@ -43,6 +43,7 @@ public class SyscallInputDialogInt extends AbstractSyscall {
     /**
      * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallInputDialogInt() {
         super(51, "InputDialogInt");
     }
@@ -64,7 +65,7 @@ public class SyscallInputDialogInt extends AbstractSyscall {
         String message;
         try {
             // Read a null-terminated string from memory
-            message = Application.memory.fetchNullTerminatedString(RegisterFile.getValue(4));
+            message = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
         }
         catch (AddressErrorException exception) {
             throw new ProcessingException(statement, exception);
@@ -75,6 +76,7 @@ public class SyscallInputDialogInt extends AbstractSyscall {
         // An empty string returned (that is, inputValue.length() of zero)
         // means that OK was chosen but no string was input.
         String inputValue = JOptionPane.showInputDialog(message);
+
         if (inputValue == null) {
             // Cancel was chosen
             RegisterFile.updateRegister(4, 0);  // set $a0 to zero

@@ -1,6 +1,5 @@
 package mars.mips.dump;
 
-import mars.Application;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
 import mars.util.Binary;
@@ -78,7 +77,7 @@ public class AsciiTextDumpFormat extends AbstractDumpFormat {
     public void dumpMemoryRange(File file, int firstAddress, int lastAddress) throws AddressErrorException, IOException {
         try (PrintStream out = new PrintStream(new FileOutputStream(file))) {
             for (int address = firstAddress; address <= lastAddress; address += Memory.BYTES_PER_WORD) {
-                Integer wordOrNull = Application.memory.fetchWordOrNull(address);
+                Integer wordOrNull = Memory.getInstance().fetchWordOrNull(address);
                 if (wordOrNull == null) {
                     break;
                 }

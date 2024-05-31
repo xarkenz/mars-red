@@ -42,6 +42,7 @@ public class SyscallRandIntRange extends AbstractSyscall {
     /**
      * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallRandIntRange() {
         super(42, "RandIntRange");
     }
@@ -66,7 +67,7 @@ public class SyscallRandIntRange extends AbstractSyscall {
             RegisterFile.updateRegister(4, stream.nextInt(RegisterFile.getValue(5)));
         }
         catch (IllegalArgumentException exception) {
-            throw new ProcessingException(statement, "Upper bound of range cannot be negative (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            throw new ProcessingException(statement, "upper bound of range cannot be negative (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
     }
 }

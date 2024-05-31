@@ -37,7 +37,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * immediately upon generating the tone.  By contrast, syscall 33
  * (MidiOutSync) does not return until tone duration has elapsed.
  */
-@SuppressWarnings("unused")
 public class SyscallMidiOut extends AbstractSyscall {
     // Endpoints of ranges for the three "byte" parameters.  The duration
     // parameter is limited at the high end only by the int range.
@@ -45,9 +44,9 @@ public class SyscallMidiOut extends AbstractSyscall {
     private static final int RANGE_MAX = 127;
 
     /**
-     * Build an instance of the MIDI (simulated) out syscall.  Default service number
-     * is 31 and name is "MidiOut".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallMidiOut() {
         super(31, "MidiOut");
     }

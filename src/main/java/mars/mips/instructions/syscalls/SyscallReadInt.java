@@ -37,12 +37,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * Service to read an integer from input console into $v0.
  */
-@SuppressWarnings("unused")
 public class SyscallReadInt extends AbstractSyscall {
     /**
-     * Build an instance of the Read Integer syscall.  Default service number
-     * is 5 and name is "ReadInt".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallReadInt() {
         super(5, "ReadInt");
     }
@@ -54,6 +53,7 @@ public class SyscallReadInt extends AbstractSyscall {
     public void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException {
         try {
             int intValue = Simulator.getInstance().getSystemIO().readInteger();
+
             RegisterFile.updateRegister(2, intValue);
         }
         catch (NumberFormatException exception) {

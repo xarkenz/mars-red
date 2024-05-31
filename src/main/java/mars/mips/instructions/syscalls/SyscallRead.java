@@ -5,6 +5,7 @@ import mars.ProgramStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
+import mars.simulator.ExceptionCause;
 import mars.simulator.Simulator;
 
 import java.nio.ByteBuffer;
@@ -45,9 +46,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class SyscallRead extends AbstractSyscall {
     /**
-     * Build an instance of the Read file syscall.  Default service number
-     * is 14 and name is "Read".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallRead() {
         super(14, "Read");
     }
@@ -63,7 +64,7 @@ public class SyscallRead extends AbstractSyscall {
         int maxLength = RegisterFile.getValue(6); // $a2: user-requested length
 
         if (maxLength < 0) {
-            throw new ProcessingException(statement, "Length value in $a2 cannot be negative for " + getName() + " (syscall " + getNumber() + ")");
+            throw new ProcessingException(statement, "Length value in $a2 cannot be negative for " + this.getName() + " (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
         ByteBuffer buffer = ByteBuffer.allocateDirect(maxLength);
 

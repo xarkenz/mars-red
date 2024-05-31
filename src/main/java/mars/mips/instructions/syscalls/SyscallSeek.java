@@ -3,6 +3,7 @@ package mars.mips.instructions.syscalls;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.RegisterFile;
+import mars.simulator.ExceptionCause;
 import mars.simulator.Simulator;
 import mars.simulator.SystemIO;
 
@@ -12,9 +13,9 @@ import mars.simulator.SystemIO;
  */
 public class SyscallSeek extends AbstractSyscall {
     /**
-     * Build an instance of the Seek file position syscall.  Default service number
-     * is 61 and name is "Seek".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallSeek() {
         super(61, "Seek");
     }
@@ -27,15 +28,14 @@ public class SyscallSeek extends AbstractSyscall {
     public void simulate(ProgramStatement statement) throws ProcessingException {
         int descriptor = RegisterFile.getValue(4); // $a0: file descriptor
         int offset = RegisterFile.getValue(5); // $a1: position offset
-        int whence = RegisterFile.getValue(6); // $a2: position whence
+        int whenceOrdinal = RegisterFile.getValue(6); // $a2: position whence
 
-        SystemIO.SeekWhence[] values = SystemIO.SeekWhence.values();
-        if (whence < 0 || whence >= values.length) {
-            throw new ProcessingException(statement, "Whence value in $a2 must be between 0 and " + (values.length-1) + " for " + getName() + " (syscall " + getNumber() + ")");
+        SystemIO.SeekWhence whence = SystemIO.SeekWhence.valueOf(whenceOrdinal);
+        if (whence == null) {
+            throw new ProcessingException(statement, "Invalid whence value in $a2 for " + this.getName() + " (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
-        SystemIO.SeekWhence whenceValue = values[whence];
 
-        long newPosition = Simulator.getInstance().getSystemIO().seekFile(descriptor, offset, whenceValue);
+        long newPosition = Simulator.getInstance().getSystemIO().seekFile(descriptor, offset, whence);
         RegisterFile.updateRegister(2, (int) newPosition); // Put return value in $v0
     }
 }

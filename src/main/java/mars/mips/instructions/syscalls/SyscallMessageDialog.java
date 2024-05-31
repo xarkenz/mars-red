@@ -1,9 +1,9 @@
 package mars.mips.instructions.syscalls;
 
-import mars.Application;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.AddressErrorException;
+import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
 
 import javax.swing.*;
@@ -43,6 +43,7 @@ public class SyscallMessageDialog extends AbstractSyscall {
     /**
      * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallMessageDialog() {
         super(55, "MessageDialog");
     }
@@ -62,21 +63,21 @@ public class SyscallMessageDialog extends AbstractSyscall {
         //       other: plain message
         // Output: none
 
-        String message;
         try {
             // Read a null-terminated string from memory
-            message = Application.memory.fetchNullTerminatedString(RegisterFile.getValue(4));
+            String message = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
+
+            // See values in http://java.sun.com/j2se/1.5.0/docs/api/constant-values.html
+            int messageType = RegisterFile.getValue(5);
+            if (messageType < JOptionPane.ERROR_MESSAGE || messageType > JOptionPane.QUESTION_MESSAGE) {
+                messageType = JOptionPane.PLAIN_MESSAGE;
+            }
+
+            // Display the dialog
+            JOptionPane.showMessageDialog(null, message, null, messageType);
         }
         catch (AddressErrorException exception) {
             throw new ProcessingException(statement, exception);
         }
-
-        // Display the dialog
-        int messageType = RegisterFile.getValue(5);
-        // See values in http://java.sun.com/j2se/1.5.0/docs/api/constant-values.html
-        if (messageType < JOptionPane.ERROR_MESSAGE || messageType > JOptionPane.QUESTION_MESSAGE) {
-            messageType = JOptionPane.PLAIN_MESSAGE;
-        }
-        JOptionPane.showMessageDialog(null, message, null, messageType);
     }
 }

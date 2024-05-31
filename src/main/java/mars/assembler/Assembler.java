@@ -169,7 +169,7 @@ public class Assembler {
         currentFileDataSegmentForwardReferences = new DataSegmentForwardReferences();
         accumulatedDataSegmentForwardReferences = new DataSegmentForwardReferences();
         Application.globalSymbolTable.clear();
-        Application.memory.reset();
+        Memory.getInstance().reset();
         this.machineList = new ArrayList<>();
         this.errors = new ErrorList();
         if (Application.debug) {

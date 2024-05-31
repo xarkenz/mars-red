@@ -37,12 +37,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * Service to read a character from input console into $a0.
  */
-@SuppressWarnings("unused")
 public class SyscallReadChar extends AbstractSyscall {
     /**
-     * Build an instance of the Read Char syscall.  Default service number
-     * is 12 and name is "ReadChar".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallReadChar() {
         super(12, "ReadChar");
     }

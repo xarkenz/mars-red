@@ -227,20 +227,20 @@ public class MarsLauncher {
                 continue;
             }
             try {
-                int highAddress = Application.memory.getAddressOfFirstNullWord(segmentInfo[0], segmentInfo[1]) - Memory.BYTES_PER_WORD;
+                int highAddress = Memory.getInstance().getAddressOfFirstNullWord(segmentInfo[0], segmentInfo[1]) - Memory.BYTES_PER_WORD;
                 if (highAddress < segmentInfo[0]) {
                     out.println("This segment has not been written to, there is nothing to dump.");
                     continue;
                 }
                 format.dumpMemoryRange(file, segmentInfo[0], highAddress);
             }
-            catch (FileNotFoundException e) {
+            catch (FileNotFoundException exception) {
                 out.println("Error while attempting to save dump, file " + file + " was not found!");
             }
-            catch (AddressErrorException e) {
-                out.println("Error while attempting to save dump, file " + file + "!  Could not access address: " + e.getAddress() + "!");
+            catch (AddressErrorException exception) {
+                out.println("Error while attempting to save dump, file " + file + "!  Could not access address: " + exception.getAddress() + "!");
             }
-            catch (IOException e) {
+            catch (IOException exception) {
                 out.println("Error while attempting to save dump, file " + file + "!  Disk IO failed!");
             }
         }
@@ -607,19 +607,19 @@ public class MarsLauncher {
             }
             else {
                 // floating point register
-                float floatValue = Coprocessor1.getFloatFromRegister(regName);
-                int intValue = Coprocessor1.getIntFromRegister(regName);
-                double doubleValue;
+                int intValue = Coprocessor1.getIntFromRegister(Coprocessor1.getRegisterNumber(regName));
+                float floatValue = Float.intBitsToFloat(intValue);
                 long longValue;
+                double doubleValue;
                 boolean hasDouble;
                 try {
-                    doubleValue = Coprocessor1.getDoubleFromRegisterPair(regName);
-                    longValue = Coprocessor1.getLongFromRegisterPair(regName);
+                    longValue = Coprocessor1.getLongFromRegisterPair(Coprocessor1.getRegisterNumber(regName));
+                    doubleValue = Double.longBitsToDouble(longValue);
                     hasDouble = true;
                 }
                 catch (InvalidRegisterAccessException ignored) {
-                    doubleValue = Double.NaN;
                     longValue = 0;
+                    doubleValue = Double.NaN;
                     hasDouble = false;
                 }
                 if (verbose) {

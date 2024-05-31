@@ -1,6 +1,5 @@
 package mars.mips.instructions.syscalls;
 
-import mars.Application;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.*;
@@ -43,6 +42,7 @@ public class SyscallMessageDialogDouble extends AbstractSyscall {
     /**
      * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallMessageDialogDouble() {
         super(58, "MessageDialogDouble");
     }
@@ -57,22 +57,21 @@ public class SyscallMessageDialogDouble extends AbstractSyscall {
         //   $f12 = double value to display in string form after the first message
         // Output: none
 
-        String message;
         try {
             // Read a null-terminated string from memory
-            message = Application.memory.fetchNullTerminatedString(RegisterFile.getValue(4));
+            String message = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
+
+            double doubleValue = Coprocessor1.getDoubleFromRegisterPair(12);
+
+            // Display the dialog
+            JOptionPane.showMessageDialog(null, message + doubleValue, null, JOptionPane.INFORMATION_MESSAGE);
         }
         catch (AddressErrorException exception) {
             throw new ProcessingException(statement, exception);
         }
-
-        // Display the dialog
-        try {
-            JOptionPane.showMessageDialog(null, message + Coprocessor1.getDoubleFromRegisterPair("$f12"), null, JOptionPane.INFORMATION_MESSAGE);
-        }
         catch (InvalidRegisterAccessException exception) {
-            RegisterFile.updateRegister(5, -1);  // set $a1 to -1 flag
-            throw new ProcessingException(statement, "Invalid register access during double input (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            // This should not occur because $f12 is always a valid double target
+            throw new ProcessingException(statement, "internal error reading double from register (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
     }
 }

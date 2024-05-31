@@ -1,6 +1,5 @@
 package mars.mips.instructions.syscalls;
 
-import mars.Application;
 import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.AddressErrorException;
@@ -46,9 +45,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class SyscallWrite extends AbstractSyscall {
     /**
-     * Build an instance of the Write file syscall.  Default service number
-     * is 15 and name is "Write".
+     * Build an instance of the syscall with its default service number and name.
      */
+    @SuppressWarnings("unused")
     public SyscallWrite() {
         super(15, "Write");
     }
@@ -64,7 +63,7 @@ public class SyscallWrite extends AbstractSyscall {
         int maxLength = RegisterFile.getValue(6); // $a2: user-requested length
 
         if (maxLength < 0) {
-            throw new ProcessingException(statement, "Length value in $a2 cannot be negative for " + getName() + " (syscall " + getNumber() + ")");
+            throw new ProcessingException(statement, "Length value in $a2 cannot be negative for " + this.getName() + " (syscall " + this.getNumber() + ")");
         }
         ByteBuffer buffer = ByteBuffer.allocateDirect(maxLength + 1); // Leave room for a possible null terminator
 

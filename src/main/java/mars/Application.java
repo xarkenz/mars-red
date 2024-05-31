@@ -114,7 +114,7 @@ public class Application {
     public static final String[] ASCII_TABLE = getAsciiStrings();
 
     /**
-     * MARS exit code -- useful with SYSCALL 17 when running from command line (not GUI).
+     * MARS exit code -- useful with syscall 17 when running from command line (not GUI).
      */
     public static int exitCode = 0;
     /**
@@ -145,17 +145,13 @@ public class Application {
      * Symbol table for file currently being assembled.
      */
     public static SymbolTable globalSymbolTable;
-    /**
-     * Simulated MIPS memory component.
-     */
-    public static Memory memory;
-
-    public static void setGUI(VenusUI gui) {
-        Application.gui = gui;
-    }
 
     public static VenusUI getGUI() {
         return gui;
+    }
+
+    public static void setGUI(VenusUI gui) {
+        Application.gui = gui;
     }
 
     public static Settings getSettings() {
@@ -168,7 +164,6 @@ public class Application {
     public static void initialize() {
         if (!initialized) {
             settings = new Settings();
-            memory = Memory.getInstance(); // Clients can still use Memory.getInstance instead of Globals.memory
             instructionSet = new InstructionSet();
             instructionSet.populate();
             globalSymbolTable = new SymbolTable("(global)");
