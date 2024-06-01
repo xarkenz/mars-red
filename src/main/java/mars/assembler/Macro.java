@@ -155,25 +155,25 @@ public class Macro {
 
         for (int i = tokens.size() - 1; i >= 0; i--) {
             Token token = tokens.get(i);
-            if (tokenIsMacroParameter(token.getValue(), true)) {
+            if (tokenIsMacroParameter(token.getLiteral(), true)) {
                 int repl = -1;
                 for (int j = 0; j < this.args.size(); j++) {
-                    if (this.args.get(j).equals(token.getValue())) {
+                    if (this.args.get(j).equals(token.getLiteral())) {
                         repl = j;
                         break;
                     }
                 }
-                String substitute = token.getValue();
+                String substitute = token.getLiteral();
                 if (repl != -1) {
                     substitute = args.get(repl + 1).toString();
                 }
                 else {
-                    errors.add(new ErrorMessage(program, token.getSourceLine(), token.getStartPos(), "Unknown macro parameter"));
+                    errors.add(new ErrorMessage(program, token.getSourceLine(), token.getSourceColumn(), "Unknown macro parameter"));
                 }
                 s = replaceToken(s, token, substitute);
             }
-            else if (tokenIsMacroLabel(token.getValue())) {
-                String substitute = token.getValue() + "_M" + counter;
+            else if (tokenIsMacroLabel(token.getLiteral())) {
+                String substitute = token.getLiteral() + "_M" + counter;
                 s = replaceToken(s, token, substitute);
             }
         }
@@ -204,7 +204,7 @@ public class Macro {
     // the source comes from a macro definition?  That has proven to be a tough question to answer.
     // DPS 12-feb-2013
     private String replaceToken(String source, Token tokenToBeReplaced, String substitute) {
-        String stringToBeReplaced = tokenToBeReplaced.getValue();
+        String stringToBeReplaced = tokenToBeReplaced.getLiteral();
         int pos = source.indexOf(stringToBeReplaced);
         return (pos < 0) ? source : source.substring(0, pos) + substitute + source.substring(pos + stringToBeReplaced.length());
     }
@@ -213,25 +213,28 @@ public class Macro {
      * Returns whether <code>tokenValue</code> is macro parameter or not.
      *
      * @param tokenValue
-     * @param acceptSpimStyleParameters accepts SPIM-style parameters which begin with '$' if true
+     * @param allowSPIMStyle accepts SPIM-style parameters which begin with '$' if true
      * @return
      */
-    public static boolean tokenIsMacroParameter(String tokenValue, boolean acceptSpimStyleParameters) {
-        if (acceptSpimStyleParameters) {
-            // Bug fix: SPIM accepts parameter names that start with $ instead of %.  This can
-            // lead to problems since register names also start with $.  This IF condition
-            // should filter out register names.  Originally filtered those from regular set but not
-            // from Coprocessor0 or Coprocessor1 register sets.  Expanded the condition.
-            // DPS  7-July-2014.
-            if (!tokenValue.isEmpty() && tokenValue.charAt(0) == '$'
-                && RegisterFile.getUserRegister(tokenValue) == null
-                && Coprocessor0.getRegister(tokenValue) == null  // added 7-July-2014
-                && Coprocessor1.getRegister(tokenValue) == null)    // added 7-July-2014
-            {
-                return true;
+    public static boolean tokenIsMacroParameter(String tokenValue, boolean allowSPIMStyle) {
+        if (tokenValue.length() <= 1) {
+            return false;
+        }
+
+        if (allowSPIMStyle) {
+            if (tokenValue.charAt(0) == '$') {
+                // Bug fix: SPIM accepts parameter names that start with $ instead of %.  This can
+                // lead to problems since register names also start with $.  This IF condition
+                // should filter out register names.  Originally filtered those from regular set but not
+                // from Coprocessor0 or Coprocessor1 register sets.  Expanded the condition.
+                // DPS 7-July-2014
+                return RegisterFile.getRegister(tokenValue) == null
+                    && Coprocessor0.getRegister(tokenValue) == null
+                    && Coprocessor1.getRegister(tokenValue) == null;
             }
         }
-        return tokenValue.length() > 1 && tokenValue.charAt(0) == '%';
+
+        return tokenValue.charAt(0) == '%';
     }
 
     public void addLabel(String value) {

@@ -1,5 +1,7 @@
 package mars;
 
+import mars.assembler.SourceLine;
+
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -65,15 +67,6 @@ public class ErrorMessage {
     private final String macroExpansionHistory;
 
     /**
-     * Constant to indicate this message is a warning.
-     */
-    public static final boolean WARNING = true;
-    /**
-     * Constant to indicate this message is an error.
-     */
-    public static final boolean ERROR = false;
-
-    /**
      * Constructor for ErrorMessage.
      *
      * @param filename String containing name of source file in which this error appears.
@@ -86,7 +79,7 @@ public class ErrorMessage {
     // Added filename October 2006 
     @Deprecated
     public ErrorMessage(String filename, int line, int position, String message) {
-        this(ERROR, filename, line, position, message, "");
+        this(false, filename, line, position, message, "");
     }
 
     /**
@@ -103,7 +96,7 @@ public class ErrorMessage {
     // Added macroExpansionHistory Dec 2012
     @Deprecated
     public ErrorMessage(String filename, int line, int position, String message, String macroExpansionHistory) {
-        this(ERROR, filename, line, position, message, macroExpansionHistory);
+        this(false, filename, line, position, message, macroExpansionHistory);
     }
 
     /**
@@ -132,26 +125,26 @@ public class ErrorMessage {
      * Constructor for ErrorMessage.  Assumes line number is calculated after any .include files expanded, and
      * if there were, it will adjust filename and line number so message reflects original file and line number.
      *
-     * @param sourceProgram MIPSprogram object of source file in which this error appears.
-     * @param line              Line number in source program being processed when error occurred.
-     * @param position          Position within line being processed when error occurred.  Normally is starting
-     *                          position of source token.
-     * @param message           String containing appropriate error message.
+     * @param sourceProgram Program object of source file in which this error appears.
+     * @param line          Line number in source program being processed when error occurred.
+     * @param position      Position within line being processed when error occurred.  Normally is starting
+     *                      position of source token.
+     * @param message       String containing appropriate error message.
      */
     public ErrorMessage(Program sourceProgram, int line, int position, String message) {
-        this(ERROR, sourceProgram, line, position, message);
+        this(false, sourceProgram, line, position, message);
     }
 
     /**
      * Constructor for ErrorMessage.  Assumes line number is calculated after any .include files expanded, and
      * if there were, it will adjust filename and line number so message reflects original file and line number.
      *
-     * @param isWarning         set to WARNING if message is a warning not error, else set to ERROR or omit.
-     * @param sourceProgram MIPSprogram object of source file in which this error appears.
-     * @param line              Line number in source program being processed when error occurred.
-     * @param position          Position within line being processed when error occurred.  Normally is starting
-     *                          position of source token.
-     * @param message           String containing appropriate error message.
+     * @param isWarning     set to WARNING if message is a warning not error, else set to ERROR or omit.
+     * @param sourceProgram Program object of source file in which this error appears.
+     * @param line          Line number in source program being processed when error occurred.
+     * @param position      Position within line being processed when error occurred.  Normally is starting
+     *                      position of source token.
+     * @param message       String containing appropriate error message.
      */
     public ErrorMessage(boolean isWarning, Program sourceProgram, int line, int position, String message) {
         this.isWarning = isWarning;
@@ -160,13 +153,12 @@ public class ErrorMessage {
             this.line = line;
         }
         else {
+            this.filename = sourceProgram.getFilename();
             if (sourceProgram.getSourceLines() == null) {
-                this.filename = sourceProgram.getFilename();
                 this.line = line;
             }
             else {
-                mars.assembler.SourceLine sourceLine = sourceProgram.getSourceLines().get(Math.max(0, line - 1));
-                this.filename = sourceLine.getFilename();
+                SourceLine sourceLine = sourceProgram.getSourceLines().get(Math.max(0, line - 1));
                 this.line = sourceLine.getLineNumber();
             }
         }
@@ -183,7 +175,7 @@ public class ErrorMessage {
      */
     // Added January 2013
     public ErrorMessage(ProgramStatement statement, String message) {
-        this.isWarning = ERROR;
+        this.isWarning = false;
         this.filename = (statement.getSourceMIPSprogram() == null) ? "" : statement.getSourceMIPSprogram().getFilename();
         this.position = 0;
         this.message = message;
@@ -206,7 +198,7 @@ public class ErrorMessage {
         }
         else {
             this.line = defineLine.get(0);
-            this.macroExpansionHistory = "" + statement.getSourceLine();
+            this.macroExpansionHistory = Integer.toString(statement.getSourceLine());
         }
     }
 
@@ -222,7 +214,7 @@ public class ErrorMessage {
                     int line = Integer.parseInt(match.substring(1, match.length() - 1));
                     macroHistory.add(line);
                 }
-                catch (NumberFormatException e) {
+                catch (NumberFormatException exception) {
                     break;
                 }
                 verify = verify.substring(match.length()).strip();

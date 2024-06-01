@@ -37,9 +37,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 public class Symbol {
     private final String name;
     private int address;
-    private final boolean isData; // boolean true if data symbol false if text symbol.
-    public static final boolean TEXT_SYMBOL = false;
-    public static final boolean DATA_SYMBOL = true;
+    private final boolean isData;
 
     /**
      * Basic constructor, creates a symbol object.

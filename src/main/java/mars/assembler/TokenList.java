@@ -69,7 +69,7 @@ public class TokenList implements Cloneable {
      *
      * @return The source line for this token list.
      */
-	// DPS 03-Jan-2013/
+	// DPS 03-Jan-2013
     public String getProcessedLine() {
         return processedLine;
     }

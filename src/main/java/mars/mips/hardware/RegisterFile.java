@@ -165,7 +165,7 @@ public class RegisterFile {
      * @param name The register name, either in $0 or $zero format.
      * @return The register object, or null if not found.
      */
-    public static Register getUserRegister(String name) {
+    public static Register getRegister(String name) {
         if (name.isEmpty() || name.charAt(0) != '$') {
             return null;
         }
