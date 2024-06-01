@@ -1,6 +1,6 @@
 package mars.assembler;
 
-import mars.Program;
+import java.util.List;
 
 /*
 Copyright (c) 2003-2013,  Pete Sanderson and Kenneth Vollmar
@@ -39,58 +39,50 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * to the user.
  */
 public class SourceLine {
-    private final String source;
-    private final String filename;
-    private final Program mipsProgram;
-    private final int lineNumber;
+    private String content;
+    private int lineNumber;
+    private final List<Token> tokens;
 
     /**
-     * SourceLine constructor
+     * SourceLine constructor.
      *
-     * @param source      The source code itself
-     * @param mipsProgram The program (object representing source file) containing that line
-     * @param lineNumber  The line number within that program where source appears.
+     * @param content    The source code itself.
+     * @param lineNumber The line number within that program where source appears.
+     * @param tokens
      */
-    public SourceLine(String source, Program mipsProgram, int lineNumber) {
-        this.source = source;
-        this.mipsProgram = mipsProgram;
-        this.filename = (mipsProgram == null) ? null : mipsProgram.getFilename();
+    public SourceLine(String content, int lineNumber, List<Token> tokens) {
+        this.content = content;
+        this.lineNumber = lineNumber;
+        this.tokens = tokens;
+    }
+
+    /**
+     * Retrieve source statement itself.
+     *
+     * @return Source statement as String.
+     */
+    public String getContent() {
+        return this.content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    /**
+     * Retrieve line number of source statement.
+     *
+     * @return Line number of source statement.
+     */
+    public int getLineNumber() {
+        return this.lineNumber;
+    }
+
+    public void setLineNumber(int lineNumber) {
         this.lineNumber = lineNumber;
     }
 
-    /**
-     * Retrieve source statement itself
-     *
-     * @return Source statement as String
-     */
-    public String getSource() {
-        return source;
-    }
-
-    /**
-     * Retrieve name of file containing source statement
-     *
-     * @return File name as String
-     */
-    public String getFilename() {
-        return filename;
-    }
-
-    /**
-     * Retrieve line number of source statement
-     *
-     * @return Line number of source statement
-     */
-    public int getLineNumber() {
-        return lineNumber;
-    }
-
-    /**
-     * Retrieve MIPSprogram object containing source statement
-     *
-     * @return program as MIPSprogram object
-     */
-    public Program getMIPSprogram() {
-        return mipsProgram;
+    public List<Token> getTokens() {
+        return this.tokens;
     }
 }

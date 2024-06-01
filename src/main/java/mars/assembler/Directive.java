@@ -1,5 +1,6 @@
 package mars.assembler;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -80,10 +81,12 @@ public enum Directive {
      * @return If match is found, returns matching directive, else returns <code>null</code>.
      */
     public static Directive matchDirective(String name) {
-        return Arrays.stream(values())
-            .filter(directive -> directive.getName().equalsIgnoreCase(name))
-            .findAny()
-            .orElse(null);
+        for (Directive directive : Directive.values()) {
+            if (directive.getName().equalsIgnoreCase(name)) {
+                return directive;
+            }
+        }
+        return null;
     }
 
     /**
@@ -94,10 +97,14 @@ public enum Directive {
      * @return List of matching directives, which may be empty.
      */
     public static List<Directive> prefixMatchDirectives(String prefix) {
-        return Arrays.stream(values())
+        List<Directive> matches = new ArrayList<>();
+        for (Directive directive : Directive.values()) {
             // Something like .startsWithIgnoreCase(prefix) would be nice... this will have to do
-            .filter(directive -> directive.getName().regionMatches(true, 0, prefix, 0, prefix.length()))
-            .toList();
+            if (directive.getName().regionMatches(true, 0, prefix, 0, prefix.length())) {
+                matches.add(directive);
+            }
+        }
+        return matches;
     }
 
     /**

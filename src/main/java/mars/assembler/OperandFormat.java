@@ -118,7 +118,7 @@ public class OperandFormat {
             // added 2-July-2010 DPS
             // Not an error if instruction calls for identifier and candidate is operator, since operator names can be used as labels.
             if (expectedType == TokenType.IDENTIFIER && candidateType == TokenType.OPERATOR) {
-                Token replacement = new Token(TokenType.IDENTIFIER, candidateToken.getValue(), candidateToken.getSourceProgram(), candidateToken.getSourceLine(), candidateToken.getStartPos());
+                Token replacement = new Token(TokenType.IDENTIFIER, candidateToken.getLiteral(), candidateToken.getSourceFilename(), candidateToken.getSourceLine(), candidateToken.getSourceColumn());
                 tokenList.set(i, replacement);
                 continue;
             }
@@ -139,7 +139,7 @@ public class OperandFormat {
                 continue;
             }
             if (candidateType == TokenType.INTEGER_16U || candidateType == TokenType.INTEGER_16) {
-                int candidateValue = Binary.decodeInteger(candidateToken.getValue());
+                int candidateValue = Binary.decodeInteger(candidateToken.getLiteral());
                 if (expectedType == TokenType.INTEGER_16 && candidateType == TokenType.INTEGER_16U
                     && candidateValue >= DataTypes.MIN_HALF_VALUE && candidateValue <= DataTypes.MAX_HALF_VALUE)
                 {
@@ -173,6 +173,6 @@ public class OperandFormat {
 
     // Handy utility for all parse errors...
     private static void generateMessage(Token token, String message, ErrorList errors) {
-        errors.add(new ErrorMessage(token.getSourceProgram(), token.getSourceLine(), token.getStartPos(), "\"" + token.getValue() + "\": " + message));
+        errors.add(new ErrorMessage(token.getSourceFilename(), token.getSourceLine(), token.getSourceColumn(), "\"" + token.getLiteral() + "\": " + message));
     }
 }

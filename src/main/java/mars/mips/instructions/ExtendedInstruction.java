@@ -219,12 +219,12 @@ public class ExtendedInstruction extends Instruction {
         }
         // substitute first operand token for template's RG1 or OP1, second for RG2 or OP2, etc
         for (int op = 1; op < tokens.size(); op++) {
-            instruction = substitute(instruction, "RG" + op, tokens.get(op).getValue());
-            instruction = substitute(instruction, "OP" + op, tokens.get(op).getValue());
+            instruction = substitute(instruction, "RG" + op, tokens.get(op).getLiteral());
+            instruction = substitute(instruction, "OP" + op, tokens.get(op).getLiteral());
             // substitute upper 16 bits of label address, after adding singe digit constant following P
             if ((index = instruction.indexOf("LH" + op + "P")) >= 0) {
                 // Label, last operand, has already been translated to address by symtab lookup
-                String label = tokens.get(op).getValue();
+                String label = tokens.get(op).getLiteral();
                 int addr = 0;
                 int add = instruction.charAt(index + 4) - 48; // extract the digit following P
                 try {
@@ -242,7 +242,7 @@ public class ExtendedInstruction extends Instruction {
             // NOTE: form LHnPm will not match here since it is discovered and substituted above.
             if (instruction.contains("LH" + op)) {
                 // Label, last operand, has already been translated to address by symtab lookup
-                String label = tokens.get(op).getValue();
+                String label = tokens.get(op).getLiteral();
                 int addr = 0;
                 try {
                     addr = Binary.decodeInteger(label); // KENV 1/6/05
@@ -258,7 +258,7 @@ public class ExtendedInstruction extends Instruction {
             // substitute lower 16 bits of label address, after adding single digit that follows P
             if ((index = instruction.indexOf("LL" + op + "P")) >= 0) {
                 // label has already been translated to address by symtab lookup.
-                String label = tokens.get(op).getValue();
+                String label = tokens.get(op).getLiteral();
                 int addr = 0;
                 int add = instruction.charAt(index + 4) - 48; // digit that follows P
                 try {
@@ -273,7 +273,7 @@ public class ExtendedInstruction extends Instruction {
             // NOTE: form LLnPm will not match here since it is discovered and substituted above.
             if ((index = instruction.indexOf("LL" + op)) >= 0) {
                 // label has already been translated to address by symtab lookup.
-                String label = tokens.get(op).getValue();
+                String label = tokens.get(op).getLiteral();
                 int addr = 0;
                 try {
                     addr = Binary.decodeInteger(label); // KENV 1/6/05
@@ -291,7 +291,7 @@ public class ExtendedInstruction extends Instruction {
             // Substitute upper 16 bits of value after adding 1,2,3,4, (any single digit)
             // Added by DPS on 22 Jan 2008 to fix "ble" and "bgt" bug [do not adjust for bit 15==1]
             if ((index = instruction.indexOf("VHL" + op + "P")) >= 0) {
-                String value = tokens.get(op).getValue();
+                String value = tokens.get(op).getLiteral();
                 int val = 0;
                 int add = instruction.charAt(index + 5) - '0'; // amount to add: 1,2,3,4 (any single digit)
                 try {
@@ -305,7 +305,7 @@ public class ExtendedInstruction extends Instruction {
             // substitute upper 16 bits of value after adding 1,2,3,4, then adjust
             // if necessary, if resulting bit 15 is 1 (see "extra" below)
             if ((index = instruction.indexOf("VH" + op + "P")) >= 0) {
-                String value = tokens.get(op).getValue();
+                String value = tokens.get(op).getLiteral();
                 int val = 0;
                 int add = instruction.charAt(index + 4) - '0'; // amount to add: 1,2,3,4 (any single digit)
                 try {
@@ -322,7 +322,7 @@ public class ExtendedInstruction extends Instruction {
             // substitute upper 16 bits of value, adjusted if necessary (see "extra" below)
             // NOTE: if VHnPm appears it will not match here; already substituted by code above
             if (instruction.contains("VH" + op)) {
-                String value = tokens.get(op).getValue();
+                String value = tokens.get(op).getLiteral();
                 int val = 0;
                 try {
                     val = Binary.decodeInteger(value); // KENV 1/6/05
@@ -337,7 +337,7 @@ public class ExtendedInstruction extends Instruction {
             }
             // substitute lower 16 bits of value after adding specified amount (1,2,3,4)
             if ((index = instruction.indexOf("VL" + op + "P")) >= 0) {
-                String value = tokens.get(op).getValue();
+                String value = tokens.get(op).getLiteral();
                 int val = 0;
                 int add = instruction.charAt(index + 4) - '0'; // P is followed by 1,2,3,4(any single digit OK)
                 try {
@@ -355,7 +355,7 @@ public class ExtendedInstruction extends Instruction {
             }
             // substitute lower 16 bits of value.  NOTE: VLnPm already substituted by above code.
             if ((index = instruction.indexOf("VL" + op)) >= 0) {
-                String value = tokens.get(op).getValue();
+                String value = tokens.get(op).getLiteral();
                 int val = 0;
                 try {
                     val = Binary.decodeInteger(value); // KENV 1/6/05
@@ -373,7 +373,7 @@ public class ExtendedInstruction extends Instruction {
             // substitute upper 16 bits of 32 bit value
             if (instruction.contains("VHL" + op)) {
                 // value has to be second operand token.
-                String value = tokens.get(op).getValue(); // has to be token 2 position
+                String value = tokens.get(op).getLiteral(); // has to be token 2 position
                 int val = 0;
                 try {
                     val = Binary.decodeInteger(value); // KENV 1/6/05
@@ -387,7 +387,7 @@ public class ExtendedInstruction extends Instruction {
         // substitute upper 16 bits of label address for "la"
         if (instruction.contains("LHL")) {
             // Label has already been translated to address by symtab lookup
-            String label = tokens.get(2).getValue(); // has to be token 2 position
+            String label = tokens.get(2).getLiteral(); // has to be token 2 position
             int addr = 0;
             try {
                 addr = Binary.decodeInteger(label); // KENV 1/6/05
@@ -403,8 +403,8 @@ public class ExtendedInstruction extends Instruction {
         // Address will be resolved using addition, so need to add 1 to upper half if bit 15 is 1.
         if ((index = instruction.indexOf("LHPAP")) >= 0) {
             // Label has already been translated to address by symtab lookup
-            String label = tokens.get(2).getValue(); // 2 is only possible token position
-            String addend = tokens.get(4).getValue(); // 4 is only possible token position
+            String label = tokens.get(2).getLiteral(); // 2 is only possible token position
+            String addend = tokens.get(4).getLiteral(); // 4 is only possible token position
             int addr = 0;
             int add = instruction.charAt(index + 5) - 48; // extract digit following P
             try {
@@ -423,8 +423,8 @@ public class ExtendedInstruction extends Instruction {
         // NOTE: format LHPAPm is recognized and substituted by the code above.
         if (instruction.contains("LHPA")) {
             // Label has already been translated to address by symtab lookup
-            String label = tokens.get(2).getValue(); // 2 is only possible token position
-            String addend = tokens.get(4).getValue(); // 4 is only possible token position
+            String label = tokens.get(2).getLiteral(); // 2 is only possible token position
+            String addend = tokens.get(4).getLiteral(); // 4 is only possible token position
             int addr = 0;
             try {
                 addr = Binary.decodeInteger(label) + Binary.decodeInteger(addend); // KENV 1/6/05
@@ -442,8 +442,8 @@ public class ExtendedInstruction extends Instruction {
         // This only happens in the "la" (load address) instruction.
         if (instruction.contains("LHPN")) {
             // Label has already been translated to address by symtab lookup
-            String label = tokens.get(2).getValue(); // 2 is only possible token position
-            String addend = tokens.get(4).getValue(); // 4 is only possible token position
+            String label = tokens.get(2).getLiteral(); // 2 is only possible token position
+            String addend = tokens.get(4).getLiteral(); // 4 is only possible token position
             int addr = 0;
             try {
                 addr = Binary.decodeInteger(label) + Binary.decodeInteger(addend); // KENV 1/6/05
@@ -457,8 +457,8 @@ public class ExtendedInstruction extends Instruction {
         // and also adding the digit following LLPP in the spec.
         if ((index = instruction.indexOf("LLPP")) >= 0) {
             // label has already been translated to address by symtab lookup.
-            String label = tokens.get(2).getValue(); // 2 is only possible token position
-            String addend = tokens.get(4).getValue(); // 4 is only possible token position
+            String label = tokens.get(2).getLiteral(); // 2 is only possible token position
+            String addend = tokens.get(4).getLiteral(); // 4 is only possible token position
             int addr = 0;
             int add = instruction.charAt(index + 4) - 48; // extract digit following P
             try {
@@ -473,8 +473,8 @@ public class ExtendedInstruction extends Instruction {
         // NOTE: format LLPPm is recognized and substituted by the code above
         if ((index = instruction.indexOf("LLP")) >= 0) {
             // label has already been translated to address by symtab lookup.
-            String label = tokens.get(2).getValue(); // 2 is only possible token position
-            String addend = tokens.get(4).getValue(); // 4 is only possible token position
+            String label = tokens.get(2).getLiteral(); // 2 is only possible token position
+            String addend = tokens.get(4).getLiteral(); // 4 is only possible token position
             int addr = 0;
             try {
                 addr = Binary.decodeInteger(label) + Binary.decodeInteger(addend); // KENV 1/6/05
@@ -505,10 +505,10 @@ public class ExtendedInstruction extends Instruction {
         // substitute Next higher Register for registers in token list (for "mfc1.d","mtc1.d")
         if (instruction.contains("NR")) {
             for (int op = 1; op < tokens.size(); op++) {
-                String token = tokens.get(op).getValue();
+                String token = tokens.get(op).getLiteral();
                 int regNumber;
                 try { // if token is a RegisterFile register, substitute next higher register
-                    regNumber = RegisterFile.getUserRegister(token).getNumber();
+                    regNumber = RegisterFile.getRegister(token).getNumber();
                     if (regNumber >= 0) {
                         instruction = substitute(instruction, "NR" + op, "$" + (regNumber + 1));
                     }
@@ -524,7 +524,7 @@ public class ExtendedInstruction extends Instruction {
 
         // substitute result of subtracting last token from 32 (rol and ror constant rotate amount)
         if (instruction.contains("S32")) {
-            String value = tokens.get(tokens.size() - 1).getValue();
+            String value = tokens.get(tokens.size() - 1).getLiteral();
             int val = 0;
             try {
                 val = Binary.decodeInteger(value); // KENV 1/6/05
@@ -540,7 +540,7 @@ public class ExtendedInstruction extends Instruction {
             // label has to be last token.  It has already been translated to address
             // by symtab lookup, so I need to get the text label back so parseLine() won't puke.
             // TODO: I want to see if there's a way I can avoid this conversion... -Sean Clarke
-            String value = tokens.get(tokens.size() - 1).getValue();
+            String value = tokens.get(tokens.size() - 1).getLiteral();
             int address = -1;
             try {
                 // DPS 2-Aug-2010: was Integer.parseInt(value) but croaked on hex

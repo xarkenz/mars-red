@@ -1,7 +1,5 @@
 package mars.assembler;
 
-import mars.Program;
-
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
 
@@ -39,65 +37,32 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class Token {
     private TokenType type;
-    private final String value;
-    private final Program sourceProgram;
+    private Object value;
+    private final String literal;
+    private final String sourceFilename;
     private final int sourceLine;
-    private final int sourcePos;
+    private final int sourceColumn;
     // Original program and line will differ from the above if token was defined in an included file
-    private Program originalProgram;
-    private int originalSourceLine;
+    private Token originalToken;
 
     /**
      * Constructor for Token class.
      *
-     * @param type              The token type that this token has. (e.g. REGISTER_NAME)
-     * @param value             The source value for this token (e.g. $t3)
-     * @param sourceProgram The MIPSprogram object containing this token
-     * @param line              The line number in source program in which this token appears.
-     * @param start             The starting position in that line number of this token's source value.
-     * @see TokenType
+     * @param type     The token type that this token has. (e.g. REGISTER_NAME)
+     * @param value
+     * @param literal  The source literal for this token. (e.g. $t3)
+     * @param filename The name of the file containing this token.
+     * @param line     The line number in source program in which this token appears.
+     * @param column   The starting position in that line number of this token's source value.
      */
-    public Token(TokenType type, String value, Program sourceProgram, int line, int start) {
+    public Token(TokenType type, Object value, String literal, String filename, int line, int column) {
         this.type = type;
         this.value = value;
-        this.sourceProgram = sourceProgram;
+        this.literal = literal;
+        this.sourceFilename = filename;
         this.sourceLine = line;
-        this.sourcePos = start;
-        this.originalProgram = sourceProgram;
-        this.originalSourceLine = line;
-    }
-
-    /**
-     * Set original program and line number for this token.
-     * Line number or both may change during pre-assembly as a result
-     * of the ".include" directive, and we need to keep the original
-     * for later reference (error messages, text segment display).
-     *
-     * @param origProgram    MIPS program containing this token.
-     * @param origSourceLine Line within that program of this token.
-     */
-    public void setOriginal(Program origProgram, int origSourceLine) {
-        this.originalProgram = origProgram;
-        this.originalSourceLine = origSourceLine;
-    }
-
-    /**
-     * Produces original program containing this token.
-     *
-     * @return MIPSprogram of origin for this token.
-     */
-    public Program getOriginalProgram() {
-        return this.originalProgram;
-    }
-
-    /**
-     * Produces original line number of this token. It could change as result
-     * of ".include"
-     *
-     * @return original line number of this token.
-     */
-    public int getOriginalSourceLine() {
-        return this.originalSourceLine;
+        this.sourceColumn = column;
+        this.originalToken = this;
     }
 
     /**
@@ -106,7 +71,7 @@ public class Token {
      * @return TokenType of this token.
      */
     public TokenType getType() {
-        return type;
+        return this.type;
     }
 
     /**
@@ -114,10 +79,18 @@ public class Token {
      * an identifier that matches an instruction name is
      * actually being used as a label.
      *
-     * @param type new TokenTypes for this token.
+     * @param type New TokenTypes for this token.
      */
     public void setType(TokenType type) {
         this.type = type;
+    }
+
+    public Object getValue() {
+        return this.value;
+    }
+
+    public void setValue(Object value) {
+        this.value = value;
     }
 
     /**
@@ -125,45 +98,72 @@ public class Token {
      *
      * @return String containing source code of this token.
      */
-    public String getValue() {
-        return value;
+    public String getLiteral() {
+        return this.literal;
     }
 
     /**
      * Get a String representing the token.  This method is
-     * equivalent to getValue().
+     * equivalent to {@link #getLiteral()}.
      *
      * @return String version of the token.
      */
+    @Override
     public String toString() {
-        return value;
+        return this.getLiteral();
     }
 
     /**
-     * Produces MIPSprogram object associated with this token.
+     * Produces name of file associated with this token.
      *
-     * @return MIPSprogram object associated with this token.
+     * @return Name of file associated with this token.
      */
-    public Program getSourceProgram() {
-        return sourceProgram;
+    public String getSourceFilename() {
+        return this.sourceFilename;
     }
 
     /**
      * Produces line number of MIPS program of this token.
      *
-     * @return line number in source program of this token.
+     * @return Line number in source program of this token.
      */
     public int getSourceLine() {
-        return sourceLine;
+        return this.sourceLine;
     }
 
     /**
      * Produces position within source line of this token.
      *
-     * @return first character position within source program line of this token.
+     * @return First character position within source program line of this token.
      */
-    public int getStartPos() {
-        return sourcePos;
+    public int getSourceColumn() {
+        return this.sourceColumn;
+    }
+
+    /**
+     * Set original program and line number for this token.
+     * Line number or both may change during pre-assembly as a result
+     * of the ".include" directive, and we need to keep the original
+     * for later reference (error messages, text segment display).
+     *
+     * @param token
+     */
+    public void setOriginalToken(Token token) {
+        this.originalToken = token;
+    }
+
+    /**
+     * Get the original form of this token. Returns <code>this</code> unless the token:
+     * <ul>
+     * <li>Has been included from another file (<code>.include</code>).
+     * <li>Has been substituted as a result of an equivalence (<code>.eqv</code>).
+     * <li>Has been generated from an instance of a macro (<code>.macro</code>).
+     * </ul>
+     *
+     * @return Original form of this token.
+     */
+    public Token getOriginalToken() {
+        return this.originalToken;
     }
 }
 
