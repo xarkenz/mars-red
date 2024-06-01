@@ -34,52 +34,32 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Handy class to represent, for a given line of source code, the code
  * itself, the program containing it, and its line number within that program.
  * This is used to separately keep track of the original file/position of
- * a given line of code.  When <code>.include</code> is used, it will migrate to a different
- * line and possibly different program but the migration should not be visible to the user.
+ * a given line of code.  When .include is used, it will migrate to a different
+ * line and possibly different program but the migration should not be visible
+ * to the user.
  */
 public class SourceLine {
-    private final String filename;
-    private final int lineNumber;
     private String content;
+    private int lineNumber;
     private final List<Token> tokens;
 
     /**
      * SourceLine constructor.
      *
-     * @param filename   The name of the file containing the source program.
-     * @param lineNumber The line number within the source program.
-     * @param content    The raw source code of the line.
-     * @param tokens     The list of tokens that the line contains.
+     * @param content    The source code itself.
+     * @param lineNumber The line number within that program where source appears.
+     * @param tokens
      */
-    public SourceLine(String filename, int lineNumber, String content, List<Token> tokens) {
-        this.filename = filename;
-        this.lineNumber = lineNumber;
+    public SourceLine(String content, int lineNumber, List<Token> tokens) {
         this.content = content;
+        this.lineNumber = lineNumber;
         this.tokens = tokens;
     }
 
     /**
-     * Retrieve the name of the file containing the source program.
+     * Retrieve source statement itself.
      *
-     * @return The source filename.
-     */
-    public String getFilename() {
-        return this.filename;
-    }
-
-    /**
-     * Retrieve the line number within the source program.
-     *
-     * @return The source line number.
-     */
-    public int getLineNumber() {
-        return this.lineNumber;
-    }
-
-    /**
-     * Retrieve the raw source code of the line.
-     *
-     * @return The line content.
+     * @return Source statement as String.
      */
     public String getContent() {
         return this.content;
@@ -90,10 +70,18 @@ public class SourceLine {
     }
 
     /**
-     * Retrieve the list of tokens that the line contains.
+     * Retrieve line number of source statement.
      *
-     * @return The token list.
+     * @return Line number of source statement.
      */
+    public int getLineNumber() {
+        return this.lineNumber;
+    }
+
+    public void setLineNumber(int lineNumber) {
+        this.lineNumber = lineNumber;
+    }
+
     public List<Token> getTokens() {
         return this.tokens;
     }

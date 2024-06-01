@@ -1,12 +1,9 @@
 package mars.assembler;
 
 import mars.*;
-import mars.mips.hardware.Coprocessor1;
-import mars.mips.hardware.Register;
-import mars.mips.hardware.RegisterFile;
-import mars.util.Binary;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
@@ -44,114 +41,125 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * a MIPS program.  Since MIPS is line-oriented, each line defines a complete statement.
  * Tokenizing is the process of analyzing the input MIPS program for the purpose of
  * recognizing each MIPS language element.  The types of language elements are known as "tokens".
- * MIPS tokens are defined in the {@link TokenType} class.
+ * MIPS tokens are defined in the TokenTypes class.
  * <p>
  * Example: The MIPS statement  <code>here:  lw  $t3, 8($t4)   #load third member of array</code><br>
  * generates the following token list<br>
  * IDENTIFIER, COLON, OPERATOR, REGISTER_NAME, COMMA, INTEGER_5, LEFT_PAREN,
  * REGISTER_NAME, RIGHT_PAREN, COMMENT<br>
  *
- * @author Pete Sanderson, August 2003
+ * @author Pete Sanderson
+ * @version August 2003
  */
 public class Tokenizer {
-    /**
-     * COD2, A-51:  "Identifiers are a sequence of alphanumeric characters,
-     * underbars (_), and dots (.) that do not begin with a number."
-     * <p>
-     * DPS 14-Jul-2008: added '$' as valid symbol.  Permits labels to include $.
-     * MIPS-target GCC will produce labels that start with $.
-     */
-    public static boolean isValidIdentifier(String value) {
-        if (!(Character.isLetter(value.charAt(0)) || value.charAt(0) == '_' || value.charAt(0) == '.' || value.charAt(0) == '$')) {
-            return false;
-        }
-        for (int index = 1; index < value.length(); index++) {
-            if (!(Character.isLetterOrDigit(value.charAt(index)) || value.charAt(index) == '_' || value.charAt(index) == '.' || value.charAt(index) == '$')) {
-                return false;
-            }
-        }
-        return true;
-    }
+    private final Map<String, String> equivalences; // DPS 11-July-2012
+    private final Set<String> knownFilenames;
 
     /**
-     * Tokenize a complete MIPS program from a file, line by line. Each line of source code is translated into a
-     * {@link SourceLine}, which consists of both the original code and its tokenized form.
-     * <p>
-     * Note: Equivalences, includes, and macros are handled by the {@link Preprocessor} at this stage.
-     *
-     * @param filename The name of the file containing source code to be tokenized.
-     * @param errors   The error list, which will be populated with any tokenizing errors in the given lines.
-     * @return The list of tokenized lines.
+     * Simple constructor.
      */
-    public static List<SourceLine> tokenize(String filename, ErrorList errors) {
-        return tokenize(filename, errors, new Preprocessor(filename));
+    public Tokenizer() {
+        this.equivalences = new HashMap<>(); // DPS 11-July-2012
+        this.knownFilenames = new HashSet<>();
     }
 
-    public static List<SourceLine> tokenize(String filename, ErrorList errors, Preprocessor preprocessor) {
+    public List<SourceLine> tokenize(String filename, ErrorList errors) {
         try {
             BufferedReader inputFile = new BufferedReader(new FileReader(filename));
             // Gather all lines from the source file into a list of strings
-            return tokenize(filename, inputFile.lines().toList(), errors, preprocessor);
+            return this.tokenize(inputFile.lines().toList(), errors);
         }
         catch (IOException exception) {
-            errors.add(new ErrorMessage(
-                filename,
-                0,
-                0,
-                "Unable to read file: " + exception
-            ));
+            errors.add(new ErrorMessage((Program) null, 0, 0, exception.toString()));
             return new ArrayList<>();
         }
     }
 
     /**
-     * Tokenize a complete MIPS program, line by line. Each line of source code is translated into a
-     * {@link SourceLine}, which consists of both the original code and its tokenized form.
-     * <p>
-     * Note: Equivalences, includes, and macros are handled by the {@link Preprocessor} at this stage.
+     * Will tokenize a complete MIPS program.  MIPS is line oriented (not free format),
+     * so we will be line-oriented too.
      *
-     * @param filename The filename indicating where the given source code is from.
-     * @param lines    The source code to be tokenized.
-     * @param errors   The error list, which will be populated with any tokenizing errors in the given lines.
-     * @return The list of tokenized lines.
+     * @param lines The source code to be tokenized.
+     * @return An ArrayList representing the tokenized program.  Each list member is a TokenList
+     *         that represents a tokenized source statement from the MIPS program.
      */
-    public static List<SourceLine> tokenize(String filename, List<String> lines, ErrorList errors) {
-        return tokenize(filename, lines, errors, new Preprocessor(filename));
-    }
-
-    public static List<SourceLine> tokenize(String filename, List<String> lines, ErrorList errors, Preprocessor preprocessor) {
-        if (preprocessor.checkFilename(filename)) {
-            errors.add(new ErrorMessage(
-                filename,
-                0,
-                0,
-                "This file has already been included (recursive or duplicate include)"
-            ));
-        }
-
-        // It's reasonable to guess that the number of lines output will equal the number of lines input...
-        // the only exception is the .include directive, which pastes all lines from another file
+    public List<SourceLine> tokenize(List<String> lines, ErrorList errors) {
         List<SourceLine> sourceLines = new ArrayList<>(lines.size());
 
         int lineNumber = 1;
         for (String line : lines) {
-            SourceLine sourceLine = tokenizeLine(filename, line, lineNumber++, errors, preprocessor);
-            preprocessor.processLine(sourceLines, sourceLine, errors);
+            sourceLines.add(tokenizeLine(line, lineNumber++, errors));
+            // DPS 03-Jan-2013. Related to 11-July-2012.
+            // This statement will replace original source with source modified by .eqv substitution.
+            // Not needed by assembler, but looks better in the Text Segment Display.
         }
 
         return sourceLines;
     }
 
     /**
-     * Tokenize one line of source code. If lexical errors are discovered, they are added to the given error list
-     * rather than being thrown as exceptions.
+     * Pre-pre-processing pass through source code to process any ".include" directives.
+     * When one is encountered, the contents of the included file are inserted at that
+     * point.  If no .include statements, the return value is a new array list but
+     * with the same lines of source code.  Uses recursion to correctly process included
+     * files that themselves have .include.  Plus it will detect and report recursive
+     * includes both direct and indirect.
      *
-     * @param filename     The filename indicating where the given source code is from.
-     * @param line         The content of the line to be tokenized.
-     * @param lineNumber   The line number in the source file (for error reporting).
-     * @param errors       The error list, which will be populated with any tokenizing errors in the given lines.
-     * @param preprocessor The current preprocessor instance, which will process token substitutions.
-     * @return The generated tokens for the given line.
+     * @author DPS 11-Jan-2013
+     */
+    private ArrayList<SourceLine> processIncludes(Program program, Map<String, String> includeFiles) throws ProcessingException {
+        List<String> source = program.getSourceList();
+        ArrayList<SourceLine> result = new ArrayList<>(source.size());
+        for (int sourceIndex = 0; sourceIndex < source.size(); sourceIndex++) {
+            String line = source.get(sourceIndex);
+            TokenList lineTokens = tokenizeLine(program, sourceIndex + 1, line, false);
+            boolean hasInclude = false;
+            for (int index = 0; index < lineTokens.size(); index++) {
+                if (lineTokens.get(index).getLiteral().equalsIgnoreCase(Directive.INCLUDE.getName()) && (lineTokens.size() > index + 1) && lineTokens.get(index + 1).getType() == TokenType.QUOTED_STRING) {
+                    String filename = lineTokens.get(index + 1).getLiteral();
+                    filename = filename.substring(1, filename.length() - 1); // get rid of quotes
+                    // Handle either absolute or relative pathname for .include file
+                    if (!new File(filename).isAbsolute()) {
+                        filename = new File(program.getFilename()).getParent() + File.separator + filename;
+                    }
+                    if (includeFiles.containsKey(filename)) {
+                        // This is a recursive include.  Generate error message and return immediately.
+                        Token t = lineTokens.get(index + 1);
+                        errors.add(new ErrorMessage(program, t.getSourceLine(), t.getSourceColumn(), "Recursive include of file " + filename));
+                        throw new ProcessingException(errors);
+                    }
+                    includeFiles.put(filename, filename);
+                    Program incl = new Program();
+                    try {
+                        incl.readSource(filename);
+                    }
+                    catch (ProcessingException p) {
+                        Token t = lineTokens.get(index + 1);
+                        errors.add(new ErrorMessage(program, t.getSourceLine(), t.getSourceColumn(), "Error reading include file " + filename));
+                        throw new ProcessingException(errors);
+                    }
+                    ArrayList<SourceLine> allLines = processIncludes(incl, includeFiles);
+                    result.addAll(allLines);
+                    hasInclude = true;
+                    break;
+                }
+            }
+            if (!hasInclude) {
+                result.add(new SourceLine(line, program, sourceIndex + 1));
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Will tokenize one line of source code.  If lexical errors are discovered,
+     * they are noted in an ErrorMessage object which is added to the provided ErrorList
+     * instead of the Tokenizer's error list. Will NOT throw an exception.
+     *
+     * @param line       String containing source code
+     * @param lineNumber Line number from source code (used in error message)
+     * @param errors
+     * @return the generated token list for that line
      */
     /*
      * Tokenizing is not as easy as it appears at first blush, because the typical
@@ -168,509 +176,277 @@ public class Tokenizer {
      *
      * Given all the above, it is just as easy to "roll my own" as to use StringTokenizer
      */
-    public static SourceLine tokenizeLine(String filename, String line, int lineNumber, ErrorList errors, Preprocessor preprocessor) {
+    public static SourceLine tokenizeLine(String line, int lineNumber, ErrorList errors) {
         List<Token> tokens = new ArrayList<>();
 
         if (line.isBlank()) {
-            return new SourceLine(filename, lineNumber, line, tokens);
+            return new SourceLine(line, lineNumber, tokens);
         }
 
-        int index = 0;
-        mainLoop: while (index < line.length()) {
-            char startChar = line.charAt(index);
+        StringBuilder currentLiteral = new StringBuilder();
+        int tokenStartIndex = 0;
 
-            switch (startChar) {
-                // Delimiter (not a token, ignored)
-                case ',', ' ', '\t' -> {}
-                // Line comment
+        for (int index = 0; index < line.length(); index++) {
+            char ch = line.charAt(index);
+
+            switch (ch) {
                 case '#' -> {
-                    preprocessor.processToken(tokens, new Token(
-                        TokenType.COMMENT,
-                        null,
-                        line.substring(index),
-                        filename,
-                        lineNumber,
-                        index
-                    ));
-                    // Skip to the end of the line
+                    // # denotes comment that takes remainder of line
+                    if (tokenPos > 0) {
+                        this.processLiteral(token, line, lineNumber, tokenStartIndex, tokens);
+                    }
+                    tokenStartIndex = index;
+                    tokenPos = line.length() - index;
+                    System.arraycopy(line.toCharArray(), index, token, 0, tokenPos);
+                    this.processLiteral(token, line, lineNumber, tokenStartIndex, tokens);
                     index = line.length();
+                    tokenPos = 0;
                 }
-                // Single-character tokens (excluding plus and minus, which are handled by the default case)
+                case ' ', '\t', ',' -> {
+                    // Space, tab or comma is delimiter
+                    if (tokenPos > 0) {
+                        this.processLiteral(token, line, lineNumber, tokenStartIndex, tokens);
+                        tokenPos = 0;
+                    }
+                }
+                // These two guys are special.  Will be recognized as unary if and only if two conditions hold:
+                // 1. Immediately followed by a digit (will use look-ahead for this).
+                // 2. Previous token, if any, is not an IDENTIFIER
+                // Otherwise considered binary and thus a separate token.  This is a slight hack but reasonable.
+                case '+', '-' -> {
+                    // Here's the REAL hack: recognizing signed exponent in E-notation floating point!
+                    // (e.g. 1.2e-5) Add the + or - to the token and keep going.  DPS 17 Aug 2005
+                    if (tokenPos > 0 && line.length() >= index + 2 && Character.isDigit(line[index + 1]) && (line[index - 1] == 'e' || line[index - 1] == 'E')) {
+                        token[tokenPos++] = ch;
+                        break;
+                    }
+                    // End of REAL hack.
+                    if (tokenPos > 0) {
+                        this.processLiteral(token, line, lineNumber, tokenStartIndex, tokens);
+                        tokenPos = 0;
+                    }
+                    tokenStartIndex = index;
+                    token[tokenPos++] = ch;
+                    if (!((tokens.isEmpty() || tokens.get(tokens.size() - 1).getType() != TokenType.IDENTIFIER) && (line.length >= index + 2 && Character.isDigit(line[index + 1])))) {
+                        // Treat it as binary
+                        this.processLiteral(token, line, lineNumber, tokenStartIndex, tokens);
+                        tokenPos = 0;
+                    }
+                }
                 case ':', '(', ')' -> {
-                    preprocessor.processToken(tokens, new Token(
-                        switch (startChar) {
-                            case ':' -> TokenType.COLON;
-                            case '(' -> TokenType.LEFT_PAREN;
-                            case ')' -> TokenType.RIGHT_PAREN;
-                            // Should not happen, only included to satisfy the compiler
-                            default -> TokenType.ERROR;
-                        },
-                        null,
-                        Character.toString(startChar),
-                        filename,
-                        lineNumber,
-                        index
-                    ));
-                    // Move on to the next character
-                    index++;
-                }
-                // Character literal
-                case '\'' -> {
-                    // This is handled almost exactly like a string, except the number of characters must be 1
-                    int startIndex = index;
-                    StringBuilder value = new StringBuilder();
-                    // Move on to the content of the literal
-                    index++;
-                    while (index < line.length()) {
-                        char ch = line.charAt(index);
-                        switch (ch) {
-                            // End of the character literal
-                            case '\'' -> {
-                                // Move on to the next character after the quote
-                                index++;
-                                if (value.isEmpty()) {
-                                    errors.add(new ErrorMessage(
-                                        filename,
-                                        lineNumber,
-                                        startIndex,
-                                        "Empty character literal"
-                                    ));
-                                    continue mainLoop;
-                                }
-                                else if (value.length() > 1) {
-                                    errors.add(new ErrorMessage(
-                                        filename,
-                                        lineNumber,
-                                        startIndex,
-                                        "Too many characters in character literal"
-                                    ));
-                                }
-                                preprocessor.processToken(tokens, new Token(
-                                    TokenType.CHARACTER,
-                                    value.charAt(0),
-                                    line.substring(startIndex, index),
-                                    filename,
-                                    lineNumber,
-                                    startIndex
-                                ));
-                                continue mainLoop;
-                            }
-                            // Escape sequence
-                            case '\\' -> {
-                                index = handleCharEscape(value, filename, lineNumber, ++index, line, errors);
-                            }
-                            // Literal character
-                            default -> {
-                                value.append(ch);
-                                index++;
-                            }
-                        }
+                    // These are other single-character tokens
+                    if (tokenPos > 0) {
+                        this.processLiteral(token, line, lineNumber, tokenStartIndex, tokens);
+                        tokenPos = 0;
                     }
-                    // If execution reaches this point, the literal was not properly terminated
-                    errors.add(new ErrorMessage(
-                        filename,
-                        lineNumber,
-                        startIndex,
-                        "Unclosed character literal"
-                    ));
-                    if (!value.isEmpty()) {
-                        preprocessor.processToken(tokens, new Token(
-                            TokenType.CHARACTER,
-                            (int) value.charAt(0),
-                            line.substring(startIndex),
-                            filename,
-                            lineNumber,
-                            startIndex
-                        ));
-                    }
+                    tokenStartIndex = index;
+                    token[tokenPos++] = ch;
+                    this.processLiteral(token, line, lineNumber, tokenStartIndex, tokens);
+                    tokenPos = 0;
                 }
-                // String literal
                 case '"' -> {
-                    int startIndex = index;
-                    StringBuilder value = new StringBuilder();
-                    // Move on to the content of the literal
-                    index++;
-                    while (index < line.length()) {
-                        char ch = line.charAt(index);
-                        switch (ch) {
-                            // End of the string literal
-                            case '"' -> {
-                                // Move on to the next character after the quote
-                                index++;
-                                preprocessor.processToken(tokens, new Token(
-                                    TokenType.STRING,
-                                    value.toString(),
-                                    line.substring(startIndex, index),
-                                    filename,
-                                    lineNumber,
-                                    startIndex
-                                ));
-                                continue mainLoop;
-                            }
-                            // Escape sequence
-                            case '\\' -> {
-                                index = handleCharEscape(value, filename, lineNumber, ++index, line, errors);
-                            }
-                            // Literal character
-                            default -> {
-                                value.append(ch);
-                                index++;
-                            }
-                        }
+                    if (tokenPos > 0) {
+                        this.processLiteral(token, line, lineNumber, tokenStartIndex, tokens);
+                        tokenPos = 0;
                     }
-                    // If execution reaches this point, the literal was not properly terminated
-                    errors.add(new ErrorMessage(
-                        filename,
-                        lineNumber,
-                        startIndex,
-                        "Unclosed string literal"
-                    ));
-                    preprocessor.processToken(tokens, new Token(
-                        TokenType.STRING,
-                        value.toString(),
-                        line.substring(startIndex),
-                        filename,
-                        lineNumber,
-                        startIndex
-                    ));
+                    tokenStartIndex = index;
+                    token[tokenPos++] = ch;
+                    insideQuotedString = true; // we're not inside a quoted string, so start a new token...
                 }
-                // Something else
+                case '\'' -> {
+                    if (tokenPos > 0) {
+                        this.processLiteral(token, line, lineNumber, tokenStartIndex, tokens);
+                        tokenPos = 0;
+                    }
+                    // Our strategy is to process the whole thing right now...
+                    tokenStartIndex = index;
+                    token[tokenPos++] = ch; // Put the quote in token[0]
+                    int lookaheadChars = line.length() - index - 1;
+                    // need minimum 2 more characters, 1 for char and 1 for ending quote
+                    if (lookaheadChars < 2) {
+                        break;  // gonna be an error
+                    }
+                    ch = line[++index];
+                    token[tokenPos++] = ch; // grab second character, put it in token[1]
+                    if (ch == '\'') {
+                        break; // gonna be an error: nothing between the quotes
+                    }
+                    ch = line[++index];
+                    token[tokenPos++] = ch; // grab third character, put it in token[2]
+                    // Process if we've either reached second, non-escaped, quote or end of line.
+                    if (ch == '\'' && token[1] != '\\' || lookaheadChars == 2) {
+                        this.processLiteral(token, line, lineNumber, tokenStartIndex, tokens);
+                        tokenPos = 0;
+                        tokenStartIndex = index;
+                        break;
+                    }
+                    // At this point, there is at least one more character on this line. If we're
+                    // still here after seeing a second quote, it was escaped.  Not done yet;
+                    // we either have an escape code, an octal code (also escaped) or invalid.
+                    ch = line[++index];
+                    token[tokenPos++] = ch; // grab fourth character, put it in token[3]
+                    // Process if this is ending quote for escaped character or if at end of line
+                    if (ch == '\'' || lookaheadChars == 3) {
+                        this.processLiteral(token, line, lineNumber, tokenStartIndex, tokens);
+                        tokenPos = 0;
+                        tokenStartIndex = index;
+                        break;
+                    }
+                    // At this point, we've handled all legal possibilities except octal, e.g. '\377'
+                    // Proceed if enough characters remain to finish off octal.
+                    if (lookaheadChars >= 5) {
+                        ch = line[++index];
+                        token[tokenPos++] = ch;  // grab fifth character, put it in token[4]
+                        if (ch != '\'') {
+                            // still haven't reached end, last chance for validity!
+                            ch = line[++index];
+                            token[tokenPos++] = ch;  // grab sixth character, put it in token[5]
+                        }
+                    }
+                    // Process no matter what...we either have a valid character by now or not
+                    this.processLiteral(token, line, lineNumber, tokenStartIndex, tokens);
+                    tokenPos = 0;
+                    tokenStartIndex = index; // start of character constant (single quote).
+                }
                 default -> {
-                    if (startChar == '+' || startChar == '-') {
-                        // Either binary (e.g. label+4), which gets its own token, or unary (e.g. -10).
-                        // If a plus or minus immediately follows an identifier, it is considered binary.
-                        // Hacky, but it will have to do for now.
-                        if (!tokens.isEmpty() && tokens.get(tokens.size() - 1).getType() == TokenType.IDENTIFIER) {
-                            preprocessor.processToken(tokens, new Token(
-                                (startChar == '+') ? TokenType.PLUS : TokenType.MINUS,
-                                null,
-                                Character.toString(startChar),
-                                filename,
-                                lineNumber,
-                                index
-                            ));
-                            continue;
-                        }
+                    // The character will be part of some literal
+                    if (currentLiteral.isEmpty()) {
+                        tokenStartIndex = index;
                     }
-
-                    // Check for either a number or identifier of some kind
-                    if (Character.isLetterOrDigit(startChar) || startChar == '_' || startChar == '.' || startChar == '$' || startChar == '%') {
-                        int startIndex = index;
-                        // Assume the first character to be part of whatever this is
-                        StringBuilder builder = new StringBuilder();
-                        builder.append(startChar);
-                        index++;
-
-                        // A number can either start with a digit or a prefix followed by a digit
-                        // Decimal point, plus, and minus are all valid prefixes
-                        boolean isNumber = Character.isDigit(startChar) || (
-                            (startChar == '.' || startChar == '+' || startChar == '-')
-                            && index < line.length()
-                            && Character.isDigit(line.charAt(index))
-                        );
-
-                        // Accumulate characters as long as they fit a number or identifier
-                        while (index < line.length()) {
-                            char ch = line.charAt(index);
-                            if (Character.isLetterOrDigit(ch) || ch == '_' || ch == '.' || ch == '$') {
-                                builder.append(ch);
-                            }
-                            // Check for the special +/- in exponential form (e.g. 1.2e+34)
-                            else if (isNumber && (ch == '+' || ch == '-')) {
-                                char prevChar = builder.charAt(builder.length() - 1);
-                                if (prevChar == 'e' || prevChar == 'E') {
-                                    builder.append(ch);
-                                }
-                                else {
-                                    break;
-                                }
-                            }
-                            else {
-                                break;
-                            }
-                        }
-
-                        String value = builder.toString();
-
-                        // See if it is a macro parameter
-                        if (Macro.tokenIsMacroParameter(value, false)) {
-                            preprocessor.processToken(tokens, new Token(
-                                TokenType.MACRO_PARAMETER,
-                                null,
-                                value,
-                                filename,
-                                lineNumber,
-                                startIndex
-                            ));
-                            continue;
-                        }
-
-                        // See if it is a register name or number
-                        Register register = RegisterFile.getRegister(value);
-                        if (register != null) {
-                            preprocessor.processToken(tokens, new Token(
-                                (register.getName().equals(value))
-                                    ? TokenType.REGISTER_NAME
-                                    : TokenType.REGISTER_NUMBER,
-                                register.getNumber(),
-                                value,
-                                filename,
-                                lineNumber,
-                                startIndex
-                            ));
-                            continue;
-                        }
-
-                        // See if it is a floating point register name
-                        register = Coprocessor1.getRegister(value);
-                        if (register != null) {
-                            preprocessor.processToken(tokens, new Token(
-                                TokenType.FP_REGISTER_NAME,
-                                register.getNumber(),
-                                value,
-                                filename,
-                                lineNumber,
-                                startIndex
-                            ));
-                            break;
-                        }
-
-                        // See if it is an immediate (constant) integer value
-                        try {
-                            int intValue = Binary.decodeInteger(value); // KENV 1/6/05
-
-                            /* MODIFICATION AND COMMENT, DPS 3-July-2008
-                             *
-                             * The modifications of January 2005 documented below are being rescinded.
-                             * All hexadecimal immediate values are considered 32 bits in length and
-                             * their classification as INTEGER_5, INTEGER_16, INTEGER_16U (new)
-                             * or INTEGER_32 depends on their 32 bit value.  So 0xFFFF will be
-                             * equivalent to 0x0000FFFF instead of 0xFFFFFFFF.  This change, along with
-                             * the introduction of INTEGER_16U (adopted from Greg Gibeling of Berkeley),
-                             * required extensive changes to instruction templates especially for
-                             * pseudo-instructions.
-                             *
-                             * This modification also appears in buildBasicStatementFromBasicInstruction()
-                             * in mars.ProgramStatement.
-                             *
-                             * ///// Begin modification 1/4/05 KENV   ///////////////////////////////////////////
-                             * // We have decided to interpret non-signed (no + or -) 16-bit hexadecimal immediate
-                             * // operands as signed values in the range -32768 to 32767. So 0xffff will represent
-                             * // -1, not 65535 (bit 15 as sign bit), 0x8000 will represent -32768 not 32768.
-                             * // NOTE: 32-bit hexadecimal immediate operands whose values fall into this range
-                             * // will be likewise affected, but they are used only in pseudo-instructions.  The
-                             * // code in ExtendedInstruction.java to split this number into upper 16 bits for "lui"
-                             * // and lower 16 bits for "ori" works with the original source code token, so it is
-                             * // not affected by this tweak.  32-bit immediates in data segment directives
-                             * // are also processed elsewhere so are not affected either.
-                             * ////////////////////////////////////////////////////////////////////////////////
-                             *
-                             * if (Binary.isHex(value) && intValue >= 0x8000 && intValue <= 0xFFFF) {
-                             *     // Subtract the 0x10000 bias, because strings in the
-                             *     // range 0x8000 to 0xFFFF are used to represent
-                             *     // 16-bit negative numbers, not positive numbers.
-                             *     intValue -= 0x10000;
-                             * }
-                             * // ------------- END KENV 1/4/05 MODIFICATIONS --------------
-                             *
-                             * END DPS 3-July-2008 COMMENTS */
-
-                            // Classify the integer based on the number of bits needed to represent it in binary
-                            // Shift operands must fit in 5 bits, thus being limited to 0-31
-                            TokenType intType;
-                            if (0 <= intValue && intValue <= 31) {
-                                intType = TokenType.INTEGER_5;
-                            }
-                            else if (DataTypes.MIN_UHALF_VALUE <= intValue && intValue <= DataTypes.MAX_UHALF_VALUE) {
-                                intType = TokenType.INTEGER_16U;
-                            }
-                            else if (DataTypes.MIN_HALF_VALUE <= intValue && intValue <= DataTypes.MAX_HALF_VALUE) {
-                                intType = TokenType.INTEGER_16;
-                            }
-                            else {
-                                intType = TokenType.INTEGER_32;
-                            }
-                            preprocessor.processToken(tokens, new Token(
-                                intType,
-                                intValue,
-                                value,
-                                filename,
-                                lineNumber,
-                                startIndex
-                            ));
-                            break;
-                        }
-                        catch (NumberFormatException exception) {
-                            // Ignore, this simply means the token is not an integer
-                        }
-
-                        // See if it is a real (fixed-point or floating-point) number. Note that integers can also
-                        // be used as real numbers, but have already been handled above.
-                        // NOTE: This also accepts would-be identifiers "Infinity" and "NaN".
-                        try {
-                            double doubleValue = Double.parseDouble(value);
-                            preprocessor.processToken(tokens, new Token(
-                                TokenType.REAL_NUMBER,
-                                doubleValue,
-                                value,
-                                filename,
-                                lineNumber,
-                                startIndex
-                            ));
-                            break;
-                        }
-                        catch (NumberFormatException exception) {
-                            // Ignore, this simply means the token is not a real number
-                        }
-
-                        // See if it is a directive
-                        if (value.charAt(0) == '.') {
-                            Directive directive = Directive.matchDirective(value);
-                            if (directive != null) {
-                                preprocessor.processToken(tokens, new Token(
-                                    TokenType.DIRECTIVE,
-                                    directive,
-                                    value,
-                                    filename,
-                                    lineNumber,
-                                    startIndex
-                                ));
-                                break;
-                            }
-                        }
-
-                        // See if it is an instruction operator
-                        if (Application.instructionSet.matchOperator(value) != null) {
-                            preprocessor.processToken(tokens, new Token(
-                                TokenType.OPERATOR,
-                                null,
-                                value,
-                                filename,
-                                lineNumber,
-                                startIndex
-                            ));
-                            break;
-                        }
-
-                        // Test for general identifier goes last because there are defined tokens for various
-                        // MIPS constructs (such as operators and directives) that also could fit
-                        // the lexical specifications of an identifier, and those need to be recognized first.
-                        if (isValidIdentifier(value)) {
-                            preprocessor.processToken(tokens, new Token(
-                                TokenType.IDENTIFIER,
-                                null,
-                                value,
-                                filename,
-                                lineNumber,
-                                startIndex
-                            ));
-                            break;
-                        }
-
-                        // Doesn't match any MIPS language token, so produce an error
-                        if (isNumber) {
-                            errors.add(new ErrorMessage(
-                                filename,
-                                lineNumber,
-                                startIndex,
-                                "Invalid number: " + value
-                            ));
-                        }
-                        else {
-                            errors.add(new ErrorMessage(
-                                filename,
-                                lineNumber,
-                                startIndex,
-                                "Invalid language element: " + value
-                            ));
-                        }
-                    }
-                    else {
-                        // startChar is some character that isn't recognized as the start of a token
-                        errors.add(new ErrorMessage(
-                            filename,
-                            lineNumber,
-                            index,
-                            "Unexpected character: " + startChar
-                                + " (0x" + Integer.toUnsignedString(startChar, 16) + ")"
-                        ));
-                    }
+                    currentLiteral.append(ch);
                 }
             }
         }
+        if (tokenPos > 0) {
+            processLiteral(currentLiteral.toString(), line, lineNumber, tokenStartIndex, tokens);
+        }
 
-        return new SourceLine(filename, lineNumber, line, tokens);
+        return new SourceLine(line, lineNumber, tokens);
     }
 
     /**
-     * Handle an escape for a character or string literal. It is assumed that <code>index</code> has already been
-     * incremented past the initial backslash.
-     *
-     * @return The new value of <code>index</code>, which corresponds to the next character in the line.
+     * Given candidate token and its position, will classify and record it.
      */
-    private static int handleCharEscape(StringBuilder value, String filename, int lineNumber, int index, String line, ErrorList errors) {
-        // If the line ends abruptly, leave the index as is... other code will deal with it
-        if (index >= line.length()) {
-            return index;
+    private static void processLiteral(StringBuilder literal, String line, int lineNumber, int tokenStartIndex, TokenList tokenList) {
+        TokenType tokenType = TokenType.detectLiteralType(literal.toString());
+        if (tokenType == TokenType.ERROR) {
+            errors.add(new ErrorMessage((Program) null, lineNumber, tokenStartIndex, line + "\nInvalid language element: " + literal));
         }
+        tokenList.add(new Token(tokenType, literal, program, lineNumber, tokenStartIndex));
+    }
 
-        // Get the first character of the escape sequence
-        char ch = line.charAt(index);
-        switch (ch) {
-            // Line feed (newline)
-            case 'n' -> value.append('\n');
-            // Tab
-            case 't' -> value.append('\t');
-            // Carriage return
-            case 'r' -> value.append('\r');
-            // Backspace
-            case 'b' -> value.append('\b');
-            // Form feed (rarely useful)
-            case 'f' -> value.append('\f');
-            // Backslash & quote escapes
-            case '\\', '\'', '\"' -> value.append(ch);
-            // Octal or invalid
-            default -> {
-                // Check for an octal digit
-                if ('0' <= ch && ch <= '7') {
-                    // 3 octal digits represent 9 bits, so if the first digit has the most significant bit set
-                    // (i.e. 4-7), it can only have one digit follow in order to fit in 8 bits
-                    int maxDigits = (ch >= '4') ? 2 : 3;
-                    int octalValue = ch - '0';
-                    // Start at the second digit because the first has already been handled
-                    // For consistency, `index` always represents the index of the last known valid digit
-                    for (int digit = 1; digit < maxDigits && index + 1 < line.length(); digit++) {
-                        ch = line.charAt(index + 1);
-                        if ('0' <= ch && ch <= '7') {
-                            // This is a valid octal digit
-                            index++;
-                            // Insert the new digit as the least significant 3 bits
-                            octalValue = (octalValue << 3) | (ch - '0');
-                        }
-                        else {
-                            // Not a valid octal digit, so it is assumed to not be part of this escape sequence
-                            break;
-                        }
+    /**
+     * Process the .eqv directive, which needs to be applied prior to tokenizing of subsequent statements.
+     * This handles detecting that theLine contains a .eqv directive, in which case it needs
+     * to be added to the HashMap of equivalents.  It also handles detecting that theLine
+     * contains a symbol that was previously defined in an .eqv directive, in which case
+     * the substitution needs to be made.
+     * DPS 11-July-2012
+     */
+    private TokenList processEqv(Program program, int lineNum, String theLine, TokenList tokens) {
+        // See if it is .eqv directive.  If so, record it...
+        // Have to assure it is a well-formed statement right now (can't wait for assembler).
+        if (tokens.size() > 2 && (tokens.get(0).getType() == TokenType.DIRECTIVE || tokens.get(2).getType() == TokenType.DIRECTIVE)) {
+            // There should not be a label but if there is, the directive is in token position 2 (ident, colon, directive).
+            int dirPos = (tokens.get(0).getType() == TokenType.DIRECTIVE) ? 0 : 2;
+            if (Directive.matchDirective(tokens.get(dirPos).getLiteral()) == Directive.EQV) {
+                // Get position in token list of last non-comment token
+                int tokenPosLastOperand = tokens.size() - ((tokens.get(tokens.size() - 1).getType() == TokenType.COMMENT) ? 2 : 1);
+                // There have to be at least two non-comment tokens beyond the directive
+                if (tokenPosLastOperand < dirPos + 2) {
+                    errors.add(new ErrorMessage(program, lineNum, tokens.get(dirPos).getSourceColumn(), "Too few operands for " + Directive.EQV.getName() + " directive"));
+                    return tokens;
+                }
+                // Token following the directive has to be IDENTIFIER
+                if (tokens.get(dirPos + 1).getType() != TokenType.IDENTIFIER) {
+                    errors.add(new ErrorMessage(program, lineNum, tokens.get(dirPos).getSourceColumn(), "Malformed " + Directive.EQV.getName() + " directive"));
+                    return tokens;
+                }
+                String symbol = tokens.get(dirPos + 1).getLiteral();
+                // Make sure the symbol is not contained in the expression.  Not likely to occur but if left
+                // undetected it will result in infinite recursion.  e.g.  .eqv ONE, (ONE)
+                for (int i = dirPos + 2; i < tokens.size(); i++) {
+                    if (tokens.get(i).getLiteral().equals(symbol)) {
+                        errors.add(new ErrorMessage(program, lineNum, tokens.get(dirPos).getSourceColumn(), "Cannot substitute " + symbol + " for itself in " + Directive.EQV.getName() + " directive"));
+                        return tokens;
                     }
-                    // Convert the octal value to the corresponding character
-                    value.append((char) octalValue);
                 }
-                else {
-                    // Invalid escape
-                    errors.add(new ErrorMessage(
-                        filename,
-                        lineNumber,
-                        index,
-                        "Unrecognized character escape: \\" + ch
-                    ));
+                // Expected syntax is symbol, expression.  I'm allowing the expression to comprise
+                // multiple tokens, so I want to get everything from the IDENTIFIER to either the
+                // COMMENT or to the end.
+                int startExpression = tokens.get(dirPos + 2).getSourceColumn();
+                int endExpression = tokens.get(tokenPosLastOperand).getSourceColumn() + tokens.get(tokenPosLastOperand).getLiteral().length();
+                String expression = theLine.substring(startExpression - 1, endExpression - 1);
+                // Symbol cannot be redefined - the only reason for this is to act like the Gnu .eqv
+                if (equivalences.containsKey(symbol) && !equivalences.get(symbol).equals(expression)) {
+                    errors.add(new ErrorMessage(program, lineNum, tokens.get(dirPos + 1).getSourceColumn(), "\"" + symbol + "\" is already defined"));
+                    return tokens;
                 }
+                equivalences.put(symbol, expression);
+                return tokens;
             }
-            // TODO: Not yet implemented (each preceded by a backslash):
-            //       xNN = hex character
-            //       uNNNN = unicode character (do we even want this feature?)
         }
+        // Check if a substitution from defined .eqv is to be made.  If so, make one.
+        boolean substitutionMade = false;
+        for (int i = 0; i < tokens.size(); i++) {
+            Token token = tokens.get(i);
+            if (token.getType() == TokenType.IDENTIFIER && equivalences.containsKey(token.getLiteral())) {
+                // Do the substitution
+                String sub = equivalences.get(token.getLiteral());
+                int startPos = token.getSourceColumn();
+                theLine = theLine.substring(0, startPos - 1) + sub + theLine.substring(startPos + token.getLiteral().length() - 1);
+                substitutionMade = true; // one substitution per call.  If there are multiple, will catch next one on the recursion
+                break;
+            }
+        }
+        tokens.setProcessedLine(theLine); // DPS 03-Jan-2013. Related to changes of 11-July-2012.
 
-        // Move to the first character following the escape
-        return index + 1;
+        return (substitutionMade) ? tokenizeLine(lineNum, theLine) : tokens;
+    }
+
+
+    /**
+     * If passed a candidate character literal, attempt to translate it into integer constant.
+     * If the translation fails, return original value.
+     */
+    private String preprocessCharacterLiteral(String literal) {
+        // Must start and end with single quotes and have something in between
+        if (literal.length() < 3 || literal.charAt(0) != '\'' || literal.charAt(literal.length() - 1) != '\'') {
+            return literal;
+        }
+        String quotesRemoved = literal.substring(1, literal.length() - 1);
+        // If it is an escape sequence, get the ASCII value of the character
+        if (quotesRemoved.charAt(0) != '\\') {
+            // There must be only one character in the literal
+            return (quotesRemoved.length() == 1) ? Integer.toString(quotesRemoved.charAt(0)) : literal;
+        }
+        // It is a simple escape sequence, so translate it to an integer constant with the ASCII value
+        if (quotesRemoved.length() == 2) {
+            return switch (quotesRemoved.charAt(1)) {
+                case '\'' -> "39"; // Single quote
+                case '\"' -> "34"; // Double quote
+                case '\\' -> "92"; // Backslash
+                case 'n' -> "10"; // Newline (line feed)
+                case 't' -> "9"; // Tab
+                case 'b' -> "8"; // Backspace
+                case 'r' -> "13"; // Return
+                case 'f' -> "12"; // Form feed
+                case '0' -> "0"; // Null
+                default -> literal; // (Invalid escape)
+            };
+        }
+        // It should be a 3 digit octal code (000 through 377)
+        if (quotesRemoved.length() == 4) {
+            try {
+                int intValue = Integer.parseInt(quotesRemoved.substring(1), 8);
+                if (intValue >= 0x00 && intValue <= 0xFF) {
+                    return Integer.toString(intValue);
+                }
+            } catch (NumberFormatException ignored) {
+                // Invalid octal escape, fall through
+            }
+        }
+        // Not a valid literal
+        return literal;
     }
 }
