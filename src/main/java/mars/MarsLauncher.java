@@ -405,7 +405,7 @@ public class MarsLauncher {
             }
 
             if (args[i].indexOf("$") == 0) {
-                if (RegisterFile.getUserRegister(args[i]) == null && Coprocessor1.getRegister(args[i]) == null) {
+                if (RegisterFile.getRegister(args[i]) == null && Coprocessor1.getRegister(args[i]) == null) {
                     out.println("Invalid Register Name: " + args[i]);
                 }
                 else {
@@ -414,7 +414,7 @@ public class MarsLauncher {
                 continue;
             }
             // check for register name w/o $.  added 14-July-2008 DPS
-            if (RegisterFile.getUserRegister("$" + args[i]) != null || Coprocessor1.getRegister("$" + args[i]) != null) {
+            if (RegisterFile.getRegister("$" + args[i]) != null || Coprocessor1.getRegister("$" + args[i]) != null) {
                 registerDisplayList.add("$" + args[i]);
                 continue;
             }
@@ -599,7 +599,7 @@ public class MarsLauncher {
         // Display requested register contents
         out.println();
         for (String regName : registerDisplayList) {
-            Register integerRegister = RegisterFile.getUserRegister(regName);
+            Register integerRegister = RegisterFile.getRegister(regName);
             if (integerRegister != null) {
                 // integer register
                 if (verbose) {

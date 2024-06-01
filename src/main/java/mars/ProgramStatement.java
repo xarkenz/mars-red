@@ -159,7 +159,7 @@ public class ProgramStatement {
      */
     public void buildBasicStatementFromBasicInstruction(ErrorList errors) {
         Token token = strippedTokenList.get(0);
-        String basicStatementElement = token.getValue() + " ";
+        String basicStatementElement = token.getLiteral() + " ";
         StringBuilder basic = new StringBuilder(basicStatementElement);
         basicStatementList.addString(basicStatementElement); // the operator
         TokenType tokenType, nextTokenType;
@@ -169,17 +169,17 @@ public class ProgramStatement {
         for (int i = 1; i < strippedTokenList.size(); i++) {
             token = strippedTokenList.get(i);
             tokenType = token.getType();
-            tokenValue = token.getValue();
+            tokenValue = token.getLiteral();
             if (tokenType == TokenType.REGISTER_NUMBER) {
                 basicStatementElement = tokenValue;
                 basic.append(basicStatementElement);
                 basicStatementList.addString(basicStatementElement);
                 try {
-                    registerNumber = RegisterFile.getUserRegister(tokenValue).getNumber();
+                    registerNumber = RegisterFile.getRegister(tokenValue).getNumber();
                 }
                 catch (Exception e) {
                     // should never happen; should be caught before now...
-                    errors.add(new ErrorMessage(this.sourceProgram, token.getSourceLine(), token.getStartPos(), "invalid register name"));
+                    errors.add(new ErrorMessage(this.sourceProgram, token.getSourceLine(), token.getSourceColumn(), "invalid register name"));
                     return;
                 }
                 this.operands[this.numOperands++] = registerNumber;
@@ -191,7 +191,7 @@ public class ProgramStatement {
                 basicStatementList.addString(basicStatementElement);
                 if (registerNumber < 0) {
                     // should never happen; should be caught before now...
-                    errors.add(new ErrorMessage(this.sourceProgram, token.getSourceLine(), token.getStartPos(), "invalid register name"));
+                    errors.add(new ErrorMessage(this.sourceProgram, token.getSourceLine(), token.getSourceColumn(), "invalid register name"));
                     return;
                 }
                 this.operands[this.numOperands++] = registerNumber;
@@ -203,7 +203,7 @@ public class ProgramStatement {
                 basicStatementList.addString(basicStatementElement);
                 if (registerNumber < 0) {
                     // should never happen; should be caught before now...
-                    errors.add(new ErrorMessage(this.sourceProgram, token.getSourceLine(), token.getStartPos(), "invalid FPU register name"));
+                    errors.add(new ErrorMessage(this.sourceProgram, token.getSourceLine(), token.getSourceColumn(), "invalid FPU register name"));
                     return;
                 }
                 this.operands[this.numOperands++] = registerNumber;
@@ -211,7 +211,7 @@ public class ProgramStatement {
             else if (tokenType == TokenType.IDENTIFIER) {
                 int address = this.sourceProgram.getLocalSymbolTable().getAddressLocalOrGlobal(tokenValue);
                 if (address == SymbolTable.NOT_FOUND) { // symbol used without being defined
-                    errors.add(new ErrorMessage(this.sourceProgram, token.getSourceLine(), token.getStartPos(), "Symbol \"" + tokenValue + "\" not found in symbol table."));
+                    errors.add(new ErrorMessage(this.sourceProgram, token.getSourceLine(), token.getSourceColumn(), "Symbol \"" + tokenValue + "\" not found in symbol table."));
                     return;
                 }
                 boolean absoluteAddress = true; // (used below)

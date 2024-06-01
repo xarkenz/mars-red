@@ -31,21 +31,21 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /**
  * Stores information of macros defined by now.
- * <br>
+ * <p>
  * Will be used in first pass of assembling MIPS source code. When reaching
  * <code>.macro</code> directive, parser calls
  * {@link MacroPool#beginMacro(Token)} and skips source code lines until
  * reaches <code>.end_macro</code> directive. then calls
  * {@link MacroPool#commitMacro(Token)} and the macro information stored in a
  * {@link Macro} instance will be added to {@link #macroList}.
- * <br>
+ * <p>
  * Each {@link Program} will have one {@link MacroPool}.
- * <br>
+ * <p>
  * NOTE: Forward referencing macros (macro expansion before its definition in
  * source code) and nested macro definitions (defining a macro inside another macro
  * definition) are not supported.
  *
- * @author M.H.Sekhavat &lt;sekhavat17@gmail.com&gt;
+ * @author M.H.Sekhavat (sekhavat17@gmail.com)
  */
 public class MacroPool {
     private final Program program;
@@ -90,9 +90,9 @@ public class MacroPool {
 
     public void beginMacro(Token nameToken) {
         current = new Macro();
-        current.setName(nameToken.getValue());
+        current.setName(nameToken.getLiteral());
         current.setFromLine(nameToken.getSourceLine());
-        current.setOriginalFromLine(nameToken.getOriginalSourceLine());
+        current.setOriginalFromLine(nameToken.getOriginalToken());
         current.setProgram(program);
     }
 
@@ -106,7 +106,7 @@ public class MacroPool {
 
     public void commitMacro(Token endToken) {
         current.setToLine(endToken.getSourceLine());
-        current.setOriginalToLine(endToken.getOriginalSourceLine());
+        current.setOriginalToLine(endToken.getOriginalToken());
         current.readyForCommit();
         macroList.add(current);
         current = null;
@@ -126,7 +126,7 @@ public class MacroPool {
         Macro ret = null;
         Token firstToken = tokens.get(0);
         for (Macro macro : macroList) {
-            if (macro.getName().equals(firstToken.getValue()) && macro.getArgs().size() + 1 == tokens.size()
+            if (macro.getName().equals(firstToken.getLiteral()) && macro.getArgs().size() + 1 == tokens.size()
                 //&& macro.getToLine() < callerLine  // condition removed; doesn't work nicely in conjunction with .include, and does not seem necessary.  DPS 8-MAR-2013
                 && (ret == null || ret.getFromLine() < macro.getFromLine())) {
                 ret = macro;
@@ -174,7 +174,7 @@ public class MacroPool {
 
     public boolean pushOnCallStack(Token token) { //returns true if detected expansion loop
         int sourceLine = token.getSourceLine();
-        int origSourceLine = token.getOriginalSourceLine();
+        int origSourceLine = token.getOriginalToken();
         if (callStack.contains(sourceLine)) {
             return true;
         }

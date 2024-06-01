@@ -5,7 +5,7 @@ import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.Register;
 import mars.mips.hardware.RegisterFile;
 import mars.util.Binary;
-	
+
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
 
@@ -68,8 +68,6 @@ public enum TokenType {
     ERROR,
     MACRO_PARAMETER;
 
-    public static final String TOKEN_DELIMITERS = "\t ,()";
-
     /**
      * Classifies the given token into one of the MIPS types.
      *
@@ -77,7 +75,7 @@ public enum TokenType {
      * @return Returns the corresponding TokenTypes object if the parameter matches a
      *     defined MIPS token type, else returns <code>null</code>.
      */
-    public static TokenType matchTokenType(String value) {
+    public static TokenType detectLiteralType(String value) {
         // If it starts with single quote ('), it is a mal-formed character literal
         // because a well-formed character literal was converted to string-ified
         // integer before getting here...
@@ -117,7 +115,7 @@ public enum TokenType {
         }
 
         // See if it is a register
-        Register reg = RegisterFile.getUserRegister(value);
+        Register reg = RegisterFile.getRegister(value);
         if (reg != null) {
             if (reg.getName().equals(value)) {
                 return TokenType.REGISTER_NAME;
@@ -152,7 +150,7 @@ public enum TokenType {
              * required extensive changes to instruction templates especially for
              * pseudo-instructions.
              *
-             * This modification also appears inbuildBasicStatementFromBasicInstruction()
+             * This modification also appears in buildBasicStatementFromBasicInstruction()
              * in mars.ProgramStatement.
              *
              *  ///// Begin modification 1/4/05 KENV   ///////////////////////////////////////////
@@ -191,8 +189,8 @@ public enum TokenType {
             }
             return TokenType.INTEGER_32;  // default when no other type is applicable
         }
-        catch (NumberFormatException e) {
-            // NO ACTION -- exception suppressed
+        catch (NumberFormatException exception) {
+            // Ignore, this simply means the token is not an integer
         }
 
         // See if it is a real (fixed or floating point) number.  Note that parseDouble()
@@ -201,7 +199,7 @@ public enum TokenType {
             Double.parseDouble(value);
             return TokenType.REAL_NUMBER;
         }
-        catch (NumberFormatException e) {
+        catch (NumberFormatException exception) {
             // NO ACTION -- exception suppressed
         }
 
@@ -252,14 +250,16 @@ public enum TokenType {
         return type == TokenType.REAL_NUMBER;
     }
 
-    // COD2, A-51:  "Identifiers are a sequence of alphanumeric characters,
-    //               underbars (_), and dots (.) that do not begin with a number."
-    // Ideally this would be in a separate Identifier class but I did not see an immediate
-    // need beyond this method (refactoring effort would probably identify other uses
-    // related to symbol table).
-    //
-    // DPS 14-Jul-2008: added '$' as valid symbol.  Permits labels to include $.
-    //                  MIPS-target GCC will produce labels that start with $.
+    /**
+     * COD2, A-51:  "Identifiers are a sequence of alphanumeric characters,
+     * underbars (_), and dots (.) that do not begin with a number."
+     * Ideally this would be in a separate Identifier class but I did not see an immediate
+     * need beyond this method (refactoring effort would probably identify other uses
+     * related to symbol table).
+     * <p>
+     * DPS 14-Jul-2008: added '$' as valid symbol.  Permits labels to include $.
+     * MIPS-target GCC will produce labels that start with $.
+     */
     public static boolean isValidIdentifier(String value) {
         if (!(Character.isLetter(value.charAt(0)) || value.charAt(0) == '_' || value.charAt(0) == '.' || value.charAt(0) == '$')) {
             return false;

@@ -163,7 +163,7 @@ public class ErrorList {
      * @return String containing report.
      */
     public String generateErrorReport() {
-        return generateReport(ErrorMessage.ERROR);
+        return generateReport(false);
     }
 
     /**
@@ -172,7 +172,7 @@ public class ErrorList {
      * @return String containing report.
      */
     public String generateWarningReport() {
-        return generateReport(ErrorMessage.WARNING);
+        return generateReport(true);
     }
 
     /**
