@@ -170,18 +170,10 @@ public class SystemIO {
     }
 
     /**
-     * Set up I/O functionality for the given simulator.
-     *
-     * @param simulator The simulator this instance will be bound to.
+     * Set up I/O functionality.
      */
-    public SystemIO(Simulator simulator) {
+    public SystemIO() {
         this.initHandles();
-        simulator.addThreadListener(new SimulatorListener() {
-            @Override
-            public void simulatorFinished(SimulatorFinishEvent event) {
-                SystemIO.this.resetFiles();
-            }
-        });
     }
 
     /**

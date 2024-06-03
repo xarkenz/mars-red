@@ -322,7 +322,7 @@ public class BackStepper {
                 this.statement = null;
                 this.programCounter = NOT_PC_VALUE; // Backstep method above will see this as flag to not set PC
             }
-            this.isInDelaySlot = Simulator.isInDelaySlot(); // ADDED 25 June 2007
+            this.isInDelaySlot = Simulator.getInstance().isInDelaySlot(); // ADDED 25 June 2007
         }
     }
 

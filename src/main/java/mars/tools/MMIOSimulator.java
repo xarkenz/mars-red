@@ -257,7 +257,7 @@ public class MMIOSimulator extends AbstractMarsTool {
                     && (Coprocessor0.getValue(Coprocessor0.STATUS) & 1) == 1) {
                     // interrupt-enabled bit is set in both Tranmitter Control and in
                     // Coprocessor0 Status register, and Interrupt Level Bit is 0, so trigger external interrupt.
-                    Simulator.externalInterruptingDevice = ExceptionCause.EXTERNAL_INTERRUPT_DISPLAY;
+                    Simulator.getInstance().raiseExternalInterrupt(ExceptionCause.EXTERNAL_INTERRUPT_DISPLAY);
                 }
             }
         }
@@ -304,7 +304,7 @@ public class MMIOSimulator extends AbstractMarsTool {
     private void displayCharacter(int intWithCharacterToDisplay) {
         char characterToDisplay = (char) (intWithCharacterToDisplay & 0x000000FF);
         if (characterToDisplay == CLEAR_SCREEN) {
-            initializeDisplay(displayRandomAccessMode);
+            initializeDisplay();
         }
         else if (characterToDisplay == SET_CURSOR_X_Y) {
             // First call will activate random access mode.
@@ -314,7 +314,7 @@ public class MMIOSimulator extends AbstractMarsTool {
             // displays will replace, not append, in the text.
             if (!displayRandomAccessMode) {
                 displayRandomAccessMode = true;
-                initializeDisplay(displayRandomAccessMode);
+                initializeDisplay();
             }
             // For SET_CURSOR_X_Y, we need data from the rest of the word.
             // High order 3 bytes are split in half to store (X,Y) value.
@@ -375,7 +375,7 @@ public class MMIOSimulator extends AbstractMarsTool {
     protected void reset() {
         displayRandomAccessMode = false;
         initializeTransmitDelaySimulator();
-        initializeDisplay(displayRandomAccessMode);
+        initializeDisplay();
         keyEventAccepter.setText("");
         ((TitledBorder) displayPanel.getBorder()).setTitle(displayPanelTitle);
         displayPanel.repaint();
@@ -389,9 +389,9 @@ public class MMIOSimulator extends AbstractMarsTool {
     // the transmitter.  This sets the caret (cursor) to a specific (x,y) position
     // on a text-based virtual display.  The lines of spaces is necessary because
     // the caret can only be placed at a position within the current text string.
-    private void initializeDisplay(boolean randomAccess) {
+    private void initializeDisplay() {
         String initialText = "";
-        if (randomAccess) {
+        if (displayRandomAccessMode) {
             Dimension textDimensions = getDisplayPanelTextDimensions();
             columns = (int) textDimensions.getWidth();
             rows = (int) textDimensions.getHeight();
@@ -412,18 +412,9 @@ public class MMIOSimulator extends AbstractMarsTool {
         int cols = (int) size.getWidth();
         int rows = (int) size.getHeight();
         int caretPosition = display.getCaretPosition();
-        String stringCaretPosition = "";
-        // display position as stream or 2D depending on random access
+        String stringCaretPosition;
+        // Display position as stream or 2D depending on random access
         if (displayRandomAccessMode) {
-            // if ( caretPosition == rows*(columns+1)+1) {
-            //    stringCaretPosition = "(0,0)";
-            // }
-            // else if ( (caretPosition+1) % (columns+1) == 0) {
-            //    stringCaretPosition = "(0,"+((caretPosition/(columns+1))+1)+")";
-            // }
-            // else {
-            //    stringCaretPosition = "("+(caretPosition%(columns+1))+","+(caretPosition/(columns+1))+")";
-            // }
             if (((caretPosition + 1) % (columns + 1) != 0)) {
                 stringCaretPosition = "(" + (caretPosition % (columns + 1)) + "," + (caretPosition / (columns + 1)) + ")";
             }
@@ -435,7 +426,7 @@ public class MMIOSimulator extends AbstractMarsTool {
             }
         }
         else {
-            stringCaretPosition = "" + caretPosition;
+            stringCaretPosition = Integer.toString(caretPosition);
         }
         String title = displayPanelTitle + ", cursor " + stringCaretPosition + ", area " + cols + " x " + rows;
         ((TitledBorder) displayPanel.getBorder()).setTitle(title);
@@ -677,7 +668,7 @@ public class MMIOSimulator extends AbstractMarsTool {
                 && (Coprocessor0.getValue(Coprocessor0.STATUS) & 1) == 1) {
                 // interrupt-enabled bit is set in both Receiver Control and in
                 // Coprocessor0 Status register, and Interrupt Level Bit is 0, so trigger external interrupt.
-                mars.simulator.Simulator.externalInterruptingDevice = ExceptionCause.EXTERNAL_INTERRUPT_KEYBOARD;
+                Simulator.getInstance().raiseExternalInterrupt(ExceptionCause.EXTERNAL_INTERRUPT_KEYBOARD);
             }
         }
 

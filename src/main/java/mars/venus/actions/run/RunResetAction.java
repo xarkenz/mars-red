@@ -3,6 +3,7 @@ package mars.venus.actions.run;
 import mars.Application;
 import mars.ProcessingException;
 import mars.mips.hardware.*;
+import mars.simulator.Simulator;
 import mars.venus.RegistersPane;
 import mars.venus.execute.ExecuteTab;
 import mars.venus.actions.VenusAction;
@@ -69,9 +70,7 @@ public class RunResetAction extends VenusAction {
             return;
         }
 
-        RegisterFile.resetRegisters();
-        Coprocessor1.resetRegisters();
-        Coprocessor0.resetRegisters();
+        Simulator.getInstance().reset();
 
         RegistersPane registersPane = gui.getRegistersPane();
         registersPane.getRegistersWindow().clearHighlighting();
@@ -89,7 +88,7 @@ public class RunResetAction extends VenusAction {
         executeTab.getTextSegmentWindow().setCodeHighlighting(true);
         executeTab.getTextSegmentWindow().highlightStepAtPC();
 
-        gui.getMessagesPane().writeToMessages(getName() + ": reset completed.\n\n");
+        gui.getMessagesPane().writeToMessages(getName() + ": reset completed.\n");
         if (executeTab.getProgramStatus().hasStarted() && executeTab.getProgramStatus() != ProgramStatus.TERMINATED) {
             gui.getMessagesPane().writeToConsole("\n--- program terminated by user ---\n\n");
         }

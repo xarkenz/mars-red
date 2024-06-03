@@ -2,7 +2,6 @@ package mars.mips.hardware;
 
 import mars.Application;
 import mars.assembler.SymbolTable;
-import mars.mips.instructions.Instruction;
 import mars.util.Binary;
 
 /*
@@ -271,8 +270,7 @@ public class RegisterFile {
     }
 
     /**
-     * Set the value of the program counter.  Note that an ordinary PC update should be done using
-     * the {@link #incrementPC()} method; use this only when processing jumps and branches.
+     * Set the value of the program counter.
      *
      * @param value The value to set the Program Counter to.
      * @return The previous program counter value.
@@ -301,13 +299,6 @@ public class RegisterFile {
      */
     public static int getInitialProgramCounter() {
         return PROGRAM_COUNTER_REGISTER.getDefaultValue();
-    }
-
-    /**
-     * Increment the Program counter in the general case (not a jump or branch).
-     */
-    public static void incrementPC() {
-        PROGRAM_COUNTER_REGISTER.setValue(PROGRAM_COUNTER_REGISTER.getValueNoNotify() + Instruction.BYTES_PER_INSTRUCTION);
     }
 
     public static int getHighOrder() {
@@ -341,7 +332,7 @@ public class RegisterFile {
      * this method uses global settings from the registry.  Command-mode must operate
      * using only the command switches, not registry settings.
      */
-    public static void resetRegisters() {
+    public static void reset() {
         for (Register register : REGISTERS) {
             register.resetValueToDefault();
         }

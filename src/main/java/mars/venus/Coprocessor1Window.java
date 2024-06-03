@@ -169,7 +169,7 @@ public class Coprocessor1Window extends RegistersDisplayTab {
      */
     public void clearWindow() {
         clearHighlighting();
-        Coprocessor1.resetRegisters();
+        Coprocessor1.reset();
         updateRegisters(gui.getMainPane().getExecuteTab().getValueDisplayBase());
         Coprocessor1.clearConditionFlags();
         updateConditionFlagDisplay();

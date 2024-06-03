@@ -85,7 +85,7 @@ public class DigitalLabSimulator extends AbstractMarsTool {
             else {
                 counterValue = COUNTER_VALUE_MAX;
                 if ((Coprocessor0.getValue(Coprocessor0.STATUS) & 2) == 0) {
-                    Simulator.externalInterruptingDevice = EXTERNAL_INTERRUPT_TIMER;
+                    Simulator.getInstance().raiseExternalInterrupt(EXTERNAL_INTERRUPT_TIMER);
                 }
             }
         }
@@ -172,65 +172,65 @@ public class DigitalLabSimulator extends AbstractMarsTool {
 
         public void drawSegment(Graphics graphics, char segment) {
             switch (segment) {
-                case 'a': // a segment
-                    int[] pxa1 = {12, 9, 12};
-                    int[] pxa2 = {36, 39, 36};
-                    int[] pya = {5, 8, 11};
+                case 'a' -> { // a segment
+                    int[] pxa1 = { 12, 9, 12 };
+                    int[] pxa2 = { 36, 39, 36 };
+                    int[] pya = { 5, 8, 11 };
                     graphics.fillPolygon(pxa1, pya, 3);
                     graphics.fillPolygon(pxa2, pya, 3);
                     graphics.fillRect(12, 5, 24, 6);
-                    break;
-                case 'b': // b segment
-                    int[] pxb = {37, 40, 43};
-                    int[] pyb1 = {12, 9, 12};
-                    int[] pyb2 = {36, 39, 36};
+                }
+                case 'b' -> { // b segment
+                    int[] pxb = { 37, 40, 43 };
+                    int[] pyb1 = { 12, 9, 12 };
+                    int[] pyb2 = { 36, 39, 36 };
                     graphics.fillPolygon(pxb, pyb1, 3);
                     graphics.fillPolygon(pxb, pyb2, 3);
                     graphics.fillRect(37, 12, 6, 24);
-                    break;
-                case 'c': // c segment
-                    int[] pxc = {37, 40, 43};
-                    int[] pyc1 = {44, 41, 44};
-                    int[] pyc2 = {68, 71, 68};
+                }
+                case 'c' -> { // c segment
+                    int[] pxc = { 37, 40, 43 };
+                    int[] pyc1 = { 44, 41, 44 };
+                    int[] pyc2 = { 68, 71, 68 };
                     graphics.fillPolygon(pxc, pyc1, 3);
                     graphics.fillPolygon(pxc, pyc2, 3);
                     graphics.fillRect(37, 44, 6, 24);
-                    break;
-                case 'd': // d segment
-                    int[] pxd1 = {12, 9, 12};
-                    int[] pxd2 = {36, 39, 36};
-                    int[] pyd = {69, 72, 75};
+                }
+                case 'd' -> { // d segment
+                    int[] pxd1 = { 12, 9, 12 };
+                    int[] pxd2 = { 36, 39, 36 };
+                    int[] pyd = { 69, 72, 75 };
                     graphics.fillPolygon(pxd1, pyd, 3);
                     graphics.fillPolygon(pxd2, pyd, 3);
                     graphics.fillRect(12, 69, 24, 6);
-                    break;
-                case 'e': // e segment
-                    int[] pxe = {5, 8, 11};
-                    int[] pye1 = {44, 41, 44};
-                    int[] pye2 = {68, 71, 68};
+                }
+                case 'e' -> { // e segment
+                    int[] pxe = { 5, 8, 11 };
+                    int[] pye1 = { 44, 41, 44 };
+                    int[] pye2 = { 68, 71, 68 };
                     graphics.fillPolygon(pxe, pye1, 3);
                     graphics.fillPolygon(pxe, pye2, 3);
                     graphics.fillRect(5, 44, 6, 24);
-                    break;
-                case 'f': // f segment
-                    int[] pxf = {5, 8, 11};
-                    int[] pyf1 = {12, 9, 12};
-                    int[] pyf2 = {36, 39, 36};
+                }
+                case 'f' -> { // f segment
+                    int[] pxf = { 5, 8, 11 };
+                    int[] pyf1 = { 12, 9, 12 };
+                    int[] pyf2 = { 36, 39, 36 };
                     graphics.fillPolygon(pxf, pyf1, 3);
                     graphics.fillPolygon(pxf, pyf2, 3);
                     graphics.fillRect(5, 12, 6, 24);
-                    break;
-                case 'g': // g segment
-                    int[] pxg1 = {12, 9, 12};
-                    int[] pxg2 = {36, 39, 36};
-                    int[] pyg = {37, 40, 43};
+                }
+                case 'g' -> { // g segment
+                    int[] pxg1 = { 12, 9, 12 };
+                    int[] pxg2 = { 36, 39, 36 };
+                    int[] pyg = { 37, 40, 43 };
                     graphics.fillPolygon(pxg1, pyg, 3);
                     graphics.fillPolygon(pxg2, pyg, 3);
                     graphics.fillRect(12, 37, 24, 6);
-                    break;
-                case 'h': // decimal point
+                }
+                case 'h' -> { // decimal point
                     graphics.fillOval(49, 68, 8, 8);
-                    break;
+                }
             }
         }
 
@@ -317,19 +317,20 @@ public class DigitalLabSimulator extends AbstractMarsTool {
 
             @Override
             public void mouseClicked(MouseEvent event) {
-                int i;
-                if (keyboardValueButtonClick != -1) { // Button already pressed -> now realease
+                if (keyboardValueButtonClick != -1) {
+                    // Button already pressed -> now realease
                     keyboardValueButtonClick = -1;
                     updateMMIOControlAndData(0);
-                    for (i = 0; i < 16; i++) {
-                        buttons[i].setBackground(null);
+                    for (JButton button : buttons) {
+                        button.setBackground(null);
                     }
                 }
-                else { // new button pressed
+                else {
+                    // New button pressed
                     keyboardValueButtonClick = buttonValue;
                     buttons[keyboardValueButtonClick].setBackground(new Color(0x118844));
                     if (keyboardInterruptOnOff && (Coprocessor0.getValue(Coprocessor0.STATUS) & 2) == 0) {
-                        Simulator.externalInterruptingDevice = EXTERNAL_INTERRUPT_HEXADECIMAL_KEYBOARD;
+                        Simulator.getInstance().raiseExternalInterrupt(EXTERNAL_INTERRUPT_HEXADECIMAL_KEYBOARD);
                     }
                 }
             }

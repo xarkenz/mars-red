@@ -66,6 +66,9 @@ public interface SimulatorListener extends EventListener {
 
     /**
      * Called when the simulator has finished executing an instruction, but only if the run speed is not unlimited.
+     * <p>
+     * <b>Note: For very fast run speeds, GUI listeners may not receive all step events.</b> This is an intentional
+     * feature to prevent overloading of the GUI event queue.
      */
     default void simulatorStepped() {
         // No action by default

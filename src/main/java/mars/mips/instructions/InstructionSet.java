@@ -6,8 +6,8 @@ import mars.ProgramStatement;
 import mars.mips.hardware.*;
 import mars.mips.instructions.syscalls.Syscall;
 import mars.mips.instructions.syscalls.SyscallManager;
-import mars.simulator.DelayedBranch;
 import mars.simulator.ExceptionCause;
+import mars.simulator.Simulator;
 import mars.util.Binary;
 
 import java.io.BufferedReader;
@@ -526,7 +526,7 @@ public class InstructionSet {
             throw new ProcessingException(statement, "break instruction executed; no code given.", ExceptionCause.BREAKPOINT_EXCEPTION);
         }));
         instructionList.add(new BasicInstruction("syscall", "Issue a system call : Execute the system call specified by value in $v0", BasicInstructionFormat.R_FORMAT, "000000 00000 00000 00000 00000 001100", statement -> {
-            findAndSimulateSyscall(RegisterFile.getValue(2), statement);
+            processSyscall(RegisterFile.getValue(2), statement);
         }));
         instructionList.add(new BasicInstruction("j target", "Jump unconditionally : Jump to statement at target address", BasicInstructionFormat.J_FORMAT, "000010 ffffffffffffffffffffffffff", statement -> {
             int[] operands = statement.getOperands();
@@ -1554,17 +1554,15 @@ public class InstructionSet {
     }
 
     /**
-     * Method to find and invoke a syscall given its service number.  Each syscall
-     * function is represented by an object in an array list.  Each object is of
-     * a class that implements Syscall or extends AbstractSyscall.
+     * Method to find and invoke a syscall given its service number.
      */
-    private void findAndSimulateSyscall(int number, ProgramStatement statement) throws ProcessingException, InterruptedException {
+    private void processSyscall(int number, ProgramStatement statement) throws ProcessingException, InterruptedException {
         Syscall service = SyscallManager.getSyscall(number);
         if (service != null) {
             service.simulate(statement);
             return;
         }
-        throw new ProcessingException(statement, "invalid or unimplemented syscall service: " + number + " ", ExceptionCause.SYSCALL_EXCEPTION);
+        throw new ProcessingException(statement, "invalid or unimplemented syscall service: " + number, ExceptionCause.SYSCALL_EXCEPTION);
     }
 
     /**
@@ -1582,14 +1580,7 @@ public class InstructionSet {
     // ProgramStatement.java, buildBasicStatementFromBasicInstruction() method near
     // the bottom (currently line 194, heavily commented).
     private void processBranch(int displacement) {
-        if (Application.getSettings().delayedBranchingEnabled.get()) {
-            // Register the branch target address (absolute byte address).
-            DelayedBranch.register(RegisterFile.getProgramCounter() + (displacement << 2));
-        }
-        else {
-            // Decrement needed because PC has already been incremented
-            RegisterFile.setProgramCounter(RegisterFile.getProgramCounter() + (displacement << 2)); // - Instruction.INSTRUCTION_LENGTH);
-        }
+        Simulator.getInstance().processJump(RegisterFile.getProgramCounter() + (displacement << 2));
     }
 
     /**
@@ -1601,12 +1592,7 @@ public class InstructionSet {
      * @param targetAddress Jump target absolute byte address.
      */
     private void processJump(int targetAddress) {
-        if (Application.getSettings().delayedBranchingEnabled.get()) {
-            DelayedBranch.register(targetAddress);
-        }
-        else {
-            RegisterFile.setProgramCounter(targetAddress);
-        }
+        Simulator.getInstance().processJump(targetAddress);
     }
 
     /**
@@ -1621,8 +1607,8 @@ public class InstructionSet {
      * @param register Register number to receive the return address.
      */
     private void processReturnAddress(int register) {
-        RegisterFile.updateRegister(register, RegisterFile.getProgramCounter()
-            + ((Application.getSettings().delayedBranchingEnabled.get()) ? Instruction.BYTES_PER_INSTRUCTION : 0));
+        int offset = Application.getSettings().delayedBranchingEnabled.get() ? Instruction.BYTES_PER_INSTRUCTION : 0;
+        RegisterFile.updateRegister(register, RegisterFile.getProgramCounter() + offset);
     }
 
     private static class MatchMap implements Comparable<MatchMap> {
@@ -1644,13 +1630,13 @@ public class InstructionSet {
         }
 
         public BasicInstruction find(int instr) {
-            int match = instr & mask;
-            return matchMap.get(match);
+            int match = instr & this.mask;
+            return this.matchMap.get(match);
         }
 
         @Override
         public boolean equals(Object other) {
-            return other instanceof MatchMap && mask == ((MatchMap) other).mask;
+            return other instanceof MatchMap otherMap && this.mask == otherMap.mask;
         }
 
         @Override

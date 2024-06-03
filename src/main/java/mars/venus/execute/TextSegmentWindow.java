@@ -842,7 +842,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
 
             this.setHorizontalAlignment(SwingConstants.LEFT);
             if (isHighlighted) {
-                if (Simulator.isInDelaySlot() || TextSegmentWindow.this.inDelaySlot) {
+                if (Simulator.getInstance().isInDelaySlot() || TextSegmentWindow.this.inDelaySlot) {
                     this.setBackground(TextSegmentWindow.this.gui.getSettings().textSegmentDelaySlotHighlightBackground.get());
                     this.setForeground(TextSegmentWindow.this.gui.getSettings().textSegmentDelaySlotHighlightForeground.get());
                 }

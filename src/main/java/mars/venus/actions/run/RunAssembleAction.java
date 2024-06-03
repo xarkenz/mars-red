@@ -2,6 +2,7 @@ package mars.venus.actions.run;
 
 import mars.*;
 import mars.mips.hardware.*;
+import mars.simulator.Simulator;
 import mars.util.FilenameFinder;
 import mars.venus.*;
 import mars.venus.actions.VenusAction;
@@ -13,7 +14,7 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
- 
+
 /*
 Copyright (c) 2003-2010,  Pete Sanderson and Kenneth Vollmar
 
@@ -92,6 +93,8 @@ public class RunAssembleAction extends VenusAction {
         }
 
         try {
+            Simulator.getInstance().reset();
+
             Application.program = new Program();
             programsToAssemble = Application.program.prepareFilesForAssembly(pathnames, leadPathname, exceptionHandler);
             gui.getMessagesPane().writeToMessages(buildFileNameList(getName() + ": assembling ", programsToAssemble));
@@ -111,9 +114,7 @@ public class RunAssembleAction extends VenusAction {
             }
 
             gui.setProgramStatus(ProgramStatus.NOT_STARTED);
-            RegisterFile.resetRegisters();
-            Coprocessor1.resetRegisters();
-            Coprocessor0.resetRegisters();
+
             executeTab.getTextSegmentWindow().setupTable();
             executeTab.getDataSegmentWindow().setupTable();
             executeTab.getDataSegmentWindow().highlightCellForAddress(Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW));
@@ -121,16 +122,18 @@ public class RunAssembleAction extends VenusAction {
             executeTab.getLabelsWindow().setupTable();
             executeTab.getTextSegmentWindow().setCodeHighlighting(true);
             executeTab.getTextSegmentWindow().highlightStepAtPC();
+            gui.getMainPane().setSelectedComponent(executeTab);
+
             registersPane.getRegistersWindow().clearWindow();
             registersPane.getCoprocessor1Window().clearWindow();
             registersPane.getCoprocessor0Window().clearWindow();
-            gui.getMainPane().setSelectedComponent(executeTab);
         }
         catch (ProcessingException exception) {
             String errorReport = exception.getErrors().generateErrorAndWarningReport();
             gui.getMessagesPane().writeToMessages(errorReport);
             gui.getMessagesPane().writeToMessages(getName() + ": operation completed with errors.\n");
             gui.getMessagesPane().selectMessagesTab();
+
             // Select editor line containing first error, and corresponding error message.
             ArrayList<ErrorMessage> errorMessages = exception.getErrors().getErrorMessages();
             for (ErrorMessage message : errorMessages) {
@@ -151,6 +154,7 @@ public class RunAssembleAction extends VenusAction {
                     break;
                 }
             }
+
             gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
         }
     }

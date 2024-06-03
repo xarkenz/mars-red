@@ -301,7 +301,9 @@ public class MemoryConfigurations {
             RegisterFile.getRegisters()[RegisterFile.GLOBAL_POINTER].setDefaultValue(configuration.getAddress(GLOBAL_POINTER));
             RegisterFile.getRegisters()[RegisterFile.STACK_POINTER].setDefaultValue(configuration.getAddress(STACK_POINTER));
             RegisterFile.getProgramCounterRegister().setDefaultValue(configuration.getAddress(TEXT_LOW));
-            RegisterFile.resetRegisters();
+            RegisterFile.reset();
+            Coprocessor1.reset();
+            Coprocessor0.reset();
             return true;
         }
         else {

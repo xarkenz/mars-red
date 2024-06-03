@@ -32,19 +32,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Interface to represent the method for simulating the execution of a specific MIPS basic
- * instruction.  It will be implemented by the anonymous class created in the last
- * argument to the BasicInstruction constructor.
+ * Functional interface providing a method for simulating the execution of a specific MIPS basic instruction.
  *
- * @author Pete Sanderson
- * @version August 2003
+ * @author Pete Sanderson, August 2003
  */
 public interface SimulationCode {
     /**
-     * Method to simulate the execution of a specific MIPS basic instruction.
+     * Simulate the execution of a specific MIPS basic instruction.
      *
-     * @param statement A {@link ProgramStatement} representing the MIPS instruction to simulate.
-     * @throws ProcessingException Thrown if a runtime exception was generated during simulation.
+     * @param statement The {@link ProgramStatement} to simulate.
+     * @throws ProcessingException  Thrown if a runtime exception was generated during execution.
+     * @throws InterruptedException Thrown if the simulator was stopped during execution.
      */
     void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException;
 }

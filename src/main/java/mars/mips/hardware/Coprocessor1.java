@@ -296,7 +296,7 @@ public class Coprocessor1 {
     /**
      * Method to reinitialize the values of the registers.
      */
-    public static void resetRegisters() {
+    public static void reset() {
         for (Register register : REGISTERS) {
             register.resetValueToDefault();
         }

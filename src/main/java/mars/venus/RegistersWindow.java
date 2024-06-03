@@ -146,7 +146,7 @@ public class RegistersWindow extends RegistersDisplayTab {
      */
     public void clearWindow() {
         clearHighlighting();
-        RegisterFile.resetRegisters();
+        RegisterFile.reset();
         updateRegisters(gui.getMainPane().getExecuteTab().getValueDisplayBase());
     }
 

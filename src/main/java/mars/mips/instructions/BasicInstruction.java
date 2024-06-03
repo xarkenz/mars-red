@@ -28,6 +28,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
 */
 
+import mars.ProcessingException;
+import mars.ProgramStatement;
+
 /**
  * Class to represent a basic instruction in the MIPS instruction set.
  * Basic instruction means it translates directly to a 32-bit binary machine
@@ -40,7 +43,6 @@ public class BasicInstruction extends Instruction {
     private final BasicInstructionFormat instructionFormat;
     private final String operationMask;
     private final SimulationCode simulationCode;
-
     private final int opcodeMask;  // integer with 1's where constants required (0/1 become 1, f/s/t become 0)
     private final int opcodeMatch; // integer matching constants required (0/1 become 0/1, f/s/t become 0)
 
@@ -83,7 +85,7 @@ public class BasicInstruction extends Instruction {
     }
 
     /**
-     * Gets the 32-character operation mask.  Each mask position represents a
+     * Get the 32-character operation mask.  Each mask position represents a
      * bit position in the 32-bit machine instruction.  Operation codes and
      * unused bits are represented in the mask by 1's and 0's.  Operand codes
      * are represented by 'f', 's', and 't' for bits occupied by first, secon
@@ -92,11 +94,11 @@ public class BasicInstruction extends Instruction {
      * @return The 32 bit mask, as a String
      */
     public String getOperationMask() {
-        return operationMask;
+        return this.operationMask;
     }
 
     /**
-     * Gets the operand format of the instruction.  MIPS defines 3 of these
+     * Get the operand format of the instruction.  MIPS defines 3 of these
      * R-format, I-format, and J-format.  R-format is all registers.  I-format
      * is address formed from register base with immediate offset.  J-format
      * is for jump destination addresses.  I have added one more:
@@ -107,19 +109,18 @@ public class BasicInstruction extends Instruction {
      * @return The machine instruction format, R, I, J or I-branch.
      */
     public BasicInstructionFormat getInstructionFormat() {
-        return instructionFormat;
+        return this.instructionFormat;
     }
 
     /**
-     * Gets the SimulationCode object.  It is really an object of an anonymous
-     * class that implements the SimulationCode interface.  Such an object has but one
-     * method: Simulate().
+     * Simulate the execution of a specific MIPS basic instruction.
      *
-     * @return the SimulationCode object for this instruction.
-     * @see SimulationCode
+     * @param statement The {@link ProgramStatement} to simulate.
+     * @throws ProcessingException  Thrown if a runtime exception was generated during execution.
+     * @throws InterruptedException Thrown if the simulator was stopped during execution.
      */
-    public SimulationCode getSimulationCode() {
-        return simulationCode;
+    public void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException {
+        this.simulationCode.simulate(statement);
     }
 
     public int getOpcodeMask() {

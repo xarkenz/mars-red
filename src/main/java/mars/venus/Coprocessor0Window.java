@@ -104,7 +104,7 @@ public class Coprocessor0Window extends RegistersDisplayTab {
      */
     public void clearWindow() {
         clearHighlighting();
-        Coprocessor0.resetRegisters();
+        Coprocessor0.reset();
         updateRegisters(gui.getMainPane().getExecuteTab().getValueDisplayBase());
     }
 
