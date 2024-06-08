@@ -1,0 +1,9 @@
+title: MARS Red
+description: A starter template for a Jeykll site using the Just the Docs theme!
+theme: just-the-docs
+
+url: https://xarkenz.github.io/mars-red
+
+aux_links:
+  GitHub Repository: https://github.com/xarkenz/mars-red
+  JavaDoc: /javadoc

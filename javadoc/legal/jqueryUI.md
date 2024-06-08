@@ -1,3 +1,6 @@
+---
+nav_exclude: true
+---
 ## jQuery UI v1.13.2
 
 ### jQuery UI License
