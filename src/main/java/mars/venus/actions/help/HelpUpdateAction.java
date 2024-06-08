@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Action to check for updates (Help -> Update menu item)
+ * Action for the Help -> Check for Updates menu item.
  *
  * @author Colin Wong
  */

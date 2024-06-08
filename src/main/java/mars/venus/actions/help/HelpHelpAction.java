@@ -54,7 +54,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action for the Help -> Help menu item
+ * Action for the Help -> Help menu item.
  */
 public class HelpHelpAction extends VenusAction {
     public HelpHelpAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
@@ -85,7 +85,7 @@ public class HelpHelpAction extends VenusAction {
         tabbedPane.addTab("Acknowledgements", createHTMLHelpPanel("Acknowledgements.html"));
         tabbedPane.addTab("Instruction Set Song", createHTMLHelpPanel("MIPSInstructionSetSong.html"));
         // Create non-modal dialog. Based on java.sun.com "How to Make Dialogs", DialogDemo.java
-        final JDialog dialog = new JDialog(gui, Application.NAME + " " + Application.VERSION + " Help");
+        final JDialog dialog = new JDialog(this.gui, Application.NAME + " " + Application.VERSION + " Help");
         // Ensure the dialog goes away if user clicks the X
         dialog.addWindowListener(new WindowAdapter() {
             @Override
@@ -116,7 +116,7 @@ public class HelpHelpAction extends VenusAction {
         // Show the dialog
         dialog.setContentPane(contentPane);
         dialog.setSize(this.getSize());
-        dialog.setLocationRelativeTo(gui);
+        dialog.setLocationRelativeTo(this.gui);
         dialog.setVisible(true);
     }
 
@@ -151,8 +151,9 @@ public class HelpHelpAction extends VenusAction {
                     else {
                         try {
                             Desktop.getDesktop().browse(event.getURL().toURI());
-                        } catch (IOException | URISyntaxException e) {
-                            throw new RuntimeException(e);
+                        }
+                        catch (IOException | URISyntaxException exception) {
+                            throw new RuntimeException(exception);
                         }
                     }
                 }

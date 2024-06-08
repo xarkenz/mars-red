@@ -3,7 +3,7 @@ package mars.venus.editor;
 import mars.Application;
 import mars.Program;
 import mars.ProcessingException;
-import mars.util.DynamicTabbedPane;
+import mars.venus.DynamicTabbedPane;
 import mars.util.FilenameFinder;
 import mars.venus.VenusUI;
 import mars.venus.execute.ProgramStatus;

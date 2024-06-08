@@ -1,4 +1,4 @@
-package mars.util;
+package mars.venus;
 
 import mars.Application;
 

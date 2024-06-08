@@ -1,7 +1,5 @@
 package mars.venus;
 
-import mars.util.EditorFont;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;

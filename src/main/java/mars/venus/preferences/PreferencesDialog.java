@@ -1,4 +1,6 @@
-package mars.venus;
+package mars.venus.preferences;
+
+import mars.venus.VenusUI;
 
 import javax.swing.*;
 import java.awt.*;
@@ -6,8 +8,11 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
 public class PreferencesDialog extends JDialog {
-    public PreferencesDialog(Frame owner, String title, boolean modality) {
-        super(owner, title, modality);
+    private final VenusUI gui;
+
+    public PreferencesDialog(VenusUI gui, String title, boolean modal) {
+        super(gui, title, modal);
+        this.gui = gui;
 
         JPanel contentPane = new JPanel(new BorderLayout());
         contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -18,8 +23,8 @@ public class PreferencesDialog extends JDialog {
         tabbedPane.addTab("Appearance", new JPanel());
         tabbedPane.addTab("Editor", new JPanel());
         tabbedPane.addTab("Simulator", new JPanel());
-        tabbedPane.addTab("Exception Handler", new JPanel());
-        tabbedPane.addTab("Memory Layout", new JPanel());
+        tabbedPane.addTab("Exception Handling", new JPanel());
+        tabbedPane.addTab("Memory", new JPanel());
         tabbedPane.setSelectedIndex(0);
         contentPane.add(tabbedPane, BorderLayout.CENTER);
 
@@ -34,33 +39,33 @@ public class PreferencesDialog extends JDialog {
         });
         this.setSize(700, 500);
 //        this.pack();
-        this.setLocationRelativeTo(owner);
+        this.setLocationRelativeTo(this.gui);
     }
 
     private void buildButtonBar(JPanel contentPane) {
         JButton revertButton = new JButton("Revert");
         revertButton.setToolTipText("Reset to initial settings without applying");
         revertButton.addActionListener(event -> {
-            revertChanges();
+            this.revertChanges();
         });
 
         JButton okButton = new JButton("OK");
         okButton.setToolTipText("Apply current settings and close dialog");
         okButton.addActionListener(event -> {
-            applyChanges();
-            closeDialog();
+            this.applyChanges();
+            this.closeDialog();
         });
 
         JButton cancelButton = new JButton("Cancel");
         cancelButton.setToolTipText("Close dialog without applying current settings");
         cancelButton.addActionListener(event -> {
-            closeDialog();
+            this.closeDialog();
         });
 
         JButton applyButton = new JButton("Apply");
         applyButton.setToolTipText("Apply current settings now and leave dialog open");
         applyButton.addActionListener(event -> {
-            applyChanges();
+            this.applyChanges();
         });
 
         Box buttonBar = Box.createHorizontalBox();

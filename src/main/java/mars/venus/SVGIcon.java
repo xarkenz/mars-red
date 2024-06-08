@@ -1,4 +1,4 @@
-package mars.util;
+package mars.venus;
 
 import org.apache.batik.anim.dom.SAXSVGDocumentFactory;
 import org.apache.batik.anim.dom.SVGOMDocument;

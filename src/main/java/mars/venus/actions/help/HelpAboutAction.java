@@ -6,7 +6,7 @@ import mars.venus.VenusUI;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
-	
+
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
 
@@ -36,7 +36,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action for the Help -> About menu item
+ * Action for the Help -> About menu item.
  */
 public class HelpAboutAction extends VenusAction {
     public HelpAboutAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
@@ -46,8 +46,8 @@ public class HelpAboutAction extends VenusAction {
     @Override
     public void actionPerformed(ActionEvent event) {
         JOptionPane.showMessageDialog(
-            gui,
-            "MARS Red " + Application.VERSION
+            this.gui,
+            Application.NAME + " " + Application.VERSION
 				+ "\nCopyright © " + Application.COPYRIGHT_YEARS
 				+ "\n" + Application.COPYRIGHT_HOLDERS
 				+ "\nMARS is the MIPS Assembler and Runtime Simulator."

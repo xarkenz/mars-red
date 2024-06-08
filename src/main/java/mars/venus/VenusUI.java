@@ -3,7 +3,6 @@ package mars.venus;
 import mars.Application;
 import mars.settings.Settings;
 import mars.simulator.*;
-import mars.util.SVGIcon;
 import mars.venus.actions.ToolAction;
 import mars.venus.actions.VenusAction;
 import mars.venus.actions.edit.*;

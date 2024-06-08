@@ -5,7 +5,7 @@ import mars.ProgramStatement;
 import mars.mips.hardware.*;
 import mars.simulator.*;
 import mars.util.Binary;
-import mars.util.EditorFont;
+import mars.venus.EditorFont;
 import mars.venus.NumberDisplayBaseChooser;
 import mars.venus.VenusUI;
 

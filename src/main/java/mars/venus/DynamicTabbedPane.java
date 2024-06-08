@@ -1,4 +1,4 @@
-package mars.util;
+package mars.venus;
 
 import javax.swing.*;
 import javax.swing.event.MouseInputListener;
