@@ -2,6 +2,7 @@ package mars.venus.actions.file;
 
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
+import mars.venus.editor.FileStatus;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -35,7 +36,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action for the File -> Close All menu item
+ * Action for the File -> Save All menu item.
  */
 public class FileSaveAllAction extends VenusAction {
     public FileSaveAllAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
@@ -44,6 +45,11 @@ public class FileSaveAllAction extends VenusAction {
 
     @Override
     public void actionPerformed(ActionEvent event) {
-        gui.getEditor().saveAll();
+        this.gui.getEditor().saveAll();
+    }
+
+    @Override
+    public void update() {
+        this.setEnabled(this.gui.getFileStatus() != FileStatus.NO_FILE);
     }
 }

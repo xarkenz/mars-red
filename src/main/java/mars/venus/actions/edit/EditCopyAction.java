@@ -2,6 +2,7 @@ package mars.venus.actions.edit;
 
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
+import mars.venus.editor.FileStatus;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -44,6 +45,11 @@ public class EditCopyAction extends VenusAction {
 
     @Override
     public void actionPerformed(ActionEvent event) {
-        gui.getMainPane().getCurrentEditorTab().copyText();
+        this.gui.getMainPane().getCurrentEditorTab().copyText();
+    }
+
+    @Override
+    public void update() {
+        this.setEnabled(this.gui.getFileStatus() != FileStatus.NO_FILE);
     }
 }

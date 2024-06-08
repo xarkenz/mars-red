@@ -5,6 +5,7 @@ import mars.venus.editor.FileEditorTab;
 import mars.util.HardcopyWriter;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
+import mars.venus.editor.FileStatus;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -41,7 +42,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action for the File -> Print menu item
+ * Action for the File -> Print menu item.
  */
 public class FilePrintAction extends VenusAction {
     public FilePrintAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
@@ -58,7 +59,7 @@ public class FilePrintAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        FileEditorTab currentTab = gui.getMainPane().getCurrentEditorTab();
+        FileEditorTab currentTab = this.gui.getMainPane().getCurrentEditorTab();
         if (currentTab == null) {
             return;
         }
@@ -66,7 +67,7 @@ public class FilePrintAction extends VenusAction {
         double margin = 0.5; // all margins (left, right, top, bottom) fixed at 0.5"
         HardcopyWriter output;
         try {
-            output = new HardcopyWriter(gui, currentTab.getFile().getPath(), fontSize, margin, margin, margin, margin);
+            output = new HardcopyWriter(this.gui, currentTab.getFile().getPath(), fontSize, margin, margin, margin, margin);
         }
         catch (HardcopyWriter.PrintCanceledException exception) {
             return;
@@ -94,7 +95,12 @@ public class FilePrintAction extends VenusAction {
             output.close();
         }
         catch (IOException exception) {
-            // No action
+            exception.printStackTrace(System.err);
         }
+    }
+
+    @Override
+    public void update() {
+        this.setEnabled(this.gui.getFileStatus() != FileStatus.NO_FILE);
     }
 }

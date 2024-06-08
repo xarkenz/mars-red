@@ -42,7 +42,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action for the Run -> Reset menu item
+ * Action for the Run -> Reset menu item.
  */
 public class RunResetAction extends VenusAction {
     public RunResetAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
@@ -66,13 +66,13 @@ public class RunResetAction extends VenusAction {
             Application.program.assemble(RunAssembleAction.getProgramsToAssemble(), Application.getSettings().extendedAssemblerEnabled.get(), Application.getSettings().warningsAreErrors.get());
         }
         catch (ProcessingException exception) {
-            gui.getMessagesPane().writeToMessages(getName() + ": unable to reset.  Please close file then re-open and re-assemble.\n");
+            this.gui.getMessagesPane().writeToMessages(this.getName() + ": unable to reset.  Please close file then re-open and re-assemble.\n");
             return;
         }
 
         Simulator.getInstance().reset();
 
-        RegistersPane registersPane = gui.getRegistersPane();
+        RegistersPane registersPane = this.gui.getRegistersPane();
         registersPane.getRegistersWindow().clearHighlighting();
         registersPane.getRegistersWindow().updateRegisters();
         registersPane.getCoprocessor1Window().clearHighlighting();
@@ -81,18 +81,23 @@ public class RunResetAction extends VenusAction {
         registersPane.getCoprocessor0Window().updateRegisters();
         registersPane.setSelectedComponent(registersPane.getRegistersWindow());
 
-        ExecuteTab executeTab = gui.getMainPane().getExecuteTab();
+        ExecuteTab executeTab = this.gui.getMainPane().getExecuteTab();
         executeTab.getDataSegmentWindow().highlightCellForAddress(Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW));
         executeTab.getDataSegmentWindow().clearHighlighting();
         executeTab.getTextSegmentWindow().resetModifiedSourceCode();
         executeTab.getTextSegmentWindow().setCodeHighlighting(true);
         executeTab.getTextSegmentWindow().highlightStepAtPC();
 
-        gui.getMessagesPane().writeToMessages(getName() + ": reset completed.\n");
-        if (executeTab.getProgramStatus().hasStarted() && executeTab.getProgramStatus() != ProgramStatus.TERMINATED) {
-            gui.getMessagesPane().writeToConsole("\n--- program terminated by user ---\n\n");
+        this.gui.getMessagesPane().writeToMessages(this.getName() + ": reset completed.\n");
+        if (this.gui.getProgramStatus() == ProgramStatus.PAUSED) {
+            this.gui.getMessagesPane().writeToConsole("\n--- program terminated by user ---\n\n");
         }
 
-        executeTab.setProgramStatus(ProgramStatus.NOT_STARTED);
+        this.gui.setProgramStatus(ProgramStatus.NOT_STARTED);
+    }
+
+    @Override
+    public void update() {
+        this.setEnabled(this.gui.getProgramStatus().hasStarted());
     }
 }

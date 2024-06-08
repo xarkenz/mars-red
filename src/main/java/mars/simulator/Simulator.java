@@ -267,11 +267,16 @@ public class Simulator {
     /**
      * Flag the simulator to stop due to termination. Once it has done so,
      * {@link SimulatorListener#simulatorFinished(SimulatorFinishEvent)} will be called for all registered listeners.
+     * <p>
+     * Note: Unlike {@link #pause()}, this may be called while the simulator is paused.
      */
     public void terminate() {
         if (this.thread != null) {
             this.thread.stopForTermination();
             this.thread = null;
+        }
+        else {
+            this.dispatchFinishEvent(RegisterFile.getProgramCounter(), SimulatorFinishEvent.Reason.EXTERNAL, null);
         }
     }
 

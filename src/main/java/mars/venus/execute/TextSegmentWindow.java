@@ -445,9 +445,11 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
      */
     public int getBreakpointCount() {
         int breakpointCount = 0;
-        for (Object[] rowData : this.data) {
-            if ((Boolean) rowData[BREAKPOINT_COLUMN]) {
-                breakpointCount++;
+        if (this.data != null) {
+            for (Object[] rowData : this.data) {
+                if ((Boolean) rowData[BREAKPOINT_COLUMN]) {
+                    breakpointCount++;
+                }
             }
         }
         return breakpointCount;

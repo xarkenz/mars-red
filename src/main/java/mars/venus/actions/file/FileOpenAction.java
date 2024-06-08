@@ -6,7 +6,6 @@ import mars.venus.VenusUI;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
 /*
@@ -38,7 +37,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action for the File -> Open menu item
+ * Action for the File -> Open menu item.
  */
 public class FileOpenAction extends VenusAction {
     public FileOpenAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
@@ -53,7 +52,7 @@ public class FileOpenAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        List<File> unopenedFiles = gui.getEditor().open();
+        List<File> unopenedFiles = this.gui.getEditor().open();
         if (!unopenedFiles.isEmpty()) {
             StringBuilder message = new StringBuilder("<html>The following files could not be opened:<ul>");
             for (File file : unopenedFiles) {
@@ -61,7 +60,7 @@ public class FileOpenAction extends VenusAction {
                 message.append("<li>").append(file).append("</li>");
             }
             message.append("</ul></html>");
-            JOptionPane.showMessageDialog(gui, message, "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this.gui, message, "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

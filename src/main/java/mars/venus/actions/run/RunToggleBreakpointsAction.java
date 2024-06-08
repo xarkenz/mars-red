@@ -1,6 +1,5 @@
 package mars.venus.actions.run;
 
-import mars.Application;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
 
@@ -36,26 +35,23 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action class for the Run menu item to clear execution breakpoints that have been set.
- * It is a listener and is notified whenever a breakpoint is added or removed, thus will
- * set its enabled status true or false depending on whether breakpoints remain after that action.
+ * Action for the Run -> Toggle Breakpoints menu item.
  */
 public class RunToggleBreakpointsAction extends VenusAction {
-    /**
-     * Create the object and register with text segment window as a listener on its table model.
-     * The table model has not been created yet, so text segment window will hang onto this
-     * registration info and transfer it to the table model upon creation (which happens with
-     * each successful assembly).
-     */
     public RunToggleBreakpointsAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
     }
 
     /**
-     * When this option is selected, tell text segment window to clear breakpoints in its table model.
+     * When this option is selected, tell text segment window to toggle breakpoints in its table model.
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().toggleBreakpoints();
+        this.gui.getMainPane().getExecuteTab().getTextSegmentWindow().toggleBreakpoints();
+    }
+    
+    @Override
+    public void update() {
+        this.setEnabled(this.gui.getProgramStatus().isRunnable());
     }
 }

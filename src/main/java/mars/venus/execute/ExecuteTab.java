@@ -1,6 +1,5 @@
 package mars.venus.execute;
 
-import mars.simulator.*;
 import mars.venus.*;
 
 import javax.swing.*;
@@ -46,7 +45,6 @@ public class ExecuteTab extends JDesktopPane {
     private final SymbolTableWindow labelValues;
     private final NumberDisplayBaseChooser valueDisplayBase;
     private final NumberDisplayBaseChooser addressDisplayBase;
-    private ProgramStatus programStatus;
     private boolean labelWindowVisible;
 
     /**
@@ -66,7 +64,6 @@ public class ExecuteTab extends JDesktopPane {
         this.labelValues = new SymbolTableWindow(this.gui);
         this.dataSegment = new DataSegmentWindow(this.gui, new NumberDisplayBaseChooser[] { this.addressDisplayBase, this.valueDisplayBase });
         this.labelWindowVisible = this.gui.getSettings().labelWindowVisible.get();
-        this.programStatus = ProgramStatus.NOT_ASSEMBLED;
 
         this.add(this.textSegment); // these 3 LOC moved up.  DPS 3-Sept-2014
         this.add(this.dataSegment);
@@ -77,23 +74,6 @@ public class ExecuteTab extends JDesktopPane {
         this.textSegment.setVisible(true);
         this.dataSegment.setVisible(true);
         this.labelValues.setVisible(this.labelWindowVisible);
-
-        Simulator.getInstance().addGUIListener(new SimulatorListener() {
-            @Override
-            public void simulatorStarted(SimulatorStartEvent event) {
-                ExecuteTab.this.setProgramStatus(ProgramStatus.RUNNING);
-            }
-
-            @Override
-            public void simulatorPaused(SimulatorPauseEvent event) {
-                ExecuteTab.this.setProgramStatus(ProgramStatus.PAUSED);
-            }
-
-            @Override
-            public void simulatorFinished(SimulatorFinishEvent event) {
-                ExecuteTab.this.setProgramStatus(ProgramStatus.TERMINATED);
-            }
-        });
     }
 
     /**
@@ -168,25 +148,6 @@ public class ExecuteTab extends JDesktopPane {
             this.gui.getMainPane().setSelectedComponent(this.gui.getMainPane().getEditTab());
             this.gui.getMainPane().setSelectedComponent(this);
         }
-    }
-
-    /**
-     * Get the current status of the overall program.
-     *
-     * @return The current program status.
-     */
-    public ProgramStatus getProgramStatus() {
-        return this.programStatus;
-    }
-
-    /**
-     * Set the status of the overall program, and update the main GUI menu state.
-     *
-     * @param status The new program status.
-     */
-    public void setProgramStatus(ProgramStatus status) {
-        this.programStatus = status;
-        this.gui.updateMenuState(status);
     }
 
     /**

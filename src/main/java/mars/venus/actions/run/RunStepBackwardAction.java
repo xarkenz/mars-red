@@ -39,7 +39,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action for the Run -> Backstep menu item
+ * Action for the Run -> Step Backward menu item.
  */
 public class RunStepBackwardAction extends VenusAction {
     public RunStepBackwardAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
@@ -47,36 +47,39 @@ public class RunStepBackwardAction extends VenusAction {
     }
 
     /**
-     * Perform the next simulated instruction step.
+     * Undo the previous simulation step.
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        gui.getMessagesPane().selectConsoleTab();
-        RegistersPane registersPane = gui.getRegistersPane();
-        ExecuteTab executeTab = gui.getMainPane().getExecuteTab();
+        this.gui.getMessagesPane().selectConsoleTab();
+        RegistersPane registersPane = this.gui.getRegistersPane();
+        ExecuteTab executeTab = this.gui.getMainPane().getExecuteTab();
         executeTab.getTextSegmentWindow().setCodeHighlighting(true);
 
-        if (Application.isBackSteppingEnabled()) {
-            boolean inDelaySlot = Application.program.getBackStepper().isInDelaySlot(); // Added 25 June 2007
+        boolean inDelaySlot = Application.program.getBackStepper().isInDelaySlot(); // Added 25 June 2007
 
-            executeTab.getDataSegmentWindow().startObservingMemory();
-            registersPane.getRegistersWindow().startObservingRegisters();
-            registersPane.getCoprocessor0Window().startObservingRegisters();
-            registersPane.getCoprocessor1Window().startObservingRegisters();
+        executeTab.getDataSegmentWindow().startObservingMemory();
+        registersPane.getRegistersWindow().startObservingRegisters();
+        registersPane.getCoprocessor0Window().startObservingRegisters();
+        registersPane.getCoprocessor1Window().startObservingRegisters();
 
-            Application.program.getBackStepper().backStep();
+        Application.program.getBackStepper().backStep();
 
-            executeTab.getDataSegmentWindow().stopObservingMemory();
-            registersPane.getRegistersWindow().stopObservingRegisters();
-            registersPane.getCoprocessor0Window().stopObservingRegisters();
-            registersPane.getCoprocessor1Window().stopObservingRegisters();
-            registersPane.getRegistersWindow().updateRegisters();
-            registersPane.getCoprocessor1Window().updateRegisters();
-            registersPane.getCoprocessor0Window().updateRegisters();
-            executeTab.getDataSegmentWindow().updateValues();
-            executeTab.getTextSegmentWindow().highlightStepAtPC(inDelaySlot); // Argument added 25 June 2007
+        executeTab.getDataSegmentWindow().stopObservingMemory();
+        registersPane.getRegistersWindow().stopObservingRegisters();
+        registersPane.getCoprocessor0Window().stopObservingRegisters();
+        registersPane.getCoprocessor1Window().stopObservingRegisters();
+        registersPane.getRegistersWindow().updateRegisters();
+        registersPane.getCoprocessor1Window().updateRegisters();
+        registersPane.getCoprocessor0Window().updateRegisters();
+        executeTab.getDataSegmentWindow().updateValues();
+        executeTab.getTextSegmentWindow().highlightStepAtPC(inDelaySlot); // Argument added 25 June 2007
 
-            executeTab.setProgramStatus(ProgramStatus.PAUSED);
-        }
+        this.gui.setProgramStatus(ProgramStatus.PAUSED);
+    }
+
+    @Override
+    public void update() {
+        this.setEnabled(this.gui.getProgramStatus().isRunnable() && Application.isBackSteppingEnabled() && !Application.program.getBackStepper().isEmpty());
     }
 }

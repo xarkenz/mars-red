@@ -3,6 +3,7 @@ package mars.venus.actions.run;
 import mars.simulator.Simulator;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
+import mars.venus.execute.ProgramStatus;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -36,7 +37,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action class for the Run -> Pause menu item (and toolbar icon)
+ * Action for the Run -> Pause menu item.
  */
 public class RunPauseAction extends VenusAction {
     public RunPauseAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
@@ -46,5 +47,10 @@ public class RunPauseAction extends VenusAction {
     @Override
     public void actionPerformed(ActionEvent event) {
         Simulator.getInstance().pause();
+    }
+
+    @Override
+    public void update() {
+        this.setEnabled(this.gui.getProgramStatus() == ProgramStatus.RUNNING);
     }
 }

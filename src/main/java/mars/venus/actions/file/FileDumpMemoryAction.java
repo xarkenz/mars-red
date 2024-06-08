@@ -1,6 +1,5 @@
 package mars.venus.actions.file;
 
-import mars.Application;
 import mars.mips.dump.DumpFormat;
 import mars.mips.dump.DumpFormatManager;
 import mars.mips.hardware.AddressErrorException;
@@ -9,6 +8,7 @@ import mars.util.Binary;
 import mars.util.MemoryDump;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
+import mars.venus.execute.ProgramStatus;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -49,7 +49,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action for the File -> Dump Memory menu item
+ * Action for the File -> Dump Memory menu item.
  */
 public class FileDumpMemoryAction extends VenusAction {
     private static final String TITLE = "Dump Memory To File";
@@ -62,32 +62,33 @@ public class FileDumpMemoryAction extends VenusAction {
         super(gui, name, icon, description, mnemonic, accel);
     }
 
-    @Override
-    public void actionPerformed(ActionEvent event) {
-        dumpMemory();
-    }
-
     /**
      * Save the memory segment in a supported format.
      */
-    private void dumpMemory() {
-        dumpDialog = createDumpDialog();
-        dumpDialog.pack();
-        dumpDialog.setLocationRelativeTo(Application.getGUI());
-        dumpDialog.setVisible(true);
+    @Override
+    public void actionPerformed(ActionEvent event) {
+        this.dumpDialog = this.createDumpDialog();
+        this.dumpDialog.pack();
+        this.dumpDialog.setLocationRelativeTo(this.gui);
+        this.dumpDialog.setVisible(true);
+    }
+
+    @Override
+    public void update() {
+        this.setEnabled(this.gui.getProgramStatus() != ProgramStatus.NOT_ASSEMBLED);
     }
 
     /**
      * Create the dump dialog that appears when menu item is selected.
      */
     private JDialog createDumpDialog() {
-        JDialog dumpDialog = new JDialog(gui, TITLE, true);
-        buildDialogContentPane(dumpDialog);
+        JDialog dumpDialog = new JDialog(this.gui, TITLE, true);
+        this.buildDialogContentPane(dumpDialog);
         dumpDialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
         dumpDialog.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent event) {
-                closeDialog();
+                FileDumpMemoryAction.this.closeDialog();
             }
         });
         return dumpDialog;
@@ -144,7 +145,7 @@ public class FileDumpMemoryAction extends VenusAction {
         if (segmentCount == 0) {
             contents.add(new Label("There is nothing to dump!"), BorderLayout.NORTH);
             JButton okButton = new JButton("OK");
-            okButton.addActionListener(event -> closeDialog());
+            okButton.addActionListener(event -> this.closeDialog());
             contents.add(okButton, BorderLayout.SOUTH);
             return;
         }
@@ -157,36 +158,36 @@ public class FileDumpMemoryAction extends VenusAction {
         }
 
         // Create segment selector.  First element selected by default.
-        segmentSelector = new JComboBox<>(segmentLabels);
-        segmentSelector.setSelectedIndex(0);
+        this.segmentSelector = new JComboBox<>(segmentLabels);
+        this.segmentSelector.setSelectedIndex(0);
         JPanel segmentPanel = new JPanel(new BorderLayout());
         segmentPanel.add(new JLabel("Memory Segment"), BorderLayout.NORTH);
-        segmentPanel.add(segmentSelector);
+        segmentPanel.add(this.segmentSelector);
         contents.add(segmentPanel, BorderLayout.WEST);
 
         // Next, create list of all available dump formats.
         DumpFormat[] dumpFormats = DumpFormatManager.getDumpFormats();
-        dumpFormatSelector = new JComboBox<>(dumpFormats);
-        dumpFormatSelector.setRenderer(new DumpFormatComboBoxRenderer(dumpFormatSelector));
-        dumpFormatSelector.setSelectedIndex(0);
+        this.dumpFormatSelector = new JComboBox<>(dumpFormats);
+        this.dumpFormatSelector.setRenderer(new DumpFormatComboBoxRenderer(this.dumpFormatSelector));
+        this.dumpFormatSelector.setSelectedIndex(0);
         JPanel formatPanel = new JPanel(new BorderLayout());
         formatPanel.add(new JLabel("Dump Format"), BorderLayout.NORTH);
-        formatPanel.add(dumpFormatSelector);
+        formatPanel.add(this.dumpFormatSelector);
         contents.add(formatPanel, BorderLayout.EAST);
 
         // Bottom row - the control buttons for Next and Cancel
         Box controlPanel = Box.createHorizontalBox();
         JButton nextButton = new JButton("Next");
         nextButton.addActionListener(event -> {
-            int firstAddress = actualBaseAddresses[segmentSelector.getSelectedIndex()];
-            int lastAddress = actualHighAddresses[segmentSelector.getSelectedIndex()];
-            if (performDump(firstAddress, lastAddress, (DumpFormat) dumpFormatSelector.getSelectedItem())) {
-                closeDialog();
+            int firstAddress = actualBaseAddresses[this.segmentSelector.getSelectedIndex()];
+            int lastAddress = actualHighAddresses[this.segmentSelector.getSelectedIndex()];
+            if (performDump(firstAddress, lastAddress, (DumpFormat) this.dumpFormatSelector.getSelectedItem())) {
+                this.closeDialog();
             }
         });
         dumpDialog.getRootPane().setDefaultButton(nextButton);
         JButton cancelButton = new JButton("Cancel");
-        cancelButton.addActionListener(event -> closeDialog());
+        cancelButton.addActionListener(event -> this.closeDialog());
         controlPanel.add(Box.createHorizontalGlue());
         controlPanel.add(nextButton);
         controlPanel.add(Box.createHorizontalStrut(12));
@@ -200,16 +201,22 @@ public class FileDumpMemoryAction extends VenusAction {
      */
     private boolean performDump(int firstAddress, int lastAddress, DumpFormat format) {
         File file;
-        JFileChooser saveDialog = new JFileChooser(gui.getEditor().getCurrentSaveDirectory());
+        JFileChooser saveDialog = new JFileChooser(this.gui.getEditor().getCurrentSaveDirectory());
         saveDialog.setDialogTitle(TITLE);
         while (true) {
-            int decision = saveDialog.showSaveDialog(gui);
+            int decision = saveDialog.showSaveDialog(this.gui);
             if (decision != JFileChooser.APPROVE_OPTION) {
                 return false;
             }
             file = saveDialog.getSelectedFile();
             if (file.exists()) {
-                int overwrite = JOptionPane.showConfirmDialog(gui, "File \"" + file.getName() + "\" already exists.  Do you wish to overwrite it?", "Overwrite existing file?", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+                int overwrite = JOptionPane.showConfirmDialog(
+                    this.gui,
+                    "File \"" + file.getName() + "\" already exists.  Do you wish to overwrite it?",
+                    "Overwrite existing file?",
+                    JOptionPane.YES_NO_CANCEL_OPTION,
+                    JOptionPane.WARNING_MESSAGE
+                );
                 switch (overwrite) {
                     case JOptionPane.YES_OPTION -> {
                         // Pass through to the break statement below
@@ -217,11 +224,7 @@ public class FileDumpMemoryAction extends VenusAction {
                     case JOptionPane.NO_OPTION -> {
                         continue;
                     }
-                    case JOptionPane.CANCEL_OPTION -> {
-                        return false;
-                    }
                     default -> {
-                        // Should never occur
                         return false;
                     }
                 }
@@ -235,7 +238,7 @@ public class FileDumpMemoryAction extends VenusAction {
             format.dumpMemoryRange(file, firstAddress, lastAddress);
         }
         catch (AddressErrorException | IOException exception) {
-            JOptionPane.showMessageDialog(gui, exception.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this.gui, exception.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
 
         return true;
@@ -245,8 +248,8 @@ public class FileDumpMemoryAction extends VenusAction {
      * We're finished with this modal dialog, so close it.
      */
     private void closeDialog() {
-        dumpDialog.setVisible(false);
-        dumpDialog.dispose();
+        this.dumpDialog.setVisible(false);
+        this.dumpDialog.dispose();
     }
 
     /**
@@ -264,9 +267,9 @@ public class FileDumpMemoryAction extends VenusAction {
         @Override
         public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
             super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-            setToolTipText(value.toString());
-            if (index >= 0 && comboBox.getItemAt(index).getDescription() != null) {
-                setToolTipText(comboBox.getItemAt(index).getDescription());
+            this.setToolTipText(value.toString());
+            if (index >= 0 && this.comboBox.getItemAt(index).getDescription() != null) {
+                this.setToolTipText(this.comboBox.getItemAt(index).getDescription());
             }
             return this;
         }

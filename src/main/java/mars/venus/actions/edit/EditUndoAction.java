@@ -36,7 +36,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action for the Edit -> Undo menu item
+ * Action for the Edit -> Undo menu item.
  */
 public class EditUndoAction extends VenusAction {
     public EditUndoAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
@@ -50,10 +50,10 @@ public class EditUndoAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        FileEditorTab fileEditorTab = gui.getMainPane().getCurrentEditorTab();
-        if (fileEditorTab != null) {
-            fileEditorTab.undo();
-            gui.updateUndoRedoActions();
+        FileEditorTab tab = this.gui.getMainPane().getCurrentEditorTab();
+        if (tab != null) {
+            tab.undo();
+            this.gui.updateUndoRedoActions();
         }
     }
 
@@ -61,8 +61,9 @@ public class EditUndoAction extends VenusAction {
      * Automatically update whether this action is enabled or disabled
      * based on the status of the {@link javax.swing.undo.UndoManager}.
      */
-    public void updateEnabledStatus() {
-        FileEditorTab fileEditorTab = gui.getMainPane().getCurrentEditorTab();
-        setEnabled(fileEditorTab != null && fileEditorTab.getUndoManager().canUndo());
+    @Override
+    public void update() {
+        FileEditorTab tab = this.gui.getMainPane().getCurrentEditorTab();
+        this.setEnabled(tab != null && tab.getUndoManager().canUndo());
     }
 }

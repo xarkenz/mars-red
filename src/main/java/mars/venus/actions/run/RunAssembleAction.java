@@ -7,6 +7,7 @@ import mars.util.FilenameFinder;
 import mars.venus.*;
 import mars.venus.actions.VenusAction;
 import mars.venus.editor.EditTab;
+import mars.venus.editor.FileStatus;
 import mars.venus.execute.ExecuteTab;
 import mars.venus.execute.ProgramStatus;
 
@@ -67,12 +68,12 @@ public class RunAssembleAction extends VenusAction {
 
     @Override
     public void actionPerformed(ActionEvent event) {
-        EditTab editTab = gui.getMainPane().getEditTab();
-        ExecuteTab executeTab = gui.getMainPane().getExecuteTab();
-        RegistersPane registersPane = gui.getRegistersPane();
+        EditTab editTab = this.gui.getMainPane().getEditTab();
+        ExecuteTab executeTab = this.gui.getMainPane().getExecuteTab();
+        RegistersPane registersPane = this.gui.getRegistersPane();
 
-        // Only continue if there is at least one file open in the Edit tab
-        if (editTab.getCurrentEditorTab() == null) {
+        // Require that there is a file open and that it is saved before running
+        if (!editTab.saveCurrentFile()) {
             return;
         }
 
@@ -88,7 +89,7 @@ public class RunAssembleAction extends VenusAction {
 
         // Get the path of the exception handler, if enabled
         String exceptionHandler = null;
-        if (Application.getSettings().exceptionHandlerEnabled.get() && Application.getSettings().exceptionHandlerPath.get() != null && !Application.getSettings().exceptionHandlerPath.get().isBlank()) {
+        if (Application.getSettings().exceptionHandlerEnabled.get()) {
             exceptionHandler = Application.getSettings().exceptionHandlerPath.get();
         }
 
@@ -97,23 +98,23 @@ public class RunAssembleAction extends VenusAction {
 
             Application.program = new Program();
             programsToAssemble = Application.program.prepareFilesForAssembly(pathnames, leadPathname, exceptionHandler);
-            gui.getMessagesPane().writeToMessages(buildFileNameList(getName() + ": assembling ", programsToAssemble));
+            this.gui.getMessagesPane().writeToMessages(this.buildFileNameList(this.getName() + ": assembling ", programsToAssemble));
 
             // Added logic to receive any warnings and output them.  DPS 11/28/06
             ErrorList warnings = Application.program.assemble(programsToAssemble, Application.getSettings().extendedAssemblerEnabled.get(), Application.getSettings().warningsAreErrors.get());
 
             if (warnings.warningsOccurred()) {
-                gui.getMessagesPane().writeToMessages(warnings.generateWarningReport());
-                gui.getMessagesPane().selectMessagesTab();
+                this.gui.getMessagesPane().writeToMessages(warnings.generateWarningReport());
+                this.gui.getMessagesPane().selectMessagesTab();
             }
             else {
-                gui.getMessagesPane().writeToMessages(getName() + ": operation completed successfully.\n");
+                this.gui.getMessagesPane().writeToMessages(this.getName() + ": operation completed successfully.\n");
             }
-            if (executeTab.getProgramStatus().hasStarted() && executeTab.getProgramStatus() != ProgramStatus.TERMINATED) {
-                gui.getMessagesPane().writeToConsole("\n--- program terminated by user ---\n\n");
+            if (this.gui.getProgramStatus() == ProgramStatus.PAUSED) {
+                this.gui.getMessagesPane().writeToConsole("\n--- program terminated by user ---\n\n");
             }
 
-            gui.setProgramStatus(ProgramStatus.NOT_STARTED);
+            this.gui.setProgramStatus(ProgramStatus.NOT_STARTED);
 
             executeTab.getTextSegmentWindow().setupTable();
             executeTab.getDataSegmentWindow().setupTable();
@@ -122,7 +123,7 @@ public class RunAssembleAction extends VenusAction {
             executeTab.getLabelsWindow().setupTable();
             executeTab.getTextSegmentWindow().setCodeHighlighting(true);
             executeTab.getTextSegmentWindow().highlightStepAtPC();
-            gui.getMainPane().setSelectedComponent(executeTab);
+            this.gui.getMainPane().setSelectedComponent(executeTab);
 
             registersPane.getRegistersWindow().clearWindow();
             registersPane.getCoprocessor1Window().clearWindow();
@@ -130,9 +131,9 @@ public class RunAssembleAction extends VenusAction {
         }
         catch (ProcessingException exception) {
             String errorReport = exception.getErrors().generateErrorAndWarningReport();
-            gui.getMessagesPane().writeToMessages(errorReport);
-            gui.getMessagesPane().writeToMessages(getName() + ": operation completed with errors.\n");
-            gui.getMessagesPane().selectMessagesTab();
+            this.gui.getMessagesPane().writeToMessages(errorReport);
+            this.gui.getMessagesPane().writeToMessages(getName() + ": operation completed with errors.\n");
+            this.gui.getMessagesPane().selectMessagesTab();
 
             // Select editor line containing first error, and corresponding error message.
             ArrayList<ErrorMessage> errorMessages = exception.getErrors().getErrorMessages();
@@ -142,21 +143,26 @@ public class RunAssembleAction extends VenusAction {
                     continue;
                 }
                 if (!message.isWarning() || Application.getSettings().warningsAreErrors.get()) {
-                    gui.getMessagesPane().selectErrorMessage(message.getFilename(), message.getLine(), message.getPosition());
+                    this.gui.getMessagesPane().selectErrorMessage(message.getFilename(), message.getLine(), message.getPosition());
                     // Bug workaround: Line selection does not work correctly for the JEditTextArea editor
                     // when the file is opened then automatically assembled (assemble-on-open setting).
                     // Automatic assemble happens in EditTabbedPane's openFile() method, by invoking
                     // this method (actionPerformed) explicitly with null argument.  Thus e!=null test.
                     // DPS 9-Aug-2010
                     if (event != null) {
-                        gui.getMessagesPane().selectEditorTextLine(message.getFilename(), message.getLine(), message.getPosition());
+                        this.gui.getMessagesPane().selectEditorTextLine(message.getFilename(), message.getLine(), message.getPosition());
                     }
                     break;
                 }
             }
 
-            gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
+            this.gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
         }
+    }
+
+    @Override
+    public void update() {
+        this.setEnabled(this.gui.getFileStatus() != FileStatus.NO_FILE && this.gui.getProgramStatus() != ProgramStatus.RUNNING);
     }
 
     /**
@@ -168,7 +174,10 @@ public class RunAssembleAction extends VenusAction {
         int lineLength = result.length();
         for (int i = 0; i < programList.size(); i++) {
             String filename = programList.get(i).getFilename();
-            result.append(filename).append((i < programList.size() - 1) ? ", " : "");
+            result.append(filename);
+            if (i < programList.size() - 1) {
+                result.append(", ");
+            }
             lineLength += filename.length();
             if (lineLength > LINE_LENGTH_LIMIT) {
                 result.append('\n');

@@ -2,10 +2,11 @@ package mars.venus.actions.edit;
 
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
+import mars.venus.editor.FileStatus;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
-	
+
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
 
@@ -35,7 +36,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action for the Edit -> Paste menu item
+ * Action for the Edit -> Paste menu item.
  */
 public class EditPasteAction extends VenusAction {
     public EditPasteAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
@@ -44,6 +45,11 @@ public class EditPasteAction extends VenusAction {
 
     @Override
     public void actionPerformed(ActionEvent event) {
-        gui.getMainPane().getCurrentEditorTab().pasteText();
+        this.gui.getMainPane().getCurrentEditorTab().pasteText();
+    }
+
+    @Override
+    public void update() {
+        this.setEnabled(this.gui.getFileStatus() != FileStatus.NO_FILE);
     }
 }

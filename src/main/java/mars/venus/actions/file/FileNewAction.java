@@ -35,7 +35,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action for the File -> New menu item
+ * Action for the File -> New menu item.
  */
 public class FileNewAction extends VenusAction {
     public FileNewAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
@@ -49,7 +49,7 @@ public class FileNewAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        gui.getEditor().newFile();
+        this.gui.getEditor().newFile();
     }
 }
 	

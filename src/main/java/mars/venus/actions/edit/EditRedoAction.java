@@ -36,12 +36,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action for the Edit -> Redo menu item
+ * Action for the Edit -> Redo menu item.
  */
 public class EditRedoAction extends VenusAction {
     public EditRedoAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
-        setEnabled(false);
     }
 
     /**
@@ -50,10 +49,10 @@ public class EditRedoAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        FileEditorTab fileEditorTab = gui.getMainPane().getCurrentEditorTab();
-        if (fileEditorTab != null) {
-            fileEditorTab.redo();
-            gui.updateUndoRedoActions();
+        FileEditorTab tab = this.gui.getMainPane().getCurrentEditorTab();
+        if (tab != null) {
+            tab.redo();
+            this.gui.updateUndoRedoActions();
         }
     }
 
@@ -61,9 +60,10 @@ public class EditRedoAction extends VenusAction {
      * Automatically update whether this action is enabled or disabled
      * based on the status of the {@link javax.swing.undo.UndoManager}.
      */
-    public void updateEnabledStatus() {
-        FileEditorTab fileEditorTab = gui.getMainPane().getCurrentEditorTab();
-        setEnabled(fileEditorTab != null && fileEditorTab.getUndoManager().canRedo());
+    @Override
+    public void update() {
+        FileEditorTab tab = this.gui.getMainPane().getCurrentEditorTab();
+        this.setEnabled(tab != null && tab.getUndoManager().canRedo());
     }
 }
 	

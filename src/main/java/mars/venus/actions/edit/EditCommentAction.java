@@ -2,6 +2,8 @@ package mars.venus.actions.edit;
 
 import mars.venus.VenusUI;
 import mars.venus.actions.VenusAction;
+import mars.venus.editor.FileEditorTab;
+import mars.venus.editor.FileStatus;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -35,7 +37,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action for the comment lines keybind.
+ * Action for the Edit -> Comment Selected Lines menu item.
  */
 public class EditCommentAction extends VenusAction {
     public EditCommentAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
@@ -44,6 +46,14 @@ public class EditCommentAction extends VenusAction {
 
     @Override
     public void actionPerformed(ActionEvent event) {
-        gui.getMainPane().getCurrentEditorTab().commentLines();
+        FileEditorTab tab = this.gui.getMainPane().getCurrentEditorTab();
+        if (tab != null) {
+            tab.commentLines();
+        }
+    }
+
+    @Override
+    public void update() {
+        this.setEnabled(this.gui.getFileStatus() != FileStatus.NO_FILE);
     }
 }

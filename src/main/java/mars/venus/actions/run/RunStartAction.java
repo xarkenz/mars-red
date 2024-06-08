@@ -5,6 +5,7 @@ import mars.ProcessingException;
 import mars.simulator.ProgramArgumentList;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
+import mars.venus.execute.ProgramStatus;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -38,7 +39,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action for the Run -> Start menu item
+ * Action for the Run -> Start menu item.
  */
 public class RunStartAction extends VenusAction {
     public RunStartAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
@@ -46,28 +47,33 @@ public class RunStartAction extends VenusAction {
     }
 
     /**
-     * Run the MIPS program.
+     * Run the program.
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        if (!gui.getProgramStatus().hasStarted()) {
+        if (this.gui.getProgramStatus() == ProgramStatus.NOT_STARTED) {
             // DPS 17-July-2008
             // Store any program arguments into MIPS memory and registers before
             // execution begins. Arguments go into the gap between $sp and kernel memory.
             // Argument pointers and count go into runtime stack and $sp is adjusted accordingly.
             // $a0 gets argument count (argc), $a1 gets stack address of first arg pointer (argv).
-            String programArguments = gui.getMainPane().getExecuteTab().getTextSegmentWindow().getProgramArguments();
-            if (programArguments != null && !programArguments.isEmpty() && gui.getSettings().useProgramArguments.get()) {
+            String programArguments = this.gui.getMainPane().getExecuteTab().getTextSegmentWindow().getProgramArguments();
+            if (programArguments != null && !programArguments.isEmpty() && this.gui.getSettings().useProgramArguments.get()) {
                 new ProgramArgumentList(programArguments).storeProgramArguments();
             }
         }
 
         try {
-            int[] breakPoints = gui.getMainPane().getExecuteTab().getTextSegmentWindow().getSortedBreakPointsArray();
+            int[] breakPoints = this.gui.getMainPane().getExecuteTab().getTextSegmentWindow().getSortedBreakPointsArray();
             Application.program.simulate(breakPoints);
         }
         catch (ProcessingException exception) {
             // Ignore
         }
+    }
+
+    @Override
+    public void update() {
+        this.setEnabled(this.gui.getProgramStatus().canStart());
     }
 }

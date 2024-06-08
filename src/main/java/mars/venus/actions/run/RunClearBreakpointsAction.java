@@ -1,14 +1,11 @@
 package mars.venus.actions.run;
 
-import mars.Application;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
 
 import javax.swing.*;
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
 import java.awt.event.ActionEvent;
-	
+
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
 
@@ -38,11 +35,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action class for the Run menu item to clear execution breakpoints that have been set.
- * It is a listener and is notified whenever a breakpoint is added or removed, thus will
- * set its enabled status true or false depending on whether breakpoints remain after that action.
+ * Action for the Run -> Clear Breakpoints menu item.
  */
-public class RunClearBreakpointsAction extends VenusAction implements TableModelListener {
+public class RunClearBreakpointsAction extends VenusAction {
     /**
      * Create the object and register with text segment window as a listener on its table model.
      * The table model has not been created yet, so text segment window will hang onto this
@@ -51,7 +46,7 @@ public class RunClearBreakpointsAction extends VenusAction implements TableModel
      */
     public RunClearBreakpointsAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
         super(gui, name, icon, description, mnemonic, accel);
-        Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().registerTableModelListener(this);
+        this.gui.getMainPane().getExecuteTab().getTextSegmentWindow().registerTableModelListener(event -> this.update());
     }
 
     /**
@@ -59,17 +54,16 @@ public class RunClearBreakpointsAction extends VenusAction implements TableModel
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().clearAllBreakpoints();
+        this.gui.getMainPane().getExecuteTab().getTextSegmentWindow().clearAllBreakpoints();
     }
 
     /**
-     * Required TableModelListener method.  This is response upon editing of text segment table
-     * model.  The only editable column is breakpoints so this method is called only when user
-     * adds or removes a breakpoint.  Gets new breakpoint count and sets enabled status
-     * accordingly.
+     * This is response upon editing of text segment table model.
+     * The only editable column is breakpoints so this method is called only when user
+     * adds or removes a breakpoint.  Gets new breakpoint count and sets enabled status accordingly.
      */
     @Override
-    public void tableChanged(TableModelEvent e) {
-        setEnabled(Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().getBreakpointCount() > 0);
+    public void update() {
+        this.setEnabled(this.gui.getProgramStatus().isRunnable() && this.gui.getMainPane().getExecuteTab().getTextSegmentWindow().getBreakpointCount() > 0);
     }
 }

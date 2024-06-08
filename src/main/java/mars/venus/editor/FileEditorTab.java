@@ -1,10 +1,8 @@
 package mars.venus.editor;
 
 import mars.Application;
-import mars.settings.Settings;
 import mars.venus.VenusUI;
 import mars.venus.editor.jeditsyntax.JEditBasedTextArea;
-import mars.venus.execute.ProgramStatus;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -157,14 +155,10 @@ public class FileEditorTab extends JPanel {
             if (this.getFileStatus() == FileStatus.NEW_NOT_EDITED) {
                 this.setFileStatus(FileStatus.NEW_EDITED);
             }
-            if (this.getFileStatus() == FileStatus.NOT_EDITED) {
+            else if (this.getFileStatus() == FileStatus.NOT_EDITED) {
                 this.setFileStatus(FileStatus.EDITED);
             }
-            this.gui.getEditor().setTitle(this.file.getName(), this.fileStatus);
-
-            // Clear the Execute tab since the file has been edited
-            this.gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
-            this.gui.getMainPane().getExecuteTab().clear(); // DPS 9-Aug-2011
+            this.editTab.updateTitleAndMenuState(this);
         }
 
         if (Application.getSettings().displayEditorLineNumbers.get()) {

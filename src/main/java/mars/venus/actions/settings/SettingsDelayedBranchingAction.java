@@ -1,10 +1,7 @@
 package mars.venus.actions.settings;
 
-import mars.Application;
-import mars.simulator.Simulator;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
-import mars.venus.execute.ProgramStatus;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -55,15 +52,6 @@ public class SettingsDelayedBranchingAction extends VenusAction {
 
     @Override
     public void actionPerformed(ActionEvent event) {
-        Application.getSettings().delayedBranchingEnabled.set(((JCheckBoxMenuItem) event.getSource()).isSelected());
-        // 25 June 2007 Re-assemble if the situation demands it to maintain consistency.
-        if (gui.getProgramStatus() != ProgramStatus.NOT_ASSEMBLED) {
-            // Stop execution if executing -- should NEVER happen because this
-            // Action's widget is disabled during MIPS execution.
-            if (gui.getMainPane().getExecuteTab().getProgramStatus() == ProgramStatus.RUNNING) {
-                Simulator.getInstance().terminate();
-            }
-            gui.getRunAssembleAction().actionPerformed(null);
-        }
+        this.gui.getSettings().delayedBranchingEnabled.set(((JCheckBoxMenuItem) event.getSource()).isSelected());
     }
 }

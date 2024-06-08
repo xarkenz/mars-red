@@ -80,17 +80,8 @@ public class EditTab extends DynamicTabbedPane {
 
         this.addChangeListener(event -> {
             FileEditorTab currentTab = this.getCurrentEditorTab();
-
+            this.updateTitleAndMenuState(currentTab);
             if (currentTab != null) {
-                // New IF statement to permit free traversal of edit panes w/o invalidating
-                // assembly if assemble-all is selected.  DPS 9-Aug-2011
-                if (this.gui.getSettings().assembleAllEnabled.get()) {
-                    this.updateTitle(currentTab);
-                }
-                else {
-                    this.updateTitleAndMenuState(currentTab);
-                    this.gui.getMainPane().getExecuteTab().clear();
-                }
                 currentTab.requestTextAreaFocus();
             }
 
@@ -123,10 +114,12 @@ public class EditTab extends DynamicTabbedPane {
      * @return The tab for the given file, or null if no such tab was found.
      */
     public FileEditorTab getEditorTab(File file) {
-        return this.getEditorTabs().stream()
-            .filter(tab -> tab.getFile().equals(file))
-            .findAny()
-            .orElse(null);
+        for (FileEditorTab tab : this.getEditorTabs()) {
+            if (tab.getFile().equals(file)) {
+                return tab;
+            }
+        }
+        return null;
     }
 
     /**
@@ -163,22 +156,6 @@ public class EditTab extends DynamicTabbedPane {
             editorTabs.add((FileEditorTab) this.getComponentAt(tabIndex));
         }
         return editorTabs;
-    }
-
-    /**
-     * Get the file status of the currently selected editor tab, or {@link FileStatus#NO_FILE}
-     * if there are no editor tabs open.
-     *
-     * @return The current file status.
-     */
-    public FileStatus getCurrentFileStatus() {
-        FileEditorTab tab = this.getCurrentEditorTab();
-        if (tab != null) {
-            return tab.getFileStatus();
-        }
-        else {
-            return FileStatus.NO_FILE;
-        }
     }
 
     /**
@@ -312,7 +289,7 @@ public class EditTab extends DynamicTabbedPane {
             return true;
         }
         else if (this.resolveUnsavedChanges()) {
-            this.closeFile(currentTab);
+            this.remove(currentTab);
             this.gui.getMainPane().getExecuteTab().clear();
             this.gui.getMainPane().setSelectedComponent(this);
             return true;
@@ -346,21 +323,19 @@ public class EditTab extends DynamicTabbedPane {
                                 this.setSelectedComponent(tab);
                                 boolean saved = this.saveCurrentFile();
                                 if (saved) {
-                                    this.closeFile(tab);
+                                    this.remove(tab);
                                 }
                                 else {
                                     closedAll = false;
                                 }
                             }
                             else {
-                                this.closeFile(tab);
+                                this.remove(tab);
                             }
                         }
                     }
                     case JOptionPane.NO_OPTION -> {
-                        for (FileEditorTab tab : tabs) {
-                            this.closeFile(tab);
-                        }
+                        this.removeAll();
                     }
                     default -> {
                         closedAll = false;
@@ -368,9 +343,7 @@ public class EditTab extends DynamicTabbedPane {
                 }
             }
             else {
-                for (FileEditorTab tab : tabs) {
-                    this.closeFile(tab);
-                }
+                this.removeAll();
             }
         }
 
@@ -406,22 +379,13 @@ public class EditTab extends DynamicTabbedPane {
             return false;
         }
         else if (tab.isNew()) {
-            File file = this.saveAsFile(tab);
-            if (file == null) {
-                return false;
-            }
-
-            this.editor.setCurrentSaveDirectory(file.getParent());
-            tab.setFile(file);
-            this.updateTitleAndMenuState(tab);
-            return true;
+            return this.saveAsFile(tab) != null;
         }
 
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(tab.getFile()));
             writer.write(tab.getSource(), 0, tab.getSource().length());
             writer.close();
-            return true;
         }
         catch (IOException exception) {
             JOptionPane.showMessageDialog(
@@ -432,6 +396,10 @@ public class EditTab extends DynamicTabbedPane {
             );
             return false;
         }
+
+        this.editor.setCurrentSaveDirectory(tab.getFile().getParent());
+
+        return true;
     }
 
     /**
@@ -493,11 +461,7 @@ public class EditTab extends DynamicTabbedPane {
                     case JOptionPane.NO_OPTION -> {
                         continue;
                     }
-                    case JOptionPane.CANCEL_OPTION -> {
-                        return null;
-                    }
                     default -> {
-                        // Should never occur
                         return null;
                     }
                 }
@@ -545,7 +509,7 @@ public class EditTab extends DynamicTabbedPane {
             if (tab.hasUnsavedEdits()) {
                 if (this.saveFile(tab)) {
                     tab.setFileStatus(FileStatus.NOT_EDITED);
-                    this.updateTitle(tab);
+                    this.updateTitleAndMenuState(tab);
                 }
                 else {
                     return false;
@@ -561,39 +525,24 @@ public class EditTab extends DynamicTabbedPane {
     }
 
     /**
-     * Remove an tab and update the menu status.
+     * Update the title on a given tab and possibly the title of the window,
+     * as well as the GUI's menu state (i.e. which actions are enabled) if applicable.
+     * Should be invoked any time the tab's state might change in any way.
      *
-     * @param tab The tab to remove.
+     * @param tab The tab to update, or null if there are no tabs remaining.
      */
-    public void closeFile(FileEditorTab tab) {
-        super.remove(tab);
+    public void updateTitleAndMenuState(FileEditorTab tab) {
+        // This condition is also true if no tabs are open
+        if (tab == this.getCurrentEditorTab()) {
+            this.gui.setFileStatus(tab == null ? FileStatus.NO_FILE : tab.getFileStatus());
+        }
 
-        tab = this.getCurrentEditorTab(); // Is now next tab or null
         if (tab == null) {
-            this.editor.setTitle("", FileStatus.NO_FILE);
-            this.gui.updateMenuState(FileStatus.NO_FILE);
+            this.editor.setTitle(null, FileStatus.NO_FILE);
         }
         else {
-            this.updateTitleAndMenuState(tab);
+            this.editor.setTitle(tab.getFile().getName(), tab.getFileStatus());
         }
-    }
-
-    /**
-     * Handy little utility to update the title on the current tab and the frame title bar
-     * and also to update the MARS menu state (controls which actions are enabled).
-     */
-    private void updateTitleAndMenuState(FileEditorTab tab) {
-        this.gui.updateMenuState(tab.getFileStatus());
-        this.updateTitle(tab);
-    }
-
-    /**
-     * Handy little utility to update the title on the current tab and the frame title bar.
-     *
-     * @author DPS 9-Aug-2011
-     */
-    private void updateTitle(FileEditorTab tab) {
-        this.editor.setTitle(tab.getFile().getName(), tab.getFileStatus());
     }
 
     /**
@@ -608,8 +557,7 @@ public class EditTab extends DynamicTabbedPane {
             return switch (this.showUnsavedEditsDialog(currentTab.getFile().getName())) {
                 case JOptionPane.YES_OPTION -> this.saveCurrentFile();
                 case JOptionPane.NO_OPTION -> true;
-                case JOptionPane.CANCEL_OPTION -> false;
-                default -> false; // Should never occur
+                default -> false;
             };
         }
         else {
@@ -757,23 +705,17 @@ public class EditTab extends DynamicTabbedPane {
                 }
             }
 
-            EditTab.this.isOpeningFiles = false;
-            EditTab.this.gui.getMainPane().setSelectedComponent(EditTab.this);
-            EditTab.this.gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
-
             if (firstTabOpened != null) {
                 // At least one file was opened successfully
                 // Treat the first opened tab as the "primary" one in the group
                 EditTab.this.setSelectedComponent(firstTabOpened);
-                // If assemble-all, then allow opening of any file w/o invalidating assembly
-                // DPS 9-Aug-2011
-                if (!EditTab.this.gui.getSettings().assembleAllEnabled.get()) {
-                    updateTitleAndMenuState(firstTabOpened);
-                    EditTab.this.gui.getMainPane().getExecuteTab().clear();
-                }
                 firstTabOpened.requestTextAreaFocus();
                 EditTab.this.mostRecentlyOpenedFile = firstTabOpened.getFile();
             }
+
+            EditTab.this.isOpeningFiles = false;
+            EditTab.this.gui.getMainPane().setSelectedComponent(EditTab.this);
+            EditTab.this.gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
 
             // Save the updated workspace with the newly opened files
             EditTab.this.saveWorkspaceState();

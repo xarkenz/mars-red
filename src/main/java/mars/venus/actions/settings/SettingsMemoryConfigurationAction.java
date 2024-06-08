@@ -65,28 +65,31 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        JDialog configDialog = new MemoryConfigurationDialog(gui, "MIPS Memory Configuration", true);
+        JDialog configDialog = new MemoryConfigurationDialog(this.gui, "MIPS Memory Configuration", true);
         configDialog.setVisible(true);
     }
 
-    private class MemoryConfigurationDialog extends JDialog implements ActionListener {
-        JTextField[] addressDisplay;
-        JLabel[] nameDisplay;
-        ConfigurationButton selectedConfigurationButton;
-        ConfigurationButton initialConfigurationButton;
+    private static class MemoryConfigurationDialog extends JDialog implements ActionListener {
+        private final VenusUI gui;
+        private JTextField[] addressDisplay;
+        private JLabel[] nameDisplay;
+        private ConfigurationButton selectedConfigurationButton;
+        private ConfigurationButton initialConfigurationButton;
 
-        public MemoryConfigurationDialog(Frame owner, String title, boolean modality) {
-            super(owner, title, modality);
-            this.setContentPane(buildDialogPanel());
+        public MemoryConfigurationDialog(VenusUI gui, String title, boolean modality) {
+            super(gui, title, modality);
+            this.gui = gui;
+
+            this.setContentPane(this.buildDialogPanel());
             this.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
             this.addWindowListener(new WindowAdapter() {
                 @Override
                 public void windowClosing(WindowEvent event) {
-                    performClose();
+                    MemoryConfigurationDialog.this.performClose();
                 }
             });
             this.pack();
-            this.setLocationRelativeTo(owner);
+            this.setLocationRelativeTo(gui);
         }
 
         private JPanel buildDialogPanel() {
@@ -94,10 +97,10 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
             dialogPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
             JPanel configInfo = new JPanel(new FlowLayout());
-            configInfo.add(buildConfigChooser());
-            configInfo.add(buildConfigDisplay());
+            configInfo.add(this.buildConfigChooser());
+            configInfo.add(this.buildConfigDisplay());
             dialogPanel.add(configInfo);
-            dialogPanel.add(buildControlPanel(), BorderLayout.SOUTH);
+            dialogPanel.add(this.buildControlPanel(), BorderLayout.SOUTH);
             return dialogPanel;
         }
 
@@ -166,23 +169,23 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
             JButton okButton = new JButton("OK");
             okButton.setToolTipText(SettingsHighlightingAction.OK_TOOL_TIP_TEXT);
             okButton.addActionListener(event -> {
-                performApply();
-                performClose();
+                this.performApply();
+                this.performClose();
             });
             JButton applyButton = new JButton("Apply");
             applyButton.setToolTipText(SettingsHighlightingAction.APPLY_TOOL_TIP_TEXT);
             applyButton.addActionListener(event -> {
-                performApply();
+                this.performApply();
             });
             JButton cancelButton = new JButton("Cancel");
             cancelButton.setToolTipText(SettingsHighlightingAction.CANCEL_TOOL_TIP_TEXT);
             cancelButton.addActionListener(event -> {
-                performClose();
+                this.performClose();
             });
             JButton resetButton = new JButton("Reset");
             resetButton.setToolTipText(SettingsHighlightingAction.REVERT_TOOL_TIP_TEXT);
             resetButton.addActionListener(event -> {
-                performReset();
+                this.performReset();
             });
             controlPanel.add(Box.createHorizontalGlue());
             controlPanel.add(okButton);
@@ -202,15 +205,6 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
                 gui.getRegistersPane().getRegistersWindow().clearHighlighting();
                 gui.getRegistersPane().getRegistersWindow().updateRegisters();
                 gui.getMainPane().getExecuteTab().getDataSegmentWindow().updateBaseAddressComboBox();
-                // 21 July 2009 Re-assemble if the situation demands it to maintain consistency.
-                if (gui.getProgramStatus() != ProgramStatus.NOT_ASSEMBLED) {
-                    // Stop execution if executing -- should NEVER happen because this
-                    // Action's widget is disabled during MIPS execution.
-                    if (gui.getProgramStatus() == ProgramStatus.RUNNING) {
-                        Simulator.getInstance().terminate();
-                    }
-                    gui.getRunAssembleAction().actionPerformed(null);
-                }
             }
         }
 

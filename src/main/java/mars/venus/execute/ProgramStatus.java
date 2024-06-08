@@ -58,14 +58,32 @@ public enum ProgramStatus {
     TERMINATED;
 
     /**
-     * Determine whether the program has been previously started, even if it has been paused or terminated.
+     * Determine whether the program has been previously started, but is not currently running.
      *
-     * @return true if the program is currently running or has stopped during execution, false otherwise.
+     * @return <code>true</code> if the program is {@link #PAUSED} or {@link #TERMINATED},
+     *         or <code>false</code> otherwise.
      */
     public boolean hasStarted() {
-        return switch (this) {
-            case RUNNING, PAUSED, TERMINATED -> true;
-            case NOT_ASSEMBLED, NOT_STARTED -> false;
-        };
+        return this == PAUSED || this == TERMINATED;
+    }
+
+    /**
+     * Determine whether the program is able to start, but is not currently running.
+     *
+     * @return <code>true</code> if the program is {@link #NOT_STARTED} or {@link #PAUSED},
+     *         or <code>false</code> otherwise.
+     */
+    public boolean canStart() {
+        return this == NOT_STARTED || this == PAUSED;
+    }
+
+    /**
+     * Determine whether the program is able to run, but is not currently running.
+     *
+     * @return <code>true</code> if the program is {@link #NOT_STARTED}, {@link #PAUSED}, or {@link #TERMINATED},
+     *         or <code>false</code> otherwise.
+     */
+    public boolean isRunnable() {
+        return this == NOT_STARTED || this == PAUSED || this == TERMINATED;
     }
 }

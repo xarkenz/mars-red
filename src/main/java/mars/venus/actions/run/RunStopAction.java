@@ -3,6 +3,7 @@ package mars.venus.actions.run;
 import mars.simulator.Simulator;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
+import mars.venus.execute.ProgramStatus;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -46,5 +47,10 @@ public class RunStopAction extends VenusAction {
     @Override
     public void actionPerformed(ActionEvent event) {
         Simulator.getInstance().terminate();
+    }
+
+    @Override
+    public void update() {
+        this.setEnabled(this.gui.getProgramStatus() == ProgramStatus.RUNNING || this.gui.getProgramStatus() == ProgramStatus.PAUSED);
     }
 }

@@ -35,7 +35,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action for the File -> Exit menu item
+ * Action for the File -> Exit menu item.
  */
 public class FileExitAction extends VenusAction {
     public FileExitAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
@@ -43,18 +43,18 @@ public class FileExitAction extends VenusAction {
     }
 
     /**
-     * Exit MARS, unless one or more files have unsaved edits and user cancels.
+     * Exit MARS Red, unless one or more files have unsaved edits and the user cancels.
      */
     @Override
     public void actionPerformed(ActionEvent event) {
         // Don't save the workspace state after closing all files, unless the exit fails
-        gui.getMainPane().getEditTab().setWorkspaceStateSavingEnabled(false);
+        this.gui.getMainPane().getEditTab().setWorkspaceStateSavingEnabled(false);
 
-        if (gui.getEditor().closeAll()) {
+        if (this.gui.getEditor().closeAll()) {
             System.exit(0);
         }
         else {
-            gui.getMainPane().getEditTab().setWorkspaceStateSavingEnabled(true);
+            this.gui.getMainPane().getEditTab().setWorkspaceStateSavingEnabled(true);
         }
     }
 }

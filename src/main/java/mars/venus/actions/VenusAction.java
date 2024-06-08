@@ -58,7 +58,7 @@ public abstract class VenusAction extends AbstractAction {
     /**
      * Register this action as a key shortcut when the component is in focus.
      *
-     * @param component the component to register the key shortcut on
+     * @param component the component to register the key shortcut on.
      */
     public void registerShortcut(JComponent component) {
         component.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(this.getShortcut(), this.getName());
@@ -68,19 +68,28 @@ public abstract class VenusAction extends AbstractAction {
     /**
      * @return The GUI instance this action was created for.
      */
-    public VenusUI getGui() {
+    public VenusUI getGUI() {
         return this.gui;
     }
 
     /**
      * @return The key shortcut to execute this action.
      */
-    public KeyStroke getShortcut() { return this.shortcut; }
+    public KeyStroke getShortcut() {
+        return this.shortcut;
+    }
 
     /**
      * @return The name assigned to the action.
      */
     public String getName() {
-        return this.getValue(NAME).toString();
+        return this.getValue(Action.NAME).toString();
+    }
+
+    /**
+     * Update this action according to the current GUI state.
+     */
+    public void update() {
+        // Do nothing by default
     }
 }
