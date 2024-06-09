@@ -25,7 +25,7 @@ jobs:
             # Copied from the default command used for Maven
             mvn javadoc:aggregate
             # Generating JavaDoc creates some .md files, so prevent them from showing up in main documentation
-            for i in $(find javadoc -name "*.md"); do
+            for i in $(find target -name "*.md"); do
               [ -f "$i" ] || break
               echo "---" > "$i.temp"
               echo "nav_exclude: true" >> "$i.temp"
