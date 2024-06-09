@@ -1,3 +1,6 @@
+---
+nav_exclude: true
+---
 ## jQuery v3.6.1
 
 ### jQuery License
