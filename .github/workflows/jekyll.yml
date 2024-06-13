@@ -5,14 +5,14 @@ on:
   push:
     branches:
       - docs
-
+    paths-ignore:
+      - "javadoc/**"
   # Runs after JavaDoc is deployed
   workflow_run:
     workflows:
-      - Deploy JavaDoc
+      - Generate JavaDoc
     types:
       - completed
-
   # Can run manually from the Actions tab
   workflow_dispatch:
 
@@ -54,7 +54,6 @@ jobs:
       - name: Upload artifact
         # Automatically uploads an artifact from the './_site' directory by default
         uses: actions/upload-pages-artifact@v3
-
   # Deployment job
   deploy:
     environment:

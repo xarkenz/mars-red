@@ -1,0 +1,72 @@
+# Credit: https://github.com/MathieuSoysal/Javadoc-publisher.yml
+
+name: Generate JavaDoc
+
+on:
+  # Runs on pushes targeting the default branch which modify source code
+  push:
+    branches:
+      - main
+    paths:
+      - "**.java"
+      - "pom.xml"
+  # Can run manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  # Generate the JavaDoc from the source code
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: adopt
+          cache: maven
+      - name: Generate JavaDoc
+        run: |
+          mvn javadoc:aggregate
+          # Generating JavaDoc creates some .md files, so prevent them from showing up in main documentation
+          for i in $(find target -name "*.md"); do
+            [ -f "$i" ] || break
+            echo "---" > "$i.temp"
+            echo "nav_exclude: true" >> "$i.temp"
+            echo "---" >> "$i.temp"
+            cat "$i" >> "$i.temp"
+            mv "$i.temp" "$i"
+          done
+        shell: bash
+      - name: Upload JavaDoc Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: javadoc
+          path: target/site/apidocs
+          overwrite: true
+  # Publish the JavaDoc to the docs branch in the "javadoc" directory
+  publish:
+    runs-on: ubuntu-latest
+    needs: generate
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: docs
+      - name: Download JavaDoc Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: javadoc
+          path: javadoc
+      - name: Publish JavaDoc
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add javadoc
+          git commit -m "published updated JavaDoc"
+          git push
