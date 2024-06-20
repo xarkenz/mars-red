@@ -90,7 +90,9 @@ public class SettingsEditorAction extends VenusAction {
         private JCheckBox[] useDefault;
 
         private int[] syntaxStyleIndices;
-        private SyntaxStyle[] defaultStyles, initialStyles, currentStyles;
+        private SyntaxStyle[] defaultStyles;
+        private SyntaxStyle[] initialStyles;
+        private SyntaxStyle[] currentStyles;
         private Font previewFont;
 
         private JSlider tabSizeSelector;

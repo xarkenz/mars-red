@@ -1,30 +1,40 @@
 package mars.venus.preferences;
 
+import mars.settings.Settings;
 import mars.venus.VenusUI;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PreferencesDialog extends JDialog {
     private final VenusUI gui;
+    private final List<PreferencesTab> tabs;
 
-    public PreferencesDialog(VenusUI gui, String title, boolean modal) {
-        super(gui, title, modal);
+    public PreferencesDialog(VenusUI gui, boolean modal) {
+        super(gui, "Preferences", modal);
         this.gui = gui;
+        this.tabs = new ArrayList<>();
+
+        Settings settings = this.gui.getSettings();
+        this.tabs.add(new GeneralPreferencesTab(settings));
+        this.tabs.add(new AppearancePreferencesTab(settings));
+        this.tabs.add(new EditorPreferencesTab(settings));
+        this.tabs.add(new SimulatorPreferencesTab(settings));
+        this.tabs.add(new ExceptionPreferencesTab(settings));
+        this.tabs.add(new MemoryPreferencesTab(settings));
 
         JPanel contentPane = new JPanel(new BorderLayout());
         contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         this.setContentPane(contentPane);
 
         JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.LEFT, JTabbedPane.SCROLL_TAB_LAYOUT);
-        tabbedPane.addTab("General", new JPanel());
-        tabbedPane.addTab("Appearance", new JPanel());
-        tabbedPane.addTab("Editor", new JPanel());
-        tabbedPane.addTab("Simulator", new JPanel());
-        tabbedPane.addTab("Exception Handling", new JPanel());
-        tabbedPane.addTab("Memory", new JPanel());
+        for (PreferencesTab tab : this.tabs) {
+            tabbedPane.add(tab);
+        }
         tabbedPane.setSelectedIndex(0);
         contentPane.add(tabbedPane, BorderLayout.CENTER);
 
@@ -89,10 +99,14 @@ public class PreferencesDialog extends JDialog {
     }
 
     public void applyChanges() {
-        //
+        for (PreferencesTab tab : this.tabs) {
+            tab.applyChanges();
+        }
     }
 
     public void revertChanges() {
-        //
+        for (PreferencesTab tab : this.tabs) {
+            tab.revertChanges();
+        }
     }
 }

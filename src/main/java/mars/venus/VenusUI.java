@@ -3,6 +3,7 @@ package mars.venus;
 import mars.Application;
 import mars.settings.Settings;
 import mars.simulator.*;
+import mars.util.NativeUtilities;
 import mars.venus.actions.ToolAction;
 import mars.venus.actions.VenusAction;
 import mars.venus.actions.edit.*;
@@ -155,6 +156,7 @@ public class VenusUI extends JFrame implements SimulatorListener {
     public VenusUI(Settings settings, String title) {
         super(title);
         Application.setGUI(this);
+        NativeUtilities.setApplicationName(title);
 
         this.fileStatus = FileStatus.NO_FILE;
         this.programStatus = ProgramStatus.NOT_ASSEMBLED;

@@ -48,7 +48,7 @@ public class SettingsPreferencesAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        JDialog dialog = new PreferencesDialog(this.gui, "Preferences", true);
+        PreferencesDialog dialog = new PreferencesDialog(this.gui, true);
         dialog.setVisible(true);
     }
 }
