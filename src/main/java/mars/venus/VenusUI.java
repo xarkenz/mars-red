@@ -76,7 +76,7 @@ public class VenusUI extends JFrame implements SimulatorListener {
     /**
      * Filename of the icon used in the window title bar and taskbar.
      */
-    public static final String WINDOW_ICON_NAME = "MarsPlanet.jpg";
+    public static final String WINDOW_ICON_NAME = "MarsPlanetTransparent.png";
 
     private final String baseTitle;
     private final Settings settings;
