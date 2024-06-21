@@ -30,8 +30,8 @@ public class HelpUpdateAction extends VenusAction {
     private static final String RELEASES_URL = "https://api.github.com/repos/xarkenz/mars-red/releases";
     private static final Duration TIMEOUT_DURATION = Duration.of(5, ChronoUnit.SECONDS);
 
-    public HelpUpdateAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public HelpUpdateAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Check for Updates...", VenusUI.getSVGActionIcon("update.svg"), "Check if a newer version is available", mnemonic, accel);
     }
 
     @Override

@@ -39,8 +39,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the Edit -> Paste menu item.
  */
 public class EditPasteAction extends VenusAction {
-    public EditPasteAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public EditPasteAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Paste", VenusUI.getSVGActionIcon("paste.svg"), "Paste", mnemonic, accel);
     }
 
     @Override

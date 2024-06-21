@@ -38,8 +38,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the File -> New menu item.
  */
 public class FileNewAction extends VenusAction {
-    public FileNewAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public FileNewAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "New", VenusUI.getSVGActionIcon("new.svg"), "Create a new file for editing", mnemonic, accel);
     }
 
     /**

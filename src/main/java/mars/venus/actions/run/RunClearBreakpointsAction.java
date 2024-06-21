@@ -44,8 +44,8 @@ public class RunClearBreakpointsAction extends VenusAction {
      * registration info and transfer it to the table model upon creation (which happens with
      * each successful assembly).
      */
-    public RunClearBreakpointsAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public RunClearBreakpointsAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Clear All Breakpoints", null, "Clear all execution breakpoints set since the last assemble.", mnemonic, accel);
         this.gui.getMainPane().getExecuteTab().getTextSegmentWindow().registerTableModelListener(event -> this.update());
     }
 

@@ -190,7 +190,7 @@ public class SymbolTableWindow extends JInternalFrame {
         this.symbolTableDisplays.clear();
         SymbolTableDisplay globalSymbolTableDisplay = new SymbolTableDisplay(null);
         this.symbolTableDisplays.add(globalSymbolTableDisplay);
-        for (Program program : RunAssembleAction.getProgramsToAssemble()) {
+        for (Program program : RunAssembleAction.programsToAssemble) {
             this.symbolTableDisplays.add(new SymbolTableDisplay(program));
         }
 

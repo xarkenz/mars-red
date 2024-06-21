@@ -58,8 +58,8 @@ public class FileDumpMemoryAction extends VenusAction {
     private JComboBox<String> segmentSelector;
     private JComboBox<DumpFormat> dumpFormatSelector;
 
-    public FileDumpMemoryAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public FileDumpMemoryAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Dump Memory...", VenusUI.getSVGActionIcon("dump_memory.svg"), "Dump machine code or data in an available format", mnemonic, accel);
     }
 
     /**

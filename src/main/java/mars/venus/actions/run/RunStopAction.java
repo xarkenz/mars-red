@@ -37,11 +37,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action for the Run -> Stop menu item
+ * Action for the Run -> Stop menu item.
  */
 public class RunStopAction extends VenusAction {
-    public RunStopAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public RunStopAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Stop", VenusUI.getSVGActionIcon("stop.svg"), "Stop the currently running program", mnemonic, accel);
     }
 
     @Override

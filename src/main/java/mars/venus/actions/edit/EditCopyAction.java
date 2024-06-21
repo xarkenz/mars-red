@@ -39,8 +39,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the Edit -> Copy menu item.
  */
 public class EditCopyAction extends VenusAction {
-    public EditCopyAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public EditCopyAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Copy", VenusUI.getSVGActionIcon("copy.svg"), "Copy", mnemonic, accel);
     }
 
     @Override

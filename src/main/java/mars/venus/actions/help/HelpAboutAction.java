@@ -39,8 +39,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the Help -> About menu item.
  */
 public class HelpAboutAction extends VenusAction {
-    public HelpAboutAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public HelpAboutAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "About...", VenusUI.getSVGActionIcon("about.svg"), "Information about " + Application.NAME, mnemonic, accel);
     }
 
     @Override

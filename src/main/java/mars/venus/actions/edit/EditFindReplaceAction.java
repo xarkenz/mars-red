@@ -49,8 +49,8 @@ public class EditFindReplaceAction extends VenusAction {
     private String searchString = "";
     private boolean caseSensitivity = true;
 
-    public EditFindReplaceAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public EditFindReplaceAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Find / Replace...", VenusUI.getSVGActionIcon("find.svg"), "Find and/or replace text in the current file", mnemonic, accel);
     }
 
     @Override

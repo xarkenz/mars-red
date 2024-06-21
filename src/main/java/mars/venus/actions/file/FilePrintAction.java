@@ -45,8 +45,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the File -> Print menu item.
  */
 public class FilePrintAction extends VenusAction {
-    public FilePrintAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public FilePrintAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Print...", VenusUI.getSVGActionIcon("print.svg"), "Print current file", mnemonic, accel);
     }
 
     /**

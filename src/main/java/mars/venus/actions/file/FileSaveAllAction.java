@@ -39,8 +39,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the File -> Save All menu item.
  */
 public class FileSaveAllAction extends VenusAction {
-    public FileSaveAllAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public FileSaveAllAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Save All", VenusUI.getSVGActionIcon("save_all.svg"), "Save all open files", mnemonic, accel);
     }
 
     @Override

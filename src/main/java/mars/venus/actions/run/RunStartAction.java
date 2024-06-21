@@ -42,8 +42,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the Run -> Start menu item.
  */
 public class RunStartAction extends VenusAction {
-    public RunStartAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public RunStartAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Start", VenusUI.getSVGActionIcon("start.svg"), "Run the current program", mnemonic, accel);
     }
 
     /**

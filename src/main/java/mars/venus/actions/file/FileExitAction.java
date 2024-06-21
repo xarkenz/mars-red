@@ -1,5 +1,6 @@
 package mars.venus.actions.file;
 
+import mars.Application;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
 
@@ -38,8 +39,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the File -> Exit menu item.
  */
 public class FileExitAction extends VenusAction {
-    public FileExitAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public FileExitAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Exit", VenusUI.getSVGActionIcon("exit.svg"), "Exit " + Application.NAME, mnemonic, accel);
     }
 
     /**

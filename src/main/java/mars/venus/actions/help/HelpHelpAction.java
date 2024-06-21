@@ -57,8 +57,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the Help -> Help menu item.
  */
 public class HelpHelpAction extends VenusAction {
-    public HelpHelpAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public HelpHelpAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Help...", VenusUI.getSVGActionIcon("help.svg"), "View help information", mnemonic, accel);
     }
 
     // Ideally read or computed from config file...

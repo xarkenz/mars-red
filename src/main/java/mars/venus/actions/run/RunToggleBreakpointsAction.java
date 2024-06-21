@@ -38,8 +38,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the Run -> Toggle Breakpoints menu item.
  */
 public class RunToggleBreakpointsAction extends VenusAction {
-    public RunToggleBreakpointsAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public RunToggleBreakpointsAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Toggle All Breakpoints", null, "Disable/enable all breakpoints without clearing (can also click Bkpt column header)", mnemonic, accel);
     }
 
     /**

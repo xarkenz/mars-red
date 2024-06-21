@@ -109,16 +109,6 @@ public class Settings {
         false
     );
     /**
-     * Flag to control whether only the current editor source file (if false) or
-     * all files in its parent directory (if true) will be assembled when the assembler is run.
-     */
-    public final BooleanSetting assembleAllEnabled = new BooleanSetting(
-        this,
-        "AssembleAll",
-        false,
-        false
-    );
-    /**
      * Flag to control whether the symbol table window will be visible upon successful assembly in the Execute tab.
      */
     public final BooleanSetting labelWindowVisible = new BooleanSetting(
@@ -286,7 +276,6 @@ public class Settings {
     public final BooleanSetting[] booleanSettings = {
         this.extendedAssemblerEnabled,
         this.assembleOnOpenEnabled,
-        this.assembleAllEnabled,
         this.labelWindowVisible,
         this.displayAddressesInHex,
         this.displayValuesInHex,

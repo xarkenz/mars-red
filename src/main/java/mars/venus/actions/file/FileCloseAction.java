@@ -39,8 +39,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the File -> Close menu item.
  */
 public class FileCloseAction extends VenusAction {
-    public FileCloseAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public FileCloseAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Close", VenusUI.getSVGActionIcon("close.svg"), "Close the current file", mnemonic, accel);
     }
 
     @Override

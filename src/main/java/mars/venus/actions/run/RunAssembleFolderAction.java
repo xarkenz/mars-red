@@ -1,9 +1,12 @@
 package mars.venus.actions.run;
 
 import mars.*;
-import mars.mips.hardware.*;
+import mars.mips.hardware.Memory;
+import mars.mips.hardware.MemoryConfigurations;
 import mars.simulator.Simulator;
-import mars.venus.*;
+import mars.util.FilenameFinder;
+import mars.venus.RegistersPane;
+import mars.venus.VenusUI;
 import mars.venus.actions.VenusAction;
 import mars.venus.editor.EditTab;
 import mars.venus.editor.FileStatus;
@@ -44,22 +47,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Action for the Run -> Assemble menu item.
+ * Action for the Run -> Assemble Folder menu item.
  */
-public class RunAssembleAction extends VenusAction {
-    /**
-     * Threshold for adding filename to printed message of files being assembled.
-     */
-    public static final int LINE_LENGTH_LIMIT = 60;
-
-    /**
-     * This is used by {@link RunResetAction} to re-assemble under identical conditions.
-     */
-    // TODO: This needs to be handled some other way please
-    public static List<Program> programsToAssemble;
-
-    public RunAssembleAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
-        super(gui, "Assemble", VenusUI.getSVGActionIcon("assemble.svg"), "Assemble the current file", mnemonic, accel);
+public class RunAssembleFolderAction extends VenusAction {
+    public RunAssembleFolderAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Assemble Folder", VenusUI.getSVGActionIcon("assemble_folder.svg"), "Assemble all files in the current directory", mnemonic, accel);
     }
 
     @Override
@@ -75,7 +67,7 @@ public class RunAssembleAction extends VenusAction {
 
         // Generate the list of files to assemble
         String leadPathname = editTab.getCurrentEditorTab().getFile().getPath();
-        List<String> pathnames = List.of(leadPathname);
+        List<String> pathnames = FilenameFinder.findFilenames(editTab.getCurrentEditorTab().getFile().getParent(), Application.FILE_EXTENSIONS);
 
         // Get the path of the exception handler, if enabled
         String exceptionHandler = null;
@@ -87,11 +79,11 @@ public class RunAssembleAction extends VenusAction {
             Simulator.getInstance().reset();
 
             Application.program = new Program();
-            programsToAssemble = Application.program.prepareFilesForAssembly(pathnames, leadPathname, exceptionHandler);
-            this.gui.getMessagesPane().writeToMessages(this.buildFileNameList(this.getName() + ": assembling ", programsToAssemble));
+            RunAssembleAction.programsToAssemble = Application.program.prepareFilesForAssembly(pathnames, leadPathname, exceptionHandler);
+            this.gui.getMessagesPane().writeToMessages(this.buildFileNameList(this.getName() + ": assembling ", RunAssembleAction.programsToAssemble));
 
             // Added logic to receive any warnings and output them.  DPS 11/28/06
-            ErrorList warnings = Application.program.assemble(programsToAssemble, Application.getSettings().extendedAssemblerEnabled.get(), Application.getSettings().warningsAreErrors.get());
+            ErrorList warnings = Application.program.assemble(RunAssembleAction.programsToAssemble, Application.getSettings().extendedAssemblerEnabled.get(), Application.getSettings().warningsAreErrors.get());
 
             if (warnings.warningsOccurred()) {
                 this.gui.getMessagesPane().writeToMessages(warnings.generateWarningReport());
@@ -169,7 +161,7 @@ public class RunAssembleAction extends VenusAction {
                 result.append(", ");
             }
             lineLength += filename.length();
-            if (lineLength > LINE_LENGTH_LIMIT) {
+            if (lineLength > RunAssembleAction.LINE_LENGTH_LIMIT) {
                 result.append('\n');
                 lineLength = 0;
             }

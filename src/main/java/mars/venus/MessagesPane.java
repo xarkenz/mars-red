@@ -74,30 +74,30 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
         super();
         this.setMinimumSize(new Dimension(0, 0));
 
-        consoleOutputBuffer = new StringBuffer();
+        this.consoleOutputBuffer = new StringBuffer();
 
-        messagesTextArea = new JTextArea();
-        messagesTextArea.setEditable(false);
-        messagesTextArea.setBackground(UIManager.getColor("Venus.MessagesPane.background"));
-        consoleTextArea = new JTextArea();
-        consoleTextArea.setEditable(false);
-        consoleTextArea.setBackground(UIManager.getColor("Venus.MessagesPane.background"));
+        this.messagesTextArea = new JTextArea();
+        this.messagesTextArea.setEditable(false);
+        this.messagesTextArea.setBackground(UIManager.getColor("Venus.MessagesPane.background"));
+        this.consoleTextArea = new JTextArea();
+        this.consoleTextArea.setEditable(false);
+        this.consoleTextArea.setBackground(UIManager.getColor("Venus.MessagesPane.background"));
         // Set both text areas to mono font.  For assemble
         // pane, will make messages more readable.  For run
         // pane, will allow properly aligned "text graphics"
         // DPS 15 Dec 2008
         Font monoFont = new Font(Font.MONOSPACED, Font.PLAIN, 12);
-        messagesTextArea.setFont(monoFont);
-        consoleTextArea.setFont(monoFont);
+        this.messagesTextArea.setFont(monoFont);
+        this.consoleTextArea.setFont(monoFont);
 
         JButton messagesTabClearButton = new JButton("Clear");
         messagesTabClearButton.setToolTipText("Clear the Messages area.");
-        messagesTabClearButton.addActionListener(event -> messagesTextArea.setText(""));
-        messagesTab = new JPanel(new BorderLayout());
-        messagesTab.setBorder(new EmptyBorder(6, 6, 6, 6));
-        messagesTab.add(createBoxForButton(messagesTabClearButton), BorderLayout.WEST);
-        messagesTab.add(new JScrollPane(messagesTextArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.CENTER);
-        messagesTextArea.addMouseListener(new MouseAdapter() {
+        messagesTabClearButton.addActionListener(event -> this.messagesTextArea.setText(""));
+        this.messagesTab = new JPanel(new BorderLayout());
+        this.messagesTab.setBorder(new EmptyBorder(6, 6, 6, 6));
+        this.messagesTab.add(createBoxForButton(messagesTabClearButton), BorderLayout.WEST);
+        this.messagesTab.add(new JScrollPane(this.messagesTextArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.CENTER);
+        this.messagesTextArea.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent event) {
                 String text;
@@ -167,14 +167,14 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
 
         JButton consoleClearButton = new JButton("Clear");
         consoleClearButton.setToolTipText("Clear the Console area.");
-        consoleClearButton.addActionListener(event -> consoleTextArea.setText(""));
-        consoleTab = new JPanel(new BorderLayout());
-        consoleTab.setBorder(new EmptyBorder(6, 6, 6, 6));
-        consoleTab.add(createBoxForButton(consoleClearButton), BorderLayout.WEST);
-        JScrollPane consoleScrollPane = new JScrollPane(consoleTextArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        consoleTab.add(consoleScrollPane, BorderLayout.CENTER);
-        this.addTab("Messages", null, messagesTab, "Information, warnings and errors. Click on an error message to jump to the error source.");
-        this.addTab("Console", null, consoleTab, "Simulated MIPS console input and output.");
+        consoleClearButton.addActionListener(event -> this.consoleTextArea.setText(""));
+        this.consoleTab = new JPanel(new BorderLayout());
+        this.consoleTab.setBorder(new EmptyBorder(6, 6, 6, 6));
+        this.consoleTab.add(createBoxForButton(consoleClearButton), BorderLayout.WEST);
+        JScrollPane consoleScrollPane = new JScrollPane(this.consoleTextArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        this.consoleTab.add(consoleScrollPane, BorderLayout.CENTER);
+        this.addTab("Messages", null, this.messagesTab, "Information, warnings and errors. Click on an error message to jump to the error source.");
+        this.addTab("Console", null, this.consoleTab, "Simulated MIPS console input and output.");
 
         Simulator.getInstance().addGUIListener(this);
     }
@@ -206,19 +206,19 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
      */
     public void selectErrorMessage(String filename, int line, int column) {
         String errorReportSubstring = new File(filename).getName() + ErrorList.LINE_PREFIX + line + ErrorList.POSITION_PREFIX + column;
-        int textPosition = messagesTextArea.getText().lastIndexOf(errorReportSubstring);
+        int textPosition = this.messagesTextArea.getText().lastIndexOf(errorReportSubstring);
         if (textPosition >= 0) {
             int textLine;
             int lineStart;
             int lineEnd;
             try {
-                textLine = messagesTextArea.getLineOfOffset(textPosition);
-                lineStart = messagesTextArea.getLineStartOffset(textLine);
-                lineEnd = messagesTextArea.getLineEndOffset(textLine);
-                messagesTextArea.setSelectionColor(Color.YELLOW);
-                messagesTextArea.select(lineStart, lineEnd);
-                messagesTextArea.getCaret().setSelectionVisible(true);
-                messagesTextArea.repaint();
+                textLine = this.messagesTextArea.getLineOfOffset(textPosition);
+                lineStart = this.messagesTextArea.getLineStartOffset(textLine);
+                lineEnd = this.messagesTextArea.getLineEndOffset(textLine);
+                this.messagesTextArea.setSelectionColor(Color.YELLOW);
+                this.messagesTextArea.select(lineStart, lineEnd);
+                this.messagesTextArea.getCaret().setSelectionVisible(true);
+                this.messagesTextArea.repaint();
             }
             catch (BadLocationException exception) {
                 // If there is a problem, simply skip the selection
@@ -267,13 +267,13 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
      */
     public void writeToMessages(final String message) {
         SwingUtilities.invokeLater(() -> {
-            messagesTextArea.append(message);
+            this.messagesTextArea.append(message);
             // Can do some crude cutting here.  If the document gets "very large",
             // let's cut off the oldest text. This will limit scrolling but the limit
             // can be set reasonably high.
-            if (messagesTextArea.getDocument().getLength() > MAXIMUM_SCROLLED_CHARACTERS) {
+            if (this.messagesTextArea.getDocument().getLength() > MAXIMUM_SCROLLED_CHARACTERS) {
                 try {
-                    messagesTextArea.getDocument().remove(0, NUMBER_OF_CHARACTERS_TO_CUT);
+                    this.messagesTextArea.getDocument().remove(0, NUMBER_OF_CHARACTERS_TO_CUT);
                 }
                 catch (BadLocationException exception) {
                     // Only if NUMBER_OF_CHARACTERS_TO_CUT > MAXIMUM_SCROLLED_CHARACTERS
@@ -303,10 +303,10 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
         // Sean Clarke 04/2024
 
         boolean isFirstWriteSinceFlush;
-        synchronized (consoleOutputBuffer) {
-            isFirstWriteSinceFlush = consoleOutputBuffer.isEmpty();
+        synchronized (this.consoleOutputBuffer) {
+            isFirstWriteSinceFlush = this.consoleOutputBuffer.isEmpty();
             // Add the text to the console output buffer
-            consoleOutputBuffer.append(text);
+            this.consoleOutputBuffer.append(text);
         }
 
         if (isFirstWriteSinceFlush) {
@@ -323,20 +323,20 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
      * <b>This method must be called from the GUI thread.</b>
      */
     public void flushConsole() {
-        synchronized (consoleOutputBuffer) {
+        synchronized (this.consoleOutputBuffer) {
             // Flush the output buffer
-            consoleTextArea.append(consoleOutputBuffer.toString());
-            consoleOutputBuffer.delete(0, consoleOutputBuffer.length());
+            this.consoleTextArea.append(this.consoleOutputBuffer.toString());
+            this.consoleOutputBuffer.delete(0, this.consoleOutputBuffer.length());
         }
 
         // Do some crude trimming to save memory.  If the number of lines exceeds the maximum,
         // trim off the excess old lines, plus some extra lines so we only have to do this occasionally.
         // This will limit scrolling, but the maximum line count can be set reasonably high.
-        int lineCount = consoleTextArea.getLineCount();
+        int lineCount = this.consoleTextArea.getLineCount();
         if (lineCount > MAXIMUM_LINE_COUNT) {
             try {
                 int lastLineToTrim = lineCount - MAXIMUM_LINE_COUNT + EXTRA_TRIM_LINE_COUNT;
-                consoleTextArea.getDocument().remove(0, consoleTextArea.getLineEndOffset(lastLineToTrim));
+                this.consoleTextArea.getDocument().remove(0, this.consoleTextArea.getLineEndOffset(lastLineToTrim));
             }
             catch (BadLocationException exception) {
                 // Only if NUMBER_OF_CHARACTERS_TO_CUT > MAXIMUM_SCROLLED_CHARACTERS
@@ -344,7 +344,7 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
             }
         }
 
-        consoleTextArea.setCaretPosition(consoleTextArea.getDocument().getLength());
+        this.consoleTextArea.setCaretPosition(this.consoleTextArea.getDocument().getLength());
     }
 
     /**
@@ -353,7 +353,7 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
      * This method may be called from any thread.
      */
     public void selectMessagesTab() {
-        SwingUtilities.invokeLater(() -> setSelectedComponent(messagesTab));
+        SwingUtilities.invokeLater(() -> this.setSelectedComponent(this.messagesTab));
     }
 
     /**
@@ -362,7 +362,7 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
      * This method may be called from any thread.
      */
     public void selectConsoleTab() {
-        SwingUtilities.invokeLater(() -> setSelectedComponent(consoleTab));
+        SwingUtilities.invokeLater(() -> this.setSelectedComponent(this.consoleTab));
     }
 
     /**
@@ -403,7 +403,7 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
      * @return User input, as a String.
      */
     public String getInputString(int maxLength) throws InterruptedException {
-        ConsoleInputContext context = new ConsoleInputContext(consoleTextArea, maxLength);
+        ConsoleInputContext context = new ConsoleInputContext(this.consoleTextArea, maxLength);
         return context.awaitUserInput();
     }
 
@@ -415,7 +415,7 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
     @Override
     public void simulatorStarted(SimulatorStartEvent event) {
         this.writeToMessages(Simulator.class.getSimpleName() + ": started simulation.\n");
-        this.setSelectedComponent(consoleTab);
+        this.setSelectedComponent(this.consoleTab);
     }
 
     /**
@@ -455,12 +455,12 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
                     this.writeToMessages(Simulator.class.getSimpleName() + ": finished simulation with exit code " + exitCode + ".\n");
                 }
                 this.writeToConsole("\n--- program finished with exit code " + exitCode + " ---\n\n");
-                this.setSelectedComponent(consoleTab);
+                this.setSelectedComponent(this.consoleTab);
             }
             case RAN_OFF_BOTTOM -> {
                 this.writeToMessages(Simulator.class.getSimpleName() + ": finished simulation due to null instruction.\n");
                 this.writeToConsole("\n--- program automatically terminated (ran off bottom) ---\n\n");
-                this.setSelectedComponent(consoleTab);
+                this.setSelectedComponent(this.consoleTab);
             }
             case EXCEPTION -> {
                 this.writeToMessages(Simulator.class.getSimpleName() + ": finished simulation with errors.\n");
@@ -472,7 +472,7 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
                     this.writeToConsole(event.getException().getErrors().generateErrorReport());
                     this.writeToConsole("--- end of error report ---\n\n");
                 }
-                this.setSelectedComponent(consoleTab);
+                this.setSelectedComponent(this.consoleTab);
             }
             case EXTERNAL -> {
                 this.writeToMessages(Simulator.class.getSimpleName() + ": stopped simulation.\n");
@@ -484,6 +484,8 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
             }
         }
     }
+
+
 
     /**
      * Thread class for obtaining user input in the Console tab of {@link MessagesPane}.
@@ -513,7 +515,7 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
 
             try {
                 // Block the current thread until input is submitted
-                return resultQueue.take();
+                return this.resultQueue.take();
             }
             catch (InterruptedException exception) {
                 // Delete the partial input, as we don't have a good way to save it

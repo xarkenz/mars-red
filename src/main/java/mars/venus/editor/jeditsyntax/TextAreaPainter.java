@@ -364,6 +364,7 @@ public class TextAreaPainter extends JComponent implements TabExpander {
     public void setFont(Font font) {
         super.setFont(font);
         fontMetrics = Toolkit.getDefaultToolkit().getFontMetrics(font);
+        tabSize = fontMetrics.charWidth(' ') * tabSizeChars;
         textArea.recalculateVisibleLines();
     }
 

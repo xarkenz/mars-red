@@ -40,8 +40,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the Edit -> Comment Selected Lines menu item.
  */
 public class EditCommentAction extends VenusAction {
-    public EditCommentAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public EditCommentAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Comment Selected Lines", VenusUI.getSVGActionIcon("comment.svg"), "Toggle whether the currently selected lines are commented out", mnemonic, accel);
     }
 
     @Override

@@ -40,8 +40,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the File -> Open menu item.
  */
 public class FileOpenAction extends VenusAction {
-    public FileOpenAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public FileOpenAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Open...", VenusUI.getSVGActionIcon("open.svg"), "Open a file for editing", mnemonic, accel);
     }
 
     /**

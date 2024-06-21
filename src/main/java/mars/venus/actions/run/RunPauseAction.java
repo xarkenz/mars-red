@@ -40,8 +40,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the Run -> Pause menu item.
  */
 public class RunPauseAction extends VenusAction {
-    public RunPauseAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public RunPauseAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Pause", VenusUI.getSVGActionIcon("pause.svg"), "Pause the currently running program", mnemonic, accel);
     }
 
     @Override

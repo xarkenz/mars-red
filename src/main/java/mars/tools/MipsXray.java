@@ -198,9 +198,9 @@ public class MipsXray extends AbstractMarsTool {
      * Setup actions in the menu bar.
      */
     private void createActionObjects() {
-        runAssembleAction = new RunAssembleAction(gui, "Assemble", VenusUI.getSVGActionIcon("assemble.svg"), "Assemble the current file and clear breakpoints", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0));
-        runStepAction = new RunStepForwardAction(gui, "Step", VenusUI.getSVGActionIcon("step_forward.svg"), "Run one step at a time", KeyEvent.VK_T, KeyStroke.getKeyStroke(KeyEvent.VK_F7, 0));
-        runBackstepAction = new RunStepBackwardAction(gui, "Backstep", VenusUI.getSVGActionIcon("step_backward.svg"), "Undo the last step", KeyEvent.VK_B, KeyStroke.getKeyStroke(KeyEvent.VK_F8, 0));
+        runAssembleAction = new RunAssembleAction(gui, KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0));
+        runStepAction = new RunStepForwardAction(gui, KeyEvent.VK_T, KeyStroke.getKeyStroke(KeyEvent.VK_F7, 0));
+        runBackstepAction = new RunStepBackwardAction(gui, KeyEvent.VK_B, KeyStroke.getKeyStroke(KeyEvent.VK_F8, 0));
     }
 
     public static class Vertex {

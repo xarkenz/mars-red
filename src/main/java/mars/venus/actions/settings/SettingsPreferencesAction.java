@@ -39,8 +39,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the Settings -> Preferences menu item.
  */
 public class SettingsPreferencesAction extends VenusAction {
-    public SettingsPreferencesAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public SettingsPreferencesAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Preferences...", VenusUI.getSVGActionIcon("preferences.svg"), "Edit the appearance and behavior of the application", mnemonic, accel);
     }
 
     /**

@@ -45,8 +45,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the Run -> Reset menu item.
  */
 public class RunResetAction extends VenusAction {
-    public RunResetAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public RunResetAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Reset", VenusUI.getSVGActionIcon("reset.svg"), "Reset MIPS memory and registers", mnemonic, accel);
     }
 
     /**
@@ -63,7 +63,7 @@ public class RunResetAction extends VenusAction {
         // I am choosing the second approach although it will slow down the reset
         // operation.  The first approach requires additional Memory class methods.
         try {
-            Application.program.assemble(RunAssembleAction.getProgramsToAssemble(), Application.getSettings().extendedAssemblerEnabled.get(), Application.getSettings().warningsAreErrors.get());
+            Application.program.assemble(RunAssembleAction.programsToAssemble, Application.getSettings().extendedAssemblerEnabled.get(), Application.getSettings().warningsAreErrors.get());
         }
         catch (ProcessingException exception) {
             this.gui.getMessagesPane().writeToMessages(this.getName() + ": unable to reset.  Please close file then re-open and re-assemble.\n");

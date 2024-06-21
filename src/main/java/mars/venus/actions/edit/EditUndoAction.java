@@ -39,9 +39,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the Edit -> Undo menu item.
  */
 public class EditUndoAction extends VenusAction {
-    public EditUndoAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
-        setEnabled(false);
+    public EditUndoAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Undo", VenusUI.getSVGActionIcon("undo.svg"), "Undo last edit", mnemonic, accel);
+        this.setEnabled(false);
     }
 
     /**

@@ -115,6 +115,7 @@ public class VenusUI extends JFrame implements SimulatorListener {
     private EditCommentAction editCommentAction;
 
     private RunAssembleAction runAssembleAction;
+    private RunAssembleFolderAction runAssembleFolderAction;
     private RunStartAction runStartAction;
     private RunStepForwardAction runStepForwardAction;
     private RunStepBackwardAction runStepBackwardAction;
@@ -130,7 +131,6 @@ public class VenusUI extends JFrame implements SimulatorListener {
     private SettingsAddressDisplayBaseAction settingsAddressDisplayBaseAction;
     private SettingsExtendedAction settingsExtendedAction;
     private SettingsAssembleOnOpenAction settingsAssembleOnOpenAction;
-    private SettingsAssembleAllAction settingsAssembleAllAction;
     private SettingsWarningsAreErrorsAction settingsWarningsAreErrorsAction;
     private SettingsStartAtMainAction settingsStartAtMainAction;
     private SettingsProgramArgumentsAction settingsProgramArgumentsAction;
@@ -326,35 +326,36 @@ public class VenusUI extends JFrame implements SimulatorListener {
     private void createActionObjects() {
         int menuShortcutMask = this.getToolkit().getMenuShortcutKeyMaskEx();
 
-        this.actions.add(this.fileNewAction = new FileNewAction(this, "New", getSVGActionIcon("new.svg"), "Create a new file for editing", KeyEvent.VK_N, KeyStroke.getKeyStroke(KeyEvent.VK_N, menuShortcutMask)));
-        this.actions.add(this.fileOpenAction = new FileOpenAction(this, "Open...", getSVGActionIcon("open.svg"), "Open a file for editing", KeyEvent.VK_O, KeyStroke.getKeyStroke(KeyEvent.VK_O, menuShortcutMask)));
-        this.actions.add(this.fileCloseAction = new FileCloseAction(this, "Close", getSVGActionIcon("close.svg"), "Close the current file", KeyEvent.VK_C, KeyStroke.getKeyStroke(KeyEvent.VK_W, menuShortcutMask)));
-        this.actions.add(this.fileCloseAllAction = new FileCloseAllAction(this, "Close All", getSVGActionIcon("close_all.svg"), "Close all open files", KeyEvent.VK_L, KeyStroke.getKeyStroke(KeyEvent.VK_W, menuShortcutMask | KeyEvent.SHIFT_DOWN_MASK)));
-        this.actions.add(this.fileSaveAction = new FileSaveAction(this, "Save", getSVGActionIcon("save.svg"), "Save the current file", KeyEvent.VK_S, KeyStroke.getKeyStroke(KeyEvent.VK_S, menuShortcutMask)));
-        this.actions.add(this.fileSaveAsAction = new FileSaveAsAction(this, "Save As...", getSVGActionIcon("save_as.svg"), "Save current file with different name", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_S, menuShortcutMask | KeyEvent.SHIFT_DOWN_MASK)));
-        this.actions.add(this.fileSaveAllAction = new FileSaveAllAction(this, "Save All", getSVGActionIcon("save_all.svg"), "Save all open files", KeyEvent.VK_V, null));
-        this.actions.add(this.fileDumpMemoryAction = new FileDumpMemoryAction(this, "Dump Memory...", getSVGActionIcon("dump_memory.svg"), "Dump machine code or data in an available format", KeyEvent.VK_D, KeyStroke.getKeyStroke(KeyEvent.VK_D, menuShortcutMask)));
-        this.actions.add(this.filePrintAction = new FilePrintAction(this, "Print...", getSVGActionIcon("print.svg"), "Print current file", KeyEvent.VK_P, KeyStroke.getKeyStroke(KeyEvent.VK_P, menuShortcutMask)));
-        this.actions.add(this.fileExitAction = new FileExitAction(this, "Exit", getSVGActionIcon("exit.svg"), "Exit " + Application.NAME, KeyEvent.VK_X, null));
+        this.actions.add(this.fileNewAction = new FileNewAction(this, KeyEvent.VK_N, KeyStroke.getKeyStroke(KeyEvent.VK_N, menuShortcutMask)));
+        this.actions.add(this.fileOpenAction = new FileOpenAction(this, KeyEvent.VK_O, KeyStroke.getKeyStroke(KeyEvent.VK_O, menuShortcutMask)));
+        this.actions.add(this.fileCloseAction = new FileCloseAction(this, KeyEvent.VK_C, KeyStroke.getKeyStroke(KeyEvent.VK_W, menuShortcutMask)));
+        this.actions.add(this.fileCloseAllAction = new FileCloseAllAction(this, KeyEvent.VK_L, KeyStroke.getKeyStroke(KeyEvent.VK_W, menuShortcutMask | KeyEvent.SHIFT_DOWN_MASK)));
+        this.actions.add(this.fileSaveAction = new FileSaveAction(this, KeyEvent.VK_S, KeyStroke.getKeyStroke(KeyEvent.VK_S, menuShortcutMask)));
+        this.actions.add(this.fileSaveAsAction = new FileSaveAsAction(this, KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_S, menuShortcutMask | KeyEvent.SHIFT_DOWN_MASK)));
+        this.actions.add(this.fileSaveAllAction = new FileSaveAllAction(this, KeyEvent.VK_V, null));
+        this.actions.add(this.fileDumpMemoryAction = new FileDumpMemoryAction(this, KeyEvent.VK_D, KeyStroke.getKeyStroke(KeyEvent.VK_D, menuShortcutMask)));
+        this.actions.add(this.filePrintAction = new FilePrintAction(this, KeyEvent.VK_P, KeyStroke.getKeyStroke(KeyEvent.VK_P, menuShortcutMask)));
+        this.actions.add(this.fileExitAction = new FileExitAction(this, KeyEvent.VK_X, null));
 
-        this.actions.add(this.editUndoAction = new EditUndoAction(this, "Undo", getSVGActionIcon("undo.svg"), "Undo last edit", KeyEvent.VK_U, KeyStroke.getKeyStroke(KeyEvent.VK_Z, menuShortcutMask)));
-        this.actions.add(this.editRedoAction = new EditRedoAction(this, "Redo", getSVGActionIcon("redo.svg"), "Redo last edit", KeyEvent.VK_R, KeyStroke.getKeyStroke(KeyEvent.VK_Y, menuShortcutMask)));
-        this.actions.add(this.editCutAction = new EditCutAction(this, "Cut", getSVGActionIcon("cut.svg"), "Cut", KeyEvent.VK_C, KeyStroke.getKeyStroke(KeyEvent.VK_X, menuShortcutMask)));
-        this.actions.add(this.editCopyAction = new EditCopyAction(this, "Copy", getSVGActionIcon("copy.svg"), "Copy", KeyEvent.VK_O, KeyStroke.getKeyStroke(KeyEvent.VK_C, menuShortcutMask)));
-        this.actions.add(this.editPasteAction = new EditPasteAction(this, "Paste", getSVGActionIcon("paste.svg"), "Paste", KeyEvent.VK_P, KeyStroke.getKeyStroke(KeyEvent.VK_V, menuShortcutMask)));
-        this.actions.add(this.editFindReplaceAction = new EditFindReplaceAction(this, "Find / Replace...", getSVGActionIcon("find.svg"), "Find and/or replace text in the current file", KeyEvent.VK_F, KeyStroke.getKeyStroke(KeyEvent.VK_F, menuShortcutMask)));
-        this.actions.add(this.editSelectAllAction = new EditSelectAllAction(this, "Select All", getSVGActionIcon("select_all.svg"), "Select all text in the current file", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_A, menuShortcutMask)));
-        this.actions.add(this.editCommentAction = new EditCommentAction(this, "Comment Selected Lines", getSVGActionIcon("comment.svg"), "Toggle whether the currently selected lines are commented out", KeyEvent.VK_SLASH, KeyStroke.getKeyStroke(KeyEvent.VK_SLASH, menuShortcutMask)));
+        this.actions.add(this.editUndoAction = new EditUndoAction(this, KeyEvent.VK_U, KeyStroke.getKeyStroke(KeyEvent.VK_Z, menuShortcutMask)));
+        this.actions.add(this.editRedoAction = new EditRedoAction(this, KeyEvent.VK_R, KeyStroke.getKeyStroke(KeyEvent.VK_Y, menuShortcutMask)));
+        this.actions.add(this.editCutAction = new EditCutAction(this, KeyEvent.VK_C, KeyStroke.getKeyStroke(KeyEvent.VK_X, menuShortcutMask)));
+        this.actions.add(this.editCopyAction = new EditCopyAction(this, KeyEvent.VK_O, KeyStroke.getKeyStroke(KeyEvent.VK_C, menuShortcutMask)));
+        this.actions.add(this.editPasteAction = new EditPasteAction(this, KeyEvent.VK_P, KeyStroke.getKeyStroke(KeyEvent.VK_V, menuShortcutMask)));
+        this.actions.add(this.editFindReplaceAction = new EditFindReplaceAction(this, KeyEvent.VK_F, KeyStroke.getKeyStroke(KeyEvent.VK_F, menuShortcutMask)));
+        this.actions.add(this.editSelectAllAction = new EditSelectAllAction(this, KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_A, menuShortcutMask)));
+        this.actions.add(this.editCommentAction = new EditCommentAction(this, KeyEvent.VK_SLASH, KeyStroke.getKeyStroke(KeyEvent.VK_SLASH, menuShortcutMask)));
 
-        this.actions.add(this.runAssembleAction = new RunAssembleAction(this, "Assemble", getSVGActionIcon("assemble.svg"), "Assemble the current file and clear breakpoints", KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0)));
-        this.actions.add(this.runStartAction = new RunStartAction(this, "Start", getSVGActionIcon("start.svg"), "Run the current program", KeyEvent.VK_G, KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0)));
-        this.actions.add(this.runStopAction = new RunStopAction(this, "Stop", getSVGActionIcon("stop.svg"), "Stop the currently running program", KeyEvent.VK_S, KeyStroke.getKeyStroke(KeyEvent.VK_F11, 0)));
-        this.actions.add(this.runPauseAction = new RunPauseAction(this, "Pause", getSVGActionIcon("pause.svg"), "Pause the currently running program", KeyEvent.VK_P, KeyStroke.getKeyStroke(KeyEvent.VK_F9, 0)));
-        this.actions.add(this.runStepForwardAction = new RunStepForwardAction(this, "Step Forward", getSVGActionIcon("step_forward.svg"), "Execute the next instruction", KeyEvent.VK_T, KeyStroke.getKeyStroke(KeyEvent.VK_F7, 0)));
-        this.actions.add(this.runStepBackwardAction = new RunStepBackwardAction(this, "Step Backward", getSVGActionIcon("step_backward.svg"), "Undo the last step", KeyEvent.VK_B, KeyStroke.getKeyStroke(KeyEvent.VK_F8, 0)));
-        this.actions.add(this.runResetAction = new RunResetAction(this, "Reset", getSVGActionIcon("reset.svg"), "Reset MIPS memory and registers", KeyEvent.VK_R, KeyStroke.getKeyStroke(KeyEvent.VK_F12, 0)));
-        this.actions.add(this.runClearBreakpointsAction = new RunClearBreakpointsAction(this, "Clear All Breakpoints", null, "Clear all execution breakpoints set since the last assemble.", KeyEvent.VK_K, KeyStroke.getKeyStroke(KeyEvent.VK_K, menuShortcutMask)));
-        this.actions.add(this.runToggleBreakpointsAction = new RunToggleBreakpointsAction(this, "Toggle All Breakpoints", null, "Disable/enable all breakpoints without clearing (can also click Bkpt column header)", KeyEvent.VK_T, KeyStroke.getKeyStroke(KeyEvent.VK_T, menuShortcutMask)));
+        this.actions.add(this.runAssembleAction = new RunAssembleAction(this, KeyEvent.VK_A, KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0)));
+        this.actions.add(this.runAssembleFolderAction = new RunAssembleFolderAction(this, KeyEvent.VK_F, KeyStroke.getKeyStroke(KeyEvent.VK_F3, KeyEvent.SHIFT_DOWN_MASK)));
+        this.actions.add(this.runStartAction = new RunStartAction(this, KeyEvent.VK_G, KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0)));
+        this.actions.add(this.runStopAction = new RunStopAction(this, KeyEvent.VK_S, KeyStroke.getKeyStroke(KeyEvent.VK_F11, 0)));
+        this.actions.add(this.runPauseAction = new RunPauseAction(this, KeyEvent.VK_P, KeyStroke.getKeyStroke(KeyEvent.VK_F9, 0)));
+        this.actions.add(this.runStepForwardAction = new RunStepForwardAction(this, KeyEvent.VK_T, KeyStroke.getKeyStroke(KeyEvent.VK_F7, 0)));
+        this.actions.add(this.runStepBackwardAction = new RunStepBackwardAction(this, KeyEvent.VK_B, KeyStroke.getKeyStroke(KeyEvent.VK_F8, 0)));
+        this.actions.add(this.runResetAction = new RunResetAction(this, KeyEvent.VK_R, KeyStroke.getKeyStroke(KeyEvent.VK_F12, 0)));
+        this.actions.add(this.runClearBreakpointsAction = new RunClearBreakpointsAction(this, KeyEvent.VK_K, KeyStroke.getKeyStroke(KeyEvent.VK_K, menuShortcutMask)));
+        this.actions.add(this.runToggleBreakpointsAction = new RunToggleBreakpointsAction(this, KeyEvent.VK_T, KeyStroke.getKeyStroke(KeyEvent.VK_T, menuShortcutMask)));
 
         this.actions.add(this.settingsLabelAction = new SettingsLabelAction(this, "Show symbol table", null, "Toggle visibility of Labels window (symbol table) in the Execute tab", null, null));
         this.actions.add(this.settingsPopupInputAction = new SettingsPopupInputAction(this, "Use dialog for user input", null, "If set, use popup dialog for input syscalls (5, 6, 7, 8, 12) instead of console input", null, null));
@@ -362,7 +363,6 @@ public class VenusUI extends JFrame implements SimulatorListener {
         this.actions.add(this.settingsAddressDisplayBaseAction = new SettingsAddressDisplayBaseAction(this, "Hexadecimal addresses", null, "Toggle between hexadecimal and decimal display of memory addresses", null, null));
         this.actions.add(this.settingsExtendedAction = new SettingsExtendedAction(this, "Allow extended (pseudo) instructions", null, "If set, MIPS extended (pseudo) instructions are formats are permitted.", null, null));
         this.actions.add(this.settingsAssembleOnOpenAction = new SettingsAssembleOnOpenAction(this, "Assemble files when opened", null, "If set, a file will be automatically assembled as soon as it is opened.  File Open dialog will show most recently opened file.", null, null));
-        this.actions.add(this.settingsAssembleAllAction = new SettingsAssembleAllAction(this, "Assemble all files in current directory", null, "If set, all files in current directory will be assembled when Assemble operation is selected.", null, null));
         this.actions.add(this.settingsWarningsAreErrorsAction = new SettingsWarningsAreErrorsAction(this, "Promote assembler warnings to errors", null, "If set, assembler warnings will be interpreted as errors and prevent successful assembly.", null, null));
         this.actions.add(this.settingsStartAtMainAction = new SettingsStartAtMainAction(this, "Use \"main\" as program entry point", null, "If set, assembler will initialize Program Counter to text address globally labeled 'main', if defined.", null, null));
         this.actions.add(this.settingsProgramArgumentsAction = new SettingsProgramArgumentsAction(this, "Allow program arguments", null, "If set, program arguments for MIPS program can be entered in border of Text Segment window.", null, null));
@@ -374,11 +374,11 @@ public class VenusUI extends JFrame implements SimulatorListener {
         this.actions.add(this.settingsHighlightingAction = new SettingsHighlightingAction(this, "Highlighting...", null, "View and modify Execute tab highlighting colors", null, null));
         this.actions.add(this.settingsExceptionHandlerAction = new SettingsExceptionHandlerAction(this, "Exception Handler...", null, "If set, the specified exception handler file will be included in all Assemble operations.", null, null));
         this.actions.add(this.settingsMemoryConfigurationAction = new SettingsMemoryConfigurationAction(this, "Memory Configuration...", null, "View and modify memory segment base addresses for simulated MIPS", null, null));
-        this.actions.add(this.settingsPreferencesAction = new SettingsPreferencesAction(this, "Preferences...", getSVGActionIcon("preferences.svg"), "Edit the appearance and behavior of the application", null, null));
+        this.actions.add(this.settingsPreferencesAction = new SettingsPreferencesAction(this, null, null));
 
-        this.actions.add(this.helpHelpAction = new HelpHelpAction(this, "Help...", getSVGActionIcon("help.svg"), "View help information", KeyEvent.VK_H, KeyStroke.getKeyStroke(KeyEvent.VK_H, menuShortcutMask)));
-        this.actions.add(this.helpUpdateAction = new HelpUpdateAction(this, "Check for Updates...", getSVGActionIcon("update.svg"), "Check if a newer version is available", null, null));
-        this.actions.add(this.helpAboutAction = new HelpAboutAction(this, "About...", getSVGActionIcon("about.svg"), "Information about " + Application.NAME, null, null));
+        this.actions.add(this.helpHelpAction = new HelpHelpAction(this, KeyEvent.VK_H, KeyStroke.getKeyStroke(KeyEvent.VK_H, menuShortcutMask)));
+        this.actions.add(this.helpUpdateAction = new HelpUpdateAction(this, null, null));
+        this.actions.add(this.helpAboutAction = new HelpAboutAction(this, null, null));
     }
 
     /**
@@ -423,6 +423,7 @@ public class VenusUI extends JFrame implements SimulatorListener {
         JMenu runMenu = new JMenu("Run");
         runMenu.setMnemonic(KeyEvent.VK_R);
         runMenu.add(this.createMenuItem(this.runAssembleAction));
+        runMenu.add(this.createMenuItem(this.runAssembleFolderAction));
         runMenu.add(this.createMenuItem(this.runStartAction));
         runMenu.add(this.createMenuItem(this.runStopAction));
         runMenu.add(this.createMenuItem(this.runPauseAction));
@@ -441,7 +442,6 @@ public class VenusUI extends JFrame implements SimulatorListener {
         settingsMenu.add(this.createMenuBaseChooser(this.settingsValueDisplayBaseAction, this.settings.displayValuesInHex.get(), this.mainPane.getExecuteTab().getValueDisplayBaseChooser()));
         settingsMenu.addSeparator();
         settingsMenu.add(this.createMenuCheckBox(this.settingsAssembleOnOpenAction, this.settings.assembleOnOpenEnabled.get()));
-        settingsMenu.add(this.createMenuCheckBox(this.settingsAssembleAllAction, this.settings.assembleAllEnabled.get()));
         settingsMenu.add(this.createMenuCheckBox(this.settingsWarningsAreErrorsAction, this.settings.warningsAreErrors.get()));
         settingsMenu.add(this.createMenuCheckBox(this.settingsStartAtMainAction, this.settings.startAtMain.get()));
         settingsMenu.add(this.createMenuCheckBox(this.settingsExtendedAction, this.settings.extendedAssemblerEnabled.get()));
@@ -530,6 +530,7 @@ public class VenusUI extends JFrame implements SimulatorListener {
         toolBar.add(this.createToolBarButton(this.editFindReplaceAction));
         toolBar.addSeparator();
         toolBar.add(this.createToolBarButton(this.runAssembleAction));
+        toolBar.add(this.createToolBarButton(this.runAssembleFolderAction));
         toolBar.add(this.createToolBarButton(this.runStartAction));
         toolBar.add(this.createToolBarButton(this.runStopAction));
         toolBar.add(this.createToolBarButton(this.runPauseAction));

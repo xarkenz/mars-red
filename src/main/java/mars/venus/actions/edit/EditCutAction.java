@@ -39,8 +39,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the Edit -> Cut menu item.
  */
 public class EditCutAction extends VenusAction {
-    public EditCutAction(VenusUI gui, String name, Icon icon, String description, Integer mnemonic, KeyStroke accel) {
-        super(gui, name, icon, description, mnemonic, accel);
+    public EditCutAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
+        super(gui, "Cut", VenusUI.getSVGActionIcon("cut.svg"), "Cut", mnemonic, accel);
     }
 
     @Override
