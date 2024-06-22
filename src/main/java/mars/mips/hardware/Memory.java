@@ -48,7 +48,7 @@ public class Memory {
      * it is bound to a range of memory addresses. Any operations on memory outside of that range will <i>not</i>
      * notify the listener. Note that a listener can be bound to multiple memory ranges simultaneously.
      */
-    public interface Listener {
+    public interface Listener extends EventListener {
         /**
          * Invoked upon any write operation which is relevant to this listener's active range.
          * Does nothing by default.

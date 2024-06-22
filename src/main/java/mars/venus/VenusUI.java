@@ -12,6 +12,7 @@ import mars.venus.actions.help.*;
 import mars.venus.actions.run.*;
 import mars.venus.actions.settings.*;
 import mars.venus.editor.Editor;
+import mars.venus.editor.FileEditorTab;
 import mars.venus.editor.FileStatus;
 import mars.venus.execute.ProgramStatus;
 import mars.venus.execute.RunSpeedPanel;
@@ -21,6 +22,7 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -85,6 +87,7 @@ public class VenusUI extends JFrame implements SimulatorListener {
     private final MessagesPane messagesPane;
     private final Editor editor;
 
+    private boolean workspaceStateSavingEnabled;
     private FileStatus fileStatus;
     private ProgramStatus programStatus;
 
@@ -158,6 +161,7 @@ public class VenusUI extends JFrame implements SimulatorListener {
         Application.setGUI(this);
         NativeUtilities.setApplicationName(title);
 
+        this.workspaceStateSavingEnabled = true;
         this.fileStatus = FileStatus.NO_FILE;
         this.programStatus = ProgramStatus.NOT_ASSEMBLED;
 
@@ -189,7 +193,7 @@ public class VenusUI extends JFrame implements SimulatorListener {
         // Image courtesy of NASA/JPL
         URL iconImageURL = this.getClass().getResource(Application.IMAGES_PATH + WINDOW_ICON_NAME);
         if (iconImageURL == null) {
-            System.err.println("Error: images folder or file not found");
+            System.err.println("Error: unable to load image at '" + Application.IMAGES_PATH + WINDOW_ICON_NAME + "'");
         }
         else {
             Image iconImage = Toolkit.getDefaultToolkit().getImage(iconImageURL);
@@ -263,14 +267,14 @@ public class VenusUI extends JFrame implements SimulatorListener {
             @Override
             public void windowClosing(WindowEvent event) {
                 // Don't save the workspace state after closing all files, unless the exit fails
-                VenusUI.this.mainPane.getEditTab().setWorkspaceStateSavingEnabled(false);
+                VenusUI.this.setWorkspaceStateSavingEnabled(false);
 
                 // Check for unsaved changes before closing the application
                 if (VenusUI.this.editor.closeAll()) {
                     System.exit(0);
                 }
                 else {
-                    VenusUI.this.mainPane.getEditTab().setWorkspaceStateSavingEnabled(true);
+                    VenusUI.this.setWorkspaceStateSavingEnabled(true);
                 }
             }
         });
@@ -288,7 +292,7 @@ public class VenusUI extends JFrame implements SimulatorListener {
         }
 
         // Restore previous session
-        this.getMainPane().getEditTab().loadWorkspaceState();
+        this.loadWorkspaceState();
     }
 
     /**
@@ -587,6 +591,55 @@ public class VenusUI extends JFrame implements SimulatorListener {
         else {
             this.setTitle(this.baseTitle);
         }
+    }
+
+    /**
+     * Set whether calls to {@link #saveWorkspaceState()} have any effect.
+     * This is useful for when the state of the workspace needs to change without
+     * updating the saved workspace state (for example, when closing all files before
+     * the application exits).
+     *
+     * @param enabled Whether to allow the workspace state to be saved.
+     */
+    public void setWorkspaceStateSavingEnabled(boolean enabled) {
+        this.workspaceStateSavingEnabled = enabled;
+
+        if (enabled) {
+            this.saveWorkspaceState();
+        }
+    }
+
+    /**
+     * Save the state of the current workspace to permanent storage, which includes
+     * the paths of the files that are open.
+     * <p>
+     * Most file-related operations trigger this automatically unless the
+     * <code>workspaceStateSavingEnabled</code> flag is set to <code>false</code>.
+     *
+     * @see #setWorkspaceStateSavingEnabled(boolean)
+     */
+    public void saveWorkspaceState() {
+        if (!this.workspaceStateSavingEnabled) {
+            // Things are changing, but we don't want to save the workspace state.
+            // Usually this happens when closing all files before exiting.
+            return;
+        }
+
+        List<File> files = this.mainPane.getEditTab().getEditorTabs().stream()
+            .map(FileEditorTab::getFile)
+            .toList();
+        String filesString = Settings.encodeFileList(files);
+        this.settings.previouslyOpenFiles.set(filesString);
+    }
+
+    /**
+     * Load the state of the previous workspace from permanent storage, which includes
+     * the paths of the files that were open.
+     */
+    public void loadWorkspaceState() {
+        String filesString = this.settings.previouslyOpenFiles.get();
+        List<File> files = Settings.decodeFileList(filesString);
+        this.mainPane.getEditTab().openFiles(files);
     }
 
     /**

@@ -6,6 +6,7 @@ import mars.venus.editor.jeditsyntax.SyntaxStyle;
 import mars.venus.editor.jeditsyntax.tokenmarker.Token;
 
 import java.awt.*;
+import java.io.File;
 import java.util.*;
 import java.util.List;
 import java.util.prefs.BackingStoreException;
@@ -60,10 +61,22 @@ public class Settings {
      */
     private static final String DEFAULT_SETTINGS_PROPERTIES = "DefaultSettings";
 
-    // This determines where the values are actually stored.  Actual implementation
-    // is platform-dependent.  For Windows, they are stored in Registry.  To see,
-    // run regedit and browse to: HKEY_CURRENT_USER\Software\JavaSoft\Prefs\mars
-    private final Preferences preferences = Preferences.userNodeForPackage(Settings.class);
+    public static String encodeFileList(List<File> files) {
+        StringBuilder output = new StringBuilder();
+        for (File file : files) {
+            output.append(file.getPath()).append(';');
+        }
+        return output.toString();
+    }
+
+    public static List<File> decodeFileList(String string) {
+        String[] paths = string.split(";");
+        List<File> files = new ArrayList<>(paths.length);
+        for (String path : paths) {
+            files.add(new File(path.strip()));
+        }
+        return files;
+    }
 
     public interface Listener extends EventListener {
         void settingsChanged();
@@ -86,6 +99,11 @@ public class Settings {
             listener.settingsChanged();
         }
     }
+
+    // This determines where the values are actually stored.  Actual implementation
+    // is platform-dependent.  For Windows, they are stored in Registry.  To see,
+    // run regedit and browse to: HKEY_CURRENT_USER\Software\JavaSoft\Prefs\mars
+    private final Preferences preferences = Preferences.userNodeForPackage(Settings.class);
 
     // BOOLEAN SETTINGS
 
@@ -392,6 +410,16 @@ public class Settings {
         false
     );
     /**
+     * The list of files which have been opened recently, ordered from most to least recent.
+     * Stored as the full file paths separated by semicolons.
+     */
+    public final StringSetting recentFiles = new StringSetting(
+        this,
+        "RecentFiles",
+        "",
+        false
+    );
+    /**
      * The name of the look and feel to use for the GUI.
      */
     public final StringSetting lookAndFeelName = new StringSetting(
@@ -406,6 +434,7 @@ public class Settings {
         this.memoryConfiguration,
         this.textSegmentColumnOrder,
         this.previouslyOpenFiles,
+        this.recentFiles,
         this.lookAndFeelName,
     };
 

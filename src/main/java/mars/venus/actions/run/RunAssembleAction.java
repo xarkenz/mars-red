@@ -79,8 +79,8 @@ public class RunAssembleAction extends VenusAction {
 
         // Get the path of the exception handler, if enabled
         String exceptionHandler = null;
-        if (Application.getSettings().exceptionHandlerEnabled.get()) {
-            exceptionHandler = Application.getSettings().exceptionHandlerPath.get();
+        if (this.gui.getSettings().exceptionHandlerEnabled.get()) {
+            exceptionHandler = this.gui.getSettings().exceptionHandlerPath.get();
         }
 
         try {

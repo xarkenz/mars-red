@@ -1,6 +1,7 @@
 package mars.mips.hardware;
 
 import java.util.ArrayList;
+import java.util.EventListener;
 import java.util.List;
 
 /*
@@ -38,7 +39,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @version June 2003
  */
 public class Register {
-    public interface Listener {
+    public interface Listener extends EventListener {
         default void registerWritten(Register register) {
             // Do nothing by default
         }

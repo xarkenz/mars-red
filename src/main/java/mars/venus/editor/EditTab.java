@@ -18,7 +18,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /*
@@ -59,13 +58,10 @@ public class EditTab extends DynamicTabbedPane {
     private final VenusUI gui;
     private final Editor editor;
     private boolean isOpeningFiles;
-    private boolean workspaceStateSavingEnabled;
     private File mostRecentlyOpenedFile;
 
     /**
      * Create and initialize the Edit tab with no open files.
-     * To restore the previous workspace state, call {@link #loadWorkspaceState()}
-     * afterward.
      *
      * @param gui    The parent GUI instance.
      * @param editor The editor instance, which will be used to manage the text editors.
@@ -75,7 +71,6 @@ public class EditTab extends DynamicTabbedPane {
         this.gui = gui;
         this.editor = editor;
         this.isOpeningFiles = false;
-        this.workspaceStateSavingEnabled = true;
         this.mostRecentlyOpenedFile = null;
 
         this.addChangeListener(event -> {
@@ -85,7 +80,7 @@ public class EditTab extends DynamicTabbedPane {
                 currentTab.requestTextAreaFocus();
             }
 
-            this.saveWorkspaceState();
+            this.gui.saveWorkspaceState();
         });
     }
 
@@ -168,58 +163,6 @@ public class EditTab extends DynamicTabbedPane {
     }
 
     /**
-     * Set whether calls to {@link #saveWorkspaceState()} have any effect.
-     * This is useful for when the state of the workspace needs to change without
-     * updating the saved workspace state (for example, when closing all files before
-     * the application exits).
-     *
-     * @param enabled Whether to allow the workspace state to be saved.
-     */
-    public void setWorkspaceStateSavingEnabled(boolean enabled) {
-        this.workspaceStateSavingEnabled = enabled;
-
-        if (enabled) {
-            this.saveWorkspaceState();
-        }
-    }
-
-    /**
-     * Save the state of the current workspace to permanent storage, which includes
-     * the paths of the files that are open.
-     * <p>
-     * Most file-related operations trigger this automatically unless the
-     * <code>workspaceStateSavingEnabled</code> flag is set to <code>false</code>.
-     *
-     * @see #setWorkspaceStateSavingEnabled(boolean)
-     */
-    public void saveWorkspaceState() {
-        if (!this.workspaceStateSavingEnabled) {
-            // Things are changing, but we don't want to save the workspace state.
-            // Usually this happens when closing all files before exiting.
-            return;
-        }
-
-        StringBuilder filesString = new StringBuilder();
-        for (FileEditorTab tab : this.getEditorTabs()) {
-            filesString.append(tab.getFile().getPath()).append(';');
-        }
-        Application.getSettings().previouslyOpenFiles.set(filesString.toString());
-    }
-
-    /**
-     * Load the state of the previous workspace from permanent storage, which includes
-     * the paths of the files that were open.
-     */
-    public void loadWorkspaceState() {
-        String filesString = Application.getSettings().previouslyOpenFiles.get();
-        List<File> files = Arrays.stream(filesString.split(";"))
-            .map(String::strip)
-            .map(File::new)
-            .toList();
-        this.openFiles(files);
-    }
-
-    /**
      * Carries out all necessary operations to implement
      * the New operation from the File menu.
      */
@@ -276,6 +219,23 @@ public class EditTab extends DynamicTabbedPane {
     }
 
     /**
+     * Attempts to remove the tab at <code>index</code>. If the tab has unsaved changes, the user will be prompted
+     * to save them. If they select cancel, the tab will <i>not</i> be removed. Otherwise, the tab is removed.
+     * After a successful removal, {@link VenusUI#saveWorkspaceState()} is invoked.
+     *
+     * @param index The index of the tab to be removed.
+     * @throws IndexOutOfBoundsException Thrown if the index is out of range
+     *                                   (<code>index</code> &lt; 0 or <code>index</code> &ge; {@link #getTabCount()}).
+     */
+    @Override
+    public void removeTabAt(int index) {
+        if (this.resolveUnsavedChanges((FileEditorTab) this.getComponentAt(index))) {
+            super.removeTabAt(index);
+            this.gui.saveWorkspaceState();
+        }
+    }
+
+    /**
      * Carries out all necessary operations to implement
      * the Close operation from the File menu.  May return
      * false, for instance when file has unsaved changes
@@ -284,19 +244,28 @@ public class EditTab extends DynamicTabbedPane {
      * @return true if file was closed, false otherwise.
      */
     public boolean closeCurrentFile() {
-        FileEditorTab currentTab = this.getCurrentEditorTab();
-        if (currentTab == null) {
+        return this.closeFile(this.getCurrentEditorTab());
+    }
+
+    /**
+     * Carries out all necessary operations to implement
+     * the Close operation from the File menu.  May return
+     * false, for instance when file has unsaved changes
+     * and user selects Cancel from the warning dialog.
+     *
+     * @param tab The tab for the file to close.
+     * @return true if file was closed, false otherwise.
+     */
+    public boolean closeFile(FileEditorTab tab) {
+        if (tab == null) {
             return true;
         }
-        else if (this.resolveUnsavedChanges()) {
-            this.remove(currentTab);
-            this.gui.getMainPane().getExecuteTab().clear();
-            this.gui.getMainPane().setSelectedComponent(this);
+        int index = this.indexOfComponent(tab);
+        if (index < 0) {
             return true;
         }
-        else {
-            return false;
-        }
+        this.removeTabAt(index);
+        return index >= this.getTabCount() || this.getComponentAt(index) != tab;
     }
 
     /**
@@ -306,48 +275,20 @@ public class EditTab extends DynamicTabbedPane {
      * @return true if files closed, false otherwise.
      */
     public boolean closeAllFiles() {
-        boolean closedAll = true;
-
-        int tabCount = this.getTabCount();
-        if (tabCount > 0) {
-            this.gui.getMainPane().getExecuteTab().clear();
-            this.gui.getMainPane().setSelectedComponent(this);
-
-            List<FileEditorTab> tabs = this.getEditorTabs();
-
-            if (tabs.stream().anyMatch(FileEditorTab::hasUnsavedEdits)) {
-                switch (this.showUnsavedEditsDialog("one or more files")) {
-                    case JOptionPane.YES_OPTION -> {
-                        for (FileEditorTab tab : tabs) {
-                            if (tab.hasUnsavedEdits()) {
-                                this.setSelectedComponent(tab);
-                                boolean saved = this.saveCurrentFile();
-                                if (saved) {
-                                    this.remove(tab);
-                                }
-                                else {
-                                    closedAll = false;
-                                }
-                            }
-                            else {
-                                this.remove(tab);
-                            }
-                        }
-                    }
-                    case JOptionPane.NO_OPTION -> {
-                        this.removeAll();
-                    }
-                    default -> {
-                        closedAll = false;
-                    }
-                }
-            }
-            else {
-                this.removeAll();
+        // If the user cancels at any point, we want the tabs to be in their original state
+        for (FileEditorTab tab : this.getEditorTabs()) {
+            if (!this.resolveUnsavedChanges(tab)) {
+                return false;
             }
         }
 
-        return closedAll;
+        // Manually close all files to avoid the override version of removeTabAt()
+        this.setSelectedIndex(-1);
+        for (int index = this.getTabCount() - 1; index >= 0; index--) {
+            super.removeTabAt(index);
+        }
+
+        return true;
     }
 
     /**
@@ -356,16 +297,7 @@ public class EditTab extends DynamicTabbedPane {
      * @return true if the file was actually saved.
      */
     public boolean saveCurrentFile() {
-        FileEditorTab currentTab = this.getCurrentEditorTab();
-
-        if (this.saveFile(currentTab)) {
-            currentTab.setFileStatus(FileStatus.NOT_EDITED);
-            this.updateTitleAndMenuState(currentTab);
-            return true;
-        }
-        else {
-            return false;
-        }
+        return this.saveFile(this.getCurrentEditorTab());
     }
 
     /**
@@ -398,6 +330,9 @@ public class EditTab extends DynamicTabbedPane {
         }
 
         this.editor.setCurrentSaveDirectory(tab.getFile().getParent());
+
+        tab.setFileStatus(FileStatus.NOT_EDITED);
+        this.updateTitleAndMenuState(tab);
 
         return true;
     }
@@ -490,7 +425,7 @@ public class EditTab extends DynamicTabbedPane {
         tab.setFile(file);
         tab.setFileStatus(FileStatus.NOT_EDITED);
         this.updateTitleAndMenuState(tab);
-        this.saveWorkspaceState();
+        this.gui.saveWorkspaceState();
 
         return file;
     }
@@ -532,16 +467,23 @@ public class EditTab extends DynamicTabbedPane {
      * @param tab The tab to update, or null if there are no tabs remaining.
      */
     public void updateTitleAndMenuState(FileEditorTab tab) {
-        // This condition is also true if no tabs are open
-        if (tab == this.getCurrentEditorTab()) {
-            this.gui.setFileStatus(tab == null ? FileStatus.NO_FILE : tab.getFileStatus());
-        }
-
         if (tab == null) {
-            this.editor.setTitle(null, FileStatus.NO_FILE);
+            this.gui.setTitleContent(null);
+            this.gui.setFileStatus(FileStatus.NO_FILE);
         }
         else {
-            this.editor.setTitle(tab.getFile().getName(), tab.getFileStatus());
+            StringBuilder content = new StringBuilder();
+            if (tab.getFileStatus().hasUnsavedEdits()) {
+                // Add the prefix for unsaved changes
+                content.append('*');
+            }
+            content.append(tab.getFile().getName());
+            this.setTitleAt(this.indexOfComponent(tab), content.toString());
+
+            if (tab == this.getCurrentEditorTab()) {
+                this.gui.setTitleContent(content.toString());
+                this.gui.setFileStatus(tab.getFileStatus());
+            }
         }
     }
 
@@ -551,11 +493,10 @@ public class EditTab extends DynamicTabbedPane {
      * @return true if no unsaved edits or if user chooses to save them or not; false
      *     if there are unsaved edits and user cancels the operation.
      */
-    public boolean resolveUnsavedChanges() {
-        FileEditorTab currentTab = this.getCurrentEditorTab();
-        if (currentTab != null && currentTab.hasUnsavedEdits()) {
-            return switch (this.showUnsavedEditsDialog(currentTab.getFile().getName())) {
-                case JOptionPane.YES_OPTION -> this.saveCurrentFile();
+    public boolean resolveUnsavedChanges(FileEditorTab tab) {
+        if (tab != null && tab.hasUnsavedEdits()) {
+            return switch (this.showUnsavedEditsDialog(tab.getFile().getName())) {
+                case JOptionPane.YES_OPTION -> this.saveFile(tab);
                 case JOptionPane.NO_OPTION -> true;
                 default -> false;
             };
@@ -568,7 +509,7 @@ public class EditTab extends DynamicTabbedPane {
     private int showUnsavedEditsDialog(String name) {
         return JOptionPane.showConfirmDialog(
             this.gui,
-            "There are unsaved changes in " + name + ". Would you like to save them?",
+            "There are unsaved changes in \"" + name + "\". Would you like to save them?",
             "Save unsaved changes?",
             JOptionPane.YES_NO_CANCEL_OPTION,
             JOptionPane.WARNING_MESSAGE
@@ -718,7 +659,7 @@ public class EditTab extends DynamicTabbedPane {
             EditTab.this.gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
 
             // Save the updated workspace with the newly opened files
-            EditTab.this.saveWorkspaceState();
+            EditTab.this.gui.saveWorkspaceState();
 
             return unopenedFiles;
         }

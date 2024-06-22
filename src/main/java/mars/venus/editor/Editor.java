@@ -3,7 +3,6 @@ package mars.venus.editor;
 import mars.venus.VenusUI;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
 /*
@@ -62,10 +61,10 @@ public class Editor {
      */
     public Editor(VenusUI gui) {
         this.gui = gui;
-        newUsageCount = 0;
+        this.newUsageCount = 0;
         // Directory from which MARS was launched. Guaranteed to have a value.
-        defaultSaveDirectory = System.getProperty("user.dir");
-        currentSaveDirectory = defaultSaveDirectory;
+        this.defaultSaveDirectory = System.getProperty("user.dir");
+        this.currentSaveDirectory = this.defaultSaveDirectory;
     }
 
     /**
@@ -76,7 +75,7 @@ public class Editor {
      *     no Save or Save As operations have been performed.
      */
     public String getCurrentSaveDirectory() {
-        return currentSaveDirectory;
+        return this.currentSaveDirectory;
     }
 
     /**
@@ -89,7 +88,7 @@ public class Editor {
     public void setCurrentSaveDirectory(String currentSaveDirectory) {
         File file = new File(currentSaveDirectory);
         if (!file.exists() || !file.isDirectory()) {
-            this.currentSaveDirectory = defaultSaveDirectory;
+            this.currentSaveDirectory = this.defaultSaveDirectory;
         }
         else {
             this.currentSaveDirectory = currentSaveDirectory;
@@ -102,32 +101,7 @@ public class Editor {
      * @return String "untitled-N.asm", where N is a number that increments upon each call.
      */
     public String getNextDefaultFilename() {
-        return "untitled-" + (++newUsageCount) + ".asm";
-    }
-
-    /**
-     * Places name of file currently being edited into its edit tab and
-     * the application's title bar.  If file has been modified since created,
-     * opened, or saved, as indicated by value of the status parameter, the name
-     * will be preceded by an asterisk.
-     *
-     * @param name   Name of file (last component of path)
-     * @param status Edit status of file.  See FileStatus static constants.
-     */
-    public void setTitle(String name, FileStatus status) {
-        if (status == FileStatus.NO_FILE || name == null || name.isBlank()) {
-            gui.setTitleContent(null);
-        }
-        else {
-            StringBuilder content = new StringBuilder();
-            if (status.hasUnsavedEdits()) {
-                // Add the prefix for unsaved changes
-                content.append('*');
-            }
-            content.append(name);
-            gui.setTitleContent(content.toString());
-            gui.getMainPane().getEditTab().setTitleAt(gui.getMainPane().getEditTab().getSelectedIndex(), content.toString());
-        }
+        return "untitled-" + (++this.newUsageCount) + ".asm";
     }
 
     /**
@@ -190,20 +164,5 @@ public class Editor {
      */
     public List<File> open() {
         return gui.getMainPane().getEditTab().openFiles();
-    }
-
-    /**
-     * Called by several of the Action objects when there is potential
-     * loss of editing changes.  Specifically: if there is a current
-     * file open for editing and its modify flag is true, then give user
-     * a dialog box with choice to save, discard edits, or cancel and
-     * carry out the decision.  This applies to File->New, File->Open,
-     * File->Close, and File->Exit.
-     *
-     * @return false means user selected Cancel so caller should do that.
-     *     Return of true means caller can proceed (edits were saved or discarded).
-     */
-    public boolean resolveUnsavedChanges() {
-        return gui.getMainPane().getEditTab().resolveUnsavedChanges();
     }
 }
