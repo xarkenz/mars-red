@@ -86,8 +86,10 @@ public class VenusUI extends JFrame implements SimulatorListener {
     private final RegistersPane registersPane;
     private final MessagesPane messagesPane;
     private final Editor editor;
+    private final JMenu recentFilesMenu;
 
     private boolean workspaceStateSavingEnabled;
+    private List<File> recentFiles;
     private FileStatus fileStatus;
     private ProgramStatus programStatus;
 
@@ -162,6 +164,8 @@ public class VenusUI extends JFrame implements SimulatorListener {
         NativeUtilities.setApplicationName(title);
 
         this.workspaceStateSavingEnabled = true;
+        this.recentFiles = new ArrayList<>();
+        this.recentFilesMenu = new JMenu("Recent Files");
         this.fileStatus = FileStatus.NO_FILE;
         this.programStatus = ProgramStatus.NOT_ASSEMBLED;
 
@@ -396,6 +400,7 @@ public class VenusUI extends JFrame implements SimulatorListener {
         fileMenu.setMnemonic(KeyEvent.VK_F);
         fileMenu.add(this.createMenuItem(this.fileNewAction));
         fileMenu.add(this.createMenuItem(this.fileOpenAction));
+        fileMenu.add(this.recentFilesMenu);
         fileMenu.add(this.createMenuItem(this.fileCloseAction));
         fileMenu.add(this.createMenuItem(this.fileCloseAllAction));
         fileMenu.addSeparator();
@@ -594,6 +599,16 @@ public class VenusUI extends JFrame implements SimulatorListener {
     }
 
     /**
+     * Determine whether calls to {@link #saveWorkspaceState()} have any effect.
+     * Workspace state saving is disabled during bulk open/close operations.
+     *
+     * @return <code>true</code> if the workspace state can be saved, or <code>false</code> otherwise.
+     */
+    public boolean isWorkspaceStateSavingEnabled() {
+        return this.workspaceStateSavingEnabled;
+    }
+
+    /**
      * Set whether calls to {@link #saveWorkspaceState()} have any effect.
      * This is useful for when the state of the workspace needs to change without
      * updating the saved workspace state (for example, when closing all files before
@@ -625,11 +640,17 @@ public class VenusUI extends JFrame implements SimulatorListener {
             return;
         }
 
+        // Trim the size of the recent files list if needed
+        int maxRecentFiles = Math.max(0, this.settings.maxRecentFiles.get());
+        while (this.recentFiles.size() > maxRecentFiles) {
+            this.recentFiles.remove(this.recentFiles.size() - 1);
+        }
+        this.settings.recentFiles.set(Settings.encodeFileList(this.recentFiles));
+
         List<File> files = this.mainPane.getEditTab().getEditorTabs().stream()
             .map(FileEditorTab::getFile)
             .toList();
-        String filesString = Settings.encodeFileList(files);
-        this.settings.previouslyOpenFiles.set(filesString);
+        this.settings.previouslyOpenFiles.set(Settings.encodeFileList(files));
     }
 
     /**
@@ -637,9 +658,41 @@ public class VenusUI extends JFrame implements SimulatorListener {
      * the paths of the files that were open.
      */
     public void loadWorkspaceState() {
-        String filesString = this.settings.previouslyOpenFiles.get();
-        List<File> files = Settings.decodeFileList(filesString);
+        this.recentFiles = Settings.decodeFileList(this.settings.recentFiles.get());
+        this.updateRecentFilesMenu();
+
+        List<File> files = Settings.decodeFileList(this.settings.previouslyOpenFiles.get());
         this.mainPane.getEditTab().openFiles(files);
+    }
+
+    /**
+     * Update the "Recent Files" menu according to the current state of <code>this.recentFiles</code>.
+     */
+    private void updateRecentFilesMenu() {
+        this.recentFilesMenu.removeAll();
+        this.recentFilesMenu.setEnabled(!this.recentFiles.isEmpty());
+
+        for (File file : this.recentFiles) {
+            JMenuItem menuItem = this.recentFilesMenu.add(file.getPath());
+            menuItem.addActionListener(event -> {
+                this.mainPane.getEditTab().openFile(file);
+                this.addRecentFile(file);
+            });
+        }
+    }
+
+    /**
+     * Add a file to the "Recent Files" menu, or bring it to the top if it is already present.
+     * If the length of the menu is pushed past the limit specified in the settings, the least recent entry
+     * is removed from the list.
+     *
+     * @param file The file which was just opened.
+     */
+    public void addRecentFile(File file) {
+        this.recentFiles.remove(file);
+        this.recentFiles.add(0, file);
+        this.saveWorkspaceState(); // This will trim the list size
+        this.updateRecentFilesMenu();
     }
 
     /**

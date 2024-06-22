@@ -73,7 +73,10 @@ public class Settings {
         String[] paths = string.split(";");
         List<File> files = new ArrayList<>(paths.length);
         for (String path : paths) {
-            files.add(new File(path.strip()));
+            path = path.strip();
+            if (!path.isEmpty()) {
+                files.add(new File(path));
+            }
         }
         return files;
     }
@@ -325,6 +328,15 @@ public class Settings {
         true
     );
     /**
+     * Maximum number of recent files to be kept in the "Recent Files" menu.
+     */
+    public final IntegerSetting maxRecentFiles = new IntegerSetting(
+        this,
+        "MaxRecentFiles",
+        10,
+        false
+    );
+    /**
      * State for sorting label window display.
      */
     public final IntegerSetting symbolTableSortState = new IntegerSetting(
@@ -363,6 +375,7 @@ public class Settings {
 
     public final IntegerSetting[] integerSettings = {
         this.uiScale,
+        this.maxRecentFiles,
         this.symbolTableSortState,
         this.caretBlinkRate,
         this.editorTabSize,

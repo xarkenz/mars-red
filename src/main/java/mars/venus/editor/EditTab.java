@@ -57,7 +57,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 public class EditTab extends DynamicTabbedPane {
     private final VenusUI gui;
     private final Editor editor;
-    private boolean isOpeningFiles;
     private File mostRecentlyOpenedFile;
 
     /**
@@ -70,7 +69,6 @@ public class EditTab extends DynamicTabbedPane {
         super();
         this.gui = gui;
         this.editor = editor;
-        this.isOpeningFiles = false;
         this.mostRecentlyOpenedFile = null;
 
         this.addChangeListener(event -> {
@@ -151,15 +149,6 @@ public class EditTab extends DynamicTabbedPane {
             editorTabs.add((FileEditorTab) this.getComponentAt(tabIndex));
         }
         return editorTabs;
-    }
-
-    /**
-     * Determine whether files are currently being opened in new tabs.
-     *
-     * @return true if files are currently being opened, false otherwise.
-     */
-    public boolean isOpeningFiles() {
-        return this.isOpeningFiles;
     }
 
     /**
@@ -531,8 +520,8 @@ public class EditTab extends DynamicTabbedPane {
             FileFilter asmFilter = FilenameFinder.getFileFilter(Application.FILE_EXTENSIONS, "Assembly Files", true);
             this.fileFilters = new ArrayList<>();
             // Note: add sequence is significant - last one added becomes default.
-            this.fileFilters.add(this.fileChooser.getAcceptAllFileFilter());
             this.fileFilters.add(asmFilter);
+            this.fileFilters.add(this.fileChooser.getAcceptAllFileFilter());
             this.fileFilterCount = 0; // This will trigger fileChooser file filter load in next line
             this.setChoosableFileFilters();
             // Note: above note seems to not be true anymore, so force the assembly filter to be default.
@@ -569,6 +558,14 @@ public class EditTab extends DynamicTabbedPane {
 
             if (this.fileChooser.showOpenDialog(EditTab.this.gui) == JFileChooser.APPROVE_OPTION) {
                 List<File> unopenedFiles = this.openFiles(List.of(this.fileChooser.getSelectedFiles()));
+
+                // Since the user opened these files manually, add them to the recent files menu
+                for (File file : this.fileChooser.getSelectedFiles()) {
+                    if (!unopenedFiles.contains(file)) {
+                        EditTab.this.gui.addRecentFile(file);
+                    }
+                }
+
                 if (!unopenedFiles.isEmpty()) {
                     return unopenedFiles;
                 }
@@ -592,7 +589,7 @@ public class EditTab extends DynamicTabbedPane {
             List<File> unopenedFiles = new ArrayList<>();
             FileEditorTab firstTabOpened = null;
 
-            EditTab.this.isOpeningFiles = true; // DPS 9-Aug-2011
+            EditTab.this.gui.setWorkspaceStateSavingEnabled(false); // DPS 9-Aug-2011
 
             for (File file : files) {
                 try {
@@ -603,7 +600,11 @@ public class EditTab extends DynamicTabbedPane {
                 }
 
                 // Don't bother reopening the file if it's already open
-                if (EditTab.this.getEditorTab(file) != null) {
+                FileEditorTab existingTab = EditTab.this.getEditorTab(file);
+                if (existingTab != null) {
+                    if (firstTabOpened == null) {
+                        firstTabOpened = existingTab;
+                    }
                     continue;
                 }
 
@@ -654,11 +655,10 @@ public class EditTab extends DynamicTabbedPane {
                 EditTab.this.mostRecentlyOpenedFile = firstTabOpened.getFile();
             }
 
-            EditTab.this.isOpeningFiles = false;
             EditTab.this.gui.getMainPane().setSelectedComponent(EditTab.this);
-            EditTab.this.gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
 
             // Save the updated workspace with the newly opened files
+            EditTab.this.gui.setWorkspaceStateSavingEnabled(true);
             EditTab.this.gui.saveWorkspaceState();
 
             return unopenedFiles;

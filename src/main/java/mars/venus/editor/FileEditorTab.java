@@ -147,7 +147,7 @@ public class FileEditorTab extends JPanel {
         // This method is triggered when file contents added to document
         // upon opening, even though not edited by user.  The IF
         // statement will sense this situation and immediately return.
-        if (this.editTab.isOpeningFiles()) {
+        if (!this.gui.isWorkspaceStateSavingEnabled()) {
             this.setFileStatus(FileStatus.NOT_EDITED);
         }
         else {
