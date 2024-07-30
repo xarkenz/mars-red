@@ -7,6 +7,8 @@ import mars.venus.editor.jeditsyntax.tokenmarker.Token;
 
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 import java.util.List;
 import java.util.prefs.BackingStoreException;
@@ -43,7 +45,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * Contains various IDE settings.  Persistent settings are maintained for the
  * current user and on the current machine using Java's Preference objects.
- * Failing that, default setting values come from DefaultSettings.properties file.
+ * Failing that, default setting values come from default_settings.properties file.
  * If both of those fail, default values are defined in this class.
  * <p>
  * NOTE: If the Preference objects fail due to security exceptions, changes to
@@ -57,9 +59,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class Settings {
     /**
-     * Name of properties file used to hold default settings.
+     * Path to the properties file which contains default settings.
      */
-    private static final String DEFAULT_SETTINGS_PROPERTIES = "DefaultSettings";
+    private static final String DEFAULT_SETTINGS_PATH = "/config/default_settings.properties";
 
     public static String encodeFileList(List<File> files) {
         StringBuilder output = new StringBuilder();
@@ -106,7 +108,7 @@ public class Settings {
     // This determines where the values are actually stored.  Actual implementation
     // is platform-dependent.  For Windows, they are stored in Registry.  To see,
     // run regedit and browse to: HKEY_CURRENT_USER\Software\JavaSoft\Prefs\mars
-    private final Preferences preferences = Preferences.userNodeForPackage(Settings.class);
+    private Preferences preferences;
 
     // BOOLEAN SETTINGS
 
@@ -337,6 +339,44 @@ public class Settings {
         false
     );
     /**
+     * Maximum number of lines that can be kept in a console at once.
+     */
+    public final IntegerSetting consoleMaxLines = new IntegerSetting(
+        this,
+        "ConsoleMaxLines",
+        1000,
+        false
+    );
+    /**
+     * Number of extra lines to be trimmed when the number of lines in a console exceeds the maximum.
+     * This allows the console to be trimmed less frequently for performance reasons.
+     */
+    public final IntegerSetting consoleTrimLines = new IntegerSetting(
+        this,
+        "ConsoleTrimLines",
+        20,
+        false
+    );
+    /**
+     * Maximum number of errors that a single assembler run can produce.
+     */
+    public final IntegerSetting assemblerMaxErrors = new IntegerSetting(
+        this,
+        "AssemblerMaxErrors",
+        200,
+        false
+    );
+    /**
+     * Maximum number of "backstep" operations that can be taken. An instruction
+     * may produce more than one (e.g. <code>trap</code> instruction may set several registers).
+     */
+    public final IntegerSetting maxBacksteps = new IntegerSetting(
+        this,
+        "MaxBacksteps",
+        2000,
+        false
+    );
+    /**
      * State for sorting label window display.
      */
     public final IntegerSetting symbolTableSortState = new IntegerSetting(
@@ -364,7 +404,7 @@ public class Settings {
         false
     );
     /**
-     * Number of letters to be matched by editor's instruction guide before popup generated (if popup enabled)
+     * Number of letters to be matched by editor's instruction guide before popup generated (if popup enabled).
      */
     public final IntegerSetting editorPopupPrefixLength = new IntegerSetting(
         this,
@@ -376,6 +416,10 @@ public class Settings {
     public final IntegerSetting[] integerSettings = {
         this.uiScale,
         this.maxRecentFiles,
+        this.consoleMaxLines,
+        this.consoleTrimLines,
+        this.assemblerMaxErrors,
+        this.maxBacksteps,
         this.symbolTableSortState,
         this.caretBlinkRate,
         this.editorTabSize,
@@ -384,6 +428,16 @@ public class Settings {
 
     // STRING SETTINGS
 
+    /**
+     * Acceptable file extensions for MIPS assembly files.
+     * Stored as the extensions (e.g. <code>asm</code>) separated by semicolons.
+     */
+    public final StringSetting mipsFileExtensions = new StringSetting(
+        this,
+        "MIPSFileExtensions",
+        "asm;s",
+        false
+    );
     /**
      * Current specified exception handler file (a MIPS assembly source file).
      */
@@ -443,6 +497,7 @@ public class Settings {
     );
 
     public final StringSetting[] stringSettings = {
+        this.mipsFileExtensions,
         this.exceptionHandlerPath,
         this.memoryConfiguration,
         this.textSegmentColumnOrder,
@@ -646,20 +701,29 @@ public class Settings {
         return styles;
     }
 
-    /**
-     * Create Settings object and set to saved values.  If saved values not found, will set
-     * based on defaults stored in DefaultSettings.properties file.  If file problems, will set based
-     * on defaults stored in this class.
-     */
     public Settings() {
         this.loadValues();
     }
 
+    /**
+     * Obtain the <code>SyntaxStyle</code> corresponding to a given token type.
+     *
+     * @param index The index of the desired syntax style, which should be one of the token type constants
+     *              in {@link Token}.
+     * @return The syntax style, or <code>null</code> if there is no syntax style assigned to the token type.
+     */
     public SyntaxStyle getSyntaxStyle(int index) {
         SyntaxStyleSetting setting = this.syntaxStyleSettings[index];
         return (setting != null) ? setting.get() : null;
     }
 
+    /**
+     * Assign a <code>SyntaxStyle</code> to a given token type.
+     *
+     * @param index The index of the desired syntax style, which should be one of the token type constants
+     *              in {@link Token}.
+     * @param style The syntax style to be associated with the token type.
+     */
     public void setSyntaxStyle(int index, SyntaxStyle style) {
         SyntaxStyleSetting setting = this.syntaxStyleSettings[index];
         if (setting != null) {
@@ -720,16 +784,22 @@ public class Settings {
     }
 
     /**
-     * Establish the settings from the given properties file.  Return true if it worked,
-     * false if it didn't.  Note the properties file exists only to provide default values
-     * in case the Preferences fail or have not been recorded yet.
-     * <p>
-     * Then, get settings values from Preferences object.  A key-value pair will only be written
-     * to Preferences if/when the value is modified.  If it has not been modified, the default value
-     * will be returned here.
+     * Load application-wide settings. For each setting, the saved user preference is used if it exists.
+     * Otherwise, the default value stored in <code>/config/default_settings.properties</code> is used.
+     * If the defaults file can't be read, or if the setting is not present in the defaults file,
+     * the built-in defaults set by this class are used.
      */
     public void loadValues() {
-        Properties defaults = PropertiesFile.loadPropertiesFromFile(DEFAULT_SETTINGS_PROPERTIES);
+        this.preferences = Preferences.userNodeForPackage(Settings.class);
+
+        Properties defaults = new Properties();
+        try {
+            InputStream input = PropertiesFile.class.getResourceAsStream(DEFAULT_SETTINGS_PATH);
+            defaults.load(input);
+        }
+        catch (IOException | NullPointerException ignored) {
+            // Built-in defaults will be used instead
+        }
 
         // Load boolean settings
         for (BooleanSetting setting : this.booleanSettings) {
