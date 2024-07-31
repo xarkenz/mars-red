@@ -150,6 +150,7 @@ public class SystemIO {
 
     private static BufferedReader inputReader = null;
 
+    private Path workingDirectory = null;
     private List<FileHandle> handles;
     private int nextDescriptor;
     private String fileOperationMessage = null;
@@ -194,6 +195,26 @@ public class SystemIO {
         System.out.flush();
         System.err.flush();
         this.nextDescriptor = this.handles.size();
+    }
+
+    /**
+     * Get the working directory which is used to calculate relative paths when using {@link #openFile(Path, int)}.
+     *
+     * @return The path representing the working directory, or <code>null</code> if the default working directory
+     *         is in use (which is determined by the <code>user.dir</code> system property).
+     */
+    public Path getWorkingDirectory() {
+        return this.workingDirectory;
+    }
+
+    /**
+     * Set the working directory which is used to calculate relative paths when using {@link #openFile(Path, int)}.
+     *
+     * @param workingDirectory The path representing the working directory, or <code>null</code> to use the
+     *                         <code>user.dir</code> system property (which is the default behavior).
+     */
+    public void setWorkingDirectory(Path workingDirectory) {
+        this.workingDirectory = workingDirectory;
     }
 
     /**
@@ -271,6 +292,10 @@ public class SystemIO {
         FileChannel channel;
         Set<OpenOption> options = new HashSet<>();
         String mode;
+
+        if (this.workingDirectory != null) {
+            filename = this.workingDirectory.resolve(filename);
+        }
 
         boolean readOnly = (flags == READ_ONLY_FLAGS);
         boolean writeOnly = ((flags & WRITE_ONLY_FLAG) != 0);

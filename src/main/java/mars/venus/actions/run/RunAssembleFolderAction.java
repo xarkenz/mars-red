@@ -77,6 +77,7 @@ public class RunAssembleFolderAction extends VenusAction {
 
         try {
             Simulator.getInstance().reset();
+            Simulator.getInstance().getSystemIO().setWorkingDirectory(editTab.getCurrentEditorTab().getFile().getParentFile().toPath());
 
             Application.program = new Program();
             RunAssembleAction.programsToAssemble = Application.program.prepareFilesForAssembly(pathnames, leadPathname, exceptionHandler);
