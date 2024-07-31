@@ -1,7 +1,5 @@
 package mars.venus;
 
-import mars.Application;
-
 import java.awt.*;
 import java.util.Arrays;
 
