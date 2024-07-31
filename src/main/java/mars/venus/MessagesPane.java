@@ -248,9 +248,12 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
         }
         else {
             // File is not open.  Try to open it.
-            if (editTab.openFile(new File(fileName))) {
+            File file = new File(fileName);
+            if (editTab.openFile(file)) {
                 currentPane = editTab.getCurrentEditorTab();
+                Application.getGUI().addRecentFile(file);
             }
+            // TODO: show dialog in case file cannot be opened
         }
         // If editPane == null, it means the desired file was not open.  Line selection
         // does not properly with the JEditTextArea editor in this situation (it works

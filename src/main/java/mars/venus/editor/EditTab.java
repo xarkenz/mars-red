@@ -300,7 +300,12 @@ public class EditTab extends DynamicTabbedPane {
             return false;
         }
         else if (tab.isNew()) {
-            return this.saveAsFile(tab) != null;
+            File savedFile = this.saveAsFile(tab);
+            if (savedFile != null) {
+                this.gui.addRecentFile(savedFile);
+                return true;
+            }
+            return false;
         }
 
         try {
@@ -644,6 +649,9 @@ public class EditTab extends DynamicTabbedPane {
                     if (firstTabOpened == null) {
                         firstTabOpened = fileEditorTab;
                     }
+                }
+                else {
+                    unopenedFiles.add(file);
                 }
             }
 
