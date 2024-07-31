@@ -52,15 +52,6 @@ public class FileOpenAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        List<File> unopenedFiles = this.gui.getEditor().open();
-        if (!unopenedFiles.isEmpty()) {
-            StringBuilder message = new StringBuilder("<html>The following files could not be opened:<ul>");
-            for (File file : unopenedFiles) {
-                // The path name isn't sanitized, but it should be fine...?
-                message.append("<li>").append(file).append("</li>");
-            }
-            message.append("</ul></html>");
-            JOptionPane.showMessageDialog(this.gui, message, "Error", JOptionPane.ERROR_MESSAGE);
-        }
+        this.gui.getEditor().open();
     }
 }

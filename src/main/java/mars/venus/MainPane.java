@@ -10,7 +10,6 @@ import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
 /*
@@ -81,11 +80,13 @@ public class MainPane extends JTabbedPane {
 
         // Enable file drag and drop functionality
         new FileDrop(this, (files) -> {
-            List<File> unopened = this.editTab.openFiles(files);
-            List<File> successful = new ArrayList<>(files);
-            successful.removeAll(unopened);
-            for (File file : successful) {
-                gui.addRecentFile(file);
+            // Attempt to open the dropped files
+            List<File> unopenedFiles = this.editTab.openFiles(files);
+            // Update the recent files list
+            for (File file : files) {
+                if (!unopenedFiles.contains(file)) {
+                    gui.addRecentFile(file);
+                }
             }
         });
     }

@@ -13,6 +13,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /*
@@ -233,8 +234,8 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
      * not be selected (apparent apparent problem with JEditTextArea).
      *
      * @param fileName A String containing the file path name.
-     * @param line     Line number for error message
-     * @param column   Column number for error message
+     * @param line     Line number for error message.
+     * @param column   Column number for error message.
      */
     public void selectEditorTextLine(String fileName, int line, int column) {
         EditTab editTab = Application.getGUI().getMainPane().getEditTab();
@@ -253,7 +254,6 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
                 currentPane = editTab.getCurrentEditorTab();
                 Application.getGUI().addRecentFile(file);
             }
-            // TODO: show dialog in case file cannot be opened
         }
         // If editPane == null, it means the desired file was not open.  Line selection
         // does not properly with the JEditTextArea editor in this situation (it works

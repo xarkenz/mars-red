@@ -208,6 +208,26 @@ public class EditTab extends DynamicTabbedPane {
     }
 
     /**
+     * Display an error dialog to the user indicating that one or more files could not be opened.
+     *
+     * @param unopenedFiles The list of files which could not be opened. (Should not be empty.) Usually obtained
+     *                      from a call to {@link #openFiles(List) openFiles}.
+     */
+    public void showOpenFileErrorDialog(List<File> unopenedFiles) {
+        StringBuilder message = new StringBuilder("<html>The following file");
+        if (unopenedFiles.size() != 1) {
+            message.append('s');
+        }
+        message.append(" could not be opened:<ul>");
+        for (File file : unopenedFiles) {
+            // The path name isn't sanitized, but it should be fine...?
+            message.append("<li>").append(file).append("</li>");
+        }
+        message.append("</ul></html>");
+        JOptionPane.showMessageDialog(this.gui, message, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    /**
      * Attempts to remove the tab at <code>index</code>. If the tab has unsaved changes, the user will be prompted
      * to save them. If they select cancel, the tab will <i>not</i> be removed. Otherwise, the tab is removed.
      * After a successful removal, {@link VenusUI#saveWorkspaceState()} is invoked.
@@ -585,8 +605,9 @@ public class EditTab extends DynamicTabbedPane {
         }
 
         /**
-         * Open the specified files in new editor tabs, switching focus to
-         * the first newly opened tab.
+         * Open the specified files in new editor tabs, switching focus to the first newly opened tab.
+         * If any files cannot be opened, an error dialog will be displayed to the user indicating which
+         * files failed to open.
          *
          * @return The list of files which could not be opened due to an error. (Can be empty.)
          */
@@ -668,6 +689,11 @@ public class EditTab extends DynamicTabbedPane {
             // Save the updated workspace with the newly opened files
             EditTab.this.gui.setWorkspaceStateSavingEnabled(true);
             EditTab.this.gui.saveWorkspaceState();
+
+            if (!unopenedFiles.isEmpty()) {
+                // Some files failed to open, so show an error dialog
+                EditTab.this.showOpenFileErrorDialog(unopenedFiles);
+            }
 
             return unopenedFiles;
         }

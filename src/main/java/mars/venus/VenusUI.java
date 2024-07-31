@@ -681,7 +681,6 @@ public class VenusUI extends JFrame implements SimulatorListener {
                 }
                 else {
                     this.removeRecentFile(file);
-                    // TODO: show dialog indicating missing file
                 }
             });
         }
