@@ -9,6 +9,9 @@ import mars.venus.execute.ExecuteTab;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -77,7 +80,14 @@ public class MainPane extends JTabbedPane {
         });
 
         // Enable file drag and drop functionality
-        new FileDrop(this, this.editTab::openFiles);
+        new FileDrop(this, (files) -> {
+            List<File> unopened = this.editTab.openFiles(files);
+            List<File> successful = new ArrayList<>(files);
+            successful.removeAll(unopened);
+            for (File file : successful) {
+                gui.addRecentFile(file);
+            }
+        });
     }
 
     /**

@@ -246,6 +246,7 @@ public class VenusUI extends JFrame implements SimulatorListener {
         horizonSplitter.resetToPreferredSizes();
 
         // Due to dependencies, do not set up menu/toolbar until now.
+        this.recentFilesMenu.setIcon(getSVGActionIcon("recent.svg"));
         this.createActionObjects();
         this.createMenuBar();
 
@@ -675,8 +676,13 @@ public class VenusUI extends JFrame implements SimulatorListener {
         for (File file : this.recentFiles) {
             JMenuItem menuItem = this.recentFilesMenu.add(file.getPath());
             menuItem.addActionListener(event -> {
-                this.mainPane.getEditTab().openFile(file);
-                this.addRecentFile(file);
+                if (this.mainPane.getEditTab().openFile(file)) {
+                    this.addRecentFile(file);
+                }
+                else {
+                    this.removeRecentFile(file);
+                    // TODO: show dialog indicating missing file
+                }
             });
         }
     }
@@ -692,6 +698,17 @@ public class VenusUI extends JFrame implements SimulatorListener {
         this.recentFiles.remove(file);
         this.recentFiles.add(0, file);
         this.saveWorkspaceState(); // This will trim the list size
+        this.updateRecentFilesMenu();
+    }
+
+    /**
+     * Remove a file from the "Recent Files" menu, if it exists in the menu.
+     *
+     * @param file The file to remove from the "Recent Files" menu.
+     */
+    public void removeRecentFile(File file) {
+        this.recentFiles.remove(file);
+        this.saveWorkspaceState();
         this.updateRecentFilesMenu();
     }
 
