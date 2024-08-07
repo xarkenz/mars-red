@@ -79,7 +79,7 @@ public class Token {
      * an identifier that matches an instruction name is
      * actually being used as a label.
      *
-     * @param type New TokenTypes for this token.
+     * @param type New type for this token.
      */
     public void setType(TokenType type) {
         this.type = type;
@@ -141,18 +141,6 @@ public class Token {
     }
 
     /**
-     * Set original program and line number for this token.
-     * Line number or both may change during pre-assembly as a result
-     * of the ".include" directive, and we need to keep the original
-     * for later reference (error messages, text segment display).
-     *
-     * @param token
-     */
-    public void setOriginalToken(Token token) {
-        this.originalToken = token;
-    }
-
-    /**
      * Get the original form of this token. Returns <code>this</code> unless the token:
      * <ul>
      * <li>Has been included from another file (<code>.include</code>).
@@ -164,6 +152,18 @@ public class Token {
      */
     public Token getOriginalToken() {
         return this.originalToken;
+    }
+
+    /**
+     * Set original program and line number for this token.
+     * Line number or both may change during pre-assembly as a result
+     * of the ".include" directive, and we need to keep the original
+     * for later reference (error messages, text segment display).
+     *
+     * @param token The original form of this token.
+     */
+    public void setOriginalToken(Token token) {
+        this.originalToken = token;
     }
 }
 

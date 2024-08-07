@@ -11,7 +11,7 @@ package mars.venus.editor.jeditsyntax.tokenmarker;
 
 import mars.Application;
 import mars.assembler.Directive;
-import mars.assembler.TokenType;
+import mars.assembler.Tokenizer;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.Register;
 import mars.mips.hardware.RegisterFile;
@@ -132,7 +132,7 @@ public class MIPSTokenMarker extends TokenMarker {
                             backslash = false;
                             boolean validIdentifier;
                             try {
-                                validIdentifier = TokenType.isValidIdentifier(new String(line.array, lastOffset, offset - lastOffset).strip());
+                                validIdentifier = Tokenizer.isValidIdentifier(new String(line.array, lastOffset, offset - lastOffset).strip());
                             }
                             catch (StringIndexOutOfBoundsException e) {
                                 validIdentifier = false;

@@ -46,7 +46,7 @@ public class ErrorList {
     public static final String POSITION_PREFIX = ", column ";
     public static final String MESSAGE_SEPARATOR = ":\n    ";
 
-    private final ArrayList<ErrorMessage> messages;
+    private final List<ErrorMessage> messages;
     private int errorCount;
     private int warningCount;
 
@@ -54,142 +54,152 @@ public class ErrorList {
      * Constructor for ErrorList.
      */
     public ErrorList() {
-        messages = new ArrayList<>();
-        errorCount = 0;
-        warningCount = 0;
+        this.messages = new ArrayList<>();
+        this.errorCount = 0;
+        this.warningCount = 0;
     }
 
     /**
-     * Get ArrayList of error messages.
+     * Obtain the list of error messages.
      *
-     * @return ArrayList of ErrorMessage objects.
+     * @return The raw list of error messages.
      */
-    public ArrayList<ErrorMessage> getErrorMessages() {
-        return messages;
+    public List<ErrorMessage> getErrorMessages() {
+        return this.messages;
     }
 
     /**
-     * Determine whether error has occurred or not.
+     * Determine whether at least one error has occurred (excluding warnings).
      *
-     * @return <code>true</code> if an error has occurred (does not include warnings), <code>false</code> otherwise.
+     * @return <code>true</code> if at least one error has occurred, or <code>false</code> otherwise.
      */
     public boolean errorsOccurred() {
-        return errorCount != 0;
+        return this.errorCount != 0;
     }
 
     /**
-     * Determine whether warning has occurred or not.
+     * Determine whether at least one warning has occurred.
      *
-     * @return <code>true</code> if an warning has occurred, <code>false</code> otherwise.
+     * @return <code>true</code> if at least one warning has occurred, or <code>false</code> otherwise.
      */
     public boolean warningsOccurred() {
-        return warningCount != 0;
+        return this.warningCount != 0;
     }
 
     /**
-     * Add new error message to end of list.
+     * Add a new error message to the end of the error list.
      *
-     * @param message ErrorMessage object to be added to end of error list.
+     * @param message Message to be added to the end of the error list.
      */
     public void add(ErrorMessage message) {
-        add(message, messages.size());
+        this.add(message, this.messages.size());
     }
 
     /**
-     * Add new error message at specified index position.
+     * Add a new error message at the specified index.
      *
-     * @param message ErrorMessage object to be added to end of error list.
-     * @param index   position in error list
+     * @param message Message to be added to the error list.
+     * @param index   Position in the error list at which to insert the message.
      */
     public void add(ErrorMessage message, int index) {
-        if (errorCount > getErrorLimit()) {
+        if (this.errorCount > this.getErrorLimit()) {
             return;
         }
-        else if (errorCount == getErrorLimit()) {
-            messages.add(new ErrorMessage((Program) null, message.getLine(), message.getPosition(), "Error Limit of " + getErrorLimit() + " exceeded."));
-            errorCount++; // Subsequent errors will not be added; see if statement above
+        else if (this.errorCount == this.getErrorLimit()) {
+            this.messages.add(new ErrorMessage(
+                (Program) null,
+                message.getLine(),
+                message.getPosition(),
+                "Error Limit of " + getErrorLimit() + " exceeded."
+            ));
+            this.errorCount++; // Subsequent errors will not be added; see if statement above
             return;
         }
 
-        messages.add(index, message);
+        this.messages.add(index, message);
         if (message.isWarning()) {
-            warningCount++;
+            this.warningCount++;
         }
         else {
-            errorCount++;
+            this.errorCount++;
         }
     }
 
     /**
-     * Count of number of error messages in list.
+     * Count the number of error messages in the list.
      *
-     * @return Number of error messages in list.
+     * @return Number of error messages in the list.
      */
-    public int errorCount() {
+    public int getErrorCount() {
         return this.errorCount;
     }
 
     /**
-     * Count of number of warning messages in list.
+     * Count the number of warning messages in the list.
      *
-     * @return Number of warning messages in list.
+     * @return Number of warning messages in the list.
      */
-    public int warningCount() {
+    public int getWarningCount() {
         return this.warningCount;
     }
 
     /**
-     * Check to see if error limit has been exceeded.
+     * Check to see if the error limit has been exceeded.
      *
-     * @return True if error limit exceeded, false otherwise.
+     * @return <code>true</code> if the error count exceeds the limit, or <code>false</code> otherwise.
+     * @see #getErrorCount()
+     * @see #getErrorLimit()
      */
-    public boolean errorLimitExceeded() {
-        return this.errorCount > getErrorLimit();
+    public boolean hasExceededErrorLimit() {
+        return this.errorCount > this.getErrorLimit();
     }
 
     /**
-     * Get limit on number of error messages to be generated
-     * by one assemble operation.
+     * Get the maximum number of errors which can be produced by a single assembler run.
      *
-     * @return error limit.
+     * @return The error limit.
      */
     public int getErrorLimit() {
         return Application.MAXIMUM_ERROR_MESSAGES;
     }
 
     /**
-     * Produce error report.
+     * Produce a report containing only errors, excluding warnings.
      *
-     * @return String containing report.
+     * @return String containing the report.
      */
     public String generateErrorReport() {
-        return generateReport(false);
+        return this.generateReport(false);
     }
 
     /**
-     * Produce warning report.
+     * Produce a report containing only warnings, excluding errors.
      *
-     * @return String containing report.
+     * @return String containing the report.
      */
     public String generateWarningReport() {
-        return generateReport(true);
+        return this.generateReport(true);
     }
 
     /**
-     * Produce report containing both warnings and errors, warnings first.
+     * Produce a report containing both warnings and errors, with warnings listed first.
      *
-     * @return String containing report.
+     * @return String containing the report.
      */
     public String generateErrorAndWarningReport() {
-        return generateWarningReport() + generateErrorReport();
+        return this.generateWarningReport() + this.generateErrorReport();
     }
 
     /**
-     * Produce either error or warning report.
+     * Produce a report containing either only warnings or only errors.
+     *
+     * @param reportWarnings <code>true</code> if only warnings should be reported, or <code>false</code>
+     *                       if only errors should be reported.
+     * @return String containing the report.
      */
     private String generateReport(boolean reportWarnings) {
         StringBuilder report = new StringBuilder();
-        for (ErrorMessage message : messages) {
+        for (ErrorMessage message : this.messages) {
             if (message.isWarning() == reportWarnings) {
                 report.append((reportWarnings) ? WARNING_MESSAGE_PREFIX : ERROR_MESSAGE_PREFIX);
                 if (!message.getFilename().isEmpty()) {

@@ -180,7 +180,7 @@ public class Assembler {
         // THERE IS ONE GLOBAL SYMBOL TABLE (for identifiers declared .globl) PLUS
         // ONE LOCAL SYMBOL TABLE FOR EACH SOURCE FILE.
         for (Program tokenizedProgramFile : tokenizedProgramFiles) {
-            if (errors.errorLimitExceeded()) {
+            if (errors.hasExceededErrorLimit()) {
                 break;
             }
             this.fileCurrentlyBeingAssembled = tokenizedProgramFile;
@@ -208,7 +208,7 @@ public class Assembler {
             for (int i = 0; i < tokenLists.size(); i++) {
                 TokenList tokens = tokenLists.get(i);
                 SourceLine sourceLine = sourceLines.get(i);
-                if (errors.errorLimitExceeded()) {
+                if (errors.hasExceededErrorLimit()) {
                     break;
                 }
                 for (int z = 0; z < tokens.size(); z++) {
@@ -254,7 +254,7 @@ public class Assembler {
             System.out.println("Assembler second pass begins");
         }
         for (Program tokenizedProgramFile : tokenizedProgramFiles) {
-            if (errors.errorLimitExceeded()) {
+            if (errors.hasExceededErrorLimit()) {
                 break;
             }
             this.fileCurrentlyBeingAssembled = tokenizedProgramFile;
@@ -291,7 +291,7 @@ public class Assembler {
                     ExtendedInstruction extendedInstruction = (ExtendedInstruction) statement.getInstruction();
                     String basicAssembly = statement.getBasicAssemblyStatement();
                     int sourceLine = statement.getSourceLine();
-                    TokenList tokens = new Tokenizer().tokenizeLine(sourceLine, basicAssembly, errors, false);
+                    TokenList tokens = Tokenizer.tokenizeLine(basicAssembly, sourceLine, errors);
 
                     // If we are using compact memory config and there is a compact expansion, use it
                     ArrayList<String> templates;
@@ -323,7 +323,7 @@ public class Assembler {
                         }
                         // For generated instruction: tokenize, build program
                         // statement, add to list.
-                        TokenList newTokens = new Tokenizer().tokenizeLine(sourceLine, instruction, errors, false);
+                        TokenList newTokens = Tokenizer.tokenizeLine(instruction, sourceLine, errors);
                         ArrayList<Instruction> instructionMatches = this.matchInstruction(newTokens.get(0));
                         Instruction instructionMatch = OperandFormat.bestOperandMatch(newTokens, instructionMatches);
                         ProgramStatement newStatement = new ProgramStatement(this.fileCurrentlyBeingAssembled, source, newTokens, newTokens, instructionMatch, textAddress.get(), statement.getSourceLine());
@@ -342,7 +342,7 @@ public class Assembler {
         // Generates machine code statements from the list of basic assembler statements
         // and writes the statement to memory.
         for (ProgramStatement statement : this.machineList) {
-            if (errors.errorLimitExceeded()) {
+            if (errors.hasExceededErrorLimit()) {
                 break;
             }
             statement.buildMachineStatementFromBasicStatement(errors);
@@ -462,7 +462,7 @@ public class Assembler {
                 for (int i = macro.getFromLine() + 1; i < macro.getToLine(); i++) {
 
                     String substituted = macro.getSubstitutedLine(i, tokens, counter, errors);
-                    TokenList tokenList2 = fileCurrentlyBeingAssembled.getTokenizer().tokenizeLine(substituted, i, errors);
+                    TokenList tokenList2 = Tokenizer.tokenizeLine(substituted, i, errors);
 
                     // If token list getProcessedLine() is not empty, then .eqv was performed and it contains the modified source.
                     // Put it into the line to be parsed, so it will be displayed properly in text segment display. DPS 23 Jan 2013
@@ -493,7 +493,7 @@ public class Assembler {
         // so this will catch anything, including a misspelling of a valid directive (which is
         // a nice thing to do).
         if (tokenType == TokenType.IDENTIFIER && token.getLiteral().charAt(0) == '.') {
-            errors.add(new ErrorMessage(true, token.getSourceFilename(), token.getSourceLine(), token.getSourceColumn(), "MARS does not recognize the " + token.getLiteral() + " directive.  Ignored."));
+            errors.add(new ErrorMessage(true, token.getSourceFilename(), token.getSourceLine(), token.getSourceColumn(), "MARS does not recognize the " + token.getLiteral() + " directive.  Ignored.", ""));
             return null;
         }
 
@@ -504,9 +504,10 @@ public class Assembler {
         // is contained in this.dataDirective (the current data directive).
         //
         if (this.inDataSegment && // 30-Dec-09 DPS Added data segment guard...
-            (tokenType == TokenType.PLUS || // because invalid instructions were being caught...
-                tokenType == TokenType.MINUS || // here and reported as a directive in text segment!
-                tokenType == TokenType.QUOTED_STRING || tokenType == TokenType.IDENTIFIER || TokenType.isIntegerTokenType(tokenType) || TokenType.isFloatingTokenType(tokenType))) {
+            (tokenType == TokenType.PLUS ||// because invalid instructions were being caught...
+                tokenType == TokenType.MINUS ||// here and reported as a directive in text segment!
+                tokenType == TokenType.STRING
+             || tokenType == TokenType.IDENTIFIER || tokenType.isInteger() || tokenType.isFloatingPoint())) {
             this.executeDirectiveContinuation(tokens);
             return null;
         }
@@ -693,14 +694,14 @@ public class Assembler {
             this.inDataSegment = true;
             this.autoAlign = true;
             this.dataAddress.setAddressSpace((direct == Directive.DATA) ? UserKernelAddressSpace.USER : UserKernelAddressSpace.KERNEL);
-            if (tokens.size() > 1 && TokenType.isIntegerTokenType(tokens.get(1).getType())) {
+            if (tokens.size() > 1 && tokens.get(1).getType().isInteger()) {
                 this.dataAddress.set(Binary.decodeInteger(tokens.get(1).getLiteral())); // KENV 1/6/05
             }
         }
         else if (direct == Directive.TEXT || direct == Directive.KTEXT) {
             this.inDataSegment = false;
             this.textAddress.setAddressSpace((direct == Directive.TEXT) ? UserKernelAddressSpace.USER : UserKernelAddressSpace.KERNEL);
-            if (tokens.size() > 1 && TokenType.isIntegerTokenType(tokens.get(1).getType())) {
+            if (tokens.size() > 1 && tokens.get(1).getType().isInteger()) {
                 this.textAddress.set(Binary.decodeInteger(tokens.get(1).getLiteral())); // KENV 1/6/05
             }
         }
@@ -723,7 +724,7 @@ public class Assembler {
                     errors.add(new ErrorMessage(token.getSourceFilename(), token.getSourceLine(), token.getSourceColumn(), "\"" + token.getLiteral() + "\" requires one operand"));
                     return;
                 }
-                if (!TokenType.isIntegerTokenType(tokens.get(1).getType()) || Binary.decodeInteger(tokens.get(1).getLiteral()) < 0) {
+                if (!tokens.get(1).getType().isInteger() || Binary.decodeInteger(tokens.get(1).getLiteral()) < 0) {
                     errors.add(new ErrorMessage(token.getSourceFilename(), token.getSourceLine(), token.getSourceColumn(), "\"" + token.getLiteral() + "\" requires a non-negative integer"));
                     return;
                 }
@@ -742,7 +743,7 @@ public class Assembler {
                     errors.add(new ErrorMessage(token.getSourceFilename(), token.getSourceLine(), token.getSourceColumn(), "\"" + token.getLiteral() + "\" requires one operand"));
                     return;
                 }
-                if (!TokenType.isIntegerTokenType(tokens.get(1).getType()) || Binary.decodeInteger(tokens.get(1).getLiteral()) < 0) {
+                if (!tokens.get(1).getType().isInteger() || Binary.decodeInteger(tokens.get(1).getLiteral()) < 0) {
                     errors.add(new ErrorMessage(token.getSourceFilename(), token.getSourceLine(), token.getSourceColumn(), "\"" + token.getLiteral() + "\" requires a non-negative integer"));
                     return;
                 }
@@ -755,7 +756,7 @@ public class Assembler {
                 errors.add(new ErrorMessage(token.getSourceFilename(), token.getSourceLine(), token.getSourceColumn(), "\"" + token.getLiteral() + "\" directive requires two operands (label and size)."));
                 return;
             }
-            if (!TokenType.isIntegerTokenType(tokens.get(2).getType()) || Binary.decodeInteger(tokens.get(2).getLiteral()) < 0) {
+            if (!tokens.get(2).getType().isInteger() || Binary.decodeInteger(tokens.get(2).getLiteral()) < 0) {
                 errors.add(new ErrorMessage(token.getSourceFilename(), token.getSourceLine(), token.getSourceColumn(), "\"" + token.getLiteral() + "\" requires a non-negative integer size"));
                 return;
             }
@@ -767,7 +768,7 @@ public class Assembler {
             }
         }
         else if (direct == Directive.SET) {
-            errors.add(new ErrorMessage(true, token.getSourceFilename(), token.getSourceLine(), token.getSourceColumn(), "MARS currently ignores the .set directive."));
+            errors.add(new ErrorMessage(true, token.getSourceFilename(), token.getSourceLine(), token.getSourceColumn(), "MARS currently ignores the .set directive.", ""));
         }
         else if (direct == Directive.GLOBL) {
             if (tokens.size() < 2) {
@@ -886,7 +887,7 @@ public class Assembler {
             // (integer directive AND integer value OR floating directive AND
             // (integer value OR floating value))
             // AND integer repetition value
-            if (!(Directive.isIntegerDirective(directive) && TokenType.isIntegerTokenType(valueToken.getType()) || Directive.isFloatingDirective(directive) && (TokenType.isIntegerTokenType(valueToken.getType()) || TokenType.isFloatingTokenType(valueToken.getType()))) || !TokenType.isIntegerTokenType(repetitionsToken.getType())) {
+            if (!(Directive.isIntegerDirective(directive) && valueToken.getType().isInteger() || Directive.isFloatingDirective(directive) && (valueToken.getType().isInteger() || valueToken.getType().isFloatingPoint())) || !repetitionsToken.getType().isInteger()) {
                 errors.add(new ErrorMessage(fileCurrentlyBeingAssembled, valueToken.getSourceLine(), valueToken.getSourceColumn(), "malformed expression"));
                 return;
             }
@@ -931,13 +932,15 @@ public class Assembler {
      */
     private void storeInteger(Token token, Directive directive, ErrorList errors) {
         int lengthInBytes = DataTypes.getLengthInBytes(directive);
-        if (TokenType.isIntegerTokenType(token.getType())) {
+        if (token.getType().isInteger()) {
             int value = Binary.decodeInteger(token.getLiteral());
-            int fullvalue = value;
             // DPS 4-Jan-2013.  Overriding 6-Jan-2005 KENV changes.
             // If value is out of range for the directive, will simply truncate
             // the leading bits (includes sign bits). This is what SPIM does.
             // But will issue a warning (not error) which SPIM does not do.
+            if (DataTypes.outOfRange(directive, value)) {
+                errors.add(new ErrorMessage(true, token.getSourceFilename(), token.getSourceLine(), token.getSourceColumn(), "\"" + token.getLiteral() + "\" is out-of-range for a signed value and possibly truncated", ""));
+            }
             if (directive == Directive.BYTE) {
                 value &= 0xFF;
             }
@@ -945,9 +948,6 @@ public class Assembler {
                 value &= 0xFFFF;
             }
 
-            if (DataTypes.outOfRange(directive, fullvalue)) {
-                errors.add(new ErrorMessage(true, token.getSourceFilename(), token.getSourceLine(), token.getSourceColumn(), "\"" + token.getLiteral() + "\" is out-of-range for a signed value and possibly truncated"));
-            }
             if (this.inDataSegment) {
                 writeToDataSegment(value, lengthInBytes, token, errors);
             }
@@ -1002,7 +1002,7 @@ public class Assembler {
         int lengthInBytes = DataTypes.getLengthInBytes(directive);
         double value;
 
-        if (TokenType.isIntegerTokenType(token.getType()) || TokenType.isFloatingTokenType(token.getType())) {
+        if (token.getType().isInteger() || token.getType().isFloatingPoint()) {
             try {
                 value = Double.parseDouble(token.getLiteral());
             }
@@ -1044,7 +1044,7 @@ public class Assembler {
         }
         for (int i = tokenStart; i < tokens.size(); i++) {
             token = tokens.get(i);
-            if (token.getType() != TokenType.QUOTED_STRING) {
+            if (token.getType() != TokenType.STRING) {
                 errors.add(new ErrorMessage(token.getSourceFilename(), token.getSourceLine(), token.getSourceColumn(), "\"" + token.getLiteral() + "\" is not a valid character string"));
             }
             else {
