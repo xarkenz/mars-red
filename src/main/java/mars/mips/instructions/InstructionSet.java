@@ -1511,12 +1511,12 @@ public class InstructionSet {
      * Given an operator mnemonic, will return the corresponding Instruction object(s)
      * from the instruction set.  Uses straight linear search technique.
      *
-     * @param name operator mnemonic (e.g. addi, sw,...)
+     * @param name operator mnemonic (e.g. addi, sw)
      * @return list of corresponding Instruction object(s), or null if not found.
      */
     public ArrayList<Instruction> matchOperator(String name) {
         ArrayList<Instruction> matchingInstructions = null;
-        // Linear search for now....
+        // Linear search for now...
         for (Instruction instruction : instructionList) {
             if (instruction.getMnemonic().equalsIgnoreCase(name)) {
                 if (matchingInstructions == null) {
@@ -1538,7 +1538,7 @@ public class InstructionSet {
      */
     public ArrayList<Instruction> prefixMatchOperator(String name) {
         ArrayList<Instruction> matchingInstructions = null;
-        // Linear search for now....
+        // Linear search for now...
         if (name != null) {
             for (Instruction instruction : instructionList) {
                 if (instruction.getMnemonic().toLowerCase().startsWith(name.toLowerCase())) {

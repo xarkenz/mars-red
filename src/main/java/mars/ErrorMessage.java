@@ -74,10 +74,7 @@ public class ErrorMessage {
      * @param position Position within line being processed when error occurred.  Normally is starting
      *                 position of source token.
      * @param message  String containing appropriate error message.
-     * @deprecated Newer constructors replace the String filename parameter with a MIPSprogram parameter to provide more information.
      */
-    // Added filename October 2006 
-    @Deprecated
     public ErrorMessage(String filename, int line, int position, String message) {
         this(false, filename, line, position, message, "");
     }
@@ -91,10 +88,7 @@ public class ErrorMessage {
      *                              position of source token.
      * @param message               String containing appropriate error message.
      * @param macroExpansionHistory Provided so message for macro can include both definition and usage line numbers.
-     * @deprecated Newer constructors replace the String filename parameter with a MIPSprogram parameter to provide more information.
      */
-    // Added macroExpansionHistory Dec 2012
-    @Deprecated
     public ErrorMessage(String filename, int line, int position, String message, String macroExpansionHistory) {
         this(false, filename, line, position, message, macroExpansionHistory);
     }
@@ -109,9 +103,7 @@ public class ErrorMessage {
      *                              position of source token.
      * @param message               String containing appropriate error message.
      * @param macroExpansionHistory Provided so message for macro can include both definition and usage line numbers.
-     * @deprecated Newer constructors replace the String filename parameter with a MIPSprogram parameter to provide more information.
      */
-    @Deprecated
     public ErrorMessage(boolean isWarning, String filename, int line, int position, String message, String macroExpansionHistory) {
         this.isWarning = isWarning;
         this.filename = filename;
@@ -202,7 +194,7 @@ public class ErrorMessage {
         }
     }
 
-    private ArrayList<Integer> parseMacroHistory(String string) {
+    private static ArrayList<Integer> parseMacroHistory(String string) {
         Pattern pattern = Pattern.compile("<\\d+>");
         Matcher matcher = pattern.matcher(string);
         String verify = string.strip();

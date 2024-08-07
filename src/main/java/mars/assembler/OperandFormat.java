@@ -118,7 +118,14 @@ public class OperandFormat {
             // added 2-July-2010 DPS
             // Not an error if instruction calls for identifier and candidate is operator, since operator names can be used as labels.
             if (expectedType == TokenType.IDENTIFIER && candidateType == TokenType.OPERATOR) {
-                Token replacement = new Token(TokenType.IDENTIFIER, candidateToken.getLiteral(), candidateToken.getSourceFilename(), candidateToken.getSourceLine(), candidateToken.getSourceColumn());
+                Token replacement = new Token(
+                    TokenType.IDENTIFIER,
+                    null,
+                    candidateToken.getLiteral(),
+                    candidateToken.getSourceFilename(),
+                    candidateToken.getSourceLine(),
+                    candidateToken.getSourceColumn()
+                );
                 tokenList.set(i, replacement);
                 continue;
             }
