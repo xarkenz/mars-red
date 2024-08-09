@@ -42,8 +42,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @version August 2003
  */
 public class OperandFormat {
-    private OperandFormat() {
-    }
+    private OperandFormat() {}
 
     /**
      * Syntax test for correct match in both numbers and types of operands.

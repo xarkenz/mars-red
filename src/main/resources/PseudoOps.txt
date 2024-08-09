@@ -92,7 +92,7 @@
 
 not $t1,$t2	nor RG1, RG2, $0	#Bitwise NOT (bit inversion)
 
-# Here are some "convenience" arithmetic pseduo-ops.  But do they encourage sloppy programming?
+# Here are some "convenience" arithmetic pseudo-ops.  But do they encourage sloppy programming?
 add $t1,$t2,-100	addi RG1, RG2, VL3	#ADDition : set $t1 to ($t2 plus 16-bit immediate)
 add $t1,$t2,100000	lui $1, VHL3	ori $1, $1, VL3U	add RG1, RG2, $1	#ADDition : set $t1 to ($t2 plus 32-bit immediate)
 addu $t1,$t2,100000	lui $1, VHL3	ori $1, $1, VL3U	addu RG1, RG2, $1	#ADDition Unsigned : set $t1 to ($t2 plus 32-bit immediate), no overflow

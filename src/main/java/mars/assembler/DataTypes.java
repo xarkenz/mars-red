@@ -36,7 +36,7 @@ import mars.mips.hardware.Memory;
  * @author Pete Sanderson
  * @version August 2003
  */
-public final class DataTypes {
+public class DataTypes {
     /**
      * Number of bytes occupied by MIPS double.
      */

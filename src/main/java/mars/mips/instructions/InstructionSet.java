@@ -1454,8 +1454,8 @@ public class InstructionSet {
         // leading "/" prevents package name being prepended to filepath.
         InputStream inputStream = this.getClass().getResourceAsStream("/PseudoOps.txt");
         if (inputStream == null) {
-            System.out.println("Error: MIPS pseudo-instruction file PseudoOps.txt not found.");
-            System.exit(0);
+            System.err.println("Error: MIPS pseudo-instruction file 'PseudoOps.txt' not found.");
+            return;
         }
         BufferedReader inputReader = new BufferedReader(new InputStreamReader(inputStream));
         try {
@@ -1500,11 +1500,9 @@ public class InstructionSet {
         }
         catch (IOException exception) {
             System.err.println("Internal Error: MIPS pseudo-instructions could not be loaded.");
-            System.exit(0);
         }
         catch (Exception exception) {
             System.err.println("Error: Invalid MIPS pseudo-instruction specification.");
-            System.exit(0);
         }
     }
 

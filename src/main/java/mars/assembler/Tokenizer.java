@@ -46,10 +46,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * recognizing each MIPS language element.  The types of language elements are known as "tokens".
  * MIPS tokens are defined in the {@link TokenType} class.
  * <p>
- * Example: The MIPS statement  <code>here:  lw  $t3, 8($t4)   #load third member of array</code><br>
- * generates the following token list<br>
- * IDENTIFIER, COLON, OPERATOR, REGISTER_NAME, COMMA, INTEGER_5, LEFT_PAREN,
- * REGISTER_NAME, RIGHT_PAREN, COMMENT<br>
+ * Example:
+ * <blockquote><pre>here:  lw  $t3, 8($t4)   #load third member of array</pre></blockquote>
+ * The above is tokenized as <code>IDENTIFIER, COLON, OPERATOR, REGISTER_NAME, COMMA, INTEGER_5, LEFT_PAREN,
+ * REGISTER_NAME, RIGHT_PAREN, COMMENT</code>.
  *
  * @author Pete Sanderson, August 2003
  */

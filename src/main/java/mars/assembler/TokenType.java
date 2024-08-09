@@ -37,6 +37,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 public enum TokenType {
     ERROR,
     COMMENT,
+    /**
+     * A token representing either a preprocessor directive (e.g. {@link Directive#INCLUDE .include})
+     * or an assembler directive (e.g. {@link Directive#TEXT .text}). The corresponding token value is the variant of
+     * {@link Directive} corresponding to the literal.
+     */
     DIRECTIVE,
     OPERATOR,
     DELIMITER,
@@ -45,12 +50,10 @@ public enum TokenType {
      * of form $0.  The former is part of extended assembler, and latter is part
      * of basic assembler.
      */
-    REGISTER_NAME,
     REGISTER_NUMBER,
+    REGISTER_NAME,
     FP_REGISTER_NAME,
     IDENTIFIER,
-    LEFT_PAREN,
-    RIGHT_PAREN,
     INTEGER_5,
     INTEGER_16,
     INTEGER_16U,
@@ -61,7 +64,16 @@ public enum TokenType {
     PLUS,
     MINUS,
     COLON,
-    MACRO_PARAMETER;
+    LEFT_PAREN,
+    RIGHT_PAREN,
+    MACRO_PARAMETER,
+    /**
+     * A token that is part of a {@link mars.assembler.translation.TranslationTemplate TranslationTemplate}
+     * describing how an extended instruction translates to basic instructions (e.g. <code>RG1</code>).
+     * The corresponding token value is an object implementing the
+     * {@link mars.assembler.translation.Translation Translation} interface.
+     */
+    TRANSLATION;
 
     /**
      * Determine whether this token type is an integer (i.e. {@link #INTEGER_5}, {@link #INTEGER_16},
