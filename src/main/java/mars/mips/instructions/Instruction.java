@@ -76,7 +76,7 @@ public abstract class Instruction {
      * @return operation mnemonic (e.g. addi, sw)
      */
     public String getMnemonic() {
-        return mnemonic;
+        return this.mnemonic;
     }
 
     /**
@@ -89,7 +89,7 @@ public abstract class Instruction {
      * @return String representing example instruction format.
      */
     public String getExampleFormat() {
-        return exampleFormat;
+        return this.exampleFormat;
     }
 
     /**
@@ -99,7 +99,7 @@ public abstract class Instruction {
      * @return String describing the instruction.
      */
     public String getDescription() {
-        return description;
+        return this.description;
     }
 
     /**
@@ -110,7 +110,7 @@ public abstract class Instruction {
      * @return TokenList object representing correct instruction usage.
      */
     public TokenList getTokenList() {
-        return tokenList;
+        return this.tokenList;
     }
 
     /**
@@ -139,10 +139,10 @@ public abstract class Instruction {
      */
     protected void createExampleTokenList() {
         try {
-            tokenList = new Tokenizer().tokenizeExampleInstruction(exampleFormat);
+            this.tokenList = Tokenizer.tokenizeExampleInstruction(this.exampleFormat);
         }
-        catch (ProcessingException pe) {
-            System.out.println("CONFIGURATION ERROR: Instruction example \"" + exampleFormat + "\" contains invalid token(s).");
+        catch (ProcessingException exception) {
+            System.err.println("CONFIGURATION ERROR: Instruction example \"" + this.exampleFormat + "\" contains invalid token(s).");
         }
     }
 }
