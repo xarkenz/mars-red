@@ -1,5 +1,7 @@
 package mars.venus;
 
+import mars.Application;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
@@ -38,15 +40,27 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Strings containing either the decimal or hexadecimal version
  * of the integer value.
  */
-public class MonoRightCellRenderer extends DefaultTableCellRenderer {
-    public static final Font MONOSPACED_PLAIN_12POINT = new Font("Monospaced", Font.PLAIN, 12);
+public class SimpleCellRenderer extends DefaultTableCellRenderer {
+    private final int alignment;
+
+    /**
+     * Create a new <code>SimpleCellRenderer</code> with the given text alignment. This cell renderer can be reused
+     * anywhere without issue.
+     *
+     * @param alignment One of the following: {@link SwingConstants#LEFT}, {@link SwingConstants#CENTER},
+     *                  {@link SwingConstants#RIGHT}, {@link SwingConstants#LEADING}, or
+     *                  {@link SwingConstants#TRAILING}.
+     */
+    public SimpleCellRenderer(int alignment) {
+        this.alignment = alignment;
+    }
 
     @Override
     public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
         super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
-        this.setFont(MONOSPACED_PLAIN_12POINT);
-        this.setHorizontalAlignment(SwingConstants.RIGHT);
+        this.setFont(Application.getSettings().tableFont.get());
+        this.setHorizontalAlignment(this.alignment);
 
         return this;
     }

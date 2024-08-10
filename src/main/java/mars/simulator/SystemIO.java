@@ -423,7 +423,7 @@ public class SystemIO {
             // Sean Clarke (05/2024): originally used buffer.array() but was getting UnsupportedOperationException
             byte[] data = new byte[buffer.remaining()];
             buffer.get(data);
-            Application.getGUI().getMessagesPane().writeToConsole(new String(data));
+            Application.getGUI().getMessagesPane().getConsole().writeOutput(new String(data));
 
             this.fileOperationMessage = "Successfully wrote " + data.length + " bytes to file with descriptor " + descriptor;
             return data.length;
@@ -464,7 +464,7 @@ public class SystemIO {
         // DPS 8-Jan-2013
         // Read from STDIN file descriptor while using IDE - get input from console.
         if (descriptor == STDIN_DESCRIPTOR && Application.getGUI() != null) {
-            String input = Application.getGUI().getMessagesPane().getInputString(buffer.remaining());
+            String input = this.readString(buffer.remaining());
             byte[] bytesRead = input.getBytes();
             int numBytes = Math.min(buffer.remaining(), bytesRead.length);
             buffer.put(bytesRead, 0, numBytes);
@@ -684,7 +684,7 @@ public class SystemIO {
             System.out.print(string);
         }
         else {
-            Application.getGUI().getMessagesPane().writeToConsole(string);
+            Application.getGUI().getMessagesPane().getConsole().writeOutput(string);
         }
     }
 
@@ -709,7 +709,7 @@ public class SystemIO {
                 input = Application.getGUI().getMessagesPane().getInputString("Enter an integer value");
             }
             else {
-                input = Application.getGUI().getMessagesPane().getInputString(-1);
+                input = Application.getGUI().getMessagesPane().getConsole().awaitUserInput(-1);
             }
         }
 
@@ -739,7 +739,7 @@ public class SystemIO {
                 input = Application.getGUI().getMessagesPane().getInputString("Enter a float value");
             }
             else {
-                input = Application.getGUI().getMessagesPane().getInputString(-1);
+                input = Application.getGUI().getMessagesPane().getConsole().awaitUserInput(-1);
             }
         }
         return Float.parseFloat(input.strip());
@@ -767,7 +767,7 @@ public class SystemIO {
                 input = Application.getGUI().getMessagesPane().getInputString("Enter a double value");
             }
             else {
-                input = Application.getGUI().getMessagesPane().getInputString(-1);
+                input = Application.getGUI().getMessagesPane().getConsole().awaitUserInput(-1);
             }
         }
         return Double.parseDouble(input.strip());
@@ -794,7 +794,7 @@ public class SystemIO {
                 input = Application.getGUI().getMessagesPane().getInputString("Enter a string (maximum " + maxLength + " characters)");
             }
             else {
-                input = Application.getGUI().getMessagesPane().getInputString(maxLength);
+                input = Application.getGUI().getMessagesPane().getConsole().awaitUserInput(maxLength);
                 if (input.endsWith("\n")) {
                     input = input.substring(0, input.length() - 1);
                 }
@@ -831,7 +831,7 @@ public class SystemIO {
                 input = Application.getGUI().getMessagesPane().getInputString("Enter a character value");
             }
             else {
-                input = Application.getGUI().getMessagesPane().getInputString(1);
+                input = Application.getGUI().getMessagesPane().getConsole().awaitUserInput(1);
             }
         }
         // Throws index-out-of-bounds exception!

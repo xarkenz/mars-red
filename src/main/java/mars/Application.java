@@ -73,10 +73,6 @@ public class Application {
      */
     public static final Object MEMORY_AND_REGISTERS_LOCK = new Object();
     /**
-     * Prefix to print to console when echoing user input from pop-up dialog.
-     */
-    public static final String USER_INPUT_PREFIX = "**** user input : ";
-    /**
      * Path to the resources folder that contains images.
      */
     public static final String IMAGES_PATH = "/images/";

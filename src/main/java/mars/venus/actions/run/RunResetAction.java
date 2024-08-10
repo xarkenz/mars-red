@@ -66,7 +66,7 @@ public class RunResetAction extends VenusAction {
             Application.program.assemble(RunAssembleAction.programsToAssemble, Application.getSettings().extendedAssemblerEnabled.get(), Application.getSettings().warningsAreErrors.get());
         }
         catch (ProcessingException exception) {
-            this.gui.getMessagesPane().writeToMessages(this.getName() + ": unable to reset.  Please close file then re-open and re-assemble.\n");
+            this.gui.getMessagesPane().getMessages().writeOutput(this.getName() + ": unable to reset.  Please close file then re-open and re-assemble.\n");
             return;
         }
 
@@ -88,9 +88,9 @@ public class RunResetAction extends VenusAction {
         executeTab.getTextSegmentWindow().setCodeHighlighting(true);
         executeTab.getTextSegmentWindow().highlightStepAtPC();
 
-        this.gui.getMessagesPane().writeToMessages(this.getName() + ": reset completed.\n");
+        this.gui.getMessagesPane().getMessages().writeOutput(this.getName() + ": reset completed.\n");
         if (this.gui.getProgramStatus() == ProgramStatus.PAUSED) {
-            this.gui.getMessagesPane().writeToConsole("\n--- program terminated by user ---\n\n");
+            this.gui.getMessagesPane().getMessages().writeOutput("\n--- program terminated by user ---\n\n");
         }
 
         this.gui.setProgramStatus(ProgramStatus.NOT_STARTED);

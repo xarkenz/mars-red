@@ -4,7 +4,7 @@ import mars.Application;
 import mars.mips.hardware.*;
 import mars.simulator.*;
 import mars.util.Binary;
-import mars.venus.MonoRightCellRenderer;
+import mars.venus.SimpleCellRenderer;
 import mars.venus.NumberDisplayBaseChooser;
 import mars.venus.RepeatButton;
 import mars.venus.VenusUI;
@@ -447,9 +447,9 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
         this.table.getTableHeader().setReorderingAllowed(false);
         this.table.setRowSelectionAllowed(false);
         // Addresses are column 0, render right-justified in mono font
-        MonoRightCellRenderer monoRightCellRenderer = new MonoRightCellRenderer();
+        SimpleCellRenderer simpleCellRenderer = new SimpleCellRenderer(SwingConstants.RIGHT);
         this.table.getColumnModel().getColumn(ADDRESS_COLUMN).setPreferredWidth(60);
-        this.table.getColumnModel().getColumn(ADDRESS_COLUMN).setCellRenderer(monoRightCellRenderer);
+        this.table.getColumnModel().getColumn(ADDRESS_COLUMN).setCellRenderer(simpleCellRenderer);
         // Data cells are columns 1 onward, render right-justified in mono font but highlightable.
         AddressCellRenderer addressCellRenderer = new AddressCellRenderer();
         for (int col = 1; col < COLUMN_COUNT; col++) {

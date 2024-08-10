@@ -595,7 +595,7 @@ public class Settings {
     // FONT SETTINGS
 
     /**
-     * Font for the text editor
+     * Font for the text editor.
      */
     public final FontSetting editorFont = new FontSetting(
         this,
@@ -604,7 +604,7 @@ public class Settings {
         false
     );
     /**
-     * Font for table even row background (text, data, register displays)
+     * Font for the various table displays (registers, text segment, memory viewer, symbol table).
      */
     public final FontSetting tableFont = new FontSetting(
         this,
@@ -613,7 +613,7 @@ public class Settings {
         false
     );
     /**
-     * Font for table odd row background (text, data, register displays)
+     * Font for highlighted text in table displays (overrides {@link #tableFont} in those cells).
      */
     public final FontSetting tableHighlightFont = new FontSetting(
         this,
@@ -621,11 +621,21 @@ public class Settings {
         new Font(Font.MONOSPACED, Font.BOLD, 12),
         false
     );
+    /**
+     * Font for the console displays in the Messages and Console tabs.
+     */
+    public final FontSetting consoleFont = new FontSetting(
+        this,
+        "ConsoleFont",
+        new Font(Font.MONOSPACED, Font.PLAIN, 12),
+        false
+    );
 
     public final FontSetting[] fontSettings = {
         this.editorFont,
         this.tableFont,
         this.tableHighlightFont,
+        this.consoleFont,
     };
 
     // SYNTAX STYLE SETTINGS
@@ -790,7 +800,10 @@ public class Settings {
      * the built-in defaults set by this class are used.
      */
     public void loadValues() {
-        this.preferences = Preferences.userNodeForPackage(Settings.class);
+        this.preferences = Objects.requireNonNull(
+            Preferences.userNodeForPackage(Settings.class),
+            "failed to access persistent settings storage"
+        );
 
         Properties defaults = new Properties();
         try {

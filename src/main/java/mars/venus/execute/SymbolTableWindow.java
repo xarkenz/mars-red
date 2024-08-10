@@ -6,7 +6,7 @@ import mars.assembler.Symbol;
 import mars.assembler.SymbolTable;
 import mars.mips.hardware.Memory;
 import mars.util.Binary;
-import mars.venus.MonoRightCellRenderer;
+import mars.venus.SimpleCellRenderer;
 import mars.venus.NumberDisplayBaseChooser;
 import mars.venus.VenusUI;
 import mars.venus.actions.run.RunAssembleAction;
@@ -389,8 +389,8 @@ public class SymbolTableWindow extends JInternalFrame {
                 this.labelTable.setModel(model);
             }
 
-            this.labelTable.setFont(MonoRightCellRenderer.MONOSPACED_PLAIN_12POINT);
-            this.labelTable.getColumnModel().getColumn(ADDRESS_COLUMN).setCellRenderer(new MonoRightCellRenderer());
+            this.labelTable.setFont(SymbolTableWindow.this.gui.getSettings().tableFont.get());
+            this.labelTable.getColumnModel().getColumn(ADDRESS_COLUMN).setCellRenderer(new SimpleCellRenderer(SwingConstants.RIGHT));
 
             return this.labelTable;
         }

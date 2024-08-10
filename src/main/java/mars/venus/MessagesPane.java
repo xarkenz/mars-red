@@ -13,8 +13,6 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
 
 /*
 Copyright (c) 2003-2010,  Pete Sanderson and Kenneth Vollmar
@@ -50,21 +48,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @author Team JSpim
  */
 public class MessagesPane extends JTabbedPane implements SimulatorListener {
-    // These constants are designed to keep scrolled contents of the
-    // two message areas from becoming overwhelmingly large (which
-    // seems to slow things down as new text is appended).  Once it
-    // reaches MAXIMUM_SCROLLED_CHARACTERS in length then cut off
-    // the first NUMBER_OF_CHARACTERS_TO_CUT characters.  The latter
-    // must obviously be smaller than the former.
-    public static final int MAXIMUM_SCROLLED_CHARACTERS = Application.MAXIMUM_MESSAGE_CHARACTERS;
-    public static final int NUMBER_OF_CHARACTERS_TO_CUT = Application.MAXIMUM_MESSAGE_CHARACTERS / 10; // 10%
-    public static final int MAXIMUM_LINE_COUNT = 1000;
-    public static final int EXTRA_TRIM_LINE_COUNT = 20;
-
-    private final StringBuffer consoleOutputBuffer;
-
-    private final JTextArea messagesTextArea;
-    private final JTextArea consoleTextArea;
+    private final ConsoleTextArea messages;
+    private final ConsoleTextArea console;
     private final JPanel messagesTab;
     private final JPanel consoleTab;
 
@@ -74,41 +59,27 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
     public MessagesPane() {
         super();
         this.setMinimumSize(new Dimension(0, 0));
-
-        this.consoleOutputBuffer = new StringBuffer();
-
-        this.messagesTextArea = new JTextArea();
-        this.messagesTextArea.setEditable(false);
-        this.messagesTextArea.setBackground(UIManager.getColor("Venus.MessagesPane.background"));
-        this.consoleTextArea = new JTextArea();
-        this.consoleTextArea.setEditable(false);
-        this.consoleTextArea.setBackground(UIManager.getColor("Venus.MessagesPane.background"));
-        // Set both text areas to mono font.  For assemble
-        // pane, will make messages more readable.  For run
-        // pane, will allow properly aligned "text graphics"
-        // DPS 15 Dec 2008
-        Font monoFont = new Font(Font.MONOSPACED, Font.PLAIN, 12);
-        this.messagesTextArea.setFont(monoFont);
-        this.consoleTextArea.setFont(monoFont);
+        this.messages = new ConsoleTextArea();
+        this.console = new ConsoleTextArea();
 
         JButton messagesTabClearButton = new JButton("Clear");
         messagesTabClearButton.setToolTipText("Clear the Messages area.");
-        messagesTabClearButton.addActionListener(event -> this.messagesTextArea.setText(""));
+        messagesTabClearButton.addActionListener(event -> this.messages.clear());
         this.messagesTab = new JPanel(new BorderLayout());
         this.messagesTab.setBorder(new EmptyBorder(6, 6, 6, 6));
-        this.messagesTab.add(createBoxForButton(messagesTabClearButton), BorderLayout.WEST);
-        this.messagesTab.add(new JScrollPane(this.messagesTextArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.CENTER);
-        this.messagesTextArea.addMouseListener(new MouseAdapter() {
+        this.messagesTab.add(this.createBoxForButton(messagesTabClearButton), BorderLayout.WEST);
+        this.messagesTab.add(new JScrollPane(this.messages, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.CENTER);
+        this.messages.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent event) {
                 String text;
                 int lineStart = 0;
                 int lineEnd = 0;
                 try {
-                    int line = messagesTextArea.getLineOfOffset(messagesTextArea.viewToModel2D(event.getPoint()));
-                    lineStart = messagesTextArea.getLineStartOffset(line);
-                    lineEnd = messagesTextArea.getLineEndOffset(line);
-                    text = messagesTextArea.getText(lineStart, lineEnd - lineStart);
+                    int line = messages.getLineOfOffset(messages.viewToModel2D(event.getPoint()));
+                    lineStart = messages.getLineStartOffset(line);
+                    lineEnd = messages.getLineEndOffset(line);
+                    text = messages.getText(lineStart, lineEnd - lineStart);
                 }
                 catch (BadLocationException exception) {
                     text = "";
@@ -116,9 +87,9 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
                 if (!text.isBlank()) {
                     // If error or warning, parse out the line and column number.
                     if (text.startsWith(ErrorList.ERROR_MESSAGE_PREFIX) || text.startsWith(ErrorList.WARNING_MESSAGE_PREFIX)) {
-                        messagesTextArea.select(lineStart, lineEnd);
-                        messagesTextArea.setSelectionColor(Color.YELLOW);
-                        messagesTextArea.repaint();
+                        messages.select(lineStart, lineEnd);
+                        messages.setSelectionColor(Color.YELLOW);
+                        messages.repaint();
                         int separatorPosition = text.indexOf(ErrorList.MESSAGE_SEPARATOR);
                         if (separatorPosition >= 0) {
                             text = text.substring(0, separatorPosition);
@@ -168,11 +139,11 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
 
         JButton consoleClearButton = new JButton("Clear");
         consoleClearButton.setToolTipText("Clear the Console area.");
-        consoleClearButton.addActionListener(event -> this.consoleTextArea.setText(""));
+        consoleClearButton.addActionListener(event -> this.console.clear());
         this.consoleTab = new JPanel(new BorderLayout());
         this.consoleTab.setBorder(new EmptyBorder(6, 6, 6, 6));
-        this.consoleTab.add(createBoxForButton(consoleClearButton), BorderLayout.WEST);
-        JScrollPane consoleScrollPane = new JScrollPane(this.consoleTextArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        this.consoleTab.add(this.createBoxForButton(consoleClearButton), BorderLayout.WEST);
+        JScrollPane consoleScrollPane = new JScrollPane(this.console, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         this.consoleTab.add(consoleScrollPane, BorderLayout.CENTER);
         this.addTab("Messages", null, this.messagesTab, "Information, warnings and errors. Click on an error message to jump to the error source.");
         this.addTab("Console", null, this.consoleTab, "Simulated MIPS console input and output.");
@@ -207,19 +178,19 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
      */
     public void selectErrorMessage(String filename, int line, int column) {
         String errorReportSubstring = new File(filename).getName() + ErrorList.LINE_PREFIX + line + ErrorList.POSITION_PREFIX + column;
-        int textPosition = this.messagesTextArea.getText().lastIndexOf(errorReportSubstring);
+        int textPosition = this.messages.getText().lastIndexOf(errorReportSubstring);
         if (textPosition >= 0) {
             int textLine;
             int lineStart;
             int lineEnd;
             try {
-                textLine = this.messagesTextArea.getLineOfOffset(textPosition);
-                lineStart = this.messagesTextArea.getLineStartOffset(textLine);
-                lineEnd = this.messagesTextArea.getLineEndOffset(textLine);
-                this.messagesTextArea.setSelectionColor(Color.YELLOW);
-                this.messagesTextArea.select(lineStart, lineEnd);
-                this.messagesTextArea.getCaret().setSelectionVisible(true);
-                this.messagesTextArea.repaint();
+                textLine = this.messages.getLineOfOffset(textPosition);
+                lineStart = this.messages.getLineStartOffset(textLine);
+                lineEnd = this.messages.getLineEndOffset(textLine);
+                this.messages.setSelectionColor(Color.YELLOW);
+                this.messages.select(lineStart, lineEnd);
+                this.messages.getCaret().setSelectionVisible(true);
+                this.messages.repaint();
             }
             catch (BadLocationException exception) {
                 // If there is a problem, simply skip the selection
@@ -264,90 +235,21 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
     }
 
     /**
-     * Post a message to the assembler display
+     * Get the text area used to display application messages to the user.
      *
-     * @param message String to append to assembler display text
+     * @return The console contained in the Messages tab.
      */
-    public void writeToMessages(final String message) {
-        SwingUtilities.invokeLater(() -> {
-            this.messagesTextArea.append(message);
-            // Can do some crude cutting here.  If the document gets "very large",
-            // let's cut off the oldest text. This will limit scrolling but the limit
-            // can be set reasonably high.
-            if (this.messagesTextArea.getDocument().getLength() > MAXIMUM_SCROLLED_CHARACTERS) {
-                try {
-                    this.messagesTextArea.getDocument().remove(0, NUMBER_OF_CHARACTERS_TO_CUT);
-                }
-                catch (BadLocationException exception) {
-                    // Only if NUMBER_OF_CHARACTERS_TO_CUT > MAXIMUM_SCROLLED_CHARACTERS
-                    // (which shouldn't happen unless the constants are changed!)
-                }
-            }
-        });
+    public ConsoleTextArea getMessages() {
+        return this.messages;
     }
 
     /**
-     * Post a message to the runtime console.
+     * Get the text area used to display runtime output to the user.
      *
-     * @param text String to append to runtime console text.
+     * @return The console contained in the Console tab.
      */
-    /*
-     * The work of this method is done by "invokeLater" because
-     * its JTextArea is maintained by the main event thread
-     * but also used, via this method, by the execution thread for
-     * "print" syscalls. "invokeLater" schedules the code to be
-     * run under the event-processing thread no matter what.
-     * DPS 23 Aug 2005
-     */
-    public void writeToConsole(String text) {
-        // Buffering the output allows one flush to handle several writes, meaning the event queue
-        // doesn't fill up with console text area updates and effectively block the GUI thread.
-        // (This is what happened previously in case of e.g. infinite print loops.)
-        // Sean Clarke 04/2024
-
-        boolean isFirstWriteSinceFlush;
-        synchronized (this.consoleOutputBuffer) {
-            isFirstWriteSinceFlush = this.consoleOutputBuffer.isEmpty();
-            // Add the text to the console output buffer
-            this.consoleOutputBuffer.append(text);
-        }
-
-        if (isFirstWriteSinceFlush) {
-            // The console output buffer was empty, meaning this text was the first text written
-            // since the last flush. Now, another flush is needed, which must happen on the GUI thread.
-            SwingUtilities.invokeLater(this::flushConsole);
-        }
-    }
-
-    /**
-     * Flush the console output buffer to the Console tab's text area,
-     * then trim the content to have at most {@link #MAXIMUM_LINE_COUNT} lines if necessary.
-     * <p>
-     * <b>This method must be called from the GUI thread.</b>
-     */
-    public void flushConsole() {
-        synchronized (this.consoleOutputBuffer) {
-            // Flush the output buffer
-            this.consoleTextArea.append(this.consoleOutputBuffer.toString());
-            this.consoleOutputBuffer.delete(0, this.consoleOutputBuffer.length());
-        }
-
-        // Do some crude trimming to save memory.  If the number of lines exceeds the maximum,
-        // trim off the excess old lines, plus some extra lines so we only have to do this occasionally.
-        // This will limit scrolling, but the maximum line count can be set reasonably high.
-        int lineCount = this.consoleTextArea.getLineCount();
-        if (lineCount > MAXIMUM_LINE_COUNT) {
-            try {
-                int lastLineToTrim = lineCount - MAXIMUM_LINE_COUNT + EXTRA_TRIM_LINE_COUNT;
-                this.consoleTextArea.getDocument().remove(0, this.consoleTextArea.getLineEndOffset(lastLineToTrim));
-            }
-            catch (BadLocationException exception) {
-                // Only if NUMBER_OF_CHARACTERS_TO_CUT > MAXIMUM_SCROLLED_CHARACTERS
-                // (which shouldn't happen unless the constants are changed!)
-            }
-        }
-
-        this.consoleTextArea.setCaretPosition(this.consoleTextArea.getDocument().getLength());
+    public ConsoleTextArea getConsole() {
+        return this.console;
     }
 
     /**
@@ -387,27 +289,8 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
         JDialog dialog = pane.createDialog(Application.getGUI(), "Keyboard Input");
         dialog.setVisible(true);
         String input = (String) pane.getInputValue();
-        this.writeToConsole(Application.USER_INPUT_PREFIX + input + '\n');
+        this.console.writeOutput(input + '\n');
         return input;
-    }
-
-    /**
-     * Method used by the {@link SystemIO} class to get interactive user input
-     * requested by a running MIPS program (e.g. syscall #5 to read an
-     * integer).  {@link SystemIO} knows whether simulator is being run at
-     * command line by the user, or by the GUI. If run at command line,
-     * it gets input from {@link System#in} rather than here.
-     * <p>
-     * This is an overloaded method.  This version, with the int parameter,
-     * is used to get input from the console.
-     *
-     * @param maxLength Maximum length of input. This method returns when maxLength characters have been read.
-     *                  Use -1 for no length restrictions.
-     * @return User input, as a String.
-     */
-    public String getInputString(int maxLength) throws InterruptedException {
-        ConsoleInputContext context = new ConsoleInputContext(this.consoleTextArea, maxLength);
-        return context.awaitUserInput();
     }
 
     /**
@@ -417,7 +300,7 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
      */
     @Override
     public void simulatorStarted(SimulatorStartEvent event) {
-        this.writeToMessages(Simulator.class.getSimpleName() + ": started simulation.\n");
+        this.messages.writeOutput(Simulator.class.getSimpleName() + ": started simulation.\n");
         this.setSelectedComponent(this.consoleTab);
     }
 
@@ -430,13 +313,13 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
     public void simulatorPaused(SimulatorPauseEvent event) {
         switch (event.getReason()) {
             case BREAKPOINT -> {
-                this.writeToMessages(Simulator.class.getSimpleName() + ": paused simulation at breakpoint.\n");
+                this.messages.writeOutput(Simulator.class.getSimpleName() + ": paused simulation at breakpoint.\n");
             }
             case STEP_LIMIT_REACHED -> {
-                this.writeToMessages(Simulator.class.getSimpleName() + ": paused simulation after " + event.getStepCount() + " step(s).\n");
+                this.messages.writeOutput(Simulator.class.getSimpleName() + ": paused simulation after " + event.getStepCount() + " step(s).\n");
             }
             case EXTERNAL -> {
-                this.writeToMessages(Simulator.class.getSimpleName() + ": paused simulation.\n");
+                this.messages.writeOutput(Simulator.class.getSimpleName() + ": paused simulation.\n");
             }
         }
     }
@@ -452,230 +335,39 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
             case EXIT_SYSCALL -> {
                 int exitCode = event.getException().getExitCode();
                 if (exitCode == 0) {
-                    this.writeToMessages(Simulator.class.getSimpleName() + ": finished simulation successfully.\n");
+                    this.messages.writeOutput(Simulator.class.getSimpleName() + ": finished simulation successfully.\n");
                 }
                 else {
-                    this.writeToMessages(Simulator.class.getSimpleName() + ": finished simulation with exit code " + exitCode + ".\n");
+                    this.messages.writeOutput(Simulator.class.getSimpleName() + ": finished simulation with exit code " + exitCode + ".\n");
                 }
-                this.writeToConsole("\n--- program finished with exit code " + exitCode + " ---\n\n");
+                this.console.writeOutput("\n--- program finished with exit code " + exitCode + " ---\n\n");
                 this.setSelectedComponent(this.consoleTab);
             }
             case RAN_OFF_BOTTOM -> {
-                this.writeToMessages(Simulator.class.getSimpleName() + ": finished simulation due to null instruction.\n");
-                this.writeToConsole("\n--- program automatically terminated (ran off bottom) ---\n\n");
+                this.messages.writeOutput(Simulator.class.getSimpleName() + ": finished simulation due to null instruction.\n");
+                this.console.writeOutput("\n--- program automatically terminated (ran off bottom) ---\n\n");
                 this.setSelectedComponent(this.consoleTab);
             }
             case EXCEPTION -> {
-                this.writeToMessages(Simulator.class.getSimpleName() + ": finished simulation with errors.\n");
+                this.messages.writeOutput(Simulator.class.getSimpleName() + ": finished simulation with errors.\n");
                 if (event.getException() == null) {
-                    this.writeToConsole("\n--- program terminated due to error(s) ---\n\n");
+                    this.console.writeOutput("\n--- program terminated due to error(s) ---\n\n");
                 }
                 else {
-                    this.writeToConsole("\n--- program terminated due to error(s): ---\n");
-                    this.writeToConsole(event.getException().getErrors().generateErrorReport());
-                    this.writeToConsole("--- end of error report ---\n\n");
+                    this.console.writeOutput("\n--- program terminated due to error(s): ---\n");
+                    this.console.writeOutput(event.getException().getErrors().generateErrorReport());
+                    this.console.writeOutput("--- end of error report ---\n\n");
                 }
                 this.setSelectedComponent(this.consoleTab);
             }
             case EXTERNAL -> {
-                this.writeToMessages(Simulator.class.getSimpleName() + ": stopped simulation.\n");
-                this.writeToConsole("\n--- program terminated by user ---\n\n");
+                this.messages.writeOutput(Simulator.class.getSimpleName() + ": stopped simulation.\n");
+                this.console.writeOutput("\n--- program terminated by user ---\n\n");
             }
             case INTERNAL_ERROR -> {
-                this.writeToMessages(Simulator.class.getSimpleName() + ": stopped simulation after encountering an internal error.\n");
-                this.writeToConsole("\n--- program terminated due to internal error ---\n\n");
+                this.messages.writeOutput(Simulator.class.getSimpleName() + ": stopped simulation after encountering an internal error.\n");
+                this.console.writeOutput("\n--- program terminated due to internal error ---\n\n");
             }
-        }
-    }
-
-
-
-    /**
-     * Thread class for obtaining user input in the Console tab of {@link MessagesPane}.
-     * Originally written by Ricardo Fernández Pascual [rfernandez@ditec.um.es] December 2009.
-     */
-    private static class ConsoleInputContext {
-        private final JTextArea textArea;
-        private final ArrayBlockingQueue<String> resultQueue = new ArrayBlockingQueue<>(1);
-        private int initialPosition;
-        private final int maxLength;
-
-        public ConsoleInputContext(JTextArea textArea, int maxLength) {
-            this.textArea = textArea;
-            this.maxLength = maxLength;
-            // initialPosition will be set when input begins
-        }
-
-        /**
-         * Allow the user to input text into the console, waiting until the input is submitted.
-         * <p>
-         * <b>This blocks the current thread. Always run this from the simulator thread!</b>
-         *
-         * @return The input submitted by the user, not including the newline.
-         */
-        public String awaitUserInput() throws InterruptedException {
-            SwingUtilities.invokeLater(this::beginInput);
-
-            try {
-                // Block the current thread until input is submitted
-                return this.resultQueue.take();
-            }
-            catch (InterruptedException exception) {
-                // Delete the partial input, as we don't have a good way to save it
-                SwingUtilities.invokeLater(() -> {
-                    if (this.initialPosition <= this.textArea.getDocument().getLength()) {
-                        this.textArea.replaceRange("", this.initialPosition, this.textArea.getDocument().getLength());
-                    }
-                });
-                throw exception;
-            }
-            finally {
-                SwingUtilities.invokeLater(this::endInput);
-            }
-        }
-
-        private final DocumentFilter documentFilter = new DocumentFilter() {
-            @Override
-            public void insertString(FilterBypass bypass, int offset, String text, AttributeSet attributes) throws BadLocationException {
-                // Prevent any edits before the initial position
-                if (offset < initialPosition) {
-                    textArea.getToolkit().beep();
-                    return;
-                }
-
-                // If there are any newlines, act like the first one ended the input by stripping it
-                // and everything past it off. I don't know if this is the best way to handle characters
-                // after a newline, but I can't think of a better way.
-                int newlineIndex = text.indexOf('\n');
-                if (newlineIndex >= 0) {
-                    text = text.substring(0, newlineIndex);
-                }
-
-                // If the character limit would be exceeded, strip the excess off and beep to let the user know
-                if (maxLength >= 0 && bypass.getDocument().getLength() + text.length() > initialPosition + maxLength) {
-                    int trimmedLength = Math.max(0, initialPosition + maxLength - bypass.getDocument().getLength());
-                    text = text.substring(0, trimmedLength);
-                    textArea.getToolkit().beep();
-                }
-
-                bypass.insertString(offset, text, attributes);
-
-                // If there was a newline, submit the input
-                if (newlineIndex >= 0) {
-                    submitInput();
-                }
-            }
-
-            @Override
-            public void replace(FilterBypass bypass, int offset, int length, String text, AttributeSet attributes) throws BadLocationException {
-                // Prevent any edits before the initial position
-                if (offset < initialPosition) {
-                    textArea.getToolkit().beep();
-                    return;
-                }
-
-                // If there are any newlines, act like the first one ended the input by stripping it
-                // and everything past it off. I don't know if this is the best way to handle characters
-                // after a newline, but I can't think of a better way.
-                int newlineIndex = text.indexOf('\n');
-                if (newlineIndex >= 0) {
-                    text = text.substring(0, newlineIndex);
-                }
-
-                // If the character limit would be exceeded, strip the excess off and beep to let the user know
-                if (maxLength >= 0 && (bypass.getDocument().getLength() - length) + text.length() > initialPosition + maxLength) {
-                    int trimmedLength = Math.max(0, initialPosition + maxLength - (bypass.getDocument().getLength() - length));
-                    text = text.substring(0, trimmedLength);
-                    textArea.getToolkit().beep();
-                }
-
-                bypass.replace(offset, length, text, attributes);
-
-                // If there was a newline, submit the input
-                if (newlineIndex >= 0) {
-                    submitInput();
-                }
-            }
-
-            @Override
-            public void remove(FilterBypass bypass, int offset, int length) throws BadLocationException {
-                // Prevent any edits before the initial position
-                if (offset < ConsoleInputContext.this.initialPosition) {
-                    ConsoleInputContext.this.textArea.getToolkit().beep();
-                    return;
-                }
-
-                bypass.remove(offset, length);
-            }
-        };
-
-        private final NavigationFilter navigationFilter = new NavigationFilter() {
-            @Override
-            public void moveDot(FilterBypass bypass, int dot, Position.Bias bias) {
-                // Prevent placement of the caret before the initial position
-                if (dot < ConsoleInputContext.this.initialPosition) {
-                    dot = Math.min(ConsoleInputContext.this.initialPosition, ConsoleInputContext.this.textArea.getDocument().getLength());
-                }
-                bypass.moveDot(dot, bias);
-            }
-
-            @Override
-            public void setDot(FilterBypass bypass, int dot, Position.Bias bias) {
-                // Prevent placement of the caret before the initial position
-                if (dot < ConsoleInputContext.this.initialPosition) {
-                    dot = Math.min(ConsoleInputContext.this.initialPosition, ConsoleInputContext.this.textArea.getDocument().getLength());
-                }
-                bypass.setDot(dot, bias);
-            }
-        };
-
-        private final SimulatorListener simulatorListener = new SimulatorListener() {
-            @Override
-            public void simulatorStarted(SimulatorStartEvent event) {
-                ConsoleInputContext.this.textArea.setEditable(true);
-            }
-
-            @Override
-            public void simulatorPaused(SimulatorPauseEvent event) {
-                ConsoleInputContext.this.textArea.setEditable(false);
-            }
-
-            @Override
-            public void simulatorFinished(SimulatorFinishEvent event) {
-                ConsoleInputContext.this.submitInput();
-            }
-        };
-
-        private void beginInput() {
-            this.textArea.setEditable(true);
-            this.textArea.requestFocusInWindow();
-            this.textArea.setCaretPosition(this.textArea.getDocument().getLength());
-            this.initialPosition = this.textArea.getCaretPosition();
-            this.textArea.setNavigationFilter(this.navigationFilter);
-            ((AbstractDocument) this.textArea.getDocument()).setDocumentFilter(this.documentFilter);
-            Simulator.getInstance().addGUIListener(this.simulatorListener);
-        }
-
-        private void submitInput() {
-            try {
-                int position = Math.min(this.initialPosition, this.textArea.getDocument().getLength());
-                int length = Math.min(this.textArea.getDocument().getLength() - position, this.maxLength >= 0 ? this.maxLength : Integer.MAX_VALUE);
-                this.resultQueue.offer(this.textArea.getText(position, length));
-            }
-            catch (BadLocationException exception) {
-                // This should not happen, but if it somehow does, default to an empty string
-                this.resultQueue.offer("");
-            }
-            // Append a newline to account for the newline stripped before submission
-            SwingUtilities.invokeLater(() -> this.textArea.append("\n"));
-        }
-
-        private void endInput() {
-            this.textArea.setEditable(false);
-            this.textArea.setNavigationFilter(null);
-            ((AbstractDocument) this.textArea.getDocument()).setDocumentFilter(null);
-            this.textArea.setCaretPosition(this.textArea.getDocument().getLength());
-            Simulator.getInstance().removeGUIListener(this.simulatorListener);
         }
     }
 }

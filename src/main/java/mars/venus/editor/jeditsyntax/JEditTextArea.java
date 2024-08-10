@@ -2301,11 +2301,7 @@ public class JEditTextArea extends JComponent {
                 final MenuElement[] newPath = new MenuElement[2];
                 newPath[0] = path[0];
                 newPath[1] = (MenuElement) popupMenu.getComponent(index);
-                SwingUtilities.invokeLater(new Runnable() {
-                    public void run() {
-                        MenuSelectionManager.defaultManager().setSelectedPath(newPath);
-                    }
-                });
+                SwingUtilities.invokeLater(() -> MenuSelectionManager.defaultManager().setSelectedPath(newPath));
                 return true;
             }
             else {

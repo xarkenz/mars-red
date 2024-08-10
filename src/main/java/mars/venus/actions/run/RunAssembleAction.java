@@ -89,20 +89,20 @@ public class RunAssembleAction extends VenusAction {
 
             Application.program = new Program();
             programsToAssemble = Application.program.prepareFilesForAssembly(pathnames, leadPathname, exceptionHandler);
-            this.gui.getMessagesPane().writeToMessages(this.buildFileNameList(this.getName() + ": assembling ", programsToAssemble));
+            this.gui.getMessagesPane().getMessages().writeOutput(this.buildFileNameList(this.getName() + ": assembling ", programsToAssemble));
 
             // Added logic to receive any warnings and output them.  DPS 11/28/06
             ErrorList warnings = Application.program.assemble(programsToAssemble, Application.getSettings().extendedAssemblerEnabled.get(), Application.getSettings().warningsAreErrors.get());
 
             if (warnings.warningsOccurred()) {
-                this.gui.getMessagesPane().writeToMessages(warnings.generateWarningReport());
+                this.gui.getMessagesPane().getMessages().writeOutput(warnings.generateWarningReport());
                 this.gui.getMessagesPane().selectMessagesTab();
             }
             else {
-                this.gui.getMessagesPane().writeToMessages(this.getName() + ": operation completed successfully.\n");
+                this.gui.getMessagesPane().getMessages().writeOutput(this.getName() + ": operation completed successfully.\n");
             }
             if (this.gui.getProgramStatus() == ProgramStatus.PAUSED) {
-                this.gui.getMessagesPane().writeToConsole("\n--- program terminated by user ---\n\n");
+                this.gui.getMessagesPane().getMessages().writeOutput("\n--- program terminated by user ---\n\n");
             }
 
             this.gui.setProgramStatus(ProgramStatus.NOT_STARTED);
@@ -122,8 +122,8 @@ public class RunAssembleAction extends VenusAction {
         }
         catch (ProcessingException exception) {
             String errorReport = exception.getErrors().generateErrorAndWarningReport();
-            this.gui.getMessagesPane().writeToMessages(errorReport);
-            this.gui.getMessagesPane().writeToMessages(this.getName() + ": operation completed with errors.\n");
+            this.gui.getMessagesPane().getMessages().writeOutput(errorReport);
+            this.gui.getMessagesPane().getMessages().writeOutput(this.getName() + ": operation completed with errors.\n");
             this.gui.getMessagesPane().selectMessagesTab();
 
             // Select editor line containing first error, and corresponding error message.
