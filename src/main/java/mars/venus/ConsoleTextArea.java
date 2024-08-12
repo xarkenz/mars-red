@@ -185,10 +185,14 @@ public class ConsoleTextArea extends JTextArea {
         }
     }
 
+    /**
+     * Update the appearance of this text area, overriding the background color and font according to current settings.
+     */
     @Override
     public void updateUI() {
         super.updateUI();
         this.setBackground(UIManager.getColor("Venus.ConsoleTextArea.background"));
+        this.setFont(Application.getSettings().consoleFont.get());
     }
 
     private final DocumentFilter documentFilter = new DocumentFilter() {
@@ -295,16 +299,31 @@ public class ConsoleTextArea extends JTextArea {
     };
 
     private final SimulatorListener simulatorListener = new SimulatorListener() {
+        /**
+         * Called when execution is resumed after pausing during console input.
+         *
+         * @param event The event which occurred.
+         */
         @Override
         public void simulatorStarted(SimulatorStartEvent event) {
             ConsoleTextArea.this.setEditable(true);
         }
 
+        /**
+         * Called when execution is paused during console input.
+         *
+         * @param event The event which occurred.
+         */
         @Override
         public void simulatorPaused(SimulatorPauseEvent event) {
             ConsoleTextArea.this.setEditable(false);
         }
 
+        /**
+         * Called when execution is terminated during console input.
+         *
+         * @param event The event which occurred.
+         */
         @Override
         public void simulatorFinished(SimulatorFinishEvent event) {
             ConsoleTextArea.this.submitInput();

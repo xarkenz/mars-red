@@ -141,7 +141,6 @@ public class VenusUI extends JFrame implements SimulatorListener {
     private SettingsProgramArgumentsAction settingsProgramArgumentsAction;
     private SettingsDelayedBranchingAction settingsDelayedBranchingAction;
     private SettingsExceptionHandlerAction settingsExceptionHandlerAction;
-    private SettingsDarkThemeAction settingsDarkThemeAction;
     private SettingsEditorAction settingsEditorAction;
     private SettingsHighlightingAction settingsHighlightingAction;
     private SettingsMemoryConfigurationAction settingsMemoryConfigurationAction;
@@ -378,7 +377,6 @@ public class VenusUI extends JFrame implements SimulatorListener {
         this.actions.add(this.settingsDelayedBranchingAction = new SettingsDelayedBranchingAction(this, "Delayed branching", null, "If set, delayed branching will occur during MIPS execution.", null, null));
         this.actions.add(this.settingsSelfModifyingCodeAction = new SettingsSelfModifyingCodeAction(this, "Self-modifying code", null, "If set, the MIPS program can write and branch to both text and data segments.", null, null));
         this.actions.add(this.settingsEndiannessAction = new SettingsEndiannessAction(this, "Use big-endian byte ordering", null, "If set, the bytes in a word will be ordered from most to least significant.", null, null));
-        this.actions.add(this.settingsDarkThemeAction = new SettingsDarkThemeAction(this, "Enable dark theme", null, "If set, the application will launch with a dark theme.", null, null));
         this.actions.add(this.settingsEditorAction = new SettingsEditorAction(this, "Editor Settings...", null, "View and modify text editor settings", null, null));
         this.actions.add(this.settingsHighlightingAction = new SettingsHighlightingAction(this, "Highlighting...", null, "View and modify Execute tab highlighting colors", null, null));
         this.actions.add(this.settingsExceptionHandlerAction = new SettingsExceptionHandlerAction(this, "Exception Handler...", null, "If set, the specified exception handler file will be included in all Assemble operations.", null, null));
@@ -462,8 +460,6 @@ public class VenusUI extends JFrame implements SimulatorListener {
         settingsMenu.add(this.createMenuCheckBox(this.settingsSelfModifyingCodeAction, this.settings.selfModifyingCodeEnabled.get()));
         settingsMenu.add(this.createMenuCheckBox(this.settingsEndiannessAction, this.settings.useBigEndian.get()));
         settingsMenu.addSeparator();
-        settingsMenu.add(this.createMenuCheckBox(this.settingsDarkThemeAction, this.settings.lookAndFeelName.get().equals("FlatDarkLaf")));
-        settingsMenu.addSeparator();
         settingsMenu.add(this.createMenuItem(this.settingsEditorAction));
         settingsMenu.add(this.createMenuItem(this.settingsHighlightingAction));
         settingsMenu.add(this.createMenuItem(this.settingsExceptionHandlerAction));
@@ -521,7 +517,7 @@ public class VenusUI extends JFrame implements SimulatorListener {
      * Build the toolbar and connect items to action objects (which serve as action listeners
      * shared between toolbar icon and corresponding menu item).
      */
-    // TODO: Make the toolbar setup customizable -Sean Clarke
+    // TODO: Make the toolbar setup customizable
     private JToolBar setupToolBar() {
         JToolBar toolBar = new JToolBar();
         toolBar.setFloatable(false);
@@ -548,6 +544,7 @@ public class VenusUI extends JFrame implements SimulatorListener {
         toolBar.add(this.createToolBarButton(this.runStepBackwardAction));
         toolBar.add(this.createToolBarButton(this.runResetAction));
         toolBar.addSeparator();
+        toolBar.add(this.createToolBarButton(this.settingsPreferencesAction));
         toolBar.add(this.createToolBarButton(this.helpHelpAction));
 
         return toolBar;

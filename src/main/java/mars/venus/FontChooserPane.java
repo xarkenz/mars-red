@@ -46,21 +46,23 @@ public class FontChooserPane extends JPanel {
     private final JCheckBox boldCheckBox;
     private final JCheckBox italicCheckBox;
     private final SpinnerNumberModel fontSizeSelectorModel;
-
     private final List<ChangeListener> changeListeners;
     private final String[] availableFontFamilies;
+    private final Font initialFont;
     private Font currentFont;
 
     public FontChooserPane(Font initialFont) {
-        super(new FlowLayout(FlowLayout.LEFT, 12, 12));
+        super();
+        this.setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
         this.changeListeners = new ArrayList<>();
         this.availableFontFamilies = GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
+        this.initialFont = initialFont;
         this.currentFont = initialFont;
 
         this.fontFamilySelector = new JComboBox<>(this.availableFontFamilies);
+        this.fontFamilySelector.setMaximumSize(this.fontFamilySelector.getPreferredSize());
         this.fontFamilySelector.setSelectedItem(initialFont.getFamily());
         this.fontFamilySelector.setEditable(false);
-        //this.fontFamilySelector.setMaximumRowCount(10);
         this.fontFamilySelector.setToolTipText("Select a font family from the list of font families currently installed");
         this.fontFamilySelector.addActionListener(event -> this.dispatchChangeEvent());
 
@@ -72,18 +74,23 @@ public class FontChooserPane extends JPanel {
         this.italicCheckBox.setToolTipText("If checked, an italic style will be applied");
         this.italicCheckBox.addActionListener(event -> this.dispatchChangeEvent());
 
+        JSpinner fontSizeSelector = new JSpinner();
+        fontSizeSelector.setMaximumSize(fontSizeSelector.getPreferredSize());
+        fontSizeSelector.setToolTipText("Select the font size, in points");
         this.fontSizeSelectorModel = new SpinnerNumberModel(initialFont.getSize(), MIN_FONT_SIZE, MAX_FONT_SIZE, 1);
         this.fontSizeSelectorModel.addChangeListener(event -> this.dispatchChangeEvent());
-        JSpinner fontSizeSelector = new JSpinner();
-        fontSizeSelector.setToolTipText("Select the font size, in points");
+        fontSizeSelector.setModel(this.fontSizeSelectorModel);
         Box fontSizeSelectorBox = Box.createHorizontalBox();
         fontSizeSelectorBox.add(new JLabel("Size:", JLabel.RIGHT));
         fontSizeSelectorBox.add(Box.createHorizontalStrut(6));
         fontSizeSelectorBox.add(fontSizeSelector);
 
         this.add(this.fontFamilySelector);
+        this.add(Box.createHorizontalStrut(12));
         this.add(fontSizeSelectorBox);
+        this.add(Box.createHorizontalStrut(12));
         this.add(this.boldCheckBox);
+        this.add(Box.createHorizontalStrut(12));
         this.add(this.italicCheckBox);
     }
 
@@ -130,5 +137,13 @@ public class FontChooserPane extends JPanel {
         this.italicCheckBox.setSelected(font.isItalic());
         this.fontSizeSelectorModel.setValue(font.getSize());
         this.currentFont = font;
+    }
+
+    public Font getInitialValue() {
+        return this.initialFont;
+    }
+
+    public void revertValue() {
+        this.setValue(this.getInitialValue());
     }
 }

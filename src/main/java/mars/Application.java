@@ -181,9 +181,9 @@ public class Application {
         FlatLaf.registerCustomDefaultsSource("themes");
         // Set up the look and feel
         FlatLaf.setup(switch (settings.lookAndFeelName.get()) {
-            case "FlatDarkLaf" -> new FlatDarkLaf();
             case "FlatLightLaf" -> new FlatLightLaf();
-            default -> new FlatDarkLaf();
+            case "FlatDarkLaf" -> new FlatDarkLaf();
+            default -> new FlatLightLaf();
         });
 
         // Refresh the GUI as best as possible if is already open

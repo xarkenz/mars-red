@@ -431,14 +431,6 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
     }
 
     /**
-     * Return code address as an int, for the specified row of the table.  This should only
-     * be used by the code renderer so I will not verify row.
-     */
-    int getIntCodeAddressAtRow(int row) {
-        return this.intAddresses[row];
-    }
-
-    /**
      * Returns number of breakpoints currently set.
      *
      * @return number of current breakpoints
@@ -614,7 +606,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         double cellHeight = sourceCell.getHeight();
         double viewHeight = this.tableScroller.getViewport().getExtentSize().getHeight();
         int numberOfVisibleRows = (int) (viewHeight / cellHeight);
-        int newViewPositionY = Math.max((int) ((addressRow - (numberOfVisibleRows / 2)) * cellHeight), 0);
+        int newViewPositionY = Math.max((int) ((double) (addressRow - (numberOfVisibleRows / 2)) * cellHeight), 0);
         this.tableScroller.getViewport().setViewPosition(new Point(0, newViewPositionY));
         // Select the source code cell for this row by generating a fake Mouse Pressed event
         // and explicitly invoking the table's mouse listener.
@@ -730,6 +722,16 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
     }
 
     /**
+     * For whatever reason, FlatLaf seems to forget what the frame icon is set to after this method is called.
+     * So, this method has been overwritten to set the frame icon back to <code>null</code> as desired.
+     */
+    @Override
+    public void updateUI() {
+        super.updateUI();
+        this.setFrameIcon(null);
+    }
+
+    /**
      * Inner class to implement the Table model for this JTable.
      */
     private class TextTableModel extends AbstractTableModel {
@@ -840,7 +842,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
     private class CodeCellRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            boolean isHighlighted = TextSegmentWindow.this.getCodeHighlighting() && TextSegmentWindow.this.getIntCodeAddressAtRow(row) == highlightAddress;
+            boolean isHighlighted = TextSegmentWindow.this.getCodeHighlighting() && TextSegmentWindow.this.intAddresses[row] == highlightAddress;
 
             this.setHorizontalAlignment(SwingConstants.LEFT);
             if (isHighlighted) {

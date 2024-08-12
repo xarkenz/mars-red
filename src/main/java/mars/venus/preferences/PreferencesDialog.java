@@ -1,5 +1,6 @@
 package mars.venus.preferences;
 
+import mars.Application;
 import mars.settings.Settings;
 import mars.venus.VenusUI;
 
@@ -47,8 +48,8 @@ public class PreferencesDialog extends JDialog {
                 PreferencesDialog.this.closeDialog();
             }
         });
-        this.setSize(700, 500);
-//        this.pack();
+        this.pack();
+        this.setSize(this.getWidth(), 600);
         this.setLocationRelativeTo(this.gui);
     }
 
@@ -102,6 +103,9 @@ public class PreferencesDialog extends JDialog {
         for (PreferencesTab tab : this.tabs) {
             tab.applyChanges();
         }
+        // TODO: maybe find a way to do this on an as-needed basis
+        Application.setupLookAndFeel();
+        SwingUtilities.updateComponentTreeUI(this);
     }
 
     public void revertChanges() {

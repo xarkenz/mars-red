@@ -254,6 +254,16 @@ public class SymbolTableWindow extends JInternalFrame {
     }
 
     /**
+     * For whatever reason, FlatLaf seems to forget what the frame icon is set to after this method is called.
+     * So, this method has been overwritten to set the frame icon back to <code>null</code> as desired.
+     */
+    @Override
+    public void updateUI() {
+        super.updateUI();
+        this.setFrameIcon(null);
+    }
+
+    /**
      * Action assigned to the sort buttons at the top of the window,
      * handling the process of changing sort state when they are clicked.
      */
