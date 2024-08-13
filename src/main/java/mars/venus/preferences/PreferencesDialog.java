@@ -103,7 +103,9 @@ public class PreferencesDialog extends JDialog {
         for (PreferencesTab tab : this.tabs) {
             tab.applyChanges();
         }
+        // Update, well, everything
         // TODO: maybe find a way to do this on an as-needed basis
+        this.gui.getSettings().dispatchChangedEvent();
         Application.setupLookAndFeel();
         SwingUtilities.updateComponentTreeUI(this);
     }
