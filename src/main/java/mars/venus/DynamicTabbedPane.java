@@ -6,6 +6,8 @@ import java.awt.*;
 import java.awt.event.MouseEvent;
 
 public class DynamicTabbedPane extends JTabbedPane {
+    private final TabDragHandler tabDragHandler;
+
     /**
      * Creates an empty <code>DynamicTabbedPane</code> with a default tab placement of {@link #TOP}
      * and a default tab layout policy of {@link #SCROLL_TAB_LAYOUT}.
@@ -37,9 +39,9 @@ public class DynamicTabbedPane extends JTabbedPane {
      */
     public DynamicTabbedPane(int tabPlacement, int tabLayoutPolicy) {
         super(tabPlacement, tabLayoutPolicy);
-        MouseMovementHandler handler = new MouseMovementHandler();
-        this.addMouseListener(handler);
-        this.addMouseMotionListener(handler);
+        this.tabDragHandler = new TabDragHandler(this);
+        this.addMouseListener(this.tabDragHandler);
+        this.addMouseMotionListener(this.tabDragHandler);
     }
 
     /**
@@ -63,6 +65,28 @@ public class DynamicTabbedPane extends JTabbedPane {
         this.setTabComponentAt(index, new DynamicTabComponent(title));
     }
 
+    public boolean hasHorizontalTabPlacement() {
+        return this.getTabPlacement() == JTabbedPane.TOP || this.getTabPlacement() == JTabbedPane.BOTTOM;
+    }
+
+    @Override
+    public void paint(Graphics graphics) {
+        super.paint(graphics);
+        if (this.tabDragHandler.getCurrentIndex() >= 0) {
+            Rectangle tabBounds = this.getBoundsAt(this.tabDragHandler.getCurrentIndex());
+            int newCenter = this.tabDragHandler.getMousePosition() + this.tabDragHandler.getTabCenterOffset();
+            if (this.hasHorizontalTabPlacement()) {
+                tabBounds.x += newCenter - (int) tabBounds.getCenterX();
+            }
+            else {
+                tabBounds.y += newCenter - (int) tabBounds.getCenterY();
+            }
+
+            graphics.setColor(Color.RED);
+            graphics.drawRect(tabBounds.x, tabBounds.y, tabBounds.width, tabBounds.height);
+        }
+    }
+
     /**
      * The tab component instantiated for each tab which adds a close button.
      */
@@ -70,6 +94,8 @@ public class DynamicTabbedPane extends JTabbedPane {
         public DynamicTabComponent(String title) {
             super(BoxLayout.X_AXIS);
 
+            // This is definitely a hack. Essentially, the title will be a custom JLabel whose content will
+            // secretly update if needed whenever its text is accessed through getText().
             JLabel titleLabel = new JLabel(title) {
                 @Override
                 public String getText() {
@@ -84,6 +110,7 @@ public class DynamicTabbedPane extends JTabbedPane {
                     return super.getText();
                 }
             };
+            // This Unicode character actually looks very clean as a close button "icon"
             JButton closeButton = new JButton("✕");
             closeButton.addActionListener(event -> {
                 // Close the corresponding tab
@@ -105,86 +132,170 @@ public class DynamicTabbedPane extends JTabbedPane {
         }
     }
 
-    private class MouseMovementHandler implements MouseInputListener {
-        private int mouseXOffset;
+    private static class TabDragHandler implements MouseInputListener {
+        private final DynamicTabbedPane tabbedPane;
+        private int currentIndex;
+        /**
+         * The position of the center of the tab currently being dragged relative to the cursor position.
+         */
+        private int tabCenterOffset;
+        private int mousePosition;
+
+        public TabDragHandler(DynamicTabbedPane tabbedPane) {
+            this.tabbedPane = tabbedPane;
+            this.currentIndex = -1;
+        }
+
+        public int getCurrentIndex() {
+            return this.currentIndex;
+        }
+
+        public int getTabCenterOffset() {
+            return this.tabCenterOffset;
+        }
+
+        public int getMousePosition() {
+            return this.mousePosition;
+        }
 
         /**
-         * Invoked when the mouse button has been clicked (pressed
-         * and released) on a component.
+         * Invoked when the mouse button has been clicked (pressed and released) on a component.
          *
-         * @param e the event to be processed
+         * @param event The event to be processed.
          */
         @Override
-        public void mouseClicked(MouseEvent e) {
+        public void mouseClicked(MouseEvent event) {
 
         }
 
         /**
          * Invoked when a mouse button has been pressed on a component.
          *
-         * @param e the event to be processed
+         * @param event The event to be processed.
          */
         @Override
-        public void mousePressed(MouseEvent e) {
+        public void mousePressed(MouseEvent event) {
+            this.currentIndex = this.tabbedPane.indexAtLocation(event.getX(), event.getY());
+            if (this.currentIndex < 0 || this.currentIndex >= this.tabbedPane.getTabCount()) {
+                this.currentIndex = -1;
+                return;
+            }
 
+            Rectangle tabBounds = this.tabbedPane.getBoundsAt(this.currentIndex);
+            if (this.tabbedPane.hasHorizontalTabPlacement()) {
+                this.mousePosition = event.getX();
+                this.tabCenterOffset = (int) tabBounds.getCenterX() - this.mousePosition;
+            }
+            else {
+                this.mousePosition = event.getY();
+                this.tabCenterOffset = (int) tabBounds.getCenterY() - this.mousePosition;
+            }
+
+            this.tabbedPane.repaint();
         }
 
         /**
          * Invoked when a mouse button has been released on a component.
          *
-         * @param e the event to be processed
+         * @param event The event to be processed.
          */
         @Override
-        public void mouseReleased(MouseEvent e) {
+        public void mouseReleased(MouseEvent event) {
+            this.currentIndex = -1;
+
+            this.tabbedPane.repaint();
+        }
+
+        /**
+         * Invoked when a mouse button is pressed on a component and then dragged. {@link MouseEvent#MOUSE_DRAGGED}
+         * events will continue to be delivered to the component where the drag originated until the mouse button
+         * is released (regardless of whether the mouse position is within the bounds of the component).
+         * <p>
+         * Due to platform-dependent Drag&amp;Drop implementations, <code>MOUSE_DRAGGED</code> events may not be
+         * delivered during a native Drag&amp;Drop operation.
+         *
+         * @param event The event to be processed.
+         */
+        @Override
+        public void mouseDragged(MouseEvent event) {
+            if (this.currentIndex < 0 || this.currentIndex >= this.tabbedPane.getTabCount()) {
+                this.currentIndex = -1;
+                return;
+            }
+
+            int oldCenter;
+            if (this.tabbedPane.hasHorizontalTabPlacement()) {
+                this.mousePosition = event.getX();
+                oldCenter = (int) this.tabbedPane.getBoundsAt(this.currentIndex).getCenterX();
+            }
+            else {
+                this.mousePosition = event.getY();
+                oldCenter = (int) this.tabbedPane.getBoundsAt(this.currentIndex).getCenterY();
+            }
+            int newCenter = this.mousePosition + this.tabCenterOffset;
+
+            int direction = Integer.compare(newCenter, oldCenter);
+            if (direction != 0) {
+                int index = this.currentIndex;
+                while (index + direction >= 0 && index + direction < this.tabbedPane.getTabCount()) {
+                    int testCenter;
+                    if (this.tabbedPane.hasHorizontalTabPlacement()) {
+                        testCenter = (int) this.tabbedPane.getBoundsAt(index + direction).getCenterX();
+                    }
+                    else {
+                        testCenter = (int) this.tabbedPane.getBoundsAt(index + direction).getCenterY();
+                    }
+                    if (newCenter * direction >= testCenter * direction) {
+                        index += direction;
+                    }
+                    else {
+                        break;
+                    }
+                }
+
+                if (index != this.currentIndex) {
+                    // The tab needs to be actually shifted to another spot
+                    String title = this.tabbedPane.getTitleAt(this.currentIndex);
+                    Icon icon = this.tabbedPane.getIconAt(this.currentIndex);
+                    Component component = this.tabbedPane.getComponentAt(this.currentIndex);
+                    String tip = this.tabbedPane.getToolTipTextAt(this.currentIndex);
+                    this.tabbedPane.removeTabAt(this.currentIndex);
+                    this.tabbedPane.insertTab(title, icon, component, tip, index);
+                    this.tabbedPane.setSelectedIndex(index);
+                    this.currentIndex = index;
+                }
+
+                this.tabbedPane.repaint();
+            }
+        }
+
+        /**
+         * Invoked when the mouse cursor has been moved onto a component but no buttons have been pushed.
+         *
+         * @param event The event to be processed.
+         */
+        @Override
+        public void mouseMoved(MouseEvent event) {
 
         }
 
         /**
          * Invoked when the mouse enters a component.
          *
-         * @param e the event to be processed
+         * @param event The event to be processed.
          */
         @Override
-        public void mouseEntered(MouseEvent e) {
+        public void mouseEntered(MouseEvent event) {
 
         }
 
         /**
          * Invoked when the mouse exits a component.
          *
-         * @param e the event to be processed
+         * @param event The event to be processed.
          */
         @Override
-        public void mouseExited(MouseEvent e) {
-
-        }
-
-        /**
-         * Invoked when a mouse button is pressed on a component and then
-         * dragged.  {@code MOUSE_DRAGGED} events will continue to be
-         * delivered to the component where the drag originated until the
-         * mouse button is released (regardless of whether the mouse position
-         * is within the bounds of the component).
-         * <p>
-         * Due to platform-dependent Drag&amp;Drop implementations,
-         * {@code MOUSE_DRAGGED} events may not be delivered during a native
-         * Drag&amp;Drop operation.
-         *
-         * @param e the event to be processed
-         */
-        @Override
-        public void mouseDragged(MouseEvent e) {
-
-        }
-
-        /**
-         * Invoked when the mouse cursor has been moved onto a component
-         * but no buttons have been pushed.
-         *
-         * @param e the event to be processed
-         */
-        @Override
-        public void mouseMoved(MouseEvent e) {
+        public void mouseExited(MouseEvent event) {
 
         }
     }
