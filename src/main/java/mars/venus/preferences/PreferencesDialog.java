@@ -12,6 +12,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PreferencesDialog extends JDialog {
+    /**
+     * Keeps track of which tab was last selected as long as the program is running.
+     * This is convenient when e.g. the user is frequently closing and reopening the dialog.
+     */
+    private static int selectedTabIndex = 0;
+
     private final VenusUI gui;
     private final List<PreferencesTab> tabs;
 
@@ -36,7 +42,11 @@ public class PreferencesDialog extends JDialog {
         for (PreferencesTab tab : this.tabs) {
             tabbedPane.add(tab);
         }
-        tabbedPane.setSelectedIndex(0);
+        tabbedPane.setSelectedIndex(PreferencesDialog.selectedTabIndex);
+        tabbedPane.addChangeListener(event -> {
+            // Update the static value to reflect the new index
+            PreferencesDialog.selectedTabIndex = ((JTabbedPane) event.getSource()).getSelectedIndex();
+        });
         contentPane.add(tabbedPane, BorderLayout.CENTER);
 
         this.buildButtonBar(contentPane);
