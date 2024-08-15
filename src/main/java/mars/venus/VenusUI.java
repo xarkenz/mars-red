@@ -270,7 +270,9 @@ public class VenusUI extends JFrame implements SimulatorListener {
 
             @Override
             public void windowClosing(WindowEvent event) {
-                // Don't save the workspace state after closing all files, unless the exit fails
+                // Save the workspace state beforehand just in case
+                VenusUI.this.saveWorkspaceState();
+                // Don't save the workspace state while closing all files, unless the exit fails
                 VenusUI.this.setWorkspaceStateSavingEnabled(false);
 
                 // Check for unsaved changes before closing the application

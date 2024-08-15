@@ -48,7 +48,9 @@ public class FileExitAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        // Don't save the workspace state after closing all files, unless the exit fails
+        // Save the workspace state beforehand just in case
+        this.gui.saveWorkspaceState();
+        // Don't save the workspace state while closing all files, unless the exit fails
         this.gui.setWorkspaceStateSavingEnabled(false);
 
         if (this.gui.getEditor().closeAll()) {

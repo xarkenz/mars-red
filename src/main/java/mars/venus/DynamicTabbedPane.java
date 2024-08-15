@@ -175,6 +175,7 @@ public class DynamicTabbedPane extends JTabbedPane {
          */
         @Override
         public void mousePressed(MouseEvent event) {
+            // Only proceed if the user actually pressed on a tab
             this.currentIndex = this.tabbedPane.indexAtLocation(event.getX(), event.getY());
             if (this.currentIndex < 0 || this.currentIndex >= this.tabbedPane.getTabCount()) {
                 this.currentIndex = -1;
@@ -201,6 +202,7 @@ public class DynamicTabbedPane extends JTabbedPane {
          */
         @Override
         public void mouseReleased(MouseEvent event) {
+            // Indicate dragging has stopped
             this.currentIndex = -1;
 
             this.tabbedPane.repaint();
@@ -218,6 +220,7 @@ public class DynamicTabbedPane extends JTabbedPane {
          */
         @Override
         public void mouseDragged(MouseEvent event) {
+            // Sanity check
             if (this.currentIndex < 0 || this.currentIndex >= this.tabbedPane.getTabCount()) {
                 this.currentIndex = -1;
                 return;
@@ -234,39 +237,54 @@ public class DynamicTabbedPane extends JTabbedPane {
             }
             int newCenter = this.mousePosition + this.tabCenterOffset;
 
+            // Integer.compare comes in handy here; essentially, `direction` indicates relative drag direction:
+            // 0 if newCenter == oldCenter (tab has not moved)
+            // +1 if newCenter > oldCenter (mouse is dragging tab right or down depending on tab placement)
+            // -1 if newCenter < oldCenter (mouse is dragging tab left or up depending on tab placement)
             int direction = Integer.compare(newCenter, oldCenter);
-            if (direction != 0) {
-                int index = this.currentIndex;
-                while (index + direction >= 0 && index + direction < this.tabbedPane.getTabCount()) {
-                    int testCenter;
-                    if (this.tabbedPane.hasHorizontalTabPlacement()) {
-                        testCenter = (int) this.tabbedPane.getBoundsAt(index + direction).getCenterX();
-                    }
-                    else {
-                        testCenter = (int) this.tabbedPane.getBoundsAt(index + direction).getCenterY();
-                    }
-                    if (newCenter * direction >= testCenter * direction) {
-                        index += direction;
-                    }
-                    else {
-                        break;
-                    }
-                }
-
-                if (index != this.currentIndex) {
-                    // The tab needs to be actually shifted to another spot
-                    String title = this.tabbedPane.getTitleAt(this.currentIndex);
-                    Icon icon = this.tabbedPane.getIconAt(this.currentIndex);
-                    Component component = this.tabbedPane.getComponentAt(this.currentIndex);
-                    String tip = this.tabbedPane.getToolTipTextAt(this.currentIndex);
-                    this.tabbedPane.removeTabAt(this.currentIndex);
-                    this.tabbedPane.insertTab(title, icon, component, tip, index);
-                    this.tabbedPane.setSelectedIndex(index);
-                    this.currentIndex = index;
-                }
-
-                this.tabbedPane.repaint();
+            if (direction == 0) {
+                return;
             }
+
+            // Iteratively shift the current tab past other tabs if it has passed any
+            boolean tabHasMoved = false;
+            int testIndex = this.currentIndex + direction;
+            while (testIndex >= 0 && testIndex < this.tabbedPane.getTabCount()) {
+                int testCenter;
+                if (this.tabbedPane.hasHorizontalTabPlacement()) {
+                    testCenter = (int) this.tabbedPane.getBoundsAt(testIndex).getCenterX();
+                }
+                else {
+                    testCenter = (int) this.tabbedPane.getBoundsAt(testIndex).getCenterY();
+                }
+                // TODO: this criterion feels awkward... maybe judge which position the tab is closer to?
+                if (newCenter * direction >= testCenter * direction) {
+                    // Swap the tab being dragged with the tab it has now passed, being careful not to break focus.
+                    // The adjacent tab has to be removed and reinserted rather than the current tab because
+                    // otherwise focus would be broken, causing flicker on some platforms.
+                    // I wish there was a better way to do this...
+                    String title = this.tabbedPane.getTitleAt(testIndex);
+                    Icon icon = this.tabbedPane.getIconAt(testIndex);
+                    Component component = this.tabbedPane.getComponentAt(testIndex);
+                    String tip = this.tabbedPane.getToolTipTextAt(testIndex);
+                    this.tabbedPane.removeTabAt(testIndex);
+                    this.tabbedPane.insertTab(title, icon, component, tip, this.currentIndex);
+
+                    this.currentIndex = testIndex;
+                    testIndex += direction;
+                    tabHasMoved = true;
+                }
+                else {
+                    break;
+                }
+            }
+
+            // If the tab has actually changed positions, we want to make sure change listeners know
+            if (tabHasMoved) {
+                this.tabbedPane.fireStateChanged();
+            }
+
+            this.tabbedPane.repaint();
         }
 
         /**
@@ -276,7 +294,7 @@ public class DynamicTabbedPane extends JTabbedPane {
          */
         @Override
         public void mouseMoved(MouseEvent event) {
-
+            // Do nothing
         }
 
         /**
@@ -286,7 +304,7 @@ public class DynamicTabbedPane extends JTabbedPane {
          */
         @Override
         public void mouseEntered(MouseEvent event) {
-
+            // Do nothing
         }
 
         /**
@@ -296,7 +314,7 @@ public class DynamicTabbedPane extends JTabbedPane {
          */
         @Override
         public void mouseExited(MouseEvent event) {
-
+            // Do nothing
         }
     }
 }
