@@ -4,7 +4,11 @@ import javax.swing.*;
 import javax.swing.event.MouseInputListener;
 import java.awt.*;
 import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 
+/**
+ * An extension of {@link JTabbedPane} which makes tabs closable and able to be rearranged by the user.
+ */
 public class DynamicTabbedPane extends JTabbedPane {
     private final TabDragHandler tabDragHandler;
 
@@ -74,16 +78,34 @@ public class DynamicTabbedPane extends JTabbedPane {
         super.paint(graphics);
         if (this.tabDragHandler.getCurrentIndex() >= 0) {
             Rectangle tabBounds = this.getBoundsAt(this.tabDragHandler.getCurrentIndex());
-            int newCenter = this.tabDragHandler.getMousePosition() + this.tabDragHandler.getTabCenterOffset();
+            int offsetCenter = this.tabDragHandler.getMousePosition() + this.tabDragHandler.getTabCenterOffset();
+
+            Rectangle bgClip = new Rectangle(tabBounds);
             if (this.hasHorizontalTabPlacement()) {
-                tabBounds.x += newCenter - (int) tabBounds.getCenterX();
+                int offset = offsetCenter - (int) tabBounds.getCenterX();
+                graphics.copyArea(tabBounds.x, tabBounds.y, tabBounds.width, tabBounds.height, offset, 0);
+
+                bgClip.width = Math.min(Math.abs(offset), tabBounds.width);
+                if (offset < 0 && bgClip.width < tabBounds.width) {
+                    bgClip.x += tabBounds.width + offset;
+                }
             }
             else {
-                tabBounds.y += newCenter - (int) tabBounds.getCenterY();
+                int offset = offsetCenter - (int) tabBounds.getCenterY();
+                graphics.copyArea(tabBounds.x, tabBounds.y, tabBounds.width, tabBounds.height, 0, offset);
+
+                bgClip.height = Math.min(Math.abs(offset), tabBounds.height);
+                if (offset < 0 && bgClip.height < tabBounds.height) {
+                    bgClip.y += tabBounds.height + offset;
+                }
             }
 
-            graphics.setColor(Color.RED);
-            graphics.drawRect(tabBounds.x, tabBounds.y, tabBounds.width, tabBounds.height);
+            if (bgClip.width > 0 && bgClip.height > 0) {
+                Graphics bgGraphics = graphics.create(bgClip.x, bgClip.y, bgClip.width, bgClip.height);
+
+                bgGraphics.setColor(UIManager.getColor("TabbedPane.focusColor"));
+                bgGraphics.fillRect(0, 0, tabBounds.width, tabBounds.height);
+            }
         }
     }
 
