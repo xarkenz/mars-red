@@ -1,16 +1,16 @@
 package mars.venus;
 
 import javax.swing.*;
-import javax.swing.event.MouseInputListener;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.image.BufferedImage;
 
 /**
  * An extension of {@link JTabbedPane} which makes tabs closable and able to be rearranged by the user.
  */
 public class DynamicTabbedPane extends JTabbedPane {
     private final TabDragHandler tabDragHandler;
+    private Color tabDragBackground;
 
     /**
      * Creates an empty <code>DynamicTabbedPane</code> with a default tab placement of {@link #TOP}
@@ -46,19 +46,18 @@ public class DynamicTabbedPane extends JTabbedPane {
         this.tabDragHandler = new TabDragHandler(this);
         this.addMouseListener(this.tabDragHandler);
         this.addMouseMotionListener(this.tabDragHandler);
+        this.updateTabDragBackground();
     }
 
     /**
-     * Inserts a new tab for the given component, at the given index,
-     * represented by the given title and/or icon, either of which may
-     * be <code>null</code>.
+     * Insert a new tab for the given component, at the given index, represented by the given title and/or icon,
+     * either of which may be <code>null</code>.
      *
      * @param title The title to be displayed on the tab.
      * @param icon The icon to be displayed on the tab.
      * @param component The component to be displayed when this tab is clicked.
      * @param tip The tooltip to be displayed for this tab.
-     * @param index The position to insert this new tab
-     *              (0 &le; <code>index</code> &le; {@link #getTabCount()}).
+     * @param index The position to insert this new tab (0 &le; <code>index</code> &le; {@link #getTabCount()}).
      *
      * @throws IndexOutOfBoundsException Thrown if the index is out of range
      *                                   (<code>index</code> &lt; 0 or <code>index</code> &gt; {@link #getTabCount()}).
@@ -69,44 +68,66 @@ public class DynamicTabbedPane extends JTabbedPane {
         this.setTabComponentAt(index, new DynamicTabComponent(title));
     }
 
+    /**
+     * Determine which axis is relevant for tab positioning based on tab placement. For horizontal placement
+     * (i.e. top or bottom) the X axis is relevant, and for vertical placement (i.e. left or right)
+     * the Y axis is relevant.
+     *
+     * @return <code>true</code> if {@link #getTabPlacement()} returns {@link #TOP} or {@link #BOTTOM}, or
+     *         <code>false</code> if it returns {@link #LEFT} or {@link #RIGHT}.
+     */
     public boolean hasHorizontalTabPlacement() {
         return this.getTabPlacement() == JTabbedPane.TOP || this.getTabPlacement() == JTabbedPane.BOTTOM;
     }
 
+    /**
+     * Paint the tabbed pane, then edit the result if needed to provide visual feedback for tab reordering.
+     *
+     * @param graphics The graphics context in which to paint.
+     */
     @Override
     public void paint(Graphics graphics) {
         super.paint(graphics);
         if (this.tabDragHandler.getCurrentIndex() >= 0) {
             Rectangle tabBounds = this.getBoundsAt(this.tabDragHandler.getCurrentIndex());
-            int offsetCenter = this.tabDragHandler.getMousePosition() + this.tabDragHandler.getTabCenterOffset();
 
             Rectangle bgClip = new Rectangle(tabBounds);
             if (this.hasHorizontalTabPlacement()) {
-                int offset = offsetCenter - (int) tabBounds.getCenterX();
-                graphics.copyArea(tabBounds.x, tabBounds.y, tabBounds.width, tabBounds.height, offset, 0);
+                int tabOffset = this.tabDragHandler.getDraggedTabPosition() - tabBounds.x;
+                graphics.copyArea(tabBounds.x, tabBounds.y, tabBounds.width, tabBounds.height, tabOffset, 0);
 
-                bgClip.width = Math.min(Math.abs(offset), tabBounds.width);
-                if (offset < 0 && bgClip.width < tabBounds.width) {
-                    bgClip.x += tabBounds.width + offset;
+                bgClip.width = Math.min(Math.abs(tabOffset), tabBounds.width);
+                if (tabOffset < 0 && bgClip.width < tabBounds.width) {
+                    bgClip.x += tabBounds.width + tabOffset;
                 }
             }
             else {
-                int offset = offsetCenter - (int) tabBounds.getCenterY();
-                graphics.copyArea(tabBounds.x, tabBounds.y, tabBounds.width, tabBounds.height, 0, offset);
+                int tabOffset = this.tabDragHandler.getDraggedTabPosition() - tabBounds.y;
+                graphics.copyArea(tabBounds.x, tabBounds.y, tabBounds.width, tabBounds.height, 0, tabOffset);
 
-                bgClip.height = Math.min(Math.abs(offset), tabBounds.height);
-                if (offset < 0 && bgClip.height < tabBounds.height) {
-                    bgClip.y += tabBounds.height + offset;
+                bgClip.height = Math.min(Math.abs(tabOffset), tabBounds.height);
+                if (tabOffset < 0 && bgClip.height < tabBounds.height) {
+                    bgClip.y += tabBounds.height + tabOffset;
                 }
             }
 
             if (bgClip.width > 0 && bgClip.height > 0) {
                 Graphics bgGraphics = graphics.create(bgClip.x, bgClip.y, bgClip.width, bgClip.height);
 
-                bgGraphics.setColor(UIManager.getColor("TabbedPane.focusColor"));
+                bgGraphics.setColor(this.tabDragBackground);
                 bgGraphics.fillRect(0, 0, tabBounds.width, tabBounds.height);
             }
         }
+    }
+
+    @Override
+    public void updateUI() {
+        super.updateUI();
+        this.updateTabDragBackground();
+    }
+
+    private void updateTabDragBackground() {
+        this.tabDragBackground = UIManager.getColor("TabbedPane.focusColor");
     }
 
     /**
@@ -154,44 +175,58 @@ public class DynamicTabbedPane extends JTabbedPane {
         }
     }
 
-    private static class TabDragHandler implements MouseInputListener {
+    private static class TabDragHandler extends MouseAdapter {
+        /**
+         * The tabbed pane this handler is attached to.
+         */
         private final DynamicTabbedPane tabbedPane;
+        /**
+         * The index of the tab currently being dragged by the user, or -1 if no tabs are being dragged.
+         */
         private int currentIndex;
         /**
-         * The position of the center of the tab currently being dragged relative to the cursor position.
+         * The position of the left/top edge of the tab currently being dragged relative to the mouse position.
          */
-        private int tabCenterOffset;
+        private int tabEdgeOffset;
+        /**
+         * The last recorded mouse position (only updated while the user is holding the mouse down).
+         */
         private int mousePosition;
 
+        /**
+         * Create a new <code>TabDragHandler</code> for the given tabbed pane. Does not automatically attach
+         * as a mouse listener.
+         *
+         * @param tabbedPane The tabbed pane this handler is attached to.
+         */
         public TabDragHandler(DynamicTabbedPane tabbedPane) {
             this.tabbedPane = tabbedPane;
             this.currentIndex = -1;
         }
 
+        /**
+         * Get the index of the tab currently being dragged by the user.
+         *
+         * @return The tab index, or -1 if no tabs are currently being dragged.
+         */
         public int getCurrentIndex() {
             return this.currentIndex;
         }
 
-        public int getTabCenterOffset() {
-            return this.tabCenterOffset;
-        }
-
-        public int getMousePosition() {
-            return this.mousePosition;
-        }
-
         /**
-         * Invoked when the mouse button has been clicked (pressed and released) on a component.
+         * Get either the X coordinate of the left edge or the Y coordinate of the top edge for the visual
+         * positioning of the tab currently being dragged. For horizontal tab placements (top or bottom),
+         * the X coordinate is used. For vertical tab placements (left or right), the Y coordinate is used.
+         * This method should only be called if {@link #getCurrentIndex()} returns a value &ge; 0.
          *
-         * @param event The event to be processed.
+         * @return The integer position of the current tab for painting purposes.
          */
-        @Override
-        public void mouseClicked(MouseEvent event) {
-
+        public int getDraggedTabPosition() {
+            return this.mousePosition + this.tabEdgeOffset;
         }
 
         /**
-         * Invoked when a mouse button has been pressed on a component.
+         * Invoked when the user starts dragging on the tabbed pane component.
          *
          * @param event The event to be processed.
          */
@@ -204,21 +239,20 @@ public class DynamicTabbedPane extends JTabbedPane {
                 return;
             }
 
-            Rectangle tabBounds = this.tabbedPane.getBoundsAt(this.currentIndex);
             if (this.tabbedPane.hasHorizontalTabPlacement()) {
                 this.mousePosition = event.getX();
-                this.tabCenterOffset = (int) tabBounds.getCenterX() - this.mousePosition;
+                this.tabEdgeOffset = this.tabbedPane.getBoundsAt(this.currentIndex).x - this.mousePosition;
             }
             else {
                 this.mousePosition = event.getY();
-                this.tabCenterOffset = (int) tabBounds.getCenterY() - this.mousePosition;
+                this.tabEdgeOffset = this.tabbedPane.getBoundsAt(this.currentIndex).y - this.mousePosition;
             }
 
             this.tabbedPane.repaint();
         }
 
         /**
-         * Invoked when a mouse button has been released on a component.
+         * Invoked when the user stops dragging on the tabbed pane component.
          *
          * @param event The event to be processed.
          */
@@ -248,23 +282,26 @@ public class DynamicTabbedPane extends JTabbedPane {
                 return;
             }
 
-            int oldCenter;
+            int oldTabEdge;
             if (this.tabbedPane.hasHorizontalTabPlacement()) {
                 this.mousePosition = event.getX();
-                oldCenter = (int) this.tabbedPane.getBoundsAt(this.currentIndex).getCenterX();
+                oldTabEdge = this.tabbedPane.getBoundsAt(this.currentIndex).x;
             }
             else {
                 this.mousePosition = event.getY();
-                oldCenter = (int) this.tabbedPane.getBoundsAt(this.currentIndex).getCenterY();
+                oldTabEdge = this.tabbedPane.getBoundsAt(this.currentIndex).y;
             }
-            int newCenter = this.mousePosition + this.tabCenterOffset;
+            int newTabEdge = this.getDraggedTabPosition();
 
             // Integer.compare comes in handy here; essentially, `direction` indicates relative drag direction:
-            // 0 if newCenter == oldCenter (tab has not moved)
-            // +1 if newCenter > oldCenter (mouse is dragging tab right or down depending on tab placement)
-            // -1 if newCenter < oldCenter (mouse is dragging tab left or up depending on tab placement)
-            int direction = Integer.compare(newCenter, oldCenter);
+            // 0 if newTabEdge == oldTabEdge (tab has not moved)
+            // +1 if newTabEdge > oldTabEdge (mouse is dragging tab right or down depending on tab placement)
+            // -1 if newTabEdge < oldTabEdge (mouse is dragging tab left or up depending on tab placement)
+            int direction = Integer.compare(newTabEdge, oldTabEdge);
+
             if (direction == 0) {
+                // Repaint just in case
+                this.tabbedPane.repaint();
                 return;
             }
 
@@ -272,17 +309,22 @@ public class DynamicTabbedPane extends JTabbedPane {
             boolean tabHasMoved = false;
             int testIndex = this.currentIndex + direction;
             while (testIndex >= 0 && testIndex < this.tabbedPane.getTabCount()) {
-                int testCenter;
+                int testTabSize;
                 if (this.tabbedPane.hasHorizontalTabPlacement()) {
-                    testCenter = (int) this.tabbedPane.getBoundsAt(testIndex).getCenterX();
+                    testTabSize = this.tabbedPane.getBoundsAt(testIndex).width;
+                    oldTabEdge = this.tabbedPane.getBoundsAt(this.currentIndex).x;
                 }
                 else {
-                    testCenter = (int) this.tabbedPane.getBoundsAt(testIndex).getCenterY();
+                    testTabSize = this.tabbedPane.getBoundsAt(testIndex).height;
+                    oldTabEdge = this.tabbedPane.getBoundsAt(this.currentIndex).y;
                 }
-                // TODO: this criterion feels awkward... maybe judge which position the tab is closer to?
-                if (newCenter * direction >= testCenter * direction) {
-                    // Swap the tab being dragged with the tab it has now passed, being careful not to break focus.
-                    // The adjacent tab has to be removed and reinserted rather than the current tab because
+
+                // The current tab "passes" the tab being tested if it has been dragged over half the width of the
+                // tab being tested; or, in other words, it is closer to the prospective spot than the current spot.
+                int tabAbsOffset = direction * (newTabEdge - oldTabEdge);
+                if (tabAbsOffset > testTabSize - tabAbsOffset) {
+                    // Swap the tab being dragged with the tab it is passing, being careful not to break focus.
+                    // The tab being passed has to be removed and reinserted rather than the current tab because
                     // otherwise focus would be broken, causing flicker on some platforms.
                     // I wish there was a better way to do this...
                     String title = this.tabbedPane.getTitleAt(testIndex);
@@ -307,36 +349,6 @@ public class DynamicTabbedPane extends JTabbedPane {
             }
 
             this.tabbedPane.repaint();
-        }
-
-        /**
-         * Invoked when the mouse cursor has been moved onto a component but no buttons have been pushed.
-         *
-         * @param event The event to be processed.
-         */
-        @Override
-        public void mouseMoved(MouseEvent event) {
-            // Do nothing
-        }
-
-        /**
-         * Invoked when the mouse enters a component.
-         *
-         * @param event The event to be processed.
-         */
-        @Override
-        public void mouseEntered(MouseEvent event) {
-            // Do nothing
-        }
-
-        /**
-         * Invoked when the mouse exits a component.
-         *
-         * @param event The event to be processed.
-         */
-        @Override
-        public void mouseExited(MouseEvent event) {
-            // Do nothing
         }
     }
 }
