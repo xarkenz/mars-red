@@ -156,7 +156,7 @@ public class EditTab extends DynamicTabbedPane {
      * the New operation from the File menu.
      */
     public void newFile() {
-        FileEditorTab newTab = new FileEditorTab(this.gui, this);
+        FileEditorTab newTab = new FileEditorTab(this.gui);
         newTab.setSourceCode("", true);
         newTab.setFileStatus(FileStatus.NEW_NOT_EDITED);
         String name = this.editor.getNextDefaultFilename();
@@ -196,14 +196,98 @@ public class EditTab extends DynamicTabbedPane {
     }
 
     /**
-     * Open the specified files in new editor tabs, switching focus to
-     * the first newly opened tab.
+     * Open the specified files in new editor tabs, switching focus to the first newly opened tab.
+     * If any files cannot be opened, an error dialog will be displayed to the user indicating which
+     * files failed to open.
      *
      * @return The list of files which could not be opened due to an error. (Can be empty.)
      */
     public List<File> openFiles(List<File> files) {
-        List<File> unopenedFiles = new FileOpener().openFiles(files);
+        List<File> unopenedFiles = new ArrayList<>();
+        FileEditorTab firstTabOpened = null;
+        // All new tabs will be inserted following the current tab
+        int tabIndex = EditTab.this.getSelectedIndex() + 1;
+
+        EditTab.this.gui.setWorkspaceStateSavingEnabled(false); // DPS 9-Aug-2011
+
+        for (File file : files) {
+            try {
+                file = file.getCanonicalFile();
+            }
+            catch (IOException exception) {
+                // Ignore, the file will stay unchanged
+            }
+
+            // Don't bother reopening the file if it's already open
+            FileEditorTab existingTab = this.getEditorTab(file);
+            if (existingTab != null) {
+                if (firstTabOpened == null) {
+                    firstTabOpened = existingTab;
+                }
+                continue;
+            }
+
+            FileEditorTab fileEditorTab = new FileEditorTab(this.gui);
+            fileEditorTab.setFile(file);
+
+            if (file.canRead()) {
+                Application.program = new Program();
+                try {
+                    Application.program.readSource(file.getPath());
+                }
+                catch (ProcessingException exception) {
+                    unopenedFiles.add(file);
+                    continue;
+                }
+                // DPS 1 Nov 2006.  Defined a StringBuffer to receive all file contents,
+                // one line at a time, before adding to the Edit pane with one setText.
+                // StringBuffer is preallocated to full file length to eliminate dynamic
+                // expansion as lines are added to it. Previously, each line was appended
+                // to the Edit pane as it was read, way slower due to dynamic string alloc.
+                StringBuilder fileContents = new StringBuilder((int) file.length());
+                int lineNumber = 1;
+                String line = Application.program.getSourceLine(lineNumber++);
+                while (line != null) {
+                    fileContents.append(line).append('\n');
+                    line = Application.program.getSourceLine(lineNumber++);
+                }
+                fileEditorTab.setSourceCode(fileContents.toString(), true);
+                // The above operation generates an undoable edit by setting the initial
+                // text area contents. That should not be seen as undoable by the Undo
+                // action, so let's get rid of it.
+                fileEditorTab.discardAllUndoableEdits();
+                fileEditorTab.setFileStatus(FileStatus.NOT_EDITED);
+
+                this.insertTab(file.getName(), null, fileEditorTab, file.getPath(), tabIndex++);
+
+                if (firstTabOpened == null) {
+                    firstTabOpened = fileEditorTab;
+                }
+            }
+            else {
+                unopenedFiles.add(file);
+            }
+        }
+
+        if (firstTabOpened != null) {
+            // At least one file was opened successfully
+            // Treat the first opened tab as the "primary" one in the group
+            this.setSelectedComponent(firstTabOpened);
+            firstTabOpened.requestTextAreaFocus();
+            this.mostRecentlyOpenedFile = firstTabOpened.getFile();
+        }
+
         this.gui.getMainPane().setSelectedComponent(this);
+
+        // Save the updated workspace with the newly opened files
+        this.gui.setWorkspaceStateSavingEnabled(true);
+        this.gui.saveWorkspaceState();
+
+        if (!unopenedFiles.isEmpty()) {
+            // Some files failed to open, so show an error dialog
+            this.showOpenFileErrorDialog(unopenedFiles);
+        }
+
         return unopenedFiles;
     }
 
@@ -582,7 +666,7 @@ public class EditTab extends DynamicTabbedPane {
             }
 
             if (this.fileChooser.showOpenDialog(EditTab.this.gui) == JFileChooser.APPROVE_OPTION) {
-                List<File> unopenedFiles = this.openFiles(List.of(this.fileChooser.getSelectedFiles()));
+                List<File> unopenedFiles = EditTab.this.openFiles(List.of(this.fileChooser.getSelectedFiles()));
 
                 // Since the user opened these files manually, add them to the recent files menu
                 for (File file : this.fileChooser.getSelectedFiles()) {
@@ -602,100 +686,6 @@ public class EditTab extends DynamicTabbedPane {
             }
 
             return new ArrayList<>();
-        }
-
-        /**
-         * Open the specified files in new editor tabs, switching focus to the first newly opened tab.
-         * If any files cannot be opened, an error dialog will be displayed to the user indicating which
-         * files failed to open.
-         *
-         * @return The list of files which could not be opened due to an error. (Can be empty.)
-         */
-        public List<File> openFiles(List<File> files) {
-            List<File> unopenedFiles = new ArrayList<>();
-            FileEditorTab firstTabOpened = null;
-
-            EditTab.this.gui.setWorkspaceStateSavingEnabled(false); // DPS 9-Aug-2011
-
-            for (File file : files) {
-                try {
-                    file = file.getCanonicalFile();
-                }
-                catch (IOException exception) {
-                    // Ignore, the file will stay unchanged
-                }
-
-                // Don't bother reopening the file if it's already open
-                FileEditorTab existingTab = EditTab.this.getEditorTab(file);
-                if (existingTab != null) {
-                    if (firstTabOpened == null) {
-                        firstTabOpened = existingTab;
-                    }
-                    continue;
-                }
-
-                FileEditorTab fileEditorTab = new FileEditorTab(EditTab.this.gui, EditTab.this);
-                fileEditorTab.setFile(file);
-
-                if (file.canRead()) {
-                    Application.program = new Program();
-                    try {
-                        Application.program.readSource(file.getPath());
-                    }
-                    catch (ProcessingException exception) {
-                        unopenedFiles.add(file);
-                        continue;
-                    }
-                    // DPS 1 Nov 2006.  Defined a StringBuffer to receive all file contents,
-                    // one line at a time, before adding to the Edit pane with one setText.
-                    // StringBuffer is preallocated to full file length to eliminate dynamic
-                    // expansion as lines are added to it. Previously, each line was appended
-                    // to the Edit pane as it was read, way slower due to dynamic string alloc.
-                    StringBuilder fileContents = new StringBuilder((int) file.length());
-                    int lineNumber = 1;
-                    String line = Application.program.getSourceLine(lineNumber++);
-                    while (line != null) {
-                        fileContents.append(line).append('\n');
-                        line = Application.program.getSourceLine(lineNumber++);
-                    }
-                    fileEditorTab.setSourceCode(fileContents.toString(), true);
-                    // The above operation generates an undoable edit by setting the initial
-                    // text area contents. That should not be seen as undoable by the Undo
-                    // action, so let's get rid of it.
-                    fileEditorTab.discardAllUndoableEdits();
-                    fileEditorTab.setFileStatus(FileStatus.NOT_EDITED);
-
-                    EditTab.this.addTab(file.getName(), null, fileEditorTab, file.getPath());
-
-                    if (firstTabOpened == null) {
-                        firstTabOpened = fileEditorTab;
-                    }
-                }
-                else {
-                    unopenedFiles.add(file);
-                }
-            }
-
-            if (firstTabOpened != null) {
-                // At least one file was opened successfully
-                // Treat the first opened tab as the "primary" one in the group
-                EditTab.this.setSelectedComponent(firstTabOpened);
-                firstTabOpened.requestTextAreaFocus();
-                EditTab.this.mostRecentlyOpenedFile = firstTabOpened.getFile();
-            }
-
-            EditTab.this.gui.getMainPane().setSelectedComponent(EditTab.this);
-
-            // Save the updated workspace with the newly opened files
-            EditTab.this.gui.setWorkspaceStateSavingEnabled(true);
-            EditTab.this.gui.saveWorkspaceState();
-
-            if (!unopenedFiles.isEmpty()) {
-                // Some files failed to open, so show an error dialog
-                EditTab.this.showOpenFileErrorDialog(unopenedFiles);
-            }
-
-            return unopenedFiles;
         }
 
         /**

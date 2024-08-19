@@ -53,7 +53,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class FileEditorTab extends JPanel {
     private final VenusUI gui;
-    private final EditTab editTab;
     private final MARSTextEditingArea textEditingArea;
     private final JLabel caretPositionLabel;
     private final JLabel lineNumbers;
@@ -64,10 +63,9 @@ public class FileEditorTab extends JPanel {
     /**
      * Create a new tab within the "Edit" tab for editing a file.
      */
-    public FileEditorTab(VenusUI gui, EditTab editTab) {
+    public FileEditorTab(VenusUI gui) {
         super(new BorderLayout());
         this.gui = gui;
-        this.editTab = editTab;
         this.lineNumbers = new JLabel();
         this.fileStatus = FileStatus.NO_FILE;
         this.file = null;
@@ -158,7 +156,7 @@ public class FileEditorTab extends JPanel {
             else if (this.getFileStatus() == FileStatus.NOT_EDITED) {
                 this.setFileStatus(FileStatus.EDITED);
             }
-            this.editTab.updateTitleAndMenuState(this);
+            this.gui.getMainPane().getEditTab().updateTitleAndMenuState(this);
         }
 
         if (Application.getSettings().displayEditorLineNumbers.get()) {
