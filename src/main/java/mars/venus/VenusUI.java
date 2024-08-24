@@ -160,7 +160,6 @@ public class VenusUI extends JFrame implements SimulatorListener {
     public VenusUI(Settings settings, String title) {
         super(title);
         Application.setGUI(this);
-        NativeUtilities.setApplicationName(title);
 
         this.workspaceStateSavingEnabled = true;
         this.recentFiles = new ArrayList<>();
@@ -196,22 +195,12 @@ public class VenusUI extends JFrame implements SimulatorListener {
         // Image courtesy of NASA/JPL
         URL iconImageURL = this.getClass().getResource(Application.IMAGES_PATH + WINDOW_ICON_NAME);
         if (iconImageURL == null) {
-            System.err.println("Error: unable to load image at '" + Application.IMAGES_PATH + WINDOW_ICON_NAME + "'");
+            System.err.println("Error: unable to load image at '" + Application.IMAGES_PATH + WINDOW_ICON_NAME + "'.");
         }
         else {
             Image iconImage = Toolkit.getDefaultToolkit().getImage(iconImageURL);
+            NativeUtilities.setApplicationIconImage(iconImage);
             this.setIconImage(iconImage);
-
-            // MacOS requires a different method to set the taskbar icon
-            try {
-                Taskbar.getTaskbar().setIconImage(iconImage);
-            }
-            catch (UnsupportedOperationException exception) {
-                // The OS doesn't support setting the icon through this method
-            }
-            catch (SecurityException exception) {
-                System.err.println("Error: unable to set taskbar icon image: no permission");
-            }
         }
 
         // Everything in frame will be arranged on JPanel "center", which is only frame component.

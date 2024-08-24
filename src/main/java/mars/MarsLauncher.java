@@ -7,6 +7,7 @@ import mars.simulator.ProgramArgumentList;
 import mars.util.Binary;
 import mars.util.FilenameFinder;
 import mars.util.MemoryDump;
+import mars.util.NativeUtilities;
 import mars.venus.VenusUI;
 
 import javax.swing.*;
@@ -188,6 +189,7 @@ public class MarsLauncher {
      */
     private void launchGUI() {
         SwingUtilities.invokeLater(() -> {
+            NativeUtilities.setApplicationName(Application.NAME);
             Application.setupLookAndFeel();
             // Initialize the GUI
             new VenusUI(Application.getSettings(), Application.NAME + " " + Application.VERSION);
