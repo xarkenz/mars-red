@@ -229,9 +229,11 @@ public class VenusUI extends JFrame implements SimulatorListener {
         JSplitPane splitter = new JSplitPane(JSplitPane.VERTICAL_SPLIT, this.mainPane, this.messagesPane);
         splitter.setOneTouchExpandable(true);
         splitter.resetToPreferredSizes();
+        splitter.setResizeWeight(0.7);
         JSplitPane horizonSplitter = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, splitter, this.registersPane);
         horizonSplitter.setOneTouchExpandable(true);
         horizonSplitter.resetToPreferredSizes();
+        horizonSplitter.setResizeWeight(0.7);
 
         // Due to dependencies, do not set up menu/toolbar until now.
         this.recentFilesMenu.setIcon(getSVGActionIcon("recent.svg"));
