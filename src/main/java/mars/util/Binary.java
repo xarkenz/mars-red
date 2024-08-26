@@ -215,7 +215,7 @@ public class Binary {
         StringBuilder result = new StringBuilder(8);
         for (int byteIndex = 3; byteIndex >= 0; byteIndex--) {
             int byteValue = getByte(value, byteIndex);
-            result.append((byteValue < Application.ASCII_TABLE.length) ? Application.ASCII_TABLE[byteValue] : Application.ASCII_NON_PRINT);
+            result.append((byteValue < Application.getAsciiTable().length) ? Application.getAsciiTable()[byteValue] : Application.getAsciiNonPrint());
         }
         return result.toString();
     }

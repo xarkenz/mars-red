@@ -46,6 +46,7 @@ public class DumpFormatManager {
 
     private static Map<String, DumpFormat> dumpFormats = null;
 
+    // Prevent instances
     private DumpFormatManager() {}
 
     /**

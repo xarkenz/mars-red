@@ -5,7 +5,6 @@ import mars.ProcessingException;
 import mars.ProgramStatement;
 import mars.mips.hardware.*;
 import mars.mips.instructions.syscalls.Syscall;
-import mars.mips.instructions.syscalls.SyscallManager;
 import mars.simulator.ExceptionCause;
 import mars.simulator.Simulator;
 import mars.util.Binary;
@@ -1452,9 +1451,9 @@ public class InstructionSet {
 
     private void addPseudoInstructions() {
         // leading "/" prevents package name being prepended to filepath.
-        InputStream inputStream = this.getClass().getResourceAsStream("/PseudoOps.txt");
+        InputStream inputStream = this.getClass().getResourceAsStream("/config/extended_instructions.txt");
         if (inputStream == null) {
-            System.out.println("Error: MIPS pseudo-instruction file PseudoOps.txt not found.");
+            System.out.println("Error: MIPS pseudo-instruction file extended_instructions.txt not found.");
             System.exit(0);
         }
         BufferedReader inputReader = new BufferedReader(new InputStreamReader(inputStream));

@@ -7,10 +7,12 @@ import mars.assembler.SymbolTable;
 import mars.mips.hardware.*;
 import mars.mips.instructions.InstructionSet;
 import mars.settings.Settings;
-import mars.util.PropertiesFile;
+import mars.util.Binary;
 import mars.venus.VenusUI;
 
 import javax.swing.*;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 
 /*
@@ -65,10 +67,6 @@ public class Application {
      */
     public static final String COPYRIGHT_HOLDERS = "Pete Sanderson and Kenneth Vollmar";
     /**
-     * Name of properties file used to hold internal configurations.
-     */
-    private static final String CONFIG_PROPERTIES = "Config";
-    /**
      * Lock variable used at head of synchronized block to guard MIPS memory and registers.
      */
     public static final Object MEMORY_AND_REGISTERS_LOCK = new Object();
@@ -101,13 +99,9 @@ public class Application {
      */
     public static final int MAXIMUM_BACKSTEPS = getBackstepLimit();
     /**
-     * Placeholder for non-printable ASCII codes
+     * Name of properties file used to hold internal configurations.
      */
-    public static final String ASCII_NON_PRINT = getAsciiNonPrint();
-    /**
-     * Array of strings to display for ASCII codes in ASCII display of data segment. ASCII code 0-255 is array index.
-     */
-    public static final String[] ASCII_TABLE = getAsciiStrings();
+    private static final String CONFIG_VALUES_PATH = "/config/values.properties";
 
     /**
      * MARS exit code -- useful with syscall 17 when running from command line (not GUI).
@@ -141,6 +135,18 @@ public class Application {
      * Symbol table for file currently being assembled.
      */
     public static SymbolTable globalSymbolTable;
+    /**
+     * Storage object for config values loaded from file. The properties are loaded when first used.
+     */
+    private static Properties configValues = null;
+    /**
+     * Array of strings to display for ASCII codes in ASCII display of data segment. ASCII code 0-255 is array index.
+     */
+    private static String[] asciiTable = null;
+    /**
+     * Placeholder for non-printable ASCII codes.
+     */
+    private static String asciiNonPrint = null;
 
     public static VenusUI getGUI() {
         return gui;
@@ -196,64 +202,77 @@ public class Application {
      * Read byte limit of Run I/O or MARS Messages text to buffer.
      */
     private static int getMessageLimit() {
-        return getIntegerProperty("MessageLimit", 1000000);
+        return getConfigInteger("MessageLimit", 1000000);
     }
 
     /**
      * Read limit on number of error messages produced by one assemble operation.
      */
     private static int getErrorLimit() {
-        return getIntegerProperty("ErrorLimit", 200);
+        return getConfigInteger("ErrorLimit", 200);
     }
 
     /**
      * Read backstep limit (number of operations to buffer) from properties file.
      */
     private static int getBackstepLimit() {
-        return getIntegerProperty("BackstepLimit", 1000);
+        return getConfigInteger("BackstepLimit", 1000);
     }
 
     /**
      * Read ASCII default display character for non-printing characters, from properties file.
      */
     public static String getAsciiNonPrint() {
-        String asciiNonPrint = getPropertyEntry(CONFIG_PROPERTIES, "AsciiNonPrint");
-        return (asciiNonPrint == null) ? "." : (asciiNonPrint.equals("space")) ? " " : asciiNonPrint;
+        if (asciiNonPrint == null) {
+            asciiNonPrint = getConfigString("AsciiNonPrint", ".");
+            if (asciiNonPrint.equalsIgnoreCase("space")) {
+                asciiNonPrint = " ";
+            }
+        }
+        return asciiNonPrint;
     }
 
     /**
-     * Read ASCII strings for codes 0-255, from properties file. If string
-     * value is "null", substitute value of ASCII_NON_PRINT.  If string is
-     * "space", substitute string containing one space character.
+     * Read ASCII strings for codes 0-255, from <code>/config/values.properties</code>
+     * under <code>AsciiTable</code>. If a string is <code>null</code>, substitute value of <code>AsciiNonPrint</code>.
+     * If string is <code>space</code>, substitute string containing one space character.
      */
-    private static String[] getAsciiStrings() {
-        String asciiTable = getPropertyEntry(CONFIG_PROPERTIES, "AsciiTable");
-        String placeHolder = getAsciiNonPrint();
-        String[] asciiStrings = asciiTable.split("\\s+");
-        int maxLength = 0;
-        for (int index = 0; index < asciiStrings.length; index++) {
-            if (asciiStrings[index].equals("null")) {
-                asciiStrings[index] = placeHolder;
+    public static String[] getAsciiTable() {
+        if (asciiTable == null) {
+            String asciiTableString = getConfigString("AsciiTable");
+            asciiTable = asciiTableString.split("\\s+");
+            int maxLength = 0;
+            for (int index = 0; index < asciiTable.length; index++) {
+                if (asciiTable[index].equalsIgnoreCase("null")) {
+                    asciiTable[index] = getAsciiNonPrint();
+                }
+                else if (asciiTable[index].equalsIgnoreCase("space")) {
+                    asciiTable[index] = " ";
+                }
+                maxLength = Math.max(maxLength, asciiTable[index].length());
             }
-            else if (asciiStrings[index].equals("space")) {
-                asciiStrings[index] = " ";
+            for (int index = 0; index < asciiTable.length; index++) {
+                asciiTable[index] = " ".repeat(maxLength - asciiTable[index].length() + 1) + asciiTable[index];
             }
-            maxLength = Math.max(maxLength, asciiStrings[index].length());
         }
-        for (int index = 0; index < asciiStrings.length; index++) {
-            asciiStrings[index] = " ".repeat(maxLength - asciiStrings[index].length() + 1) + asciiStrings[index];
-        }
-        return asciiStrings;
+        return asciiTable;
     }
 
     /**
-     * Read and return integer property value for given file and property name.
-     * Default value is returned if property file or name not found.
+     * Obtain a configuration integer from <code>/config/values.properties</code>.
+     *
+     * @param key          The name of the configuration integer to retrieve.
+     * @param defaultValue The default value to use if no integer is found.
+     * @return The configuration integer requested, or <code>defaultValue</code> if it is invalid or not specified.
+     * @see Binary#decodeInteger(String)
      */
-    private static int getIntegerProperty(String propertyName, int defaultValue) {
-        Properties properties = PropertiesFile.loadPropertiesFromFile(Application.CONFIG_PROPERTIES);
+    private static int getConfigInteger(String key, int defaultValue) {
+        String stringValue = getConfigString(key);
+        if (stringValue == null) {
+            return defaultValue;
+        }
         try {
-            return Integer.parseInt(properties.getProperty(propertyName, Integer.toString(defaultValue)));
+            return Binary.decodeInteger(stringValue);
         }
         catch (NumberFormatException exception) {
             return defaultValue;
@@ -266,7 +285,7 @@ public class Application {
      */
     private static ArrayList<String> getFileExtensions() {
         ArrayList<String> extensionsList = new ArrayList<>();
-        String extensions = getPropertyEntry(CONFIG_PROPERTIES, "Extensions");
+        String extensions = getConfigString("Extensions");
         if (extensions != null) {
             StringTokenizer st = new StringTokenizer(extensions);
             while (st.hasMoreTokens()) {
@@ -277,15 +296,25 @@ public class Application {
     }
 
     /**
-     * Read and return property file value (if any) for requested property.
+     * Obtain a configuration string from <code>/config/values.properties</code>.
      *
-     * @param propertiesFile name of properties file (do NOT include filename extension,
-     *                       which is assumed to be ".properties")
-     * @param propertyName   String containing desired property name
-     * @return String containing associated value; null if property not found
+     * @param key The name of the configuration string to retrieve.
+     * @return The configuration string requested, or <code>null</code> if it is not specified.
      */
-    public static String getPropertyEntry(String propertiesFile, String propertyName) {
-        return PropertiesFile.loadPropertiesFromFile(propertiesFile).getProperty(propertyName);
+    public static String getConfigString(String key) {
+        return getConfigString(key, null);
+    }
+
+    /**
+     * Obtain a configuration string from <code>/config/values.properties</code>.
+     *
+     * @param key          The name of the configuration string to retrieve.
+     * @param defaultValue The default value to use if no string is found.
+     * @return The configuration string requested, or <code>defaultValue</code> if it is not specified.
+     */
+    public static String getConfigString(String key, String defaultValue) {
+        ensureConfigValuesLoaded();
+        return configValues.getProperty(key, defaultValue);
     }
 
     /**
@@ -296,5 +325,22 @@ public class Application {
      */
     public static boolean isBackSteppingEnabled() {
         return program != null && program.getBackStepper() != null && program.getBackStepper().isEnabled();
+    }
+
+    /**
+     * Load config values from file if they have not been loaded already.
+     */
+    private static void ensureConfigValuesLoaded() {
+        if (configValues == null) {
+            configValues = new Properties();
+            try {
+                InputStream input = Application.class.getResourceAsStream(CONFIG_VALUES_PATH);
+                configValues.load(input);
+            }
+            catch (IOException | NullPointerException ignored) {
+                System.err.println(CONFIG_VALUES_PATH + ": failed to load config values from file");
+                // The properties that loaded successfully, if any, will be used
+            }
+        }
     }
 }

@@ -1,9 +1,11 @@
-package mars.mips.instructions.syscalls;
+package mars.mips.instructions;
 
+import mars.mips.instructions.syscalls.Syscall;
 import mars.util.FilenameFinder;
-import mars.util.PropertiesFile;
 import mars.venus.ToolManager;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
@@ -46,13 +48,14 @@ public class SyscallManager {
     /**
      * Name of properties file used to hold syscall service number overrides.
      */
-    private static final String SYSCALL_OVERRIDES_PROPERTIES = "Syscalls";
+    private static final String SYSCALL_OVERRIDES_PATH = "/config/syscall_overrides.properties";
     private static final String SYSCALLS_PACKAGE_PREFIX = "mars.mips.instructions.syscalls.";
     private static final String SYSCALLS_DIRECTORY_PATH = "mars/mips/instructions/syscalls";
     private static final String CLASS_EXTENSION = "class";
 
     private static Map<Integer, Syscall> syscalls = null;
 
+    // Prevent instances
     private SyscallManager() {}
 
     /**
@@ -67,7 +70,7 @@ public class SyscallManager {
         if (syscalls == null) {
             syscalls = new HashMap<>();
 
-            Map<String, Integer> overrides = getSyscallOverrides();
+            Map<String, Integer> overrides = loadSyscallOverrides();
             // Grab all class files in the syscalls package
             List<String> filenames = FilenameFinder.findFilenames(SyscallManager.class.getClassLoader(), SYSCALLS_DIRECTORY_PATH, CLASS_EXTENSION);
             Set<String> knownFilenames = new HashSet<>();
@@ -108,7 +111,7 @@ public class SyscallManager {
 
             // If there are any entries left in the overrides map, they did not correspond to any syscall
             for (String unknownName : overrides.keySet()) {
-                System.err.println(SYSCALL_OVERRIDES_PROPERTIES + ".properties: unrecognized syscall '" + unknownName + "'");
+                System.err.println(SYSCALL_OVERRIDES_PATH + ": unrecognized syscall '" + unknownName + "'");
             }
         }
 
@@ -127,24 +130,33 @@ public class SyscallManager {
     }
 
     /**
-     * Read all syscall number overrides from the syscall configuration file.
+     * Load all syscall number overrides from the syscall configuration file located at
+     * <code>/config/syscall_overrides.properties</code>.
      *
      * @return Mapping from syscall names to service numbers.
      */
-    private static Map<String, Integer> getSyscallOverrides() {
-        Properties properties = PropertiesFile.loadPropertiesFromFile(SYSCALL_OVERRIDES_PROPERTIES);
+    private static Map<String, Integer> loadSyscallOverrides() {
+        Properties properties = new Properties();
+        try {
+            InputStream input = SyscallManager.class.getResourceAsStream(SYSCALL_OVERRIDES_PATH);
+            properties.load(input);
+        }
+        catch (IOException | NullPointerException exception) {
+            System.err.println(SYSCALL_OVERRIDES_PATH + ": failed to load syscall overrides from file");
+            // The properties that loaded successfully, if any, will be used
+        }
 
         Map<String, Integer> overrides = new HashMap<>();
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-            String name = entry.getKey().toString();
+            String name = String.valueOf(entry.getKey());
             try {
-                Integer number = Integer.decode(entry.getValue().toString());
+                Integer number = Integer.decode(String.valueOf(entry.getValue()));
                 if (overrides.put(name, number) != null) {
-                    System.err.println(SYSCALL_OVERRIDES_PROPERTIES + ".properties: duplicate entries for syscall '" + name + "'");
+                    System.err.println(SYSCALL_OVERRIDES_PATH + ": duplicate entries for syscall '" + name + "'");
                 }
             }
             catch (NumberFormatException exception) {
-                System.err.println(SYSCALL_OVERRIDES_PROPERTIES + ".properties: invalid service number for syscall '" + name + "': " + entry.getValue());
+                System.err.println(SYSCALL_OVERRIDES_PATH + ": invalid service number for syscall '" + name + "': " + entry.getValue());
             }
         }
 

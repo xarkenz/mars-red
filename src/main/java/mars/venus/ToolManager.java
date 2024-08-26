@@ -54,6 +54,7 @@ public class ToolManager {
 
     private static List<ToolAction> toolActions = null;
 
+    // Prevent instances
     private ToolManager() {}
 
     /**
@@ -81,10 +82,11 @@ public class ToolManager {
      * folder, then continue as before.
      */
     public static List<ToolAction> getToolActions() {
+        // The list will be populated only the first time this is called
         if (toolActions == null) {
             List<MarsTool> marsTools = new ArrayList<>();
 
-            // Add any tools stored externally, as listed in Config.properties file.
+            // Add any tools stored externally, as listed in values.properties file.
             // This needs some work, because mars.Globals.getExternalTools() returns
             // whatever is in the properties file entry.  Since the class file will
             // not be located in the mars.tools folder, the loop below will not process

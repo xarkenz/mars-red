@@ -1,7 +1,6 @@
 package mars.settings;
 
 import mars.util.Binary;
-import mars.util.PropertiesFile;
 import mars.venus.editor.jeditsyntax.SyntaxStyle;
 import mars.venus.editor.jeditsyntax.tokenmarker.Token;
 
@@ -807,10 +806,10 @@ public class Settings {
 
         Properties defaults = new Properties();
         try {
-            InputStream input = PropertiesFile.class.getResourceAsStream(DEFAULT_SETTINGS_PATH);
+            InputStream input = Settings.class.getResourceAsStream(DEFAULT_SETTINGS_PATH);
             defaults.load(input);
         }
-        catch (IOException | NullPointerException ignored) {
+        catch (IOException | NullPointerException exception) {
             // Built-in defaults will be used instead
         }
 
