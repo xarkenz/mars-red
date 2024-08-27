@@ -1,8 +1,8 @@
 package mars;
 
-import com.formdev.flatlaf.FlatDarkLaf;
-import com.formdev.flatlaf.FlatLaf;
-import com.formdev.flatlaf.FlatLightLaf;
+import com.formdev.flatlaf.*;
+import com.formdev.flatlaf.themes.FlatMacDarkLaf;
+import com.formdev.flatlaf.themes.FlatMacLightLaf;
 import mars.assembler.SymbolTable;
 import mars.mips.hardware.*;
 import mars.mips.instructions.InstructionSet;
@@ -189,6 +189,9 @@ public class Application {
         FlatLaf.setup(switch (settings.lookAndFeelName.get()) {
             case "FlatLightLaf" -> new FlatLightLaf();
             case "FlatDarkLaf" -> new FlatDarkLaf();
+            case "FlatDarculaLaf" -> new FlatDarculaLaf();
+            case "FlatMacLightLaf" -> new FlatMacLightLaf();
+            case "FlatMacDarkLaf" -> new FlatMacDarkLaf();
             default -> new FlatLightLaf();
         });
 

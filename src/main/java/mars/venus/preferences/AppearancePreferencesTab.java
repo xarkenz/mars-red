@@ -8,12 +8,18 @@ import javax.swing.*;
 public class AppearancePreferencesTab extends PreferencesTab {
     public enum Theme {
         DEFAULT_LIGHT("Default Light", "FlatLightLaf"),
-        DEFAULT_DARK("Default Dark", "FlatDarkLaf");
+        DEFAULT_DARK("Default Dark", "FlatDarkLaf"),
+        DARCULA("Darcula", "FlatDarculaLaf"),
+        MAC_LIGHT("Mac Light", "FlatMacLightLaf"),
+        MAC_DARK("Mac Dark", "FlatMacDarkLaf");
 
         public static Theme fromLookAndFeelName(String lookAndFeelName) {
             return switch (lookAndFeelName) {
                 case "FlatLightLaf" -> DEFAULT_LIGHT;
                 case "FlatDarkLaf" -> DEFAULT_DARK;
+                case "FlatDarculaLaf" -> DARCULA;
+                case "FlatMacLightLaf" -> MAC_LIGHT;
+                case "FlatMacDarkLaf" -> MAC_DARK;
                 default -> null;
             };
         }
