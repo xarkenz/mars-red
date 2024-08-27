@@ -9,6 +9,8 @@ import mars.mips.instructions.InstructionSet;
 import mars.settings.Settings;
 import mars.util.Binary;
 import mars.venus.VenusUI;
+import mars.venus.themes.SolarizedDarkLaf;
+import mars.venus.themes.SolarizedLightLaf;
 
 import javax.swing.*;
 import java.io.IOException;
@@ -189,9 +191,11 @@ public class Application {
         FlatLaf.setup(switch (settings.lookAndFeelName.get()) {
             case "FlatLightLaf" -> new FlatLightLaf();
             case "FlatDarkLaf" -> new FlatDarkLaf();
-            case "FlatDarculaLaf" -> new FlatDarculaLaf();
             case "FlatMacLightLaf" -> new FlatMacLightLaf();
             case "FlatMacDarkLaf" -> new FlatMacDarkLaf();
+            case "SolarizedLightLaf" -> new SolarizedLightLaf();
+            case "SolarizedDarkLaf" -> new SolarizedDarkLaf();
+            case "FlatDarculaLaf" -> new FlatDarculaLaf();
             default -> new FlatLightLaf();
         });
 

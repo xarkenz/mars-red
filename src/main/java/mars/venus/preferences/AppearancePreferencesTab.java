@@ -9,19 +9,19 @@ public class AppearancePreferencesTab extends PreferencesTab {
     public enum Theme {
         DEFAULT_LIGHT("Default Light", "FlatLightLaf"),
         DEFAULT_DARK("Default Dark", "FlatDarkLaf"),
-        DARCULA("Darcula", "FlatDarculaLaf"),
         MAC_LIGHT("Mac Light", "FlatMacLightLaf"),
-        MAC_DARK("Mac Dark", "FlatMacDarkLaf");
+        MAC_DARK("Mac Dark", "FlatMacDarkLaf"),
+        SOLARIZED_LIGHT("Solarized Light", "SolarizedLightLaf"),
+        SOLARIZED_DARK("Solarized Dark", "SolarizedDarkLaf"),
+        DARCULA("Darcula", "FlatDarculaLaf");
 
         public static Theme fromLookAndFeelName(String lookAndFeelName) {
-            return switch (lookAndFeelName) {
-                case "FlatLightLaf" -> DEFAULT_LIGHT;
-                case "FlatDarkLaf" -> DEFAULT_DARK;
-                case "FlatDarculaLaf" -> DARCULA;
-                case "FlatMacLightLaf" -> MAC_LIGHT;
-                case "FlatMacDarkLaf" -> MAC_DARK;
-                default -> null;
-            };
+            for (Theme theme : Theme.values()) {
+                if (theme.getLookAndFeelName().equals(lookAndFeelName)) {
+                    return theme;
+                }
+            }
+            return null;
         }
 
         private final String displayName;
