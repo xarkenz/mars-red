@@ -30,7 +30,15 @@ jobs:
           cache: maven
       - name: Generate JavaDoc
         run: |
+          # Generate the initial JavaDoc
           mvn javadoc:aggregate
+          # Output some debug info
+          echo "Contents of 'target':"
+          ls -l target
+          echo "Contents of 'target/site':"
+          ls -l target/site
+          echo "Contents of 'target/site/apidocs':"
+          ls -l target/site/apidocs
           # Generating JavaDoc creates some .md files, so prevent them from showing up in main documentation
           for i in $(find target -name "*.md"); do
             [ -f "$i" ] || break
