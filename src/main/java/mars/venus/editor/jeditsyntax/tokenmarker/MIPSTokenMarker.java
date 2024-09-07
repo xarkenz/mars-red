@@ -47,6 +47,7 @@ public class MIPSTokenMarker extends TokenMarker {
     public static String[] getTokenDescriptions() {
         if (tokenDescriptions == null) {
             tokenDescriptions = new String[Token.ID_COUNT];
+            tokenDescriptions[Token.NULL] = "Default";
             tokenDescriptions[Token.COMMENT] = "Comment";
             tokenDescriptions[Token.STRING_LITERAL] = "String literal";
             tokenDescriptions[Token.CHAR_LITERAL] = "Character literal";
@@ -63,6 +64,7 @@ public class MIPSTokenMarker extends TokenMarker {
     public static String[] getTokenExamples() {
         if (tokenExamples == null) {
             tokenExamples = new String[Token.ID_COUNT];
+            tokenExamples[Token.NULL] = "example";
             tokenExamples[Token.COMMENT] = "# comment";
             tokenExamples[Token.STRING_LITERAL] = "\"string\"";
             tokenExamples[Token.CHAR_LITERAL] = "'\\n'";

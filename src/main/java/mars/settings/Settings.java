@@ -639,58 +639,64 @@ public class Settings {
 
     // SYNTAX STYLE SETTINGS
 
+    public final SyntaxStyleSetting syntaxStyleDefault = new SyntaxStyleSetting(
+        this,
+        "SyntaxStyleDefault",
+        "Venus.SyntaxStyle.default",
+        false
+    );
     public final SyntaxStyleSetting syntaxStyleComment = new SyntaxStyleSetting(
         this,
         "SyntaxStyleComment",
-        new SyntaxStyle(new Color(0x666666), false, false),
+        "Venus.SyntaxStyle.comment",
         false
     );
     public final SyntaxStyleSetting syntaxStyleInstruction = new SyntaxStyleSetting(
         this,
         "SyntaxStyleInstruction",
-        new SyntaxStyle(new Color(0xF27541), false, false),
+        "Venus.SyntaxStyle.instruction",
         false
     );
     public final SyntaxStyleSetting syntaxStyleDirective = new SyntaxStyleSetting(
         this,
         "SyntaxStyleDirective",
-        new SyntaxStyle(new Color(0x5A81FD), false, false),
+        "Venus.SyntaxStyle.directive",
         false
     );
     public final SyntaxStyleSetting syntaxStyleRegister = new SyntaxStyleSetting(
         this,
         "SyntaxStyleRegister",
-        new SyntaxStyle(new Color(0xE9AA4B), false, false),
+        "Venus.SyntaxStyle.register",
         false
     );
     public final SyntaxStyleSetting syntaxStyleStringLiteral = new SyntaxStyleSetting(
         this,
         "SyntaxStyleStringLiteral",
-        new SyntaxStyle(new Color(0x3C9862), false, false),
+        "Venus.SyntaxStyle.stringLiteral",
         false
     );
     public final SyntaxStyleSetting syntaxStyleCharLiteral = new SyntaxStyleSetting(
         this,
         "SyntaxStyleCharLiteral",
-        new SyntaxStyle(new Color(0x3C9862), false, false),
+        "Venus.SyntaxStyle.charLiteral",
         false
     );
     public final SyntaxStyleSetting syntaxStyleLabel = new SyntaxStyleSetting(
         this,
         "SyntaxStyleLabel",
-        new SyntaxStyle(new Color(0x2DB7AE), false, true),
+        "Venus.SyntaxStyle.label",
         false
     );
     public final SyntaxStyleSetting syntaxStyleInvalid = new SyntaxStyleSetting(
         this,
         "SyntaxStyleInvalid",
-        new SyntaxStyle(new Color(0xFF3F3F), false, false),
+        "Venus.SyntaxStyle.invalid",
         false
     );
     public final SyntaxStyleSetting syntaxStyleMacroArgument = new SyntaxStyleSetting(
         this,
         "SyntaxStyleMacroArgument",
-        new SyntaxStyle(new Color(0xDE8ACA), false, false),
+        "Venus.SyntaxStyle.macroArgument",
         false
     );
 
@@ -698,6 +704,7 @@ public class Settings {
 
     private SyntaxStyleSetting[] getStyleSettingsArray() {
         SyntaxStyleSetting[] styles = new SyntaxStyleSetting[Token.ID_COUNT];
+        styles[Token.NULL] = this.syntaxStyleDefault;
         styles[Token.COMMENT] = this.syntaxStyleComment;
         styles[Token.INSTRUCTION] = this.syntaxStyleInstruction;
         styles[Token.DIRECTIVE] = this.syntaxStyleDirective;
@@ -710,20 +717,106 @@ public class Settings {
         return styles;
     }
 
+    /**
+     * Create and initialize an instance of <code>Settings</code> based on configuration defaults and
+     * user-defined values from permanent storage.
+     */
     public Settings() {
         this.loadValues();
     }
 
     /**
-     * Obtain the <code>SyntaxStyle</code> corresponding to a given token type.
+     * Obtain the user-defined <code>SyntaxStyle</code>s in the form of an array.
+     * The indices of elements in the array correspond to constants from the {@link Token} class.
+     * A <code>null</code> element indicates that the syntax style defers to the theme default.
+     *
+     * @return The syntax styles.
+     * @see SyntaxStyleSetting#get()
+     */
+    public SyntaxStyle[] getSyntaxStyles() {
+        SyntaxStyle[] styles = new SyntaxStyle[this.syntaxStyleSettings.length];
+
+        for (int index = 0; index < styles.length; index++) {
+            SyntaxStyleSetting setting = this.syntaxStyleSettings[index];
+            styles[index] = (setting == null) ? null : setting.get();
+        }
+
+        return styles;
+    }
+
+    /**
+     * Obtain the current <code>SyntaxStyle</code>s in the form of an array.
+     * The indices of elements in the array correspond to constants from the {@link Token} class.
+     * Each element is the user-defined style, if set, or the theme default otherwise.
+     * A <code>null</code> element indicates that the theme default does not assign a syntax style to the token,
+     * and no user-defined value is set.
+     *
+     * @return The syntax styles.
+     * @see SyntaxStyleSetting#getOrDefault()
+     */
+    public SyntaxStyle[] getSyntaxStylesOrDefault() {
+        SyntaxStyle[] styles = new SyntaxStyle[this.syntaxStyleSettings.length];
+
+        for (int index = 0; index < styles.length; index++) {
+            SyntaxStyleSetting setting = this.syntaxStyleSettings[index];
+            styles[index] = (setting == null) ? null : setting.getOrDefault();
+        }
+
+        return styles;
+    }
+
+    /**
+     * Obtain the user-defined <code>SyntaxStyle</code> corresponding to a given token type.
+     * If the syntax style defers to the theme default, <code>null</code> is returned.
      *
      * @param index The index of the desired syntax style, which should be one of the token type constants
      *              in {@link Token}.
      * @return The syntax style, or <code>null</code> if there is no syntax style assigned to the token type.
+     * @see SyntaxStyleSetting#get()
      */
     public SyntaxStyle getSyntaxStyle(int index) {
+        if (index < 0 || index >= this.syntaxStyleSettings.length) {
+            return null;
+        }
+
         SyntaxStyleSetting setting = this.syntaxStyleSettings[index];
-        return (setting != null) ? setting.get() : null;
+        return (setting == null) ? null : setting.get();
+    }
+
+    /**
+     * Obtain the current <code>SyntaxStyle</code> corresponding to a given token type. If the user has defined a custom
+     * syntax style, it is returned. Otherwise, the theme default syntax style is returned.
+     *
+     * @param index The index of the desired syntax style, which should be one of the token type constants
+     *              in {@link Token}.
+     * @return The syntax style, or <code>null</code> if there is no syntax style assigned to the token type.
+     * @see SyntaxStyleSetting#getOrDefault()
+     */
+    public SyntaxStyle getSyntaxStyleOrDefault(int index) {
+        if (index < 0 || index >= this.syntaxStyleSettings.length) {
+            return null;
+        }
+
+        SyntaxStyleSetting setting = this.syntaxStyleSettings[index];
+        return (setting == null) ? null : setting.getOrDefault();
+    }
+
+    /**
+     * Obtain the default <code>SyntaxStyle</code> corresponding to a given token type. This default value
+     * derives from theme-specific defaults.
+     *
+     * @param index The index of the desired syntax style, which should be one of the token type constants
+     *              in {@link Token}.
+     * @return The syntax style, or <code>null</code> if there is no syntax style assigned to the token type.
+     * @see SyntaxStyleSetting#getDefault()
+     */
+    public SyntaxStyle getDefaultSyntaxStyle(int index) {
+        if (index < 0 || index >= this.syntaxStyleSettings.length) {
+            return null;
+        }
+
+        SyntaxStyleSetting setting = this.syntaxStyleSettings[index];
+        return (setting == null) ? null : setting.getDefault();
     }
 
     /**
@@ -731,9 +824,13 @@ public class Settings {
      *
      * @param index The index of the desired syntax style, which should be one of the token type constants
      *              in {@link Token}.
-     * @param style The syntax style to be associated with the token type.
+     * @param style The syntax style to be associated with the token type, or <code>null</code> to assume the default.
+     * @see SyntaxStyleSetting#set(SyntaxStyle)
      */
     public void setSyntaxStyle(int index, SyntaxStyle style) {
+        if (index < 0 || index >= this.syntaxStyleSettings.length) {
+            return;
+        }
         SyntaxStyleSetting setting = this.syntaxStyleSettings[index];
         if (setting != null) {
             setting.set(style);
@@ -780,7 +877,12 @@ public class Settings {
      */
     public void saveStringSetting(String key, String value, boolean notify) {
         try {
-            this.preferences.put(key, value);
+            if (value != null) {
+                this.preferences.put(key, value);
+            }
+            else {
+                this.preferences.remove(key);
+            }
             this.preferences.flush();
         }
         catch (SecurityException | BackingStoreException exception) {
@@ -820,7 +922,7 @@ public class Settings {
                 setting.setDefault(Boolean.parseBoolean(property));
                 setting.setNonPersistent(setting.getDefault());
             }
-            setting.set(this.preferences.getBoolean(setting.getKey(), setting.getDefault()));
+            setting.setNonPersistent(this.preferences.getBoolean(setting.getKey(), setting.getDefault()));
         }
         // Load integer settings
         for (IntegerSetting setting : this.integerSettings) {
@@ -834,7 +936,7 @@ public class Settings {
                     // Keep the default value
                 }
             }
-            setting.set(this.preferences.getInt(setting.getKey(), setting.getDefault()));
+            setting.setNonPersistent(this.preferences.getInt(setting.getKey(), setting.getDefault()));
         }
         // Load string settings
         for (StringSetting setting : this.stringSettings) {
@@ -843,7 +945,7 @@ public class Settings {
                 setting.setDefault(property);
                 setting.setNonPersistent(setting.getDefault());
             }
-            setting.set(this.preferences.get(setting.getKey(), setting.getDefault()));
+            setting.setNonPersistent(this.preferences.get(setting.getKey(), setting.getDefault()));
         }
         // Load color settings
         for (ColorSetting setting : this.colorSettings) {
@@ -857,7 +959,7 @@ public class Settings {
             }
             Color color = ColorSetting.decode(this.preferences.get(setting.getKey(), null));
             if (color != null) {
-                setting.set(color);
+                setting.setNonPersistent(color);
             }
         }
         // Load font settings
@@ -870,21 +972,16 @@ public class Settings {
             }
             String fontString = this.preferences.get(setting.getKey(), null);
             if (fontString != null) {
-                setting.set(FontSetting.decode(fontString));
+                setting.setNonPersistent(FontSetting.decode(fontString));
             }
         }
         // Load syntax style settings
         for (SyntaxStyleSetting setting : this.syntaxStyleSettings) {
             if (setting != null) {
-                String property = defaults.getProperty(setting.getKey());
-                if (property != null) {
-                    SyntaxStyle style = SyntaxStyleSetting.decode(property);
-                    setting.setDefault(style);
-                    setting.setNonPersistent(style);
-                }
+                // Default value comes from theme-specific UI values, so don't bother checking for a default here
                 String styleString = this.preferences.get(setting.getKey(), null);
                 if (styleString != null) {
-                    setting.set(SyntaxStyleSetting.decode(styleString));
+                    setting.setNonPersistent(SyntaxStyleSetting.decode(styleString));
                 }
             }
         }

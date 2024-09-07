@@ -2,6 +2,7 @@ package mars.settings;
 
 import mars.venus.editor.jeditsyntax.SyntaxStyle;
 
+import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,18 +14,18 @@ import java.util.Objects;
 public class SyntaxStyleSetting {
     private final Settings settings;
     private final String key;
-    private SyntaxStyle defaultValue;
+    private final String uiKey;
     private SyntaxStyle value;
     private final boolean notifies;
 
     // Package-private visibility; the constructor usage should be restricted to Settings.
-    // The default value will almost always be overridden immediately, but it serves as
-    // a backup in case both Preferences and the defaults file fail to load.
-    SyntaxStyleSetting(Settings settings, String key, SyntaxStyle defaultValue, boolean notifies) {
+    // This setting works differently from most; the default value is derived from UI properties, so the base UI
+    // key is stored rather than the default value itself.
+    SyntaxStyleSetting(Settings settings, String key, String uiKey, boolean notifies) {
         this.settings = settings;
         this.key = key;
-        this.defaultValue = defaultValue;
-        this.value = defaultValue;
+        this.uiKey = uiKey;
+        this.value = null;
         this.notifies = notifies;
     }
 
@@ -60,21 +61,25 @@ public class SyntaxStyleSetting {
     }
 
     /**
-     * Get the default value for this setting.
+     * Get the theme default value for this setting.
      *
-     * @return The default syntax style value for this setting.
+     * @return The theme default syntax style value for this setting.
      */
     public SyntaxStyle getDefault() {
-        return this.defaultValue;
+        Color foreground = UIManager.getColor(this.uiKey + ".foreground");
+        boolean italic = UIManager.getBoolean(this.uiKey + ".italic");
+        boolean bold = UIManager.getBoolean(this.uiKey + ".bold");
+        return new SyntaxStyle(foreground, italic, bold);
     }
 
     /**
-     * Set the default value for this setting without updating the current value.
+     * Get the value currently stored in this setting if it is not <code>null</code>, or the theme default
+     * returned by {@link #getDefault()} otherwise.
      *
-     * @param value The new default syntax style value for this setting.
+     * @return The syntax style value for this setting, or the theme default if not set.
      */
-    public void setDefault(SyntaxStyle value) {
-        this.defaultValue = value;
+    public SyntaxStyle getOrDefault() {
+        return (this.value == null) ? this.getDefault() : this.value;
     }
 
     /**
@@ -105,7 +110,7 @@ public class SyntaxStyleSetting {
         }
 
         List<String> attributes = new ArrayList<>();
-        attributes.add("Color=" + ColorSetting.encode(style.getColor()));
+        attributes.add("Color=" + ColorSetting.encode(style.getForeground()));
         if (style.isBold()) {
             attributes.add("Bold");
         }

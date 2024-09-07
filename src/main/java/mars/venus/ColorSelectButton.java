@@ -3,6 +3,7 @@ package mars.venus;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
+import java.awt.*;
 
 /*
 Copyright (c) 2003-2009,  Pete Sanderson and Kenneth Vollmar
@@ -38,12 +39,31 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * well on buttons with black background.
  */
 public class ColorSelectButton extends JButton {
-    public static final Border ENABLED_BORDER = new EmptyBorder(0, 0, 0, 0);
-    public static final Border DISABLED_BORDER = new EmptyBorder(0, 0, 0, 0);
+    private Color colorValue = null;
+
+    public Color getColorValue() {
+        return this.colorValue;
+    }
+
+    public void setColorValue(Color colorValue) {
+        this.colorValue = colorValue;
+        this.repaint();
+    }
 
     @Override
     public void setEnabled(boolean enable) {
         super.setEnabled(enable);
-        this.setBorder(enable ? ENABLED_BORDER : DISABLED_BORDER);
+        this.putClientProperty("JButton.squareSize", "true");
+    }
+
+    @Override
+    protected void paintComponent(Graphics graphics) {
+        super.paintComponent(graphics);
+
+        if (this.colorValue != null) {
+            graphics.setColor(this.colorValue);
+            ((Graphics2D) graphics).setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            graphics.fillRoundRect(4, 4, this.getWidth() - 8, this.getHeight() - 8, 4, 4);
+        }
     }
 }

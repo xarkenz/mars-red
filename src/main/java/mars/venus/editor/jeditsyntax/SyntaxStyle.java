@@ -9,9 +9,8 @@
 
 package mars.venus.editor.jeditsyntax;
 
-import mars.util.Binary;
-
 import java.awt.*;
+import java.util.Objects;
 
 /**
  * A simple text style class. It can specify the color, italic flag,
@@ -21,7 +20,7 @@ import java.awt.*;
  * @version $Id: SyntaxStyle.java,v 1.6 1999/12/13 03:40:30 sp Exp $
  */
 public class SyntaxStyle {
-    private final Color color;
+    private final Color foreground;
     private final boolean italic;
     private final boolean bold;
     private Font lastFont;
@@ -31,12 +30,12 @@ public class SyntaxStyle {
     /**
      * Creates a new SyntaxStyle.
      *
-     * @param color  The text color
-     * @param italic True if the text should be italics
-     * @param bold   True if the text should be bold
+     * @param foreground The text color
+     * @param italic     True if the text should be italics
+     * @param bold       True if the text should be bold
      */
-    public SyntaxStyle(Color color, boolean italic, boolean bold) {
-        this.color = color;
+    public SyntaxStyle(Color foreground, boolean italic, boolean bold) {
+        this.foreground = foreground;
         this.italic = italic;
         this.bold = bold;
     }
@@ -44,21 +43,8 @@ public class SyntaxStyle {
     /**
      * Returns the color specified in this style.
      */
-    public Color getColor() {
-        return color;
-    }
-
-    /**
-     * Returns the color coded as stringified 32-bit hex with
-     * red in bits 16-23, green in bits 8-15, blue in bits 0-7
-     * e.g. "0x00FF3366" where Red is FF, Green is 33, Blue is 66.
-     * This is used by Settings initialization to avoid direct
-     * use of Color class.  Long story. DPS 13-May-2010
-     *
-     * @return String containing hex-coded color value.
-     */
-    public String getColorAsHexString() {
-        return Binary.intToHexString(color.getRGB() & 0xFFFFFF);
+    public Color getForeground() {
+        return foreground;
     }
 
     /**
@@ -87,9 +73,7 @@ public class SyntaxStyle {
      * italic flags applied.
      */
     public Font getStyledFont(Font font) {
-        if (font == null) {
-            throw new NullPointerException("font param must not be null");
-        }
+        Objects.requireNonNull(font);
         if (font.equals(lastFont)) {
             return lastStyledFont;
         }
@@ -102,9 +86,7 @@ public class SyntaxStyle {
      * Returns the font metrics for the styled font.
      */
     public FontMetrics getFontMetrics(Font font) {
-        if (font == null) {
-            throw new NullPointerException("font param must not be null");
-        }
+        Objects.requireNonNull(font);
         if (font.equals(lastFont) && fontMetrics != null) {
             return fontMetrics;
         }
@@ -123,13 +105,13 @@ public class SyntaxStyle {
      */
     public void setGraphicsFlags(Graphics gfx, Font font) {
         gfx.setFont(getStyledFont(font));
-        gfx.setColor(color);
+        gfx.setColor(foreground);
     }
 
     /**
      * Returns a string representation of this object.
      */
     public String toString() {
-        return getClass().getName() + "[color=" + color + (italic ? ",italic" : "") + (bold ? ",bold" : "") + "]";
+        return getClass().getName() + "[color=" + foreground + (italic ? ",italic" : "") + (bold ? ",bold" : "") + "]";
     }
 }
