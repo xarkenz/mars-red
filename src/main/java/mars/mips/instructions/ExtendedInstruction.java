@@ -636,6 +636,6 @@ public class ExtendedInstruction extends Instruction {
             }
             instructionCount++;
         }
-        return 4 * instructionCount;
+        return instructionCount * Instruction.BYTES_PER_INSTRUCTION;
     }
 }

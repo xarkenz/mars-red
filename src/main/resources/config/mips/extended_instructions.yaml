@@ -1,0 +1,2842 @@
+# Copyright (c) 2003-2010,  Pete Sanderson and Kenneth Vollmar
+#
+# Developed by Pete Sanderson (psanderson@otterbein.edu)
+# and Kenneth Vollmar (kenvollmar@missouristate.edu)
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject
+# to the following conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR
+# ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+# CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+# (MIT license, http://www.opensource.org/licenses/mit-license.html)
+
+
+# File containing definitions of MIPS pseudo-ops
+
+# File format:
+#   Each line contains specification for one pseudo-op, including optional description.
+#   First item is source statement syntax, specified in same "example" parser format used for regular instructions.
+#   Source statement specification ends with a tab.  It is followed by a tab-separated list of basic instruction
+#   templates to complete and substitute for the pseudo-op.
+#   Format for specifying syntax of templates is different from specifying syntax of source statement:
+#      (n=0,1,2,3,...) is token position in source statement (operator is token 0, parentheses are tokens but commas aren't)
+#      RGn means substitute register found in n'th token of source statement
+#      NRn means substitute next higher register than the one in n'th token of source code
+#      OPn means substitute n'th token of source code as is
+#      LLn means substitute low order 16-bits from label address in source token n.
+#      LLnU means substitute low order 16-bits (unsigned) from label address in source token n.
+#      LLnPm (m=1,2,3,4) means substitute low order 16-bits from label address in source token n, after adding m.
+#      LHn means substitute high order 16-bits from label address in source token n. Must add 1 if address bit 15 is 1.
+#      LHnPm (m=1,2,3,4) means substitute high order 16-bits from label address in source token n, after adding m. Must then add 1 if bit 15 is 1.
+#      VLn means substitute low order 16-bits from 32-bit value in source token n.
+#      VLnU means substitute low order 16-bits (unsigned) from 32-bit value in source token n.
+#      VLnPm (m=1,2,3,4) means substitute low order 16-bits from 32-bit value in source token n, after adding m to value.
+#      VLnPmU (m=1,2,3,4) means substitute low order 16-bits(unsigned) from 32-bit value in source token n, after adding m to value.
+#      VHLn means substitute high order 16-bits from 32-bit value in source token n.  Use this if later combined with low order 16-bits using "ori $1,$1,VLnU". See logical and branch operations.
+#      VHn means substitute high order 16-bits from 32-bit value in source token n, then add 1 if value's bit 15 is 1.  Use this only if later instruction uses VLn($1) to calculate 32-bit address.  See loads and stores.
+#      VHLnPm (m=1,2,3,4) means substitute high order 16-bits from 32-bit value in source token n, after adding m.  See VHLn.
+#      VHnPm (m=1,2,3,4) means substitute high order 16-bits from 32-bit value in source token n, after adding m. Must then add 1 if bit 15 is 1. See VHn.
+#      LLP is similar to LLn, but is needed for "label+100000" address offset. Immediate is added before taking low order 16.
+#      LLPU is similar to LLn, but is needed for "label+100000" address offset. Immediate is added before taking low order 16 (unsigned).
+#      LLPPm (m=1,2,3,4) is similar to LLP except m is added along with immediate before taking low order 16.
+#      LHPA is similar to LHn, but is needed for "label+100000" address offset. Immediate is added before taking high order 16.
+#      LHPN is similar to LHPA, used only by "la" instruction. Address resolved by "ori" so do not add 1 if bit 15 is 1.
+#      LHPAPm (m=1,2,3,4) is similar to LHPA except value m is added along with immediate before taking high order 16.
+#      LHL means substitute high order 16-bits from label address in token 2 of "la" (load address) source statement.
+#      LAB means substitute textual label from last token of source statement.  Used for various branches.
+#      S32 means substitute the result of subtracting the constant value in last token from 32.  Used by "ror", "rol".
+#      DBNOP means Delayed Branching NOP - generate a "nop" instruction but only if delayed branching is enabled.  Added in 3.4.1 release.
+#      BROFFnm means substitute n if delayed branching is NOT enabled otherwise substitute m.  n and m are single digit numbers indicating constant branch offset (in words).  Added in 3.4.1 release.
+#      COMPACT is a marker to separate the default template from a second template optimized for 16-bit addresses.  See loads and stores having (data) label operands.
+#   Everything else is copied as is into the generated statement (you must use register numbers not mnemonics)
+#   The list of basic instruction templates is optionally followed a description of the instruction for help purposes.
+#   To add optional description, append a tab then the '#' character followed immediately (no spaces) by the description.
+#
+#  See documentation for ExtendedInstruction.makeTemplateSubstitutions() for more details.
+#
+#  Matching for a given instruction mnemonic is first-fit not best-fit.  If an instruction has both 16 and 32-bit
+#  immediate operand options, they should be listed in that order (16-bit version first).  Otherwise the 16-bit
+#  version will never be matched since the 32-bit version fits small immediate values first.
+#
+#  The pseudo-op specification must start in the first column.  If first column is blank, the line will be skipped!
+#
+#  When specifying the example instruction (first item on line), the conventions I follow are:
+#  - for a register operand, specify a numbered register (e.g. $t1 or $f1) to represent any register in the set.
+#    The numerical value is not significant.  This is NOT the case when writing the templates that follow!
+#    In the templates, numbered registers are parsed as is (use only $0 and $1, which are $zero and $at).
+#  - for an immediate operand, specify a positive value indicative of the expected range.  I use 10 to represent
+#    a 5 bit value, 100 to represent a 16-bit value, and 100000 to represent a 32-bit value.
+#  - for a label operand, I use the string "label" (without the quotes).
+#  The idea is to give the parser an example that will be parsed into the desired token sequence.  Syntax checking
+#  is done by comparing the source token sequence to list of token sequences generated from the examples.
+#  IMPORTANT NOTE:  The use of $t1,$t2, etc in the instruction sample means that any CPU register reference
+#                   can be used in that position.  It is simply a placeholder.  By contrast, when
+#                   $1 is used in the template specification, $1 ($at) is literally placed into the generated
+#                   instruction!  If you want the generated code to echo the source register, use RG1,RG2, etc.
+
+#######################  arithmetic and branch pseudo-ops #####################
+
+- mnemonic: not
+  title: "NOT"
+  matches:
+    - description: "set {0} to bitwise inversion of {1}"
+      operands: [ reg, reg ]
+      expansion: |
+        nor {0}, {1}, $0
+
+# Here are some "convenience" arithmetic pseduo-ops.  But do they encourage sloppy programming?
+- mnemonic: add
+  title: "ADDition"
+  matches:
+    - description: "set {0} to ({1} plus 16-bit immediate)"
+      operands: [ reg, reg, s16 ]
+      expansion: |
+        addi {0}, {1}, {2:AL}
+    - description: "set {0} to ({1} plus 32-bit immediate)"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        add {0}, {1}, $1
+- mnemonic: addu
+  title: "ADDition Unsigned"
+  matches:
+    - description: "set {0} to ({1} plus 32-bit immediate), no overflow"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        addu {0}, {1}, $1
+- mnemonic: addi
+  title: "ADDition Immediate"
+  matches:
+    - description: "set {0} to ({1} plus 32-bit immediate)"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        add {0}, {1}, $1
+- mnemonic: addiu
+  title: "ADDition Immediate Unsigned"
+  matches:
+    - description: "set {0} to ({1} plus 32-bit immediate), no overflow"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        addu {0}, {1}, $1
+- mnemonic: sub
+  title: "SUBtraction"
+  matches:
+    - description: "set {0} to ({1} minus 16-bit immediate)"
+      operands: [ reg, reg, s16 ]
+      expansion: |
+        addi $1, $0, {2:AL}
+        sub {0}, {1}, $1
+    - description: "set {0} to ({1} minus 32-bit immediate)"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        sub {0}, {1}, $1
+- mnemonic: subu
+  title: "SUBtraction Unsigned"
+  matches:
+    - description: "set {0} to ({1} minus 32-bit immediate), no overflow"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        subu {0}, {1}, $1
+- mnemonic: subi
+  title: "SUBtraction Immediate"
+  matches:
+    - description: "set {0} to ({1} minus 16-bit immediate)"
+      operands: [ reg, reg, s16 ]
+      expansion: |
+        addi $1, $0, {2:AL}
+        sub {0}, {1}, $1
+    - description: "set {0} to ({1} minus 32-bit immediate)"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        sub {0}, {1}, $1
+- mnemonic: subiu
+  title: "SUBtraction Immediate Unsigned"
+  matches:
+    - description: "set {0} to ({1} minus 32-bit immediate), no overflow"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        subu {0}, {1}, $1
+# feel free to add more convenience arithmetic pseduo-ops.
+
+# convenience logical operations can be added too,
+- mnemonic: andi
+  title: "AND Immediate"
+  matches:
+    - description: "set {0} to ({1} bitwise-AND 32-bit immediate)"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        and {0}, {1}, $1
+    - description: "set {0} to ({0} bitwise-AND 16-bit unsigned immediate)"
+      operands: [ reg, u16 ]
+      expansion: |
+        andi {0}, {0}, {1:L}
+    - description: "set {0} to ({0} bitwise-AND 32-bit immediate)"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:H}
+        ori $1, $1, {1:L}
+        and {0}, {0}, $1
+- mnemonic: ori
+  title: "OR Immediate"
+  matches:
+    - description: "set {0} to ({1} bitwise-OR 32-bit immediate)"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        or {0}, {1}, $1
+    - description: "set {0} to ({0} bitwise-OR 16-bit unsigned immediate)"
+      operands: [ reg, u16 ]
+      expansion: |
+        ori {0}, {0}, {1:L}
+    - description: "set {0} to ({0} bitwise-OR 32-bit immediate)"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:H}
+        ori $1, $1, {1:L}
+        or {0}, {0}, $1
+- mnemonic: xori
+  title: "XOR Immediate"
+  matches:
+    - description: "set {0} to ({1} bitwise-exclusive-OR 32-bit immediate)"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        xor {0}, {1}, $1
+    - description: "set {0} to ({0} bitwise-exclusive-OR 16-bit unsigned immediate)"
+      operands: [ reg, u16 ]
+      expansion: |
+        xori {0}, {0}, {1:L}
+    - description: "set {0} to ({0} bitwise-exclusive-OR 32-bit immediate)"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:H}
+        ori $1, $1, {1:L}
+        xor {0}, {0}, $1
+- mnemonic: and
+  title: "AND"
+  matches:
+    - description: "set {0} to ({1} bitwise-AND 16-bit unsigned immediate)"
+      operands: [ reg, reg, u16 ]
+      expansion: |
+        andi {0}, {1}, {2:L}
+    - description: "set {0} to ({0} bitwise-AND 16-bit unsigned immediate)"
+      operands: [ reg, u16 ]
+      expansion: |
+        andi {0}, {0}, {1:L}
+- mnemonic: or
+  title: "OR"
+  matches:
+    - description: "set {0} to ({1} bitwise-OR 16-bit unsigned immediate)"
+      operands: [ reg, reg, u16 ]
+      expansion: |
+        ori {0}, {1}, {2:L}
+    - description: "set {0} to ({0} bitwise-OR 16-bit unsigned immediate)"
+      operands: [ reg, u16 ]
+      expansion: |
+        ori {0}, {0}, {1:L}
+- mnemonic: xor
+  title: "XOR"
+  matches:
+    - description: "set {0} to ({1} bitwise-exclusive-OR 16-bit unsigned immediate)"
+      operands: [ reg, reg, u16 ]
+      expansion: |
+        xori {0}, {1}, {2:L}
+    - description: "set {0} to ({0} bitwise-exclusive-OR 16-bit unsigned immediate)"
+      operands: [ reg, u16 ]
+      expansion: |
+        xori {0}, {0}, {1:L}
+
+# Note: most of the expansions in this group were rewritten for Release 3.4.1 to remove internal branching.
+- mnemonic: seq
+  title: "Set EQual"
+  matches:
+    - description: "if {1} equal to {2} then set {0} to 1 else 0"
+      operands: [ reg, reg, reg ]
+      expansion: |
+        subu {0}, {1}, {2}
+        ori $1, $0, 1
+        sltu {0}, {0}, $1
+    - description: "if {1} equal to 16-bit immediate then set {0} to 1 else 0"
+      operands: [ reg, reg, s16 ]
+      expansion: |
+        addi $1, $0, {2:AL}
+        subu {0}, {1}, $1
+        ori $1, $0, 1
+        sltu {0}, {0}, $1
+    - description: "if {1} equal to 32-bit immediate then set {0} to 1 else 0"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        subu {0}, {1}, $1
+        ori $1, $0, 1
+        sltu {0}, {0}, $1
+
+- mnemonic: sne
+  title: "Set Not Equal"
+  matches:
+    - description: "if {1} not equal to {2} then set {0} to 1 else 0"
+      operands: [ reg, reg, reg ]
+      expansion: |
+        subu {0}, {1}, {2}
+        sltu {0}, $0, {0}
+    - description: "if {1} not equal to 16-bit immediate then set {0} to 1 else 0"
+      operands: [ reg, reg, s16 ]
+      expansion: |
+        addi $1, $0, {2:AL}
+        subu {0}, {1}, $1
+        sltu {0}, $0, {0}
+    - description: "if {1} not equal to 32-bit immediate then set {0} to 1 else 0"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        subu {0}, {1}, $1
+        sltu {0}, $0, {0}
+
+- mnemonic: sge
+  title: "Set Greater or Equal"
+  matches:
+    - description: "if {1} greater or equal to {2} then set {0} to 1 else 0"
+      operands: [ reg, reg, reg ]
+      expansion: |
+        slt {0}, {1}, {2}
+        ori $1, $0, 1
+        subu {0}, $1, {0}
+    - description: "if {1} greater or equal to 16-bit immediate then set {0} to 1 else 0"
+      operands: [ reg, reg, s16 ]
+      expansion: |
+        addi $1, $0, {2:AL}
+        slt {0}, {1}, $1
+        ori $1, $0, 1
+        subu {0}, $1, {0}
+    - description: "if {1} greater or equal to 32-bit immediate then set {0} to 1 else 0"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        slt {0}, {1}, $1
+        ori $1, $0, 1
+        subu {0}, $1, {0}
+
+- mnemonic: sgeu
+  title: "Set Greater or Equal Unsigned"
+  matches:
+    - description: "if {1} greater or equal to {2} (unsigned compare) then set {0} to 1 else 0"
+      operands: [ reg, reg, reg ]
+      expansion: |
+        sltu {0}, {1}, {2}
+        ori $1, $0, 1
+        subu {0}, $1, {0}
+    - description: "if {1} greater or equal to 16-bit immediate (unsigned compare) then set {0} to 1 else 0"
+      operands: [ reg, reg, s16 ]
+      expansion: |
+        addi $1, $0, {2:AL}
+        sltu {0}, {1}, $1
+        ori $1, $0, 1
+        subu {0}, $1, {0}
+    - description: "if {1} greater or equal to 32-bit immediate (unsigned compare) then set {0} to 1 else 0"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        sltu {0}, {1}, $1
+        ori $1, $0, 1
+        subu {0}, $1, {0}
+
+- mnemonic: sgt
+  title: "Set Greater Than"
+  matches:
+    - description: "if {1} greater than {2} then set {0} to 1 else 0"
+      operands: [ reg, reg, reg ]
+      expansion: |
+        slt {0}, {2}, {1}
+    - description: "if {1} greater than 16-bit immediate then set {0} to 1 else 0"
+      operands: [ reg, reg, s16 ]
+      expansion: |
+        addi $1, $0, {2:AL}
+        slt {0}, $1, {1}
+    - description: "if {1} greater than 32-bit immediate then set {0} to 1 else 0"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        slt {0}, $1, {1}
+
+- mnemonic: sgtu
+  title: "Set Greater Than Unsigned"
+  matches:
+    - description: "if {1} greater than {2} (unsigned compare) then set {0} to 1 else 0"
+      operands: [ reg, reg, reg ]
+      expansion: |
+        sltu {0}, {2}, {1}
+    - description: "if {1} greater than 16-bit immediate (unsigned compare) then set {0} to 1 else 0"
+      operands: [ reg, reg, s16 ]
+      expansion: |
+        addi $1, $0, {2:AL}
+        sltu {0}, $1, {1}
+    - description: "if {1} greater than 32-bit immediate (unsigned compare) then set {0} to 1 else 0"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        sltu {0}, $1, {1}
+
+- mnemonic: sle
+  title: "Set Less or Equal"
+  matches:
+    - description: "if {1} less or equal to {2} then set {0} to 1 else 0"
+      operands: [ reg, reg, reg ]
+      expansion: |
+        slt {0}, {2}, {1}
+        ori $1, $0, 1
+        subu {0}, $1, {0}
+    - description: "if {1} less or equal to 16-bit immediate then set {0} to 1 else 0"
+      operands: [ reg, reg, s16 ]
+      expansion: |
+        addi $1, $0, {2:AL}
+        slt {0}, $1, {1}
+        ori $1, $0, 1
+        subu {0}, $1, {0}
+    - description: "if {1} less or equal to 32-bit immediate then set {0} to 1 else 0"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        slt {0}, $1, {1}
+        ori $1, $0, 1
+        subu {0}, $1, {0}
+
+- mnemonic: sleu
+  title: "Set Less or Equal Unsigned"
+  matches:
+    - description: "if {1} less or equal to {2} (unsigned compare) then set {0} to 1 else 0"
+      operands: [ reg, reg, reg ]
+      expansion: |
+        sltu {0}, {2}, {1}
+        ori $1, $0, 1
+        subu {0}, $1, {0}
+    - description: "if {1} less or equal to 16-bit immediate (unsigned compare) then set {0} to 1 else 0"
+      operands: [ reg, reg, s16 ]
+      expansion: |
+        addi $1, $0, {2:AL}
+        sltu {0}, $1, {1}
+        ori $1, $0, 1
+        subu {0}, $1, {0}
+    - description: "if {1} less or equal to 32-bit immediate (unsigned compare) then set {0} to 1 else 0"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        sltu {0}, $1, {1}
+        ori $1, $0, 1
+        subu {0}, $1, {0}
+
+
+- mnemonic: move
+  title: "MOVE"
+  matches:
+    - description: "Set {0} to contents of {1}"
+      operands: [ reg, reg ]
+      expansion: |
+        addu {0}, $0, {1}
+- mnemonic: abs
+  title: "ABSolute value"
+  matches:
+    - description: "Set {0} to absolute value of {1} (algorithm from Hacker's Delight)"
+      operands: [ reg, reg ]
+      expansion: |
+        sra $1, {1}, 31
+        xor {0}, $1, {1}
+        subu {0}, {0}, $1
+- mnemonic: neg
+  title: "NEGate"
+  matches:
+    - description: "Set {0} to negation of {1}"
+      operands: [ reg, reg ]
+      expansion: |
+        sub {0}, $0, {1}
+- mnemonic: negu
+  title: "NEGate Unsigned"
+  matches:
+    - description: "Set {0} to negation of {1}, no overflow"
+      operands: [ reg, reg ]
+      expansion: |
+        subu {0}, $0, {1}
+
+- mnemonic: b
+  title: "Branch"
+  matches:
+    - description: "Branch to statement at {0} unconditionally"
+      operands: [ label ]
+      expansion: |
+        bgez $0, {0:B}
+- mnemonic: beqz
+  title: "Branch if EQual Zero"
+  matches:
+    - description: "Branch to statement at {1} if {0} is equal to zero"
+      operands: [ reg, label ]
+      expansion: |
+        beq {0}, $0, {1:B}
+- mnemonic: bnez
+  title: "Branch if Not Equal Zero"
+  matches:
+    - description: "Branch to statement at {1} if {0} is not equal to zero"
+      operands: [ reg, label ]
+      expansion: |
+        bne {0}, $0, {1:B}
+
+- mnemonic: beq
+  title: "Branch if EQual"
+  matches:
+    - description: "Branch to statement at {2} if {0} is equal to 16-bit immediate"
+      operands: [ reg, s16, label ]
+      expansion: |
+        addi $1, $0, {1:AL}
+        beq $1, {0}, {2:B}
+    - description: "Branch to statement at {2} if {0} is equal to 32-bit immediate"
+      operands: [ reg, i32, label ]
+      expansion: |
+        lui $1, {1:H}
+        ori $1, $1, {1:L}
+        beq $1, {0}, {2:B}
+- mnemonic: bne
+  title: "Branch if Not Equal"
+  matches:
+    - description: "Branch to statement at {2} if {0} is not equal to 16-bit immediate"
+      operands: [ reg, s16, label ]
+      expansion: |
+        addi $1, $0, {1:AL}
+        bne $1, {0}, {2:B}
+    - description: "Branch to statement at {2} if {0} is not equal to 32-bit immediate"
+      operands: [ reg, i32, label ]
+      expansion: |
+        lui $1, {1:H}
+        ori $1, $1, {1:L}
+        bne $1, {0}, {2:B}
+
+- mnemonic: bge
+  title: "Branch if Greater or Equal"
+  matches:
+    - description: "Branch to statement at {2} if {0} is greater or equal to {1}"
+      operands: [ reg, reg, label ]
+      expansion: |
+        slt $1, {0}, {1}
+        beq $1, $0, {2:B}
+    - description: "Branch to statement at {2} if {0} is greater or equal to 16-bit immediate"
+      operands: [ reg, s16, label ]
+      expansion: |
+        slti $1, {0}, {1:AL}
+        beq $1, $0, {2:B}
+    - description: "Branch to statement at {2} if {0} is greater or equal to 32-bit immediate"
+      operands: [ reg, i32, label ]
+      expansion: |
+        lui $1, {1:H}
+        ori $1, $1, {1:L}
+        slt $1, {0}, $1
+        beq $1, $0, {2:B}
+
+- mnemonic: bgeu
+  title: "Branch if Greater or Equal Unsigned"
+  matches:
+    - description: "Branch to statement at {2} if {0} is greater or equal to {1} (unsigned compare)"
+      operands: [ reg, reg, label ]
+      expansion: |
+        sltu $1, {0}, {1}
+        beq $1, $0, {2:B}
+    - description: "Branch to statement at {2} if {0} is greater or equal to 16-bit immediate (unsigned compare)"
+      operands: [ reg, s16, label ]
+      expansion: |
+        sltiu $1, {0}, {1:AL}
+        beq $1, $0, {2:B}
+    - description: "Branch to statement at {2} if {0} is greater or equal to 32-bit immediate (unsigned compare)"
+      operands: [ reg, i32, label ]
+      expansion: |
+        lui $1, {1:H}
+        ori $1, $1, {1:L}
+        sltu $1, {0}, $1
+        beq $1, $0, {2:B}
+
+- mnemonic: bgt
+  title: "Branch if Greater Than"
+  matches:
+    - description: "Branch to statement at {2} if {0} is greater than {1}"
+      operands: [ reg, reg, label ]
+      expansion: |
+        slt $1, {1}, {0}
+        bne $1, $0, {2:B}
+    - description: "Branch to statement at {2} if {0} is greater than 16-bit immediate"
+      operands: [ reg, s16, label ]
+      expansion: |
+        addi $1, $0, {1:AL}
+        slt $1, $1, {0}
+        bne $1, $0, {2:B}
+    - description: "Branch to statement at {2} if {0} is greater than 32-bit immediate"
+      operands: [ reg, i32, label ]
+      expansion: |
+        lui $1, {1:+1,H}
+        ori $1, $1, {1:+1,L}
+        slt $1, {0}, $1
+        beq $1, $0, {2:B}
+
+- mnemonic: bgtu
+  title: "Branch if Greater Than Unsigned"
+  matches:
+    - description: "Branch to statement at {2} if {0} is greater than {1} (unsigned compare)"
+      operands: [ reg, reg, label ]
+      expansion: |
+        sltu $1, {1}, {0}
+        bne $1, $0, {2:B}
+    - description: "Branch to statement at {2} if {0} is greater than 16-bit immediate (unsigned compare)"
+      operands: [ reg, s16, label ]
+      expansion: |
+        addi $1, $0, {1:AL}
+        sltu $1, $1, {0}
+        bne $1, $0, {2:B}
+    - description: "Branch to statement at {2} if {0} is greater than 16-bit immediate (unsigned compare)"
+      operands: [ reg, i32, label ]
+      expansion: |
+        lui $1, {1:H}
+        ori $1, $1, {1:L}
+        sltu $1, $1, {0}
+        bne $1, $0, {2:B}
+
+- mnemonic: ble
+  title: "Branch if Less or Equal"
+  matches:
+    - description: "Branch to statement at {2} if {0} is less than or equal to {1}"
+      operands: [ reg, reg, label ]
+      expansion: |
+        slt $1, {1}, {0}
+        beq $1, $0, {2:B}
+    - description: "Branch to statement at {2} if {0} is less than or equal to 16-bit immediate"
+      operands: [ reg, s16, label ]
+      expansion: |
+        addi $1, {0}, -1
+        slti $1, $1, {1:AL}
+        bne $1, $0, {2:B}
+    - description: "Branch to statement at {2} if {0} is less than or equal to 32-bit immediate"
+      operands: [ reg, i32, label ]
+      expansion: |
+        lui $1, {1:+1,H}
+        ori $1, $1, {1:+1,L}
+        slt $1, {0}, $1
+        bne $1, $0, {2:B}
+
+- mnemonic: bleu
+  title: "Branch if Less or Equal Unsigned"
+  matches:
+    - description: "Branch to statement at {2} if {0} is less than or equal to {1} (unsigned compare)"
+      operands: [ reg, reg, label ]
+      expansion: |
+        sltu $1, {1}, {0}
+        beq $1, $0, {2:B}
+    - description: "Branch to statement at {2} if {0} is less than or equal to 16-bit immediate (unsigned compare)"
+      operands: [ reg, s16, label ]
+      expansion: |
+        addi $1, $0, {1:AL}
+        sltu $1, $1, {0}
+        beq $1, $0, {2:B}
+    - description: "Branch to statement at {2} if {0} is less than or equal to 32-bit immediate (unsigned compare)"
+      operands: [ reg, i32, label ]
+      expansion: |
+        lui $1, {1:H}
+        ori $1, $1, {1:L}
+        sltu $1, $1, {0}
+        beq $1, $0, {2:B}
+
+- mnemonic: blt
+  title: "Branch if Less Than"
+  matches:
+    - description: "Branch to statement at {2} if {0} is less than {1}"
+      operands: [ reg, reg, label ]
+      expansion: |
+        slt $1, {0}, {1}
+        bne $1, $0, {2:B}
+    - description: "Branch to statement at {2} if {0} is less than 16-bit immediate"
+      operands: [ reg, s16, label ]
+      expansion: |
+        slti $1, {0}, {1:AL}
+        bne $1, $0, {2:B}
+    - description: "Branch to statement at {2} if {0} is less than 32-bit immediate"
+      operands: [ reg, i32, label ]
+      expansion: |
+        lui $1, {1:H}
+        ori $1, $1, {1:L}
+        slt $1, {0}, $1
+        bne $1, $0, {2:B}
+
+- mnemonic: bltu
+  title: "Branch if Less Than Unsigned"
+  matches:
+    - description: "Branch to statement at {2} if {0} is less than {1}"
+      operands: [ reg, reg, label ]
+      expansion: |
+        sltu $1, {0}, {1}
+        bne $1, $0, {2:B}
+    - description: "Branch to statement at {2} if {0} is less than 16-bit immediate"
+      operands: [ reg, s16, label ]
+      expansion: |
+        sltiu $1, {0}, {1:AL}
+        bne $1, $0, {2:B}
+    - description: "Branch to statement at {2} if {0} is less than 32-bit immediate"
+      operands: [ reg, i32, label ]
+      expansion: |
+        lui $1, {1:H}
+        ori $1, $1, {1:L}
+        sltu $1, {0}, $1
+        bne $1, $0, {2:B}
+
+- mnemonic: rol
+  title: "ROtate Left"
+  matches:
+    - description: "Set {0} to ({1} rotated left by number of bit positions specified in {2})"
+      operands: [ reg, reg, reg ]
+      expansion: |
+        subu $1, $0, {2}
+        srlv $1, {1}, $1
+        sllv {0}, {1}, {2}
+        or {0}, {0}, $1
+    - description: "Set {0} to ({1} rotated left by number of bit positions specified in 5-bit immediate)"
+      operands: [ reg, reg, u5 ]
+      expansion: |
+        srl $1, {1}, {2:-}
+        sll {0}, {1}, {2}
+        or {0}, {0}, $1
+- mnemonic: ror
+  title: "ROtate Right"
+  matches:
+    - description: "Set {0} to ({1} rotated right by number of bit positions specified in {2})"
+      operands: [ reg, reg, reg ]
+      expansion: |
+        subu $1, $0, {2}
+        sllv $1, {1}, $1
+        srlv {0}, {1}, {2}
+        or {0}, {0}, $1
+    - description: "Set {0} to ({1} rotated right by number of bit positions specified in 5-bit immediate)"
+      operands: [ reg, reg, u5 ]
+      expansion: |
+        sll $1, {1}, {2:-}
+        srl {0}, {1}, {2}
+        or {0}, {0}, $1
+
+- mnemonic: mfc1.d
+  title: "Move From Coprocessor 1 Double"
+  matches:
+    - description: "Set {0} to contents of {1}, set next higher register from {0} to contents of next higher register from {1}"
+      operands: [ reg, freg ]
+      expansion: |
+        mfc1 {0}, {1}
+        mfc1 {0:+1}, {1:+1}
+- mnemonic: mtc1.d
+  title: "Move To Coprocessor 1 Double"
+  matches:
+    - description: "Set {1} to contents of {0}, set next higher register from {1} to contents of next higher register from {0}"
+      operands: [ reg, freg ]
+      expansion: |
+        mtc1 {0}, {1}
+        mtc1 {0:+1}, {1:+1}
+
+- mnemonic: mul
+  title: "MULtiplication"
+  matches:
+    - description: "Set HI to high-order 32 bits, LO and {0} to low-order 32 bits of the product of {1} and 16-bit signed immediate (use mfhi to access HI, mflo to access LO)"
+      operands: [ reg, reg, s16 ]
+      expansion: |
+        addi $1, $0, {2:AL}
+        mul {0}, {1}, $1
+    - description: "Set HI to high-order 32 bits, LO and {0} to low-order 32 bits of the product of {1} and 32-bit immediate (use mfhi to access HI, mflo to access LO)"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        mul {0}, {1}, $1
+- mnemonic: mulu
+  title: "MULtiplication Unsigned"
+  matches:
+    - description: "Set HI to high-order 32 bits, LO and {0} to low-order 32 bits of ({1} multiplied by {2}, unsigned multiplication)"
+      operands: [ reg, reg, reg ]
+      expansion: |
+        multu {1}, {2}
+        mflo {0}
+    - description: "Set HI to high-order 32 bits, LO and {0} to low-order 32 bits of ({1} multiplied by 16-bit immediate, unsigned multiplication)"
+      operands: [ reg, reg, s16 ]
+      expansion: |
+        addi $1, $0, {2:AL}
+        multu {1}, $1
+        mflo {0}
+    - description: "Set HI to high-order 32 bits, LO and {0} to low-order 32 bits of ({1} multiplied by 32-bit immediate, unsigned multiplication)"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        multu {1}, $1
+        mflo {0}
+- mnemonic: mulo
+  title: "MULtiplication with Overflow"
+  matches:
+    - description: "Set {0} to low-order 32 bits of the product of {1} and {2}"
+      operands: [ reg, reg, reg ]
+      expansion: |
+        mult {1}, {2}
+        mfhi $1
+        mflo {0}
+        sra {0}, {0}, 31
+        beq $1, {0}, {DB:2,1}
+        {DB:nop} 
+        break 
+        mflo {0}
+    - description: "Set {0} to low-order 32 bits of the product of {1} and signed 16-bit immediate"
+      operands: [ reg, reg, s16 ]
+      expansion: |
+        addi $1, $0, {2:AL}
+        mult {1}, $1
+        mfhi $1
+        mflo {0}
+        sra {0}, {0}, 31
+        beq $1, {0}, {DB:2,1}
+        {DB:nop} 
+        break 
+        mflo {0}
+    - description: "Set {0} to low-order 32 bits of the product of {1} and 32-bit immediate"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        mult {1}, $1
+        mfhi $1
+        mflo {0}
+        sra {0}, {0}, 31
+        beq $1, {0}, {DB:2,1}
+        {DB:nop} 
+        break 
+        mflo {0}
+- mnemonic: mulou
+  title: "MULtiplication with Overflow Unsigned"
+  matches:
+    - description: "Set {0} to low-order 32 bits of the product of {1} and {2}"
+      operands: [ reg, reg, reg ]
+      expansion: |
+        multu {1}, {2}
+        mfhi $1
+        beq $1, $0, {DB:2,1}
+        {DB:nop} 
+        break 
+        mflo {0}
+    - description: "Set {0} to low-order 32 bits of the product of {1} and signed 16-bit immediate"
+      operands: [ reg, reg, s16 ]
+      expansion: |
+        addi $1, $0, {2:AL}
+        multu {1}, $1
+        mfhi $1
+        beq $1, $0, {DB:2,1}
+        {DB:nop} 
+        break 
+        mflo {0}
+    - description: "Set {0} to low-order 32 bits of the product of {1} and 32-bit immediate"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        multu {1}, $1
+        mfhi $1
+        beq $1, $0, {DB:2,1}
+        {DB:nop} 
+        break 
+        mflo {0}
+- mnemonic: div
+  title: "DIVision"
+  matches:
+    - description: "Set {0} to ({1} divided by {2}, integer division)"
+      operands: [ reg, reg, reg ]
+      expansion: |
+        bne {2}, $0, {DB:2,1}
+        {DB:nop} 
+        break 
+        div {1}, {2}
+        mflo {0}
+    - description: "Set {0} to ({1} divided by 16-bit immediate, integer division)"
+      operands: [ reg, reg, s16 ]
+      expansion: |
+        addi $1, $0, {2:AL}
+        div {1}, $1
+        mflo {0}
+    - description: "Set {0} to ({1} divided by 32-bit immediate, integer division)"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        div {1}, $1
+        mflo {0}
+- mnemonic: divu
+  title: "DIVision Unsigned"
+  matches:
+    - description: "Set {0} to ({1} divided by {2}, unsigned integer division)"
+      operands: [ reg, reg, reg ]
+      expansion: |
+        bne {2}, $0, {DB:2,1}
+        {DB:nop} 
+        break 
+        divu {1}, {2}
+        mflo {0}
+    - description: "Set {0} to ({1} divided by 16-bit immediate, unsigned integer division)"
+      operands: [ reg, reg, s16 ]
+      expansion: |
+        addi $1, $0, {2:AL}
+        divu {1}, $1
+        mflo {0}
+    - description: "Set {0} to ({1} divided by 32-bit immediate, unsigned integer division)"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        divu {1}, $1
+        mflo {0}
+- mnemonic: rem
+  title: "REMainder"
+  matches:
+    - description: "Set {0} to (remainder of {1} divided by {2})"
+      operands: [ reg, reg, reg ]
+      expansion: |
+        bne {2}, $0, {DB:2,1}
+        {DB:nop} 
+        break 
+        div {1}, {2}
+        mfhi {0}
+    - description: "Set {0} to (remainder of {1} divided by 16-bit immediate)"
+      operands: [ reg, reg, s16 ]
+      expansion: |
+        addi $1, $0, {2:AL}
+        div {1}, $1
+        mfhi {0}
+    - description: "Set {0} to (remainder of {1} divided by 32-bit immediate)"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        div {1}, $1
+        mfhi {0}
+- mnemonic: remu
+  title: "REMainder"
+  matches:
+    - description: "Set {0} to (remainder of {1} divided by {2}, unsigned division)"
+      operands: [ reg, reg, reg ]
+      expansion: |
+        bne {2}, $0, {DB:2,1}
+        {DB:nop} 
+        break 
+        divu {1}, {2}
+        mfhi {0}
+    - description: "Set {0} to (remainder of {1} divided by 16-bit immediate, unsigned division)"
+      operands: [ reg, reg, s16 ]
+      expansion: |
+        addi $1, $0, {2:AL}
+        divu {1}, $1
+        mfhi {0}
+    - description: "Set {0} to (remainder of {1} divided by 32-bit immediate, unsigned division)"
+      operands: [ reg, reg, i32 ]
+      expansion: |
+        lui $1, {2:H}
+        ori $1, $1, {2:L}
+        divu {1}, $1
+        mfhi {0}
+
+
+#########################  load/store pseudo-ops start here  ##########################
+#
+#  Most of these simply provide a variety of convenient memory addressing modes for
+#  specifying load/store address.
+#
+
+- mnemonic: li
+  title: "Load Immediate"
+  matches:
+    - description: "Set {0} to 16-bit immediate (sign-extended)"
+      operands: [ reg, s16 ]
+      expansion: |
+        addiu {0}, $0, {1:AL}
+    - description: "Set {0} to unsigned 16-bit immediate (zero-extended)"
+      operands: [ reg, u16 ]
+      expansion: |
+        ori {0}, $0, {1:L}
+    - description: "Set {0} to 32-bit immediate"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:H}
+        ori {0}, $1, {1:L}
+
+- mnemonic: la
+  title: "Load Address"
+  matches:
+    - description: "Set {0} to contents of {1}"
+      operands: [ reg, (reg) ]
+      expansion: |
+        addi {0}, {1}, 0
+    - description: "Set {0} to 16-bit immediate (sign-extended)"
+      operands: [ reg, s16 ]
+      expansion: |
+        addiu {0}, $0, {1:AL}
+    - description: "Set {0} to 16-bit immediate (zero-extended)"
+      operands: [ reg, u16 ]
+      expansion: |
+        ori {0}, $0, {1:L}
+    - description: "Set {0} to 32-bit immediate"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:H}
+        ori {0}, $1, {1:L}
+    - description: "Set {0} to sum (of {2} and 16-bit immediate)"
+      operands: [ reg, u16, (reg) ]
+      expansion: |
+        ori $1, $0, {1:L}
+        add {0}, {2}, $1
+    - description: "Set {0} to sum (of {2} and 32-bit immediate)"
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:H}
+        ori $1, $1, {1:L}
+        add {0}, {2}, $1
+    - description: "Set {0} to {1}'s address"
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:H}
+        ori {0}, $1, {1:L}
+      compact_expansion: |
+        addi {0}, $0, {1:AL}
+    - description: "Set {0} to sum (of {2} and {1}'s address)"
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:H}
+        ori $1, $1, {1:L}
+        add {0}, {2}, $1
+      compact_expansion: |
+        addi {0}, {2}, {1:AL}
+    - description: "Set {0} to sum (of {1}'s address and 32-bit immediate)"
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:H}
+        ori {0}, $1, {1:L}
+    - description: "Set {0} to sum (of {1}'s address, 32-bit immediate, and {2})"
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:H}
+        ori $1, $1, {1:L}
+        add {0}, {2}, $1
+
+- mnemonic: lw
+  title: "Load Word"
+  matches:
+    - description: "Set {0} to contents of effective memory word address"
+      operands: [ reg, (reg) ]
+      expansion: |
+        lw {0}, 0({1})
+    - description: "Set {0} to contents of effective memory word address"
+      operands: [ reg, s16 ]
+      expansion: |
+        lw {0}, {1:AL}($0)
+    - description: "Set {0} to contents of effective memory word address"
+      operands: [ reg, u16 ]
+      expansion: |
+        ori $1, $0, {1:L}
+        lw {0}, 0($1)
+    - description: "Set {0} to contents of effective memory word address"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        lw {0}, {1:AL}($1)
+    - description: "Set {0} to contents of effective memory word address"
+      operands: [ reg, u16, (reg) ]
+      expansion: |
+        ori $1, $0, {1:L}
+        addu $1, $1, {2}
+        lw {0}, 0($1)
+    - description: "Set {0} to contents of effective memory word address"
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lw {0}, {1:AL}($1)
+    - description: "Set {0} to contents of memory word at {1}'s address"
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        lw {0}, {1:AL}($1)
+      compact_expansion: |
+        lw {0}, {1:AL}($0)
+    - description: "Set {0} to contents of effective memory word address"
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lw {0}, {1:AL}($1)
+      compact_expansion: |
+        lw {0}, {1:AL}({2})
+    - description: "Set {0} to contents of effective memory word address"
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        lw {0}, {1:AL}($1)
+    - description: "Set {0} to contents of effective memory word address"
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lw {0}, {1:AL}($1)
+
+- mnemonic: sw
+  title: "Store Word"
+  matches:
+    - description: "Store {0} contents into effective memory word address"
+      operands: [ reg, (reg) ]
+      expansion: |
+        sw {0}, 0({1})
+    - description: "Store {0} contents into effective memory word address"
+      operands: [ reg, s16 ]
+      expansion: |
+        sw {0}, {1:AL}($0)
+    - description: "Store {0} contents into effective memory word address"
+      operands: [ reg, u16 ]
+      expansion: |
+        ori $1, $0, {1:L}
+        sw {0}, 0($1)
+    - description: "Store {0} contents into effective memory word address"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        sw {0}, {1:AL}($1)
+    - description: "Store {0} contents into effective memory word address"
+      operands: [ reg, u16, (reg) ]
+      expansion: |
+        ori $1, $0, {1:L}
+        addu $1, $1, {2}
+        sw {0}, 0($1)
+    - description: "Store {0} contents into effective memory word address"
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sw {0}, {1:AL}($1)
+    - description: "Store {0} contents into memory word at {1}'s address"
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        sw {0}, {1:AL}($1)
+      compact_expansion: |
+        sw {0}, {1:AL}($0)
+    - description: "Store {0} contents into effective memory word address"
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sw {0}, {1:AL}($1)
+      compact_expansion: |
+        sw {0}, {1:AL}({2})
+    - description: "Store {0} contents into effective memory word address"
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        sw {0}, {1:AL}($1)
+    - description: "Store {0} contents into effective memory word address"
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sw {0}, {1:AL}($1)
+
+- mnemonic: lh
+  title: "Load Halfword"
+  matches:
+    - description: "Set {0} to sign-extended 16-bit value from effective memory halfword address"
+      operands: [ reg, (reg) ]
+      expansion: |
+        lh {0}, 0({1})
+    - description: "Set {0} to sign-extended 16-bit value from effective memory halfword address"
+      operands: [ reg, s16 ]
+      expansion: |
+        lh {0}, {1:AL}($0)
+    - description: "Set {0} to sign-extended 16-bit value from effective memory halfword address"
+      operands: [ reg, u16 ]
+      expansion: |
+        ori $1, $0, {1:L}
+        lh {0}, 0($1)
+    - description: "Set {0} to sign-extended 16-bit value from effective memory halfword address"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        lh {0}, {1:AL}($1)
+    - description: "Set {0} to sign-extended 16-bit value from effective memory halfword address"
+      operands: [ reg, u16, (reg) ]
+      expansion: |
+        ori $1, $0, {1:L}
+        addu $1, $1, {2}
+        lh {0}, 0($1)
+    - description: "Set {0} to sign-extended 16-bit value from effective memory halfword address"
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lh {0}, {1:AL}($1)
+    - description: "Set {0} to sign-extended 16-bit value from effective memory halfword address"
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        lh {0}, {1:AL}($1)
+      compact_expansion: |
+        lh {0}, {1:AL}($0)
+    - description: "Set {0} to sign-extended 16-bit value from effective memory halfword address"
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lh {0}, {1:AL}($1)
+      compact_expansion: |
+        lh {0}, {1:AL}({2})
+    - description: "Set {0} to sign-extended 16-bit value from effective memory halfword address"
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        lh {0}, {1:AL}($1)
+    - description: "Set {0} to sign-extended 16-bit value from effective memory halfword address"
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lh {0}, {1:AL}($1)
+
+- mnemonic: sh
+  title: "Store Halfword"
+  matches:
+    - description: "Store the low-order 16 bits of {0} into the effective memory halfword address"
+      operands: [ reg, (reg) ]
+      expansion: |
+        sh {0}, 0({1})
+    - description: "Store the low-order 16 bits of {0} into the effective memory halfword address"
+      operands: [ reg, s16 ]
+      expansion: |
+        sh {0}, {1:AL}($0)
+    - description: "Store the low-order 16 bits of {0} into the effective memory halfword address"
+      operands: [ reg, u16 ]
+      expansion: |
+        ori $1, $0, {1:L}
+        sh {0}, 0($1)
+    - description: "Store the low-order 16 bits of {0} into the effective memory halfword address"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        sh {0}, {1:AL}($1)
+    - description: "Store the low-order 16 bits of {0} into the effective memory halfword address"
+      operands: [ reg, u16, (reg) ]
+      expansion: |
+        ori $1, $0, {1:L}
+        addu $1, $1, {2}
+        sh {0}, 0($1)
+    - description: "Store the low-order 16 bits of {0} into the effective memory halfword address"
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sh {0}, {1:AL}($1)
+    - description: "Store the low-order 16 bits of {0} into the effective memory halfword address"
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        sh {0}, {1:AL}($1)
+      compact_expansion: |
+        sh {0}, {1:AL}($0)
+    - description: "Store the low-order 16 bits of {0} into the effective memory halfword address"
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sh {0}, {1:AL}($1)
+      compact_expansion: |
+        sh {0}, {1:AL}({2})
+    - description: "Store the low-order 16 bits of {0} into the effective memory halfword address"
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        sh {0}, {1:AL}($1)
+    - description: "Store the low-order 16 bits of {0} into the effective memory halfword address"
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sh {0}, {1:AL}($1)
+
+- mnemonic: lb
+  title: "Load Byte"
+  matches:
+    - description: "Set {0} to sign-extended 8-bit value from effective memory byte address"
+      operands: [ reg, (reg) ]
+      expansion: |
+        lb {0}, 0({1})
+    - description: "Set {0} to sign-extended 8-bit value from effective memory byte address"
+      operands: [ reg, s16 ]
+      expansion: |
+        lb {0}, {1:AL}($0)
+    - description: "Set {0} to sign-extended 8-bit value from effective memory byte address"
+      operands: [ reg, u16 ]
+      expansion: |
+        ori $1, $0, {1:L}
+        lb {0}, 0($1)
+    - description: "Set {0} to sign-extended 8-bit value from effective memory byte address"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        lb {0}, {1:AL}($1)
+    - description: "Set {0} to sign-extended 8-bit value from effective memory byte address"
+      operands: [ reg, u16, (reg) ]
+      expansion: |
+        ori $1, $0, {1:L}
+        addu $1, $1, {2}
+        lb {0}, 0($1)
+    - description: "Set {0} to sign-extended 8-bit value from effective memory byte address"
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lb {0}, {1:AL}($1)
+    - description: "Set {0} to sign-extended 8-bit value from effective memory byte address"
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        lb {0}, {1:AL}($1)
+      compact_expansion: |
+        lb {0}, {1:AL}($0)
+    - description: "Set {0} to sign-extended 8-bit value from effective memory byte address"
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lb {0}, {1:AL}($1)
+      compact_expansion: |
+        lb {0}, {1:AL}({2})
+    - description: "Set {0} to sign-extended 8-bit value from effective memory byte address"
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        lb {0}, {1:AL}($1)
+    - description: "Set {0} to sign-extended 8-bit value from effective memory byte address"
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lb {0}, {1:AL}($1)
+
+- mnemonic: sb
+  title: "Store Byte"
+  matches:
+    - description: "Store the low-order 8 bits of {0} into the effective memory byte address"
+      operands: [ reg, (reg) ]
+      expansion: |
+        sb {0}, 0({1})
+    - description: "Store the low-order 8 bits of {0} into the effective memory byte address"
+      operands: [ reg, s16 ]
+      expansion: |
+        sb {0}, {1:AL}($0)
+    - description: "Store the low-order 8 bits of {0} into the effective memory byte address"
+      operands: [ reg, u16 ]
+      expansion: |
+        ori $1, $0, {1:L}
+        sb {0}, 0($1)
+    - description: "Store the low-order 8 bits of {0} into the effective memory byte address"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        sb {0}, {1:AL}($1)
+    - description: "Store the low-order 8 bits of {0} into the effective memory byte address"
+      operands: [ reg, u16, (reg) ]
+      expansion: |
+        ori $1, $0, {1:L}
+        addu $1, $1, {2}
+        sb {0}, 0($1)
+    - description: "Store the low-order 8 bits of {0} into the effective memory byte address"
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sb {0}, {1:AL}($1)
+    - description: "Store the low-order 8 bits of {0} into the effective memory byte address"
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        sb {0}, {1:AL}($1)
+      compact_expansion: |
+        sb {0}, {1:AL}($0)
+    - description: "Store the low-order 8 bits of {0} into the effective memory byte address"
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sb {0}, {1:AL}($1)
+      compact_expansion: |
+        sb {0}, {1:AL}({2})
+    - description: "Store the low-order 8 bits of {0} into the effective memory byte address"
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        sb {0}, {1:AL}($1)
+    - description: "Store the low-order 8 bits of {0} into the effective memory byte address"
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sb {0}, {1:AL}($1)
+
+- mnemonic: lhu
+  title: "Load Halfword Unsigned"
+  matches:
+    - description: "Set {0} to zero-extended 16-bit value from effective memory halfword address"
+      operands: [ reg, (reg) ]
+      expansion: |
+        lhu {0}, 0({1})
+    - description: "Set {0} to zero-extended 16-bit value from effective memory halfword address"
+      operands: [ reg, s16 ]
+      expansion: |
+        lhu {0}, {1:AL}($0)
+    - description: "Set {0} to zero-extended 16-bit value from effective memory halfword address"
+      operands: [ reg, u16 ]
+      expansion: |
+        ori $1, $0, {1:L}
+        lhu {0}, 0($1)
+    - description: "Set {0} to zero-extended 16-bit value from effective memory halfword address"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        lhu {0}, {1:AL}($1)
+    - description: "Set {0} to zero-extended 16-bit value from effective memory halfword address"
+      operands: [ reg, u16, (reg) ]
+      expansion: |
+        ori $1, $0, {1:L}
+        addu $1, $1, {2}
+        lhu {0}, 0($1)
+    - description: "Set {0} to zero-extended 16-bit value from effective memory halfword address"
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lhu {0}, {1:AL}($1)
+    - description: "Set {0} to zero-extended 16-bit value from effective memory halfword address"
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        lhu {0}, {1:AL}($1)
+      compact_expansion: |
+        lhu {0}, {1:AL}($0)
+    - description: "Set {0} to zero-extended 16-bit value from effective memory halfword address"
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lhu {0}, {1:AL}($1)
+      compact_expansion: |
+        lhu {0}, {1:AL}({2})
+    - description: "Set {0} to zero-extended 16-bit value from effective memory halfword address"
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        lhu {0}, {1:AL}($1)
+    - description: "Set {0} to zero-extended 16-bit value from effective memory halfword address"
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lhu {0}, {1:AL}($1)
+
+- mnemonic: lbu
+  title: "Load Byte Unsigned"
+  matches:
+    - description: "Set {0} to zero-extended 8-bit value from effective memory byte address"
+      operands: [ reg, (reg) ]
+      expansion: |
+        lbu {0}, 0({1})
+    - description: "Set {0} to zero-extended 8-bit value from effective memory byte address"
+      operands: [ reg, s16 ]
+      expansion: |
+        lbu {0}, {1:AL}($0)
+    - description: "Set {0} to zero-extended 8-bit value from effective memory byte address"
+      operands: [ reg, u16 ]
+      expansion: |
+        ori $1, $0, {1:L}
+        lbu {0}, 0($1)
+    - description: "Set {0} to zero-extended 8-bit value from effective memory byte address"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        lbu {0}, {1:AL}($1)
+    - description: "Set {0} to zero-extended 8-bit value from effective memory byte address"
+      operands: [ reg, u16, (reg) ]
+      expansion: |
+        ori $1, $0, {1:L}
+        addu $1, $1, {2}
+        lbu {0}, 0($1)
+    - description: "Set {0} to zero-extended 8-bit value from effective memory byte address"
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lbu {0}, {1:AL}($1)
+    - description: "Set {0} to zero-extended 8-bit value from effective memory byte address"
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        lbu {0}, {1:AL}($1)
+      compact_expansion: |
+        lbu {0}, {1:AL}($0)
+    - description: "Set {0} to zero-extended 8-bit value from effective memory byte address"
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lbu {0}, {1:AL}($1)
+      compact_expansion: |
+        lbu {0}, {1:AL}({2})
+    - description: "Set {0} to zero-extended 8-bit value from effective memory byte address"
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        lbu {0}, {1:AL}($1)
+    - description: "Set {0} to zero-extended 8-bit value from effective memory byte address"
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lbu {0}, {1:AL}($1)
+
+- mnemonic: lwl
+  title: "Load Word Left"
+  matches:
+    - description: "Load from 1 to 4 bytes left-justified into {0}, starting with effective memory byte address and continuing through the low-order byte of its word"
+      operands: [ reg, (reg) ]
+      expansion: |
+        lwl {0}, 0({1})
+    - description: "Load from 1 to 4 bytes left-justified into {0}, starting with effective memory byte address and continuing through the low-order byte of its word"
+      operands: [ reg, s16 ]
+      expansion: |
+        lwl {0}, {1:AL}($0)
+    - description: "Load from 1 to 4 bytes left-justified into {0}, starting with effective memory byte address and continuing through the low-order byte of its word"
+      operands: [ reg, u16 ]
+      expansion: |
+        ori $1, $0, {1:L}
+        lwl {0}, 0($1)
+    - description: "Load from 1 to 4 bytes left-justified into {0}, starting with effective memory byte address and continuing through the low-order byte of its word"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        lwl {0}, {1:AL}($1)
+    - description: "Load from 1 to 4 bytes left-justified into {0}, starting with effective memory byte address and continuing through the low-order byte of its word"
+      operands: [ reg, u16, (reg) ]
+      expansion: |
+        ori $1, $0, {1:L}
+        addu $1, $1, {2}
+        lwl {0}, 0($1)
+    - description: "Load from 1 to 4 bytes left-justified into {0}, starting with effective memory byte address and continuing through the low-order byte of its word"
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lwl {0}, {1:AL}($1)
+    - description: "Load from 1 to 4 bytes left-justified into {0}, starting with effective memory byte address and continuing through the low-order byte of its word"
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        lwl {0}, {1:AL}($1)
+      compact_expansion: |
+        lwl {0}, {1:AL}($0)
+    - description: "Load from 1 to 4 bytes left-justified into {0}, starting with effective memory byte address and continuing through the low-order byte of its word"
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lwl {0}, {1:AL}($1)
+      compact_expansion: |
+        lwl {0}, {1:AL}({2})
+    - description: "Load from 1 to 4 bytes left-justified into {0}, starting with effective memory byte address and continuing through the low-order byte of its word"
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        lwl {0}, {1:AL}($1)
+    - description: "Load from 1 to 4 bytes left-justified into {0}, starting with effective memory byte address and continuing through the low-order byte of its word"
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lwl {0}, {1:AL}($1)
+
+- mnemonic: swl
+  title: "Store Word Left"
+  matches:
+    - description: "Store high-order 1 to 4 bytes of {0} into memory, starting with effective memory byte address and continuing through the low-order byte of its word"
+      operands: [ reg, (reg) ]
+      expansion: |
+        swl {0}, 0({1})
+    - description: "Store high-order 1 to 4 bytes of {0} into memory, starting with effective memory byte address and continuing through the low-order byte of its word"
+      operands: [ reg, s16 ]
+      expansion: |
+        swl {0}, {1:AL}($0)
+    - description: "Store high-order 1 to 4 bytes of {0} into memory, starting with effective memory byte address and continuing through the low-order byte of its word"
+      operands: [ reg, u16 ]
+      expansion: |
+        ori $1, $0, {1:L}
+        swl {0}, 0($1)
+    - description: "Store high-order 1 to 4 bytes of {0} into memory, starting with effective memory byte address and continuing through the low-order byte of its word"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        swl {0}, {1:AL}($1)
+    - description: "Store high-order 1 to 4 bytes of {0} into memory, starting with effective memory byte address and continuing through the low-order byte of its word"
+      operands: [ reg, u16, (reg) ]
+      expansion: |
+        ori $1, $0, {1:L}
+        addu $1, $1, {2}
+        swl {0}, 0($1)
+    - description: "Store high-order 1 to 4 bytes of {0} into memory, starting with effective memory byte address and continuing through the low-order byte of its word"
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        swl {0}, {1:AL}($1)
+    - description: "Store high-order 1 to 4 bytes of {0} into memory, starting with effective memory byte address and continuing through the low-order byte of its word"
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        swl {0}, {1:AL}($1)
+      compact_expansion: |
+        swl {0}, {1:AL}($0)
+    - description: "Store high-order 1 to 4 bytes of {0} into memory, starting with effective memory byte address and continuing through the low-order byte of its word"
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        swl {0}, {1:AL}($1)
+      compact_expansion: |
+        swl {0}, {1:AL}({2})
+    - description: "Store high-order 1 to 4 bytes of {0} into memory, starting with effective memory byte address and continuing through the low-order byte of its word"
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        swl {0}, {1:AL}($1)
+    - description: "Store high-order 1 to 4 bytes of {0} into memory, starting with effective memory byte address and continuing through the low-order byte of its word"
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        swl {0}, {1:AL}($1)
+
+- mnemonic: lwr
+  title: "Load Word Right"
+  matches:
+    - description: "Load from 1 to 4 bytes right-justified into {0}, starting with effective memory byte address and continuing through the high-order byte of its word"
+      operands: [ reg, (reg) ]
+      expansion: |
+        lwr {0}, 0({1})
+    - description: "Load from 1 to 4 bytes right-justified into {0}, starting with effective memory byte address and continuing through the high-order byte of its word"
+      operands: [ reg, s16 ]
+      expansion: |
+        lwr {0}, {1:AL}($0)
+    - description: "Load from 1 to 4 bytes right-justified into {0}, starting with effective memory byte address and continuing through the high-order byte of its word"
+      operands: [ reg, u16 ]
+      expansion: |
+        ori $1, $0, {1:L}
+        lwr {0}, 0($1)
+    - description: "Load from 1 to 4 bytes right-justified into {0}, starting with effective memory byte address and continuing through the high-order byte of its word"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        lwr {0}, {1:AL}($1)
+    - description: "Load from 1 to 4 bytes right-justified into {0}, starting with effective memory byte address and continuing through the high-order byte of its word"
+      operands: [ reg, u16, (reg) ]
+      expansion: |
+        ori $1, $0, {1:L}
+        addu $1, $1, {2}
+        lwr {0}, 0($1)
+    - description: "Load from 1 to 4 bytes right-justified into {0}, starting with effective memory byte address and continuing through the high-order byte of its word"
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lwr {0}, {1:AL}($1)
+    - description: "Load from 1 to 4 bytes right-justified into {0}, starting with effective memory byte address and continuing through the high-order byte of its word"
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        lwr {0}, {1:AL}($1)
+      compact_expansion: |
+        lwr {0}, {1:AL}($0)
+    - description: "Load from 1 to 4 bytes right-justified into {0}, starting with effective memory byte address and continuing through the high-order byte of its word"
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lwr {0}, {1:AL}($1)
+      compact_expansion: |
+        lwr {0}, {1:AL}({2})
+    - description: "Load from 1 to 4 bytes right-justified into {0}, starting with effective memory byte address and continuing through the high-order byte of its word"
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        lwr {0}, {1:AL}($1)
+    - description: "Load from 1 to 4 bytes right-justified into {0}, starting with effective memory byte address and continuing through the high-order byte of its word"
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lwr {0}, {1:AL}($1)
+
+- mnemonic: swr
+  title: "Store Word Right"
+  matches:
+    - description: "Store low-order 1 to 4 bytes of {0} into memory, starting with high-order byte of word containing effective memory byte address and continuing through that byte address"
+      operands: [ reg, (reg) ]
+      expansion: |
+        swr {0}, 0({1})
+    - description: "Store low-order 1 to 4 bytes of {0} into memory, starting with high-order byte of word containing effective memory byte address and continuing through that byte address"
+      operands: [ reg, s16 ]
+      expansion: |
+        swr {0}, {1:AL}($0)
+    - description: "Store low-order 1 to 4 bytes of {0} into memory, starting with high-order byte of word containing effective memory byte address and continuing through that byte address"
+      operands: [ reg, u16 ]
+      expansion: |
+        ori $1, $0, {1:L}
+        swr {0}, 0
+    - description: "Store low-order 1 to 4 bytes of {0} into memory, starting with high-order byte of word containing effective memory byte address and continuing through that byte address"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        swr {0}, {1:AL}($1)
+    - description: "Store low-order 1 to 4 bytes of {0} into memory, starting with high-order byte of word containing effective memory byte address and continuing through that byte address"
+      operands: [ reg, u16, (reg) ]
+      expansion: |
+        ori $1, $0, {1:L}
+        addu $1, $1, {2}
+        swr {0}, 0($1)
+    - description: "Store low-order 1 to 4 bytes of {0} into memory, starting with high-order byte of word containing effective memory byte address and continuing through that byte address"
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        swr {0}, {1:AL}($1)
+    - description: "Store low-order 1 to 4 bytes of {0} into memory, starting with high-order byte of word containing effective memory byte address and continuing through that byte address"
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        swr {0}, {1:AL}($1)
+      compact_expansion: |
+        swr {0}, {1:AL}($0)
+    - description: "Store low-order 1 to 4 bytes of {0} into memory, starting with high-order byte of word containing effective memory byte address and continuing through that byte address"
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        swr {0}, {1:AL}($1)
+      compact_expansion: |
+        swr {0}, {1:AL}({2})
+    - description: "Store low-order 1 to 4 bytes of {0} into memory, starting with high-order byte of word containing effective memory byte address and continuing through that byte address"
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        swr {0}, {1:AL}($1)
+    - description: "Store low-order 1 to 4 bytes of {0} into memory, starting with high-order byte of word containing effective memory byte address and continuing through that byte address"
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        swr {0}, {1:AL}($1)
+
+- mnemonic: ll
+  title: "Load Linked"
+  matches:
+    - description: "Paired with Store Conditional (sc) to perform atomic read-modify-write.  Treated as equivalent to Load Word (lw) because MARS does not simulate multiple processors."
+      operands: [ reg, (reg) ]
+      expansion: |
+        ll {0}, 0({1})
+    - description: "Paired with Store Conditional (sc) to perform atomic read-modify-write.  Treated as equivalent to Load Word (lw) because MARS does not simulate multiple processors."
+      operands: [ reg, s16 ]
+      expansion: |
+        ll {0}, {1:AL}($0)
+    - description: "Paired with Store Conditional (sc) to perform atomic read-modify-write.  Treated as equivalent to Load Word (lw) because MARS does not simulate multiple processors."
+      operands: [ reg, u16 ]
+      expansion: |
+        ori $1, $0, {1:L}
+        ll {0}, 0($1)
+    - description: "Paired with Store Conditional (sc) to perform atomic read-modify-write.  Treated as equivalent to Load Word (lw) because MARS does not simulate multiple processors."
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        ll {0}, {1:AL}($1)
+    - description: "Paired with Store Conditional (sc) to perform atomic read-modify-write.  Treated as equivalent to Load Word (lw) because MARS does not simulate multiple processors."
+      operands: [ reg, u16, (reg) ]
+      expansion: |
+        ori $1, $0, {1:L}
+        addu $1, $1, {2}
+        ll {0}, 0($1)
+    - description: "Paired with Store Conditional (sc) to perform atomic read-modify-write.  Treated as equivalent to Load Word (lw) because MARS does not simulate multiple processors."
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        ll {0}, {1:AL}($1)
+    - description: "Paired with Store Conditional (sc) to perform atomic read-modify-write.  Treated as equivalent to Load Word (lw) because MARS does not simulate multiple processors."
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        ll {0}, {1:AL}($1)
+      compact_expansion: |
+        ll {0}, {1:AL}($0)
+    - description: "Paired with Store Conditional (sc) to perform atomic read-modify-write.  Treated as equivalent to Load Word (lw) because MARS does not simulate multiple processors."
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        ll {0}, {1:AL}($1)
+      compact_expansion: |
+        ll {0}, {1:AL}({2})
+    - description: "Paired with Store Conditional (sc) to perform atomic read-modify-write.  Treated as equivalent to Load Word (lw) because MARS does not simulate multiple processors."
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        ll {0}, {1:AL}($1)
+    - description: "Paired with Store Conditional (sc) to perform atomic read-modify-write.  Treated as equivalent to Load Word (lw) because MARS does not simulate multiple processors."
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        ll {0}, {1:AL}($1)
+
+- mnemonic: sc
+  title: "Store Conditional"
+  matches:
+    - description: "Paired with Load Linked (ll) to perform atomic read-modify-write.  Treated as equivalent to Store Word (sw) because MARS does not simulate multiple processors."
+      operands: [ reg, (reg) ]
+      expansion: |
+        sc {0}, 0({1})
+    - description: "Paired with Load Linked (ll) to perform atomic read-modify-write.  Treated as equivalent to Store Word (sw) because MARS does not simulate multiple processors."
+      operands: [ reg, s16 ]
+      expansion: |
+        sc {0}, {1:AL}($0)
+    - description: "Paired with Load Linked (ll) to perform atomic read-modify-write.  Treated as equivalent to Store Word (sw) because MARS does not simulate multiple processors."
+      operands: [ reg, u16 ]
+      expansion: |
+        ori $1, $0, {1:L}
+        sc {0}, 0($1)
+    - description: "Paired with Load Linked (ll) to perform atomic read-modify-write.  Treated as equivalent to Store Word (sw) because MARS does not simulate multiple processors."
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        sc {0}, {1:AL}($1)
+    - description: "Paired with Load Linked (ll) to perform atomic read-modify-write.  Treated as equivalent to Store Word (sw) because MARS does not simulate multiple processors."
+      operands: [ reg, u16, (reg) ]
+      expansion: |
+        ori $1, $0, {1:L}
+        addu $1, $1, {2}
+        sc {0}, 0($1)
+    - description: "Paired with Load Linked (ll) to perform atomic read-modify-write.  Treated as equivalent to Store Word (sw) because MARS does not simulate multiple processors."
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sc {0}, {1:AL}($1)
+    - description: "Paired with Load Linked (ll) to perform atomic read-modify-write.  Treated as equivalent to Store Word (sw) because MARS does not simulate multiple processors."
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        sc {0}, {1:AL}($1)
+      compact_expansion: |
+        sc {0}, {1:AL}($0)
+    - description: "Paired with Load Linked (ll) to perform atomic read-modify-write.  Treated as equivalent to Store Word (sw) because MARS does not simulate multiple processors."
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sc {0}, {1:AL}($1)
+      compact_expansion: |
+        sc {0}, {1:AL}({2})
+    - description: "Paired with Load Linked (ll) to perform atomic read-modify-write.  Treated as equivalent to Store Word (sw) because MARS does not simulate multiple processors."
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        sc {0}, {1:AL}($1)
+    - description: "Paired with Load Linked (ll) to perform atomic read-modify-write.  Treated as equivalent to Store Word (sw) because MARS does not simulate multiple processors."
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sc {0}, {1:AL}($1)
+
+# Unaligned and double loads and stores.  All the them require assembler to add a constant
+# byte offset (from 1 to 4 bytes) to the given or calculated address.
+# NOTE: I have abandoned the "accepted" expansion of immed16($reg) addressing form for the
+#       unaligned and double load/store pseudo-instructions because they produce what I consider
+#       incorrect results for immediate values at the upper edge of the signed 16-bit range
+#       (32765 through 32767).  The expansion of these pseudo's requires adding an additional
+#       byte offset (from 1 to 4 bytes) to the immediate value, which overflows the signed 16
+#       bit range and results in a large negative offset with no counterbalancing increment
+#       to the high order 16-bits.  Thus if the two pieces of unaligned data end up in different
+#       words, they are stored 64K bytes apart!  For example, the normal expansion of
+#       "usw $8,32767($9)" would be "swl $8,-32766($9)", "swr $8, 32767($9)"  Both SPIM and
+#       Britten's text do this but I consider it incorrect.  My compromise is the following:
+#       since each of the expansion calls for two calculated offsets, one of which can possibly
+#       overflow due to the addition but the other will not (because there is no addition),
+#       I'll code the expansion to treat the at-risk calculated offset as 32-bits (it will generate
+#       the lui and addu, which is unnecessary in almost every case but is always correct)
+#       and the second as 16-bits.  I'll group all instructions for this addressing mode together.
+# ulw $t1,-100($t2)	lwl RG1, VL2P3(RG4)	lwr RG1, VL2(RG4)   -- used by SPIM but not me.
+# usw $t1,-100($t2)	swl RG1, VL2P3(RG4)	swr RG1, VL2(RG4)   -- used by SPIM but not me.
+
+- mnemonic: ulw
+  title: "Unaligned Load Word"
+  matches:
+    - description: "Set {0} to the 32 bits starting at effective memory byte address"
+      operands: [ reg, s16, (reg) ]
+      expansion: |
+        lui $1, {1:+3,AH}
+        addu $1, $1, {2}
+        lwl {0}, {1:+3,AL}($1)
+        lwr {0}, {1:AL}({2})
+    - description: "Set {0} to the 32 bits starting at effective memory byte address"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:+3,AH}
+        lwl {0}, {1:+3,AL}($1)
+        lui $1, {1:AH}
+        lwr {0}, {1:AL}($1)
+    - description: "Set {0} to the 32 bits starting at effective memory byte address"
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:+3,AH}
+        lwl {0}, {1:+3,AL}($1)
+        lui $1, {1:AH}
+        lwr {0}, {1:AL}($1)
+    - description: "Set {0} to the 32 bits starting at effective memory byte address"
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:+3,AH}
+        lwl {0}, {1:+3,AL}($1)
+        lui $1, {1:AH}
+        lwr {0}, {1:AL}($1)
+    - description: "Set {0} to the 32 bits starting at effective memory byte address"
+      operands: [ reg, (reg) ]
+      expansion: |
+        lwl {0}, 3({1})
+        lwr {0}, 0({1})
+    - description: "Set {0} to the 32 bits starting at effective memory byte address"
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:+3,AH}
+        addu $1, $1, {2}
+        lwl {0}, {1:+3,AL}($1)
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lwr {0}, {1:AL}($1)
+    - description: "Set {0} to the 32 bits starting at effective memory byte address"
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:+3,AH}
+        addu $1, $1, {2}
+        lwl {0}, {1:+3,AL}($1)
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lwr {0}, {1:AL}($1)
+    - description: "Set {0} to the 32 bits starting at effective memory byte address"
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:+3,AH}
+        addu $1, $1, {2}
+        lwl {0}, {1:+3,AL}($1)
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lwr {0}, {1:AL}($1)
+- mnemonic: ulh
+  title: "Unaligned Load Halfword"
+  matches:
+    - description: "Set {0} to the 16 bits, sign-extended, starting at effective memory byte address"
+      operands: [ reg, s16, (reg) ]
+      expansion: |
+        lui $1, {1:+1,AH}
+        addu $1, $1, {2}
+        lb {0}, {1:+1,AL}($1)
+        lbu $1, {1:AL}({2})
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+    - description: "Set {0} to the 16 bits, sign-extended, starting at effective memory byte address"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:+1,AH}
+        lb {0}, {1:+1,AL}($1)
+        lui $1, {1:AH}
+        lbu $1, {1:AL}($1)
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+    - description: "Set {0} to the 16 bits, sign-extended, starting at effective memory byte address"
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:+1,AH}
+        lb {0}, {1:+1,AL}($1)
+        lui $1, {1:AH}
+        lbu $1, {1:AL}($1)
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+    - description: "Set {0} to the 16 bits, sign-extended, starting at effective memory byte address"
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:+1,AH}
+        lb {0}, {1:+1,AL}($1)
+        lui $1, {1:AH}
+        lbu $1, {1:AL}($1)
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+    - description: "Set {0} to the 16 bits, sign-extended, starting at effective memory byte address"
+      operands: [ reg, (reg) ]
+      expansion: |
+        lb {0}, 1({1})
+        lbu $1, 0({1})
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+    - description: "Set {0} to the 16 bits, sign-extended, starting at effective memory byte address"
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:+1,AH}
+        addu $1, $1, {2}
+        lb {0}, {1:+1,AL}($1)
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lbu $1, {1:AL}($1)
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+    - description: "Set {0} to the 16 bits, sign-extended, starting at effective memory byte address"
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:+1,AH}
+        addu $1, $1, {2}
+        lb {0}, {1:+1,AL}($1)
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lbu $1, {1:AL}($1)
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+    - description: "Set {0} to the 16 bits, sign-extended, starting at effective memory byte address"
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:+1,AH}
+        addu $1, $1, {2}
+        lb {0}, {1:+1,AL}($1)
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lbu $1, {1:AL}($1)
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+- mnemonic: ulhu
+  title: "Unaligned Load Halfword Unsigned"
+  matches:
+    - description: "Set {0} to the 16 bits, zero-extended, starting at effective memory byte address"
+      operands: [ reg, s16, (reg) ]
+      expansion: |
+        lui $1, {1:+1,AH}
+        addu $1, $1, {2}
+        lbu {0}, {1:+1,AL}($1)
+        lbu $1, {1:AL}({2})
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+    - description: "Set {0} to the 16 bits, zero-extended, starting at effective memory byte address"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:+1,AH}
+        lbu {0}, {1:+1,AL}($1)
+        lui $1, {1:AH}
+        lbu $1, {1:AL}($1)
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+    - description: "Set {0} to the 16 bits, zero-extended, starting at effective memory byte address"
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:+1,AH}
+        lbu {0}, {1:+1,AL}($1)
+        lui $1, {1:AH}
+        lbu $1, {1:AL}($1)
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+    - description: "Set {0} to the 16 bits, zero-extended, starting at effective memory byte address"
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:+1,AH}
+        lbu {0}, {1:+1,AL}($1)
+        lui $1, {1:AH}
+        lbu $1, {1:AL}($1)
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+    - description: "Set {0} to the 16 bits, zero-extended, starting at effective memory byte address"
+      operands: [ reg, (reg) ]
+      expansion: |
+        lbu {0}, 1({1})
+        lbu $1, 0({1})
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+    - description: "Set {0} to the 16 bits, zero-extended, starting at effective memory byte address"
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:+1,AH}
+        addu $1, $1, {2}
+        lbu {0}, {1:+1,AL}($1)
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lbu $1, {1:AL}($1)
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+    - description: "Set {0} to the 16 bits, zero-extended, starting at effective memory byte address"
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:+1,AH}
+        addu $1, $1, {2}
+        lbu {0}, {1:+1,AL}($1)
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lbu $1, {1:AL}($1)
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+    - description: "Set {0} to the 16 bits, zero-extended, starting at effective memory byte address"
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:+1,AH}
+        addu $1, $1, {2}
+        lbu {0}, {1:+1,AL}($1)
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lbu $1, {1:AL}($1)
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+- mnemonic: ld
+  title: "Load Doubleword"
+  matches:
+    - description: "Set {0} and the next register to the 64 bits starting at effective memory byte address"
+      operands: [ reg, s16, (reg) ]
+      expansion: |
+        lw {0}, {1:AL}({2})
+        lui $1, {1:+4,AH}
+        addu $1, $1, {2}
+        lw {0:+1}, {1:+4,AL}($1)
+    - description: "Set {0} and the next register to the 64 bits starting at effective memory word address"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        lw {0}, {1:AL}($1)
+        lui $1, {1:+4,AH}
+        lw {0:+1}, {1:+4,AL}($1)
+    - description: "Set {0} and the next register to the 64 bits starting at effective memory word address"
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        lw {0}, {1:AL}($1)
+        lui $1, {1:+4,AH}
+        lw {0:+1}, {1:+4,AL}($1)
+    - description: "Set {0} and the next register to the 64 bits starting at effective memory word address"
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        lw {0}, {1:AL}($1)
+        lui $1, {1:+4,AH}
+        lw {0:+1}, {1:+4,AL}($1)
+    - description: "Set {0} and the next register to the 64 bits starting at effective memory word address"
+      operands: [ reg, (reg) ]
+      expansion: |
+        lw {0}, 0({1})
+        lw {0:+1}, 4({1})
+    - description: "Set {0} and the next register to the 64 bits starting at effective memory word address"
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lw {0}, {1:AL}($1)
+        lui $1, {1:+4,AH}
+        addu $1, $1, {2}
+        lw {0:+1}, {1:+4,AL}($1)
+    - description: "Set {0} and the next register to the 64 bits starting at effective memory word address"
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lw {0}, {1:AL}($1)
+        lui $1, {1:+4,AH}
+        addu $1, $1, {2}
+        lw {0:+1}, {1:+4,AL}($1)
+    - description: "Set {0} and the next register to the 64 bits starting at effective memory word address"
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lw {0}, {1:AL}($1)
+        lui $1, {1:+4,AH}
+        addu $1, $1, {2}
+        lw {0:+1}, {1:+4,AL}($1)
+- mnemonic: usw
+  title: "Unaligned Store Word"
+  matches:
+    - description: "Store {0} contents into the 32 bits starting at effective memory byte address"
+      operands: [ reg, s16, (reg) ]
+      expansion: |
+        lui $1, {1:+3,AH}
+        addu $1, $1, {2}
+        swl {0}, {1:+3,AL}($1)
+        swr {0}, {1:AL}({2})
+    - description: "Store {0} contents into the 32 bits starting at effective memory byte address"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:+3,AH}
+        swl {0}, {1:+3,AL}($1)
+        lui $1, {1:AH}
+        swr {0}, {1:AL}($1)
+    - description: "Store {0} contents into the 32 bits starting at effective memory byte address"
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:+3,AH}
+        swl {0}, {1:+3,AL}($1)
+        lui $1, {1:AH}
+        swr {0}, {1:AL}($1)
+    - description: "Store {0} contents into the 32 bits starting at effective memory byte address"
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:+3,AH}
+        swl {0}, {1:+3,AL}($1)
+        lui $1, {1:AH}
+        swr {0}, {1:AL}($1)
+    - description: "Store {0} contents into the 32 bits starting at effective memory byte address"
+      operands: [ reg, (reg) ]
+      expansion: |
+        swl {0}, 3({1})
+        swr {0}, 0({1})
+    - description: "Store {0} contents into the 32 bits starting at effective memory byte address"
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:+3,AH}
+        addu $1, $1, {2}
+        swl {0}, {1:+3,AL}($1)
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        swr {0}, {1:AL}($1)
+    - description: "Store {0} contents into the 32 bits starting at effective memory byte address"
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:+3,AH}
+        addu $1, $1, {2}
+        swl {0}, {1:+3,AL}($1)
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        swr {0}, {1:AL}($1)
+    - description: "Store {0} contents into the 32 bits starting at effective memory byte address"
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:+3,AH}
+        addu $1, $1, {2}
+        swl {0}, {1:+3,AL}($1)
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        swr {0}, {1:AL}($1)
+- mnemonic: ush
+  title: "Unaligned Store Halfword"
+  matches:
+    - description: "Store low-order halfword {0} contents into the 16 bits starting at effective memory byte address"
+      operands: [ reg, s16, (reg) ]
+      expansion: |
+        sb {0}, {1:AL}({2})
+        sll $1, {0}, 24
+        srl {0}, {0}, 8
+        or {0}, {0}, $1
+        lui $1, {1:+1,AH}
+        addu $1, $1, {2}
+        sb {0}, {1:+1,AL}($1)
+        srl $1, {0}, 24
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+    - description: "Store low-order halfword {0} contents into the 16 bits starting at effective memory byte address"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        sb {0}, {1:AL}($1)
+        sll $1, {0}, 24
+        srl {0}, {0}, 8
+        or {0}, {0}, $1
+        lui $1, {1:+1,AH}
+        sb {0}, {1:+1,AL}($1)
+        srl $1, {0}, 24
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+    - description: "Store low-order halfword {0} contents into the 16 bits starting at effective memory byte address"
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        sb {0}, {1:AL}($1)
+        sll $1, {0}, 24
+        srl {0}, {0}, 8
+        or {0}, {0}, $1
+        lui $1, {1:+1,AH}
+        sb {0}, {1:+1,AL}($1)
+        srl $1, {0}, 24
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+    - description: "Store low-order halfword {0} contents into the 16 bits starting at effective memory byte address"
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        sb {0}, {1:AL}($1)
+        sll $1, {0}, 24
+        srl {0}, {0}, 8
+        or {0}, {0}, $1
+        lui $1, {1:+1,AH}
+        sb {0}, {1:+1,AL}($1)
+        srl $1, {0}, 24
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+    - description: "Store low-order halfword {0} contents into the 16 bits starting at effective memory byte address"
+      operands: [ reg, (reg) ]
+      expansion: |
+        sb {0}, 0({1})
+        sll $1, {0}, 24
+        srl {0}, {0}, 8
+        or {0}, {0}, $1
+        sb {0}, 1({1})
+        srl $1, {0}, 24
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+    - description: "Store low-order halfword {0} contents into the 16 bits starting at effective memory byte address"
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sb {0}, {1:AL}($1)
+        sll $1, {0}, 24
+        srl {0}, {0}, 8
+        or {0}, {0}, $1
+        lui $1, {1:+1,AH}
+        addu $1, $1, {2}
+        sb {0}, {1:+1,AL}($1)
+        srl $1, {0}, 24
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+    - description: "Store low-order halfword {0} contents into the 16 bits starting at effective memory byte address"
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sb {0}, {1:AL}($1)
+        sll $1, {0}, 24
+        srl {0}, {0}, 8
+        or {0}, {0}, $1
+        lui $1, {1:+1,AH}
+        addu $1, $1, {2}
+        sb {0}, {1:+1,AL}($1)
+        srl $1, {0}, 24
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+    - description: "Store low-order halfword {0} contents into the 16 bits starting at effective memory byte address"
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sb {0}, {1:AL}($1)
+        sll $1, {0}, 24
+        srl {0}, {0}, 8
+        or {0}, {0}, $1
+        lui $1, {1:+1,AH}
+        addu $1, $1, {2}
+        sb {0}, {1:+1,AL}($1)
+        srl $1, {0}, 24
+        sll {0}, {0}, 8
+        or {0}, {0}, $1
+- mnemonic: sd
+  title: "Store Doubleword"
+  matches:
+    - description: "Store contents of {0} and the next register to the 64 bits starting at effective memory byte address"
+      operands: [ reg, s16, (reg) ]
+      expansion: |
+        sw {0}, {1:AL}({2})
+        lui $1, {1:+4,AH}
+        addu $1, $1, {2}
+        sw {0:+1}, {1:+4,AL}($1)
+    - description: "Store contents of {0} and the next register to the 64 bits starting at effective memory word address"
+      operands: [ reg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        sw {0}, {1:AL}($1)
+        lui $1, {1:+4,AH}
+        sw {0:+1}, {1:+4,AL}($1)
+    - description: "Store contents of {0} and the next register to the 64 bits starting at effective memory word address"
+      operands: [ reg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        sw {0}, {1:AL}($1)
+        lui $1, {1:+4,AH}
+        sw {0:+1}, {1:+4,AL}($1)
+    - description: "Store contents of {0} and the next register to the 64 bits starting at effective memory word address"
+      operands: [ reg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        sw {0}, {1:AL}($1)
+        lui $1, {1:+4,AH}
+        sw {0:+1}, {1:+4,AL}($1)
+    - description: "Store contents of {0} and the next register to the 64 bits starting at effective memory word address"
+      operands: [ reg, (reg) ]
+      expansion: |
+        sw {0}, 0({1})
+        sw {0:+1}, 4({1})
+    - description: "Store contents of {0} and the next register to the 64 bits starting at effective memory word address"
+      operands: [ reg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sw {0}, {1:AL}($1)
+        lui $1, {1:+4,AH}
+        addu $1, $1, {2}
+        sw {0:+1}, {1:+4,AL}($1)
+    - description: "Store contents of {0} and the next register to the 64 bits starting at effective memory word address"
+      operands: [ reg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sw {0}, {1:AL}($1)
+        lui $1, {1:+4,AH}
+        addu $1, $1, {2}
+        sw {0:+1}, {1:+4,AL}($1)
+    - description: "Store contents of {0} and the next register to the 64 bits starting at effective memory word address"
+      operands: [ reg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sw {0}, {1:AL}($1)
+        lui $1, {1:+4,AH}
+        addu $1, $1, {2}
+        sw {0:+1}, {1:+4,AL}($1)
+
+# here are the remaining addressing modes, grouped by instruction.
+
+
+
+
+
+
+
+
+# load and store pseudo-instructions for floating point (coprocessor 1) registers
+
+- mnemonic: lwc1
+  title: "Load Word Coprocessor 1"
+  matches:
+    - description: "Set {0} to 32-bit value from effective memory word address"
+      operands: [ freg, (reg) ]
+      expansion: |
+        lwc1 {0}, 0({1})
+    - description: "Set {0} to 32-bit value from effective memory word address"
+      operands: [ freg, s16 ]
+      expansion: |
+        lwc1 {0}, {1:AL}($0)
+    - description: "Set {0} to 32-bit value from effective memory word address"
+      operands: [ freg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        lwc1 {0}, {1:AL}($1)
+    - description: "Set {0} to 32-bit value from effective memory word address"
+      operands: [ freg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lwc1 {0}, {1:AL}($1)
+    - description: "Set {0} to 32-bit value from effective memory word address"
+      operands: [ freg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        lwc1 {0}, {1:AL}($1)
+      compact_expansion: |
+        lwc1 {0}, {1:AL}($0)
+    - description: "Set {0} to 32-bit value from effective memory word address"
+      operands: [ freg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lwc1 {0}, {1:AL}($1)
+      compact_expansion: |
+        lwc1 {0}, {1:AL}({2})
+    - description: "Set {0} to 32-bit value from effective memory word address"
+      operands: [ freg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        lwc1 {0}, {1:AL}($1)
+    - description: "Set {0} to 32-bit value from effective memory word address"
+      operands: [ freg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lwc1 {0}, {1:AL}($1)
+
+- mnemonic: ldc1
+  title: "Load Doubleword Coprocessor 1"
+  matches:
+    - description: "Set {0} and $f3 register pair to 64-bit value at effective memory doubleword address"
+      operands: [ freg, (reg) ]
+      expansion: |
+        ldc1 {0}, 0({1})
+    - description: "Set {0} and $f3 register pair to 64-bit value at effective memory doubleword address"
+      operands: [ freg, s16 ]
+      expansion: |
+        ldc1 {0}, {1:AL}($0)
+    - description: "Set {0} and $f3 register pair to 64-bit value at effective memory doubleword address"
+      operands: [ freg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        ldc1 {0}, {1:AL}($1)
+    - description: "Set {0} and $f3 register pair to 64-bit value at effective memory doubleword address"
+      operands: [ freg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        ldc1 {0}, {1:AL}($1)
+    - description: "Set {0} and $f3 register pair to 64-bit value at effective memory doubleword address"
+      operands: [ freg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        ldc1 {0}, {1:AL}($1)
+      compact_expansion: |
+        ldc1 {0}, {1:AL}($0)
+    - description: "Set {0} and $f3 register pair to 64-bit value at effective memory doubleword address"
+      operands: [ freg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        ldc1 {0}, {1:AL}($1)
+      compact_expansion: |
+        ldc1 {0}, {1:AL}({2})
+    - description: "Set {0} and $f3 register pair to 64-bit value at effective memory doubleword address"
+      operands: [ freg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        ldc1 {0}, {1:AL}($1)
+    - description: "Set {0} and $f3 register pair to 64-bit value at effective memory doubleword address"
+      operands: [ freg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        ldc1 {0}, {1:AL}($1)
+
+- mnemonic: swc1
+  title: "Store Word Coprocessor 1"
+  matches:
+    - description: "Store 32-bit value from {0} to effective memory word address"
+      operands: [ freg, (reg) ]
+      expansion: |
+        swc1 {0}, 0({1})
+    - description: "Store 32-bit value from {0} to effective memory word address"
+      operands: [ freg, s16 ]
+      expansion: |
+        swc1 {0}, {1:AL}($0)
+    - description: "Store 32-bit value from {0} to effective memory word address"
+      operands: [ freg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        swc1 {0}, {1:AL}($1)
+    - description: "Store 32-bit value from {0} to effective memory word address"
+      operands: [ freg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        swc1 {0}, {1:AL}($1)
+    - description: "Store 32-bit value from {0} to effective memory word address"
+      operands: [ freg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        swc1 {0}, {1:AL}($1)
+      compact_expansion: |
+        swc1 {0}, {1:AL}($0)
+    - description: "Store 32-bit value from {0} to effective memory word address"
+      operands: [ freg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        swc1 {0}, {1:AL}($1)
+      compact_expansion: |
+        swc1 {0}, {1:AL}({2})
+    - description: "Store 32-bit value from {0} to effective memory word address"
+      operands: [ freg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        swc1 {0}, {1:AL}($1)
+    - description: "Store 32-bit value from {0} to effective memory word address"
+      operands: [ freg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        swc1 {0}, {1:AL}($1)
+
+- mnemonic: sdc1
+  title: "Store Doubleword Coprocessor 1"
+  matches:
+    - description: "Store 64 bits from {0} and $f3 register pair to effective memory doubleword address"
+      operands: [ freg, (reg) ]
+      expansion: |
+        sdc1 {0}, 0({1})
+    - description: "Store 64 bits from {0} and $f3 register pair to effective memory doubleword address"
+      operands: [ freg, s16 ]
+      expansion: |
+        sdc1 {0}, {1:AL}($0)
+    - description: "Store 64 bits from {0} and $f3 register pair to effective memory doubleword address"
+      operands: [ freg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        sdc1 {0}, {1:AL}($1)
+    - description: "Store 64 bits from {0} and $f3 register pair to effective memory doubleword address"
+      operands: [ freg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sdc1 {0}, {1:AL}($1)
+    - description: "Store 64 bits from {0} and $f3 register pair to effective memory doubleword address"
+      operands: [ freg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        sdc1 {0}, {1:AL}($1)
+      compact_expansion: |
+        sdc1 {0}, {1:AL}($0)
+    - description: "Store 64 bits from {0} and $f3 register pair to effective memory doubleword address"
+      operands: [ freg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sdc1 {0}, {1:AL}($1)
+      compact_expansion: |
+        sdc1 {0}, {1:AL}({2})
+    - description: "Store 64 bits from {0} and $f3 register pair to effective memory doubleword address"
+      operands: [ freg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        sdc1 {0}, {1:AL}($1)
+    - description: "Store 64 bits from {0} and $f3 register pair to effective memory doubleword address"
+      operands: [ freg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sdc1 {0}, {1:AL}($1)
+
+- mnemonic: l.s
+  title: "Load floating point Single precision"
+  matches:
+    - description: "Set {0} to 32-bit value at effective memory word address"
+      operands: [ freg, (reg) ]
+      expansion: |
+        lwc1 {0}, 0({1})
+    - description: "Set {0} to 32-bit value at effective memory word address"
+      operands: [ freg, s16 ]
+      expansion: |
+        lwc1 {0}, {1:AL}($0)
+    - description: "Set {0} to 32-bit value at effective memory word address"
+      operands: [ freg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        lwc1 {0}, {1:AL}($1)
+    - description: "Set {0} to 32-bit value at effective memory word address"
+      operands: [ freg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lwc1 {0}, {1:AL}($1)
+    - description: "Set {0} to 32-bit value at effective memory word address"
+      operands: [ freg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        lwc1 {0}, {1:AL}($1)
+      compact_expansion: |
+        lwc1 {0}, {1:AL}($0)
+    - description: "Set {0} to 32-bit value at effective memory word address"
+      operands: [ freg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lwc1 {0}, {1:AL}($1)
+      compact_expansion: |
+        lwc1 {0}, {1:AL}({2})
+    - description: "Set {0} to 32-bit value at effective memory word address"
+      operands: [ freg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        lwc1 {0}, {1:AL}($1)
+    - description: "Set {0} to 32-bit value at effective memory word address"
+      operands: [ freg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        lwc1 {0}, {1:AL}($1)
+
+- mnemonic: s.s
+  title: "Store floating point Single precision"
+  matches:
+    - description: "Store 32-bit value from {0} to effective memory word address"
+      operands: [ freg, (reg) ]
+      expansion: |
+        swc1 {0}, 0({1})
+    - description: "Store 32-bit value from {0} to effective memory word address"
+      operands: [ freg, s16 ]
+      expansion: |
+        swc1 {0}, {1:AL}($0)
+    - description: "Store 32-bit value from {0} to effective memory word address"
+      operands: [ freg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        swc1 {0}, {1:AL}($1)
+    - description: "Store 32-bit value from {0} to effective memory word address"
+      operands: [ freg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        swc1 {0}, {1:AL}($1)
+    - description: "Store 32-bit value from {0} to effective memory word address"
+      operands: [ freg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        swc1 {0}, {1:AL}($1)
+      compact_expansion: |
+        swc1 {0}, {1:AL}($0)
+    - description: "Store 32-bit value from {0} to effective memory word address"
+      operands: [ freg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        swc1 {0}, {1:AL}($1)
+      compact_expansion: |
+        swc1 {0}, {1:AL}({2})
+    - description: "Store 32-bit value from {0} to effective memory word address"
+      operands: [ freg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        swc1 {0}, {1:AL}($1)
+    - description: "Store 32-bit value from {0} to effective memory word address"
+      operands: [ freg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        swc1 {0}, {1:AL}($1)
+
+- mnemonic: l.d
+  title: "Load floating point Double precision"
+  matches:
+    - description: "Set {0} and $f3 register pair to 64-bit value at effective memory doubleword address"
+      operands: [ freg, (reg) ]
+      expansion: |
+        ldc1 {0}, 0({1})
+    - description: "Set {0} and $f3 register pair to 64-bit value at effective memory doubleword address"
+      operands: [ freg, s16 ]
+      expansion: |
+        ldc1 {0}, {1:AL}($0)
+    - description: "Set {0} and $f3 register pair to 64-bit value at effective memory doubleword address"
+      operands: [ freg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        ldc1 {0}, {1:AL}($1)
+    - description: "Set {0} and $f3 register pair to 64-bit value at effective memory doubleword address"
+      operands: [ freg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        ldc1 {0}, {1:AL}($1)
+    - description: "Set {0} and $f3 register pair to 64-bit value at effective memory doubleword address"
+      operands: [ freg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        ldc1 {0}, {1:AL}($1)
+      compact_expansion: |
+        ldc1 {0}, {1:AL}($0)
+    - description: "Set {0} and $f3 register pair to 64-bit value at effective memory doubleword address"
+      operands: [ freg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        ldc1 {0}, {1:AL}($1)
+      compact_expansion: |
+        ldc1 {0}, {1:AL}({2})
+    - description: "Set {0} and $f3 register pair to 64-bit value at effective memory doubleword address"
+      operands: [ freg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        ldc1 {0}, {1:AL}($1)
+    - description: "Set {0} and $f3 register pair to 64-bit value at effective memory doubleword address"
+      operands: [ freg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        ldc1 {0}, {1:AL}($1)
+
+- mnemonic: s.d
+  title: "Store floating point Double precision"
+  matches:
+    - description: "Store 64 bits from {0} and $f3 register pair to effective memory doubleword address"
+      operands: [ freg, (reg) ]
+      expansion: |
+        sdc1 {0}, 0({1})
+    - description: "Store 64 bits from {0} and $f3 register pair to effective memory doubleword address"
+      operands: [ freg, s16 ]
+      expansion: |
+        sdc1 {0}, {1:AL}($0)
+    - description: "Store 64 bits from {0} and $f3 register pair to effective memory doubleword address"
+      operands: [ freg, i32 ]
+      expansion: |
+        lui $1, {1:AH}
+        sdc1 {0}, {1:AL}($1)
+    - description: "Store 64 bits from {0} and $f3 register pair to effective memory doubleword address"
+      operands: [ freg, i32, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sdc1 {0}, {1:AL}($1)
+    - description: "Store 64 bits from {0} and $f3 register pair to effective memory doubleword address"
+      operands: [ freg, label ]
+      expansion: |
+        lui $1, {1:AH}
+        sdc1 {0}, {1:AL}($1)
+      compact_expansion: |
+        sdc1 {0}, {1:AL}($0)
+    - description: "Store 64 bits from {0} and $f3 register pair to effective memory doubleword address"
+      operands: [ freg, label, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sdc1 {0}, {1:AL}($1)
+      compact_expansion: |
+        sdc1 {0}, {1:AL}({2})
+    - description: "Store 64 bits from {0} and $f3 register pair to effective memory doubleword address"
+      operands: [ freg, label+ ]
+      expansion: |
+        lui $1, {1:AH}
+        sdc1 {0}, {1:AL}($1)
+    - description: "Store 64 bits from {0} and $f3 register pair to effective memory doubleword address"
+      operands: [ freg, label+, (reg) ]
+      expansion: |
+        lui $1, {1:AH}
+        addu $1, $1, {2}
+        sdc1 {0}, {1:AL}($1)

@@ -90,7 +90,7 @@
 
 #######################  arithmetic and branch pseudo-ops #####################
 
-not $t1,$t2	nor RG1, RG2, $0	#Bitwise NOT (bit inversion)
+not $t1,$t2	nor RG1, RG2, $0	#NOT : set $t1 to the bitwise inversion of $t2
 
 # Here are some "convenience" arithmetic pseudo-ops.  But do they encourage sloppy programming?
 add $t1,$t2,-100	addi RG1, RG2, VL3	#ADDition : set $t1 to ($t2 plus 16-bit immediate)
@@ -457,13 +457,13 @@ ulh $t1,100000($t2)	lui $1, VH2P1	addu $1, $1, RG4	lb RG1, VL2P1($1)	lui $1, VH2
 ulh $t1,label($t2)	lui $1, LH2P1	addu $1, $1, RG4	lb RG1, LL2P1($1)	lui $1, LH2	addu $1, $1, RG4	lbu $1, LL2($1)	sll RG1, RG1, 8	or RG1, RG1, $1	#Unaligned Load Halfword : Set $t1 to the 16 bits, sign-extended, starting at effective memory byte address
 ulh $t1,label+100000($t2)	lui $1, LHPAP1	addu $1, $1, RG6	lb RG1, LLPP1($1)	lui $1, LHPA	addu $1, $1, RG6	lbu $1, LLP($1)	sll RG1, RG1, 8	or RG1, RG1, $1	#Unaligned Load Halfword : Set $t1 to the 16 bits, sign-extended, starting at effective memory byte address
 
-ulhu $t1,100000	lui $1, VH2P1	lbu RG1, VL2P1($1)	lui $1, VH2	lbu $1, VL2($1)	sll RG1, RG1, 8	or RG1, RG1, $1	#Unaligned Load Halfword : Set $t1 to the 16 bits, zero-extended, starting at effective memory byte address
-ulhu $t1,label	lui $1, LH2P1	lbu RG1, LL2P1($1)	lui $1, LH2	lbu $1, LL2($1)	sll RG1, RG1, 8	or RG1, RG1, $1	#Unaligned Load Halfword : Set $t1 to the 16 bits, zero-extended, starting at effective memory byte address
-ulhu $t1,label+100000	lui $1, LHPAP1	lbu RG1, LLPP1($1)	lui $1, LHPA	lbu $1, LLP($1)	sll RG1, RG1, 8	or RG1, RG1, $1	#Unaligned Load Halfword : Set $t1 to the 16 bits, zero-extended, starting at effective memory byte address
-ulhu $t1,($t2)	lbu RG1, 1(RG3)	lbu $1, 0(RG3)	sll RG1, RG1, 8	or RG1, RG1, $1		#Unaligned Load Halfword : Set $t1 to the 16 bits, zero-extended, starting at effective memory byte address
-ulhu $t1,100000($t2)	lui $1, VH2P1	addu $1, $1, RG4	lbu RG1, VL2P1($1)	lui $1, VH2	addu $1, $1, RG4	lbu $1, VL2($1)	sll RG1, RG1, 8	or RG1, RG1, $1	#Unaligned Load Halfword : Set $t1 to the 16 bits, zero-extended, starting at effective memory byte address
-ulhu $t1,label($t2)	lui $1, LH2P1	addu $1, $1, RG4	lbu RG1, LL2P1($1)	lui $1, LH2	addu $1, $1, RG4	lbu $1, LL2($1)	sll RG1, RG1, 8	or RG1, RG1, $1	#Unaligned Load Halfword : Set $t1 to the 16 bits, zero-extended, starting at effective memory byte address
-ulhu $t1,label+100000($t2)	lui $1, LHPAP1	addu $1, $1, RG6	lbu RG1, LLPP1($1)	lui $1, LHPA	addu $1, $1, RG6	lbu $1, LLP($1)	sll RG1, RG1, 8	or RG1, RG1, $1	#Unaligned Load Halfword : Set $t1 to the 16 bits, zero-extended, starting at effective memory byte address
+ulhu $t1,100000	lui $1, VH2P1	lbu RG1, VL2P1($1)	lui $1, VH2	lbu $1, VL2($1)	sll RG1, RG1, 8	or RG1, RG1, $1	#Unaligned Load Halfword Unsigned : Set $t1 to the 16 bits, zero-extended, starting at effective memory byte address
+ulhu $t1,label	lui $1, LH2P1	lbu RG1, LL2P1($1)	lui $1, LH2	lbu $1, LL2($1)	sll RG1, RG1, 8	or RG1, RG1, $1	#Unaligned Load Halfword Unsigned : Set $t1 to the 16 bits, zero-extended, starting at effective memory byte address
+ulhu $t1,label+100000	lui $1, LHPAP1	lbu RG1, LLPP1($1)	lui $1, LHPA	lbu $1, LLP($1)	sll RG1, RG1, 8	or RG1, RG1, $1	#Unaligned Load Halfword Unsigned : Set $t1 to the 16 bits, zero-extended, starting at effective memory byte address
+ulhu $t1,($t2)	lbu RG1, 1(RG3)	lbu $1, 0(RG3)	sll RG1, RG1, 8	or RG1, RG1, $1		#Unaligned Load Halfword Unsigned : Set $t1 to the 16 bits, zero-extended, starting at effective memory byte address
+ulhu $t1,100000($t2)	lui $1, VH2P1	addu $1, $1, RG4	lbu RG1, VL2P1($1)	lui $1, VH2	addu $1, $1, RG4	lbu $1, VL2($1)	sll RG1, RG1, 8	or RG1, RG1, $1	#Unaligned Load Halfword Unsigned : Set $t1 to the 16 bits, zero-extended, starting at effective memory byte address
+ulhu $t1,label($t2)	lui $1, LH2P1	addu $1, $1, RG4	lbu RG1, LL2P1($1)	lui $1, LH2	addu $1, $1, RG4	lbu $1, LL2($1)	sll RG1, RG1, 8	or RG1, RG1, $1	#Unaligned Load Halfword Unsigned : Set $t1 to the 16 bits, zero-extended, starting at effective memory byte address
+ulhu $t1,label+100000($t2)	lui $1, LHPAP1	addu $1, $1, RG6	lbu RG1, LLPP1($1)	lui $1, LHPA	addu $1, $1, RG6	lbu $1, LLP($1)	sll RG1, RG1, 8	or RG1, RG1, $1	#Unaligned Load Halfword Unsigned : Set $t1 to the 16 bits, zero-extended, starting at effective memory byte address
 
 ld $t1,100000	lui $1, VH2	lw RG1, VL2($1)	lui $1, VH2P4	lw NR1, VL2P4($1)	#Load Doubleword : Set $t1 and the next register to the 64 bits starting at effective memory word address
 ld $t1,label	lui $1, LH2	lw RG1, LL2($1)	lui $1, LH2P4	lw NR1, LL2P4($1)	#Load Doubleword : Set $t1 and the next register to the 64 bits starting at effective memory word address
