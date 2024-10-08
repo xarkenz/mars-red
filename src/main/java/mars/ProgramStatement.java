@@ -1,13 +1,11 @@
 package mars;
 
 import mars.assembler.SymbolTable;
-import mars.assembler.Token;
-import mars.assembler.TokenList;
-import mars.assembler.TokenType;
+import mars.assembler.token.Token;
+import mars.assembler.token.TokenType;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.RegisterFile;
 import mars.mips.instructions.BasicInstruction;
-import mars.mips.instructions.BasicInstructionFormat;
 import mars.mips.instructions.Instruction;
 import mars.util.Binary;
 import mars.venus.NumberDisplayBaseChooser;
@@ -117,7 +115,7 @@ public class ProgramStatement {
             this.operands = null;
             this.numOperands = 0;
             this.instruction = (binaryStatement == 0) // this is a "nop" statement
-                ? Application.instructionSet.matchOperator("nop").get(0) : null;
+                ? Application.instructionSet.matchMnemonic("nop").get(0) : null;
         }
         else {
             this.operands = new int[MAX_OPERANDS];
@@ -126,7 +124,7 @@ public class ProgramStatement {
 
             String operandCodes = "fst";
             String fmt = instr.getOperationMask();
-            BasicInstructionFormat instrFormat = instr.getInstructionFormat();
+            BasicInstruction.Format instrFormat = instr.getFormat();
             int numOps = 0;
             for (int i = 0; i < operandCodes.length(); i++) {
                 int code = operandCodes.charAt(i);
@@ -135,10 +133,10 @@ public class ProgramStatement {
                     int k0 = 31 - fmt.lastIndexOf(code);
                     int k1 = 31 - j;
                     int operand = (binaryStatement >> k0) & ((1 << (k1 - k0 + 1)) - 1);
-                    if (instrFormat.equals(BasicInstructionFormat.I_BRANCH_FORMAT) && numOps == 2) {
+                    if (instrFormat.equals(BasicInstruction.Format.I_BRANCH_FORMAT) && numOps == 2) {
                         operand = operand << 16 >> 16;
                     }
-                    else if (instrFormat.equals(BasicInstructionFormat.J_FORMAT) && numOps == 0) {
+                    else if (instrFormat.equals(BasicInstruction.Format.J_FORMAT) && numOps == 0) {
                         operand |= (textAddress >> 2) & 0x3C000000;
                     }
                     this.operands[numOps] = operand;
@@ -234,7 +232,7 @@ public class ProgramStatement {
                 // method.  There are some comments there as well.
 
                 if (instruction instanceof BasicInstruction basicInstruction) {
-                    if (basicInstruction.getInstructionFormat() == BasicInstructionFormat.I_BRANCH_FORMAT) {
+                    if (basicInstruction.getFormat() == BasicInstruction.Format.I_BRANCH_FORMAT) {
                         //address = (address - (this.textAddress+((Globals.getSettings().getDelayedBranchingEnabled())? Instruction.INSTRUCTION_LENGTH : 0))) >> 2;
                         address = (address - (this.textAddress + Instruction.BYTES_PER_INSTRUCTION)) >> 2;
                         absoluteAddress = false;
@@ -249,7 +247,9 @@ public class ProgramStatement {
                 }
                 this.operands[this.numOperands++] = address;
             }
-            else if (tokenType == TokenType.INTEGER_5 || tokenType == TokenType.INTEGER_16 || tokenType == TokenType.INTEGER_16U || tokenType == TokenType.INTEGER_32) {
+            else if (tokenType == TokenType.INTEGER_5_UNSIGNED
+                     || tokenType == TokenType.INTEGER_16_SIGNED || tokenType == TokenType.INTEGER_16_UNSIGNED
+                     || tokenType == TokenType.INTEGER_32) {
                 int tempNumeric = Binary.decodeInteger(tokenValue);
 
                 /* **************************************************************************
@@ -324,11 +324,11 @@ public class ProgramStatement {
      * @param errors The list of assembly errors encountered so far.  May add to it here.
      */
     public void buildMachineStatementFromBasicStatement(ErrorList errors) {
-        BasicInstructionFormat format;
+        BasicInstruction.Format format;
         if (instruction instanceof BasicInstruction basicInstruction) {
             // Mask indicates bit positions for 'f'irst, 's'econd, 't'hird operand
             this.machineStatement = basicInstruction.getOperationMask();
-            format = basicInstruction.getInstructionFormat();
+            format = basicInstruction.getFormat();
         }
         else {
             // This means the pseudo-instruction expansion generated another
@@ -338,7 +338,7 @@ public class ProgramStatement {
             return;
         }
 
-        if (format == BasicInstructionFormat.J_FORMAT) {
+        if (format == BasicInstruction.Format.J_FORMAT) {
             if ((this.textAddress & 0xF0000000) != (this.operands[0] & 0xF0000000)) {
                 // attempt to jump beyond 28-bit byte (26-bit word) address range.
                 // SPIM flags as warning, I'll flag as error b/c MARS text segment not long enough for it to be OK.
@@ -347,18 +347,18 @@ public class ProgramStatement {
             }
             // Note the bit shift to make this a word address.
             this.operands[0] = this.operands[0] >>> 2;
-            this.insertBinaryCode(this.operands[0], Instruction.operandMask[0], errors);
+            this.insertBinaryCode(this.operands[0], Instruction.OPERAND_MASK[0], errors);
         }
-        else if (format == BasicInstructionFormat.I_BRANCH_FORMAT) {
+        else if (format == BasicInstruction.Format.I_BRANCH_FORMAT) {
             for (int i = 0; i < this.numOperands - 1; i++) {
-                this.insertBinaryCode(this.operands[i], Instruction.operandMask[i], errors);
+                this.insertBinaryCode(this.operands[i], Instruction.OPERAND_MASK[i], errors);
             }
-            this.insertBinaryCode(operands[this.numOperands - 1], Instruction.operandMask[this.numOperands - 1], errors);
+            this.insertBinaryCode(operands[this.numOperands - 1], Instruction.OPERAND_MASK[this.numOperands - 1], errors);
         }
         else {
             // R_FORMAT or I_FORMAT
             for (int i = 0; i < this.numOperands; i++) {
-                this.insertBinaryCode(this.operands[i], Instruction.operandMask[i], errors);
+                this.insertBinaryCode(this.operands[i], Instruction.OPERAND_MASK[i], errors);
             }
         }
         this.binaryStatement = Binary.binaryStringToInt(this.machineStatement);

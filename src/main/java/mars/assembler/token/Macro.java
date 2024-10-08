@@ -1,4 +1,4 @@
-package mars.assembler;
+package mars.assembler.token;
 
 import mars.ErrorList;
 import mars.ErrorMessage;

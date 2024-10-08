@@ -2,9 +2,10 @@ package mars.assembler;
 
 import mars.ErrorList;
 import mars.ErrorMessage;
-import mars.Application;
+import mars.assembler.token.Token;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -41,31 +42,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @version June 2003
  */
 public class SymbolTable {
-    /*
-     * This class was originally implemented with an ArrayList and linear searching,
-     * which can be highly inefficient, so I took it upon myself to reimplement it with
-     * a HashMap instead. That should make this class more friendly to larger programs.
-     * Sean Clarke 03/2024
-     */
-
-    // Note -1 is legal 32 bit address (0xFFFFFFFF) but it is the high address in
-    // kernel address space so highly unlikely that any symbol will have this as
-    // its associated address!
-    public static final int NOT_FOUND = -1;
-    private static final String START_LABEL = "main";
-
     private final String filename;
-    private final HashMap<String, Symbol> table;
+    private final Map<String, Symbol> symbols;
 
     /**
-     * Create a new empty symbol table for given file.
+     * Create a new empty symbol table corresponding to the given filename.
      *
-     * @param filename name of file this symbol table is associated with.  Will be
+     * @param filename The name of the file this symbol table is associated with.  Will be
      *                 used only for output/display so it can be any descriptive string.
      */
     public SymbolTable(String filename) {
         this.filename = filename;
-        this.table = new HashMap<>();
+        this.symbols = new HashMap<>();
+    }
+
+    public String getFilename() {
+        return this.filename;
     }
 
     /**
@@ -78,12 +70,14 @@ public class SymbolTable {
      */
     public void addSymbol(Token token, int address, boolean isData, ErrorList errors) {
         String label = token.getLiteral();
-        Symbol previousSymbol = table.put(label, new Symbol(label, address, isData));
+        Symbol previousSymbol = this.symbols.put(label, new Symbol(label, address, isData));
         if (previousSymbol != null) {
-            errors.add(new ErrorMessage(token.getSourceFilename(), token.getSourceLine(), token.getSourceColumn(), "label \"" + label + "\" already defined"));
-        }
-        if (Application.debug) {
-            System.out.println("The symbol " + label + " with address " + address + " has been added to the " + this.filename + " symbol table.");
+            errors.add(new ErrorMessage(
+                token.getSourceFilename(),
+                token.getSourceLine(),
+                token.getSourceColumn(),
+                "label \"" + label + "\" is already defined"
+            ));
         }
     }
 
@@ -95,34 +89,18 @@ public class SymbolTable {
      * @param label The label for the symbol to remove.
      */
     public void removeSymbol(String label) {
-        Symbol removedSymbol = table.remove(label);
-        if (Application.debug && removedSymbol != null) {
-            System.out.println("The symbol " + label + " has been removed from the " + this.filename + " symbol table.");
-        }
+        this.symbols.remove(label);
     }
 
     /**
-     * Method to return the address associated with the given label.
+     * Get the address associated with the given label.
      *
      * @param label The label to search for.
-     * @return The memory address of the label given, or NOT_FOUND if not found in symbol table.
+     * @return The memory address of the label given, or <code>null</code> if not found in symbol table.
      */
-    public int getAddress(String label) {
-        Symbol symbol = getSymbol(label);
-        return (symbol == null) ? NOT_FOUND : symbol.getAddress();
-    }
-
-    /**
-     * Method to return the address associated with the given label.  Look first
-     * in this (local) symbol table then in symbol table of labels declared
-     * global (.globl directive).
-     *
-     * @param s The label.
-     * @return The memory address of the label given, or NOT_FOUND if not found in symbol table.
-     */
-    public int getAddressLocalOrGlobal(String s) {
-        int address = this.getAddress(s);
-        return (address == NOT_FOUND) ? Application.globalSymbolTable.getAddress(s) : address;
+    public Integer getAddress(String label) {
+        Symbol symbol = this.getSymbol(label);
+        return (symbol == null) ? null : symbol.getAddress();
     }
 
     /**
@@ -132,33 +110,7 @@ public class SymbolTable {
      * @return Symbol object for requested target, null if not found in symbol table.
      */
     public Symbol getSymbol(String label) {
-        return table.get(label);
-    }
-
-    /**
-     * Produce Symbol object from symbol table that has the given address.
-     *
-     * @param address Address of symbol to find.
-     * @return Symbol object having requested address, null if address not found in symbol table.
-     */
-    // TODO: I'm not really a fan of this... but without a lot of restructuring it's hard to avoid. -Sean Clarke
-    public Symbol getSymbolGivenAddress(int address) {
-        return table.values().stream()
-            .filter(symbol -> symbol.getAddress() == address)
-            .findFirst()
-            .orElse(null);
-    }
-
-    /**
-     * Produce Symbol object from either local or global symbol table that has the
-     * given address.
-     *
-     * @param address Address of symbol to find.
-     * @return Symbol object having requested address, null if address not found in symbol table.
-     */
-    public Symbol getSymbolGivenAddressLocalOrGlobal(int address) {
-        Symbol symbol = this.getSymbolGivenAddress(address);
-        return (symbol == null) ? Application.globalSymbolTable.getSymbolGivenAddress(address) : symbol;
+        return this.symbols.get(label);
     }
 
     /**
@@ -167,7 +119,8 @@ public class SymbolTable {
      * @return Array of data symbols.
      */
     public Symbol[] getDataSymbols() {
-        return table.values().stream()
+        return this.symbols.values()
+            .stream()
             .filter(Symbol::isData)
             .toArray(Symbol[]::new); // Java arrays are weird
     }
@@ -178,7 +131,8 @@ public class SymbolTable {
      * @return Array of text symbols.
      */
     public Symbol[] getTextSymbols() {
-        return table.values().stream()
+        return this.symbols.values()
+            .stream()
             .filter(Symbol::isText)
             .toArray(Symbol[]::new); // Java arrays are weird
     }
@@ -189,7 +143,7 @@ public class SymbolTable {
      * @return Array of symbols.
      */
     public Symbol[] getAllSymbols() {
-        return table.values()
+        return this.symbols.values()
             .toArray(Symbol[]::new); // Java arrays are weird
     }
 
@@ -199,31 +153,14 @@ public class SymbolTable {
      * @return Number of symbol table entries.
      */
     public int getSize() {
-        return table.size();
+        return this.symbols.size();
     }
 
     /**
      * Clear all symbols from the table.
      */
     public void clear() {
-        table.clear();
-    }
-
-    /**
-     * Fix address in symbol table entry.  Any and all entries that match the original
-     * address will be modified to contain the replacement address. There is no effect
-     * if none of the addresses match.
-     *
-     * @param originalAddress    Address associated with 0 or more symbol table entries.
-     * @param replacementAddress Any entry that has originalAddress will have its
-     *                           address updated to this value.  Does nothing if none do.
-     */
-    public void fixSymbolTableAddress(int originalAddress, int replacementAddress) {
-        Symbol label = getSymbolGivenAddress(originalAddress);
-        while (label != null) {
-            label.setAddress(replacementAddress);
-            label = getSymbolGivenAddress(originalAddress);
-        }
+        this.symbols.clear();
     }
 
     /**
@@ -233,6 +170,7 @@ public class SymbolTable {
      * @return String containing global label whose text segment address is starting address for program execution.
      */
     public static String getStartLabel() {
-        return START_LABEL;
+        // TODO: add setting
+        return "main";
     }
 }

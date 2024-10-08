@@ -1,8 +1,8 @@
 package mars.assembler;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import mars.util.StringTrie;
+
+import java.util.*;
 
 /*
 Copyright (c) 2003-2012,  Pete Sanderson and Kenneth Vollmar
@@ -66,6 +66,16 @@ public enum Directive {
     /* INCLUDE added by DPS 11 Jan 2013 */
     INCLUDE(".include", "Insert the contents of the specified file.  Put filename in quotes.");
 
+    public static final Map<String, Directive> ALL_DIRECTIVES = new HashMap<>();
+    public static final StringTrie<Directive> ALL_DIRECTIVES_TRIE = new StringTrie<>();
+
+    static {
+        for (Directive directive : Directive.values()) {
+            ALL_DIRECTIVES.put(directive.getName(), directive);
+            ALL_DIRECTIVES_TRIE.put(directive.getName(), directive);
+        }
+    }
+
     private final String name;
     private final String description;
 
@@ -80,13 +90,8 @@ public enum Directive {
      * @param name String containing candidate directive name (e.g. ".ascii")
      * @return If match is found, returns matching directive, else returns <code>null</code>.
      */
-    public static Directive matchDirective(String name) {
-        for (Directive directive : Directive.values()) {
-            if (directive.getName().equalsIgnoreCase(name)) {
-                return directive;
-            }
-        }
-        return null;
+    public static Directive fromName(String name) {
+        return ALL_DIRECTIVES.get(name.toLowerCase());
     }
 
     /**
@@ -96,15 +101,9 @@ public enum Directive {
      * @param prefix The prefix to match.
      * @return List of matching directives, which may be empty.
      */
-    public static List<Directive> prefixMatchDirectives(String prefix) {
-        List<Directive> matches = new ArrayList<>();
-        for (Directive directive : Directive.values()) {
-            // Something like .startsWithIgnoreCase(prefix) would be nice... this will have to do
-            if (directive.getName().regionMatches(true, 0, prefix, 0, prefix.length())) {
-                matches.add(directive);
-            }
-        }
-        return matches;
+    public static List<Directive> matchNamePrefix(String prefix) {
+        StringTrie<Directive> subTrie = ALL_DIRECTIVES_TRIE.getSubTrieIfPresent(prefix.toLowerCase());
+        return (subTrie == null) ? List.of() : List.copyOf(subTrie.values());
     }
 
     /**

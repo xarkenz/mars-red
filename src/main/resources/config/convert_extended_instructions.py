@@ -41,7 +41,9 @@ def get_token_type(tokens, index):
         return prefix + ("freg" if token.startswith("$f") else "reg") + suffix
     try:
         immediate = int(token)
-        if 0 <= immediate < (1 << 5):
+        if 0 <= immediate < (1 << 3):
+            return prefix + "u3" + suffix
+        elif 0 <= immediate < (1 << 5):
             return prefix + "u5" + suffix
         elif 0 <= immediate < (1 << 16):
             return prefix + "u16" + suffix
@@ -100,9 +102,9 @@ def translate_token(token, token_operand_indices):
     if not token or not token.isupper():
         return token
     elif token == "DBNOP":
-        return "{DB:nop}"
+        return "{DB:nop:}"
     elif len(token) == 7 and token.startswith("BROFF"):
-        return "{DB:" + token[6] + "," + token[5] + "}"
+        return "{DB:" + token[6] + ":" + token[5] + "}"
     elif token in ("LAB", "S32"):
         # Index of last operand
         operand_index = len(token_operand_indices) - token_operand_indices.count(None) - 1

@@ -35,19 +35,20 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @version June 2003
  */
 public class Symbol {
-    private final String name;
+    private final String label;
     private int address;
     private final boolean isData;
 
     /**
      * Basic constructor, creates a symbol object.
      *
-     * @param name    The name of the Symbol.
-     * @param address The memory address that the Symbol refers to.
-     * @param isData  The type of Symbol that it is.
+     * @param label   The name of the symbol.
+     * @param address The address in memory which the symbol refers to.
+     * @param isData  <code>true</code> if the address is in a segment of memory containing data, or
+     *                <code>false</code> if in a segment of memory containing text.
      */
-    public Symbol(String name, int address, boolean isData) {
-        this.name = name;
+    public Symbol(String label, int address, boolean isData) {
+        this.label = label;
         this.address = address;
         this.isData = isData;
     }
@@ -66,8 +67,8 @@ public class Symbol {
      *
      * @return The label of the Symbol.
      */
-    public String getName() {
-        return this.name;
+    public String getLabel() {
+        return this.label;
     }
 
     /**
@@ -91,9 +92,9 @@ public class Symbol {
     /**
      * Sets (replaces) the address of the the Symbol.
      *
-     * @param newAddress The revised address of the Symbol.
+     * @param address The revised address of the Symbol.
      */
-    public void setAddress(int newAddress) {
-        this.address = newAddress;
+    public void setAddress(int address) {
+        this.address = address;
     }
 }

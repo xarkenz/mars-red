@@ -1,12 +1,13 @@
-package mars.assembler;
+package mars.assembler.token;
 
 import mars.ErrorList;
 import mars.ErrorMessage;
+import mars.assembler.Directive;
+import mars.assembler.SourceLine;
 
 import java.nio.file.Path;
 import java.util.*;
 
-// TODO: document
 public class Preprocessor {
     private final Path mainFilePath;
     private final Set<Path> knownFilePaths;
@@ -70,12 +71,14 @@ public class Preprocessor {
                 // Equivalences cannot be redefined-- the only reason for this is to act like the GNU .eqv
                 if (this.equivalences.containsKey(equivalenceKey)) {
                     errors.add(new ErrorMessage(
+                        true,
                         token.getSourceFilename(),
                         token.getSourceLine(),
                         token.getSourceColumn(),
-                        "The equivalence '" + equivalenceKey + "' has already been defined"
+                        "The equivalence '" + equivalenceKey + "' has already been defined",
+                        ""
                     ));
-                    // Even though this is an error, we can still process it as if it's valid, so continue
+                    // Even though this is a warning, we can still process it as if it's valid, so continue
                 }
                 List<Token> equivalentTokens = new ArrayList<>(tokens.subList(index + 2, tokens.size()));
                 // Remove any comments so they don't interfere when the equivalence is used later
@@ -88,6 +91,7 @@ public class Preprocessor {
                 destination.add(line);
                 return;
             }
+            // TODO: macros
         }
         // No preprocessor directive found, so add the line without any processing
         destination.add(line);

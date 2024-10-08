@@ -815,8 +815,8 @@
         mfhi $1
         mflo {0}
         sra {0}, {0}, 31
-        beq $1, {0}, {DB:2,1}
-        {DB:nop} 
+        beq $1, {0}, {DB:2:1}
+        {DB:nop:} 
         break 
         mflo {0}
     - description: "Set {0} to low-order 32 bits of the product of {1} and signed 16-bit immediate"
@@ -827,8 +827,8 @@
         mfhi $1
         mflo {0}
         sra {0}, {0}, 31
-        beq $1, {0}, {DB:2,1}
-        {DB:nop} 
+        beq $1, {0}, {DB:2:1}
+        {DB:nop:} 
         break 
         mflo {0}
     - description: "Set {0} to low-order 32 bits of the product of {1} and 32-bit immediate"
@@ -840,8 +840,8 @@
         mfhi $1
         mflo {0}
         sra {0}, {0}, 31
-        beq $1, {0}, {DB:2,1}
-        {DB:nop} 
+        beq $1, {0}, {DB:2:1}
+        {DB:nop:} 
         break 
         mflo {0}
 - mnemonic: mulou
@@ -852,8 +852,8 @@
       expansion: |
         multu {1}, {2}
         mfhi $1
-        beq $1, $0, {DB:2,1}
-        {DB:nop} 
+        beq $1, $0, {DB:2:1}
+        {DB:nop:} 
         break 
         mflo {0}
     - description: "Set {0} to low-order 32 bits of the product of {1} and signed 16-bit immediate"
@@ -862,8 +862,8 @@
         addi $1, $0, {2:AL}
         multu {1}, $1
         mfhi $1
-        beq $1, $0, {DB:2,1}
-        {DB:nop} 
+        beq $1, $0, {DB:2:1}
+        {DB:nop:} 
         break 
         mflo {0}
     - description: "Set {0} to low-order 32 bits of the product of {1} and 32-bit immediate"
@@ -873,8 +873,8 @@
         ori $1, $1, {2:L}
         multu {1}, $1
         mfhi $1
-        beq $1, $0, {DB:2,1}
-        {DB:nop} 
+        beq $1, $0, {DB:2:1}
+        {DB:nop:} 
         break 
         mflo {0}
 - mnemonic: div
@@ -883,8 +883,8 @@
     - description: "Set {0} to ({1} divided by {2}, integer division)"
       operands: [ reg, reg, reg ]
       expansion: |
-        bne {2}, $0, {DB:2,1}
-        {DB:nop} 
+        bne {2}, $0, {DB:2:1}
+        {DB:nop:} 
         break 
         div {1}, {2}
         mflo {0}
@@ -907,8 +907,8 @@
     - description: "Set {0} to ({1} divided by {2}, unsigned integer division)"
       operands: [ reg, reg, reg ]
       expansion: |
-        bne {2}, $0, {DB:2,1}
-        {DB:nop} 
+        bne {2}, $0, {DB:2:1}
+        {DB:nop:} 
         break 
         divu {1}, {2}
         mflo {0}
@@ -931,8 +931,8 @@
     - description: "Set {0} to (remainder of {1} divided by {2})"
       operands: [ reg, reg, reg ]
       expansion: |
-        bne {2}, $0, {DB:2,1}
-        {DB:nop} 
+        bne {2}, $0, {DB:2:1}
+        {DB:nop:} 
         break 
         div {1}, {2}
         mfhi {0}
@@ -955,8 +955,8 @@
     - description: "Set {0} to (remainder of {1} divided by {2}, unsigned division)"
       operands: [ reg, reg, reg ]
       expansion: |
-        bne {2}, $0, {DB:2,1}
-        {DB:nop} 
+        bne {2}, $0, {DB:2:1}
+        {DB:nop:} 
         break 
         divu {1}, {2}
         mfhi {0}

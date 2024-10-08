@@ -1,9 +1,11 @@
-package mars.assembler;
+package mars.assembler.token;
 
 import mars.*;
+import mars.assembler.*;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.Register;
 import mars.mips.hardware.RegisterFile;
+import mars.mips.instructions.Instruction;
 import mars.util.Binary;
 
 import java.io.BufferedReader;
@@ -54,25 +56,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @author Pete Sanderson, August 2003
  */
 public class Tokenizer {
-    /**
-     * COD2, A-51:  "Identifiers are a sequence of alphanumeric characters,
-     * underbars (_), and dots (.) that do not begin with a number."
-     * <p>
-     * DPS 14-Jul-2008: added '$' as valid symbol.  Permits labels to include $.
-     * MIPS-target GCC will produce labels that start with $.
-     */
-    public static boolean isValidIdentifier(String value) {
-        if (!(Character.isLetter(value.charAt(0)) || value.charAt(0) == '_' || value.charAt(0) == '.' || value.charAt(0) == '$')) {
-            return false;
-        }
-        for (int index = 1; index < value.length(); index++) {
-            if (!(Character.isLetterOrDigit(value.charAt(index)) || value.charAt(index) == '_' || value.charAt(index) == '.' || value.charAt(index) == '$')) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     /**
      * Tokenize a complete MIPS program from a file, line by line. Each line of source code is translated into a
      * {@link SourceLine}, which consists of both the original code and its tokenized form.
@@ -153,22 +136,11 @@ public class Tokenizer {
      * @param preprocessor The current preprocessor instance, which will process token substitutions.
      * @return The generated tokens for the given line.
      */
-    /*
-     * Tokenizing is not as easy as it appears at first blush, because the typical
-     * delimiters: space, tab, comma, can all appear inside MIPS quoted ASCII strings!
-     * Also, spaces are not as necessary as they seem, the following line is accepted
-     * and parsed correctly by SPIM:    label:lw,$t4,simple#comment
-     * as is this weird variation:      label  :lw  $t4  ,simple ,  ,  , # comment
-     *
-     * as is this line:  stuff:.asciiz"# ,\n\"","aaaaa"  (interestingly, if you put
-     * additional characters after the \", they are ignored!!)
-     *
-     * I also would like to know the starting character position in the line of each
-     * token, for error reporting purposes.  StringTokenizer cannot give you this.
-     *
-     * Given all the above, it is just as easy to "roll my own" as to use StringTokenizer
-     */
     public static SourceLine tokenizeLine(String filename, String line, int lineNumber, ErrorList errors, Preprocessor preprocessor) {
+        return tokenizeLine(filename, line, lineNumber, errors, preprocessor, false);
+    }
+
+    public static SourceLine tokenizeLine(String filename, String line, int lineNumber, ErrorList errors, Preprocessor preprocessor, boolean isInExpansionTemplate) {
         List<Token> tokens = new ArrayList<>();
 
         if (line.isBlank()) {
@@ -180,8 +152,24 @@ public class Tokenizer {
             char startChar = line.charAt(index);
 
             switch (startChar) {
-                // Delimiter (not a token, ignored)
-                case ',', ' ', '\t' -> {}
+                // Invisible delimiter (not a token, ignored)
+                case ' ', '\t', '\r' -> {
+                    // Move on to the next character
+                    index++;
+                }
+                // Visible delimiter (is a token, but only relevant for syntax highlighting)
+                case ',' -> {
+                    preprocessor.processToken(tokens, new Token(
+                        TokenType.DELIMITER,
+                        null,
+                        Character.toString(startChar),
+                        filename,
+                        lineNumber,
+                        index
+                    ));
+                    // Move on to the next character
+                    index++;
+                }
                 // Line comment
                 case '#' -> {
                     preprocessor.processToken(tokens, new Token(
@@ -247,7 +235,7 @@ public class Tokenizer {
                                 }
                                 preprocessor.processToken(tokens, new Token(
                                     TokenType.CHARACTER,
-                                    value.charAt(0),
+                                    (int) value.charAt(0),
                                     line.substring(startIndex, index),
                                     filename,
                                     lineNumber,
@@ -257,7 +245,8 @@ public class Tokenizer {
                             }
                             // Escape sequence
                             case '\\' -> {
-                                index = handleCharEscape(value, filename, lineNumber, ++index, line, errors);
+                                index++;
+                                index = handleCharEscape(value, filename, lineNumber, index, line, errors);
                             }
                             // Literal character
                             default -> {
@@ -354,7 +343,9 @@ public class Tokenizer {
                     }
 
                     // Check for either a number or identifier of some kind
-                    if (Character.isLetterOrDigit(startChar) || startChar == '_' || startChar == '.' || startChar == '$' || startChar == '%') {
+                    if (Character.isLetterOrDigit(startChar) || startChar == '+' || startChar == '-'
+                        || startChar == '_' || startChar == '.' || startChar == '$' || startChar == '%'
+                    ) {
                         int startIndex = index;
                         // Assume the first character to be part of whatever this is
                         StringBuilder builder = new StringBuilder();
@@ -390,14 +381,14 @@ public class Tokenizer {
                             }
                         }
 
-                        String value = builder.toString();
+                        String literal = builder.toString();
 
                         // See if it is a macro parameter
-                        if (Macro.tokenIsMacroParameter(value, false)) {
+                        if (Macro.tokenIsMacroParameter(literal, false)) {
                             preprocessor.processToken(tokens, new Token(
                                 TokenType.MACRO_PARAMETER,
                                 null,
-                                value,
+                                literal,
                                 filename,
                                 lineNumber,
                                 startIndex
@@ -406,14 +397,14 @@ public class Tokenizer {
                         }
 
                         // See if it is a register name or number
-                        Register register = RegisterFile.getRegister(value);
+                        Register register = RegisterFile.getRegister(literal);
                         if (register != null) {
                             preprocessor.processToken(tokens, new Token(
-                                (register.getName().equals(value))
+                                (register.getName().equals(literal))
                                     ? TokenType.REGISTER_NAME
                                     : TokenType.REGISTER_NUMBER,
                                 register.getNumber(),
-                                value,
+                                literal,
                                 filename,
                                 lineNumber,
                                 startIndex
@@ -422,12 +413,12 @@ public class Tokenizer {
                         }
 
                         // See if it is a floating point register name
-                        register = Coprocessor1.getRegister(value);
+                        register = Coprocessor1.getRegister(literal);
                         if (register != null) {
                             preprocessor.processToken(tokens, new Token(
                                 TokenType.FP_REGISTER_NAME,
                                 register.getNumber(),
-                                value,
+                                literal,
                                 filename,
                                 lineNumber,
                                 startIndex
@@ -437,7 +428,7 @@ public class Tokenizer {
 
                         // See if it is an immediate (constant) integer value
                         try {
-                            int intValue = Binary.decodeInteger(value); // KENV 1/6/05
+                            int intValue = Binary.decodeInteger(literal); // KENV 1/6/05
 
                             /* MODIFICATION AND COMMENT, DPS 3-July-2008
                              *
@@ -475,25 +466,10 @@ public class Tokenizer {
                              *
                              * END DPS 3-July-2008 COMMENTS */
 
-                            // Classify the integer based on the number of bits needed to represent it in binary
-                            // Shift operands must fit in 5 bits, thus being limited to 0-31
-                            TokenType intType;
-                            if (0 <= intValue && intValue <= 31) {
-                                intType = TokenType.INTEGER_5;
-                            }
-                            else if (DataTypes.MIN_UHALF_VALUE <= intValue && intValue <= DataTypes.MAX_UHALF_VALUE) {
-                                intType = TokenType.INTEGER_16U;
-                            }
-                            else if (DataTypes.MIN_HALF_VALUE <= intValue && intValue <= DataTypes.MAX_HALF_VALUE) {
-                                intType = TokenType.INTEGER_16;
-                            }
-                            else {
-                                intType = TokenType.INTEGER_32;
-                            }
                             preprocessor.processToken(tokens, new Token(
-                                intType,
+                                TokenType.fromIntegerValue(intValue),
                                 intValue,
-                                value,
+                                literal,
                                 filename,
                                 lineNumber,
                                 startIndex
@@ -508,11 +484,11 @@ public class Tokenizer {
                         // be used as real numbers, but have already been handled above.
                         // NOTE: This also accepts would-be identifiers "Infinity" and "NaN".
                         try {
-                            double doubleValue = Double.parseDouble(value);
+                            double doubleValue = Double.parseDouble(literal);
                             preprocessor.processToken(tokens, new Token(
                                 TokenType.REAL_NUMBER,
                                 doubleValue,
-                                value,
+                                literal,
                                 filename,
                                 lineNumber,
                                 startIndex
@@ -524,13 +500,23 @@ public class Tokenizer {
                         }
 
                         // See if it is a directive
-                        if (value.charAt(0) == '.') {
-                            Directive directive = Directive.matchDirective(value);
+                        if (literal.charAt(0) == '.') {
+                            Directive directive = Directive.fromName(literal);
                             if (directive != null) {
+                                if (isInExpansionTemplate) {
+                                    errors.add(new ErrorMessage(
+                                        filename,
+                                        lineNumber,
+                                        startIndex,
+                                        "Directives such as '" + directive + "' are not allowed in expansion templates"
+                                    ));
+                                    break;
+                                }
+
                                 preprocessor.processToken(tokens, new Token(
                                     TokenType.DIRECTIVE,
                                     directive,
-                                    value,
+                                    literal,
                                     filename,
                                     lineNumber,
                                     startIndex
@@ -540,11 +526,12 @@ public class Tokenizer {
                         }
 
                         // See if it is an instruction operator
-                        if (Application.instructionSet.matchOperator(value) != null) {
+                        List<Instruction> mnemonicMatches = Application.instructionSet.matchMnemonic(literal);
+                        if (!mnemonicMatches.isEmpty()) {
                             preprocessor.processToken(tokens, new Token(
                                 TokenType.OPERATOR,
-                                null,
-                                value,
+                                mnemonicMatches,
+                                literal,
                                 filename,
                                 lineNumber,
                                 startIndex
@@ -555,11 +542,11 @@ public class Tokenizer {
                         // Test for general identifier goes last because there are defined tokens for various
                         // MIPS constructs (such as operators and directives) that also could fit
                         // the lexical specifications of an identifier, and those need to be recognized first.
-                        if (isValidIdentifier(value)) {
+                        if (isValidIdentifier(literal)) {
                             preprocessor.processToken(tokens, new Token(
                                 TokenType.IDENTIFIER,
                                 null,
-                                value,
+                                literal,
                                 filename,
                                 lineNumber,
                                 startIndex
@@ -573,7 +560,7 @@ public class Tokenizer {
                                 filename,
                                 lineNumber,
                                 startIndex,
-                                "Invalid number: " + value
+                                "Invalid number: " + literal
                             ));
                         }
                         else {
@@ -581,9 +568,49 @@ public class Tokenizer {
                                 filename,
                                 lineNumber,
                                 startIndex,
-                                "Invalid language element: " + value
+                                "Invalid language element: " + literal
                             ));
                         }
+                    }
+                    // Check for some sort of template substitution, but only in an expansion template
+                    else if (isInExpansionTemplate && startChar == '{') {
+                        int startIndex = index;
+                        index++;
+
+                        // Find the end of the substitution, accounting for possible nesting of curly braces
+                        int nestLevel = 1;
+                        while (index < line.length() && nestLevel > 0) {
+                            char ch = line.charAt(index);
+                            if (ch == '{') {
+                                nestLevel++;
+                            }
+                            else if (ch == '}') {
+                                nestLevel--;
+                            }
+                            index++;
+                        }
+
+                        if (nestLevel != 0) {
+                            errors.add(new ErrorMessage(
+                                filename,
+                                lineNumber,
+                                startIndex,
+                                "Unclosed substitution syntax in expansion template"
+                            ));
+                            break;
+                        }
+
+                        String subLine = line.substring(startIndex + 1, index - 1);
+                        SourceLine tokenizedSubLine = tokenizeLine(filename, subLine, lineNumber, errors, preprocessor, true);
+
+                        preprocessor.processToken(tokens, new Token(
+                            TokenType.TEMPLATE_SUBSTITUTION,
+                            tokenizedSubLine.getTokens(),
+                            line.substring(startIndex, index),
+                            filename,
+                            lineNumber,
+                            startIndex
+                        ));
                     }
                     else {
                         // startChar is some character that isn't recognized as the start of a token
@@ -600,6 +627,25 @@ public class Tokenizer {
         }
 
         return new SourceLine(filename, lineNumber, line, tokens);
+    }
+
+    /**
+     * COD2, A-51:  "Identifiers are a sequence of alphanumeric characters,
+     * underbars (_), and dots (.) that do not begin with a number."
+     * <p>
+     * DPS 14-Jul-2008: added '$' as valid symbol.  Permits labels to include $.
+     * MIPS-target GCC will produce labels that start with $.
+     */
+    public static boolean isValidIdentifier(String value) {
+        if (!(Character.isLetter(value.charAt(0)) || value.charAt(0) == '_' || value.charAt(0) == '.' || value.charAt(0) == '$')) {
+            return false;
+        }
+        for (int index = 1; index < value.length(); index++) {
+            if (!(Character.isLetterOrDigit(value.charAt(index)) || value.charAt(index) == '_' || value.charAt(index) == '.' || value.charAt(index) == '$')) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

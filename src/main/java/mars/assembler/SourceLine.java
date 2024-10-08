@@ -1,5 +1,7 @@
 package mars.assembler;
 
+import mars.assembler.token.Token;
+
 import java.util.List;
 
 /*

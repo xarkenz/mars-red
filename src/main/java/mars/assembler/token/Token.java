@@ -1,4 +1,4 @@
-package mars.assembler;
+package mars.assembler.token;
 
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
@@ -27,6 +27,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
 */
+
+import mars.assembler.Operand;
+import mars.assembler.OperandType;
 
 /**
  * Represents one token in the input MIPS program.  Each Token carries, along with its
@@ -164,6 +167,33 @@ public class Token {
      */
     public void setOriginalToken(Token token) {
         this.originalToken = token;
+    }
+
+    /**
+     * Convert this token to an {@link Operand}, if possible. Only registers, integers, and characters
+     * can be converted using this method.
+     *
+     * @return An operand based on the value of this token, or <code>null</code> if the conversion fails.
+     */
+    public Operand asOperand() {
+        TokenType type = this.type;
+
+        // Character literals should just be treated as plain integers
+        if (type == TokenType.CHARACTER) {
+            type = TokenType.fromIntegerValue((Integer) this.value);
+        }
+
+        return switch (type) {
+            case REGISTER_NUMBER, REGISTER_NAME -> new Operand(OperandType.REGISTER, (Integer) this.value);
+            case FP_REGISTER_NAME -> new Operand(OperandType.FP_REGISTER, (Integer) this.value);
+            case INTEGER_3_UNSIGNED -> new Operand(OperandType.INTEGER_3_UNSIGNED, (Integer) this.value);
+            case INTEGER_5_UNSIGNED -> new Operand(OperandType.INTEGER_5_UNSIGNED, (Integer) this.value);
+            case INTEGER_15_UNSIGNED -> new Operand(OperandType.INTEGER_15_UNSIGNED, (Integer) this.value);
+            case INTEGER_16_SIGNED -> new Operand(OperandType.INTEGER_16_SIGNED, (Integer) this.value);
+            case INTEGER_16_UNSIGNED -> new Operand(OperandType.INTEGER_16_UNSIGNED, (Integer) this.value);
+            case INTEGER_32 -> new Operand(OperandType.INTEGER_32, (Integer) this.value);
+            default -> null;
+        };
     }
 }
 

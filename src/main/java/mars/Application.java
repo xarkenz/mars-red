@@ -59,7 +59,7 @@ public class Application {
     /**
      * The current MARS Red version number.
      */
-    public static final String VERSION = "5.0-beta7";
+    public static final String VERSION = "5.0-beta7 [assembler-refactor]";
     /**
      * MARS copyright years.
      */

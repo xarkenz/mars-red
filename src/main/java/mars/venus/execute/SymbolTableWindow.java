@@ -387,7 +387,7 @@ public class SymbolTableWindow extends JInternalFrame {
             // Set up the label table
             this.labelData = new Object[this.symbols.length][COLUMN_NAMES.length];
             for (int row = 0; row < this.symbols.length; row++) {
-                this.labelData[row][LABEL_COLUMN] = this.symbols[row].getName();
+                this.labelData[row][LABEL_COLUMN] = this.symbols[row].getLabel();
                 this.labelData[row][ADDRESS_COLUMN] = NumberDisplayBaseChooser.formatNumber(this.symbols[row].getAddress(), addressBase);
             }
 
@@ -555,7 +555,7 @@ public class SymbolTableWindow extends JInternalFrame {
     private static class LabelNameAscendingComparator implements Comparator<Symbol> {
         @Override
         public int compare(Symbol a, Symbol b) {
-            return a.getName().compareToIgnoreCase(b.getName());
+            return a.getLabel().compareToIgnoreCase(b.getLabel());
         }
     }
 

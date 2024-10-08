@@ -1,6 +1,7 @@
 package mars.assembler;
 
 import mars.*;
+import mars.assembler.token.*;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.MemoryConfigurations;
@@ -295,7 +296,7 @@ public class Assembler {
 
                     // If we are using compact memory config and there is a compact expansion, use it
                     ArrayList<String> templates;
-                    if (Memory.getInstance().isUsingCompactAddressSpace() && extendedInstruction.hasCompactTranslation()) {
+                    if (Memory.getInstance().isUsingCompactAddressSpace() && extendedInstruction.hasCompactVariant()) {
                         templates = extendedInstruction.getCompactBasicInstructionTemplateList();
                     }
                     else {
@@ -325,7 +326,7 @@ public class Assembler {
                         // statement, add to list.
                         TokenList newTokens = Tokenizer.tokenizeLine(instruction, sourceLine, errors);
                         ArrayList<Instruction> instructionMatches = this.matchInstruction(newTokens.get(0));
-                        Instruction instructionMatch = OperandFormat.bestOperandMatch(newTokens, instructionMatches);
+                        Instruction instructionMatch = OperandType.bestOperandMatch(newTokens, instructionMatches);
                         ProgramStatement newStatement = new ProgramStatement(this.fileCurrentlyBeingAssembled, source, newTokens, newTokens, instructionMatch, textAddress.get(), statement.getSourceLine());
                         source = ""; // Only first generated instruction is linked to original source
                         textAddress.increment(Instruction.BYTES_PER_INSTRUCTION);
@@ -523,22 +524,22 @@ public class Assembler {
                 return parsedStatements;
             }
             // OK, we've got an operator match, let's check the operands.
-            Instruction instruction = OperandFormat.bestOperandMatch(tokens, instructionMatches);
+            Instruction instruction = OperandType.bestOperandMatch(tokens, instructionMatches);
             // Here's the place to flag use of extended (pseudo) instructions
             // when setting disabled.
             if (instruction instanceof ExtendedInstruction && !extendedAssemblerEnabled) {
                 errors.add(new ErrorMessage(token.getSourceFilename(), token.getSourceLine(), token.getSourceColumn(), "Extended (pseudo) instruction or format not permitted.  See Settings."));
             }
-            if (OperandFormat.tokenOperandMatch(tokens, instruction, errors)) {
+            if (OperandType.tokenOperandMatch(tokens, instruction, errors)) {
                 ProgramStatement statement = new ProgramStatement(this.fileCurrentlyBeingAssembled, source, tokenList, tokens, instruction, textAddress.get(), sourceLineNumber);
                 // instruction length is 4 for all basic instruction, varies for extended instruction
                 // Modified to permit use of compact expansion if address fits
                 // in 15 bits. DPS 4-Aug-2009
-                int instLength = instruction.getInstructionLength();
+                int instLength = instruction.getSizeBytes();
                 if (instruction instanceof ExtendedInstruction extendedInstruction
                         && Memory.getInstance().isUsingCompactAddressSpace()
-                        && extendedInstruction.hasCompactTranslation()) {
-                    instLength = ((ExtendedInstruction) instruction).getCompactInstructionLength();
+                        && extendedInstruction.hasCompactVariant()) {
+                    instLength = ((ExtendedInstruction) instruction).getCompactSizeBytes();
                 }
                 textAddress.increment(instLength);
                 parsedStatements.add(statement);
@@ -565,7 +566,7 @@ public class Assembler {
     private boolean compactTranslationCanBeApplied(ProgramStatement statement) {
         return statement.getInstruction() instanceof ExtendedInstruction
             && Memory.getInstance().isUsingCompactAddressSpace()
-            && ((ExtendedInstruction) statement.getInstruction()).hasCompactTranslation();
+            && ((ExtendedInstruction) statement.getInstruction()).hasCompactVariant();
     }
 
     /**
@@ -637,7 +638,7 @@ public class Assembler {
      */
     private void executeDirective(TokenList tokens) {
         Token token = tokens.get(0);
-        Directive direct = Directive.matchDirective(token.getLiteral());
+        Directive direct = Directive.fromName(token.getLiteral());
         if (Application.debug) {
             System.out.println("line " + token.getSourceLine() + " is directive " + direct);
         }
@@ -849,7 +850,7 @@ public class Assembler {
             }
             return null;
         }
-        ArrayList<Instruction> instructionMatches = Application.instructionSet.matchOperator(token.getLiteral());
+        ArrayList<Instruction> instructionMatches = Application.instructionSet.matchMnemonic(token.getLiteral());
         if (instructionMatches == null) { // This should NEVER happen...
             this.errors.add(new ErrorMessage(token.getSourceFilename(), token.getSourceLine(), token.getSourceColumn(), "Internal Assembler error: \"" + token.getLiteral() + "\" tokenized OPERATOR then not recognized"));
         }

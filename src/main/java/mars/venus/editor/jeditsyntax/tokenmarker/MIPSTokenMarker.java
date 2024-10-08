@@ -11,7 +11,7 @@ package mars.venus.editor.jeditsyntax.tokenmarker;
 
 import mars.Application;
 import mars.assembler.Directive;
-import mars.assembler.Tokenizer;
+import mars.assembler.token.Tokenizer;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.Register;
 import mars.mips.hardware.RegisterFile;
@@ -224,7 +224,7 @@ public class MIPSTokenMarker extends TokenMarker {
     public ArrayList<PopupHelpItem> getTokenExactMatchHelp(Token token, String tokenText) {
         ArrayList<PopupHelpItem> helpItems = null;
         if (token != null && token.id == Token.INSTRUCTION) {
-            ArrayList<Instruction> instructionMatches = Application.instructionSet.matchOperator(tokenText);
+            ArrayList<Instruction> instructionMatches = Application.instructionSet.matchMnemonic(tokenText);
             if (!instructionMatches.isEmpty()) {
                 int realMatches = 0;
                 helpItems = new ArrayList<>();
@@ -240,7 +240,7 @@ public class MIPSTokenMarker extends TokenMarker {
             }
         }
         if (token != null && token.id == Token.DIRECTIVE) {
-            Directive dir = Directive.matchDirective(tokenText);
+            Directive dir = Directive.fromName(tokenText);
             if (dir != null) {
                 helpItems = new ArrayList<>();
                 helpItems.add(new PopupHelpItem(tokenText, dir.getName(), dir.getDescription()));
@@ -368,14 +368,14 @@ public class MIPSTokenMarker extends TokenMarker {
     private ArrayList<PopupHelpItem> getTextFromDirectiveMatch(String tokenText, boolean isExact) {
         List<Directive> directiveMatches = null;
         if (isExact) {
-            Directive directive = Directive.matchDirective(tokenText);
+            Directive directive = Directive.fromName(tokenText);
             if (directive != null) {
                 directiveMatches = new ArrayList<>();
                 directiveMatches.add(directive);
             }
         }
         else {
-            directiveMatches = Directive.prefixMatchDirectives(tokenText);
+            directiveMatches = Directive.matchNamePrefix(tokenText);
         }
 
         ArrayList<PopupHelpItem> results = null;
@@ -395,12 +395,12 @@ public class MIPSTokenMarker extends TokenMarker {
      * of PopupHelpItem objects. If no matches, returns null.
      */
     private ArrayList<PopupHelpItem> getTextFromInstructionMatch(String tokenText, boolean isExact) {
-        ArrayList<Instruction> instructionMatches;
+        List<Instruction> instructionMatches;
         if (isExact) {
-            instructionMatches = Application.instructionSet.matchOperator(tokenText);
+            instructionMatches = Application.instructionSet.matchMnemonic(tokenText);
         }
         else {
-            instructionMatches = Application.instructionSet.prefixMatchOperator(tokenText);
+            instructionMatches = Application.instructionSet.matchMnemonicPrefix(tokenText);
         }
         if (instructionMatches == null) {
             return null;

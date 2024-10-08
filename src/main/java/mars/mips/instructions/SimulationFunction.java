@@ -1,7 +1,7 @@
 package mars.mips.instructions;
 
 import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.assembler.Operand;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -36,13 +36,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Pete Sanderson, August 2003
  */
-public interface SimulationCode {
+public interface SimulationFunction {
     /**
-     * Simulate the execution of a specific MIPS basic instruction.
+     * Simulate the execution of a statement in a program.
      *
-     * @param statement The {@link ProgramStatement} to simulate.
+     * @param operands The operands contained in the statement to simulate.
      * @throws ProcessingException  Thrown if a runtime exception was generated during execution.
      * @throws InterruptedException Thrown if the simulator was stopped during execution.
      */
-    void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException;
+    void simulate(int[] operands) throws ProcessingException, InterruptedException;
 }

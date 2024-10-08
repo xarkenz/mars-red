@@ -1,6 +1,8 @@
 package mars;
 
 import mars.assembler.*;
+import mars.assembler.token.MacroPool;
+import mars.assembler.token.Tokenizer;
 import mars.mips.hardware.RegisterFile;
 import mars.simulator.BackStepper;
 import mars.simulator.Simulator;
