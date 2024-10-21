@@ -1,10 +1,11 @@
 package mars.assembler;
 
 import mars.assembler.extended.TemplateOperand;
+import mars.assembler.syntax.SyntaxOperand;
 
 import java.util.List;
 
-public class Operand implements TemplateOperand {
+public class Operand implements SyntaxOperand, TemplateOperand {
     private final OperandType type;
     private final int value;
 
@@ -20,6 +21,11 @@ public class Operand implements TemplateOperand {
 
     public int getValue() {
         return this.value;
+    }
+
+    @Override
+    public Operand resolve(Assembler assembler) {
+        return this;
     }
 
     @Override

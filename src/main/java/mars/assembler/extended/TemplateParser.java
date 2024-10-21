@@ -6,6 +6,7 @@ import mars.assembler.SourceLine;
 import mars.assembler.token.Token;
 import mars.assembler.token.TokenType;
 import mars.mips.instructions.BasicInstruction;
+import mars.mips.instructions.Instruction;
 import mars.mips.instructions.InstructionSet;
 
 import java.util.ArrayList;
@@ -13,15 +14,13 @@ import java.util.Iterator;
 import java.util.List;
 
 public class TemplateParser {
-    private final InstructionSet instructionSet;
     private final List<OperandType> originalTypes;
     private final Iterator<SourceLine> sourceLines;
     private SourceLine sourceLine;
     private Iterator<Token> lineTokens;
     private Token cachedToken;
 
-    public TemplateParser(InstructionSet instructionSet, List<OperandType> originalTypes, Iterator<SourceLine> sourceLines) {
-        this.instructionSet = instructionSet;
+    public TemplateParser(List<OperandType> originalTypes, Iterator<SourceLine> sourceLines) {
         this.originalTypes = originalTypes;
         this.sourceLines = sourceLines;
         this.sourceLine = null;
@@ -30,6 +29,7 @@ public class TemplateParser {
     }
 
     public ExpansionTemplate.Statement parseNextStatement() throws RuntimeException {
+        // Cache the next token if necessary
         if (this.cachedToken == null && !this.nextToken()) {
             return null;
         }
@@ -38,13 +38,11 @@ public class TemplateParser {
     }
 
     public ExpansionTemplate.Statement parseNextStatementInLine() throws RuntimeException {
-        if (this.cachedToken == null && !this.nextTokenInLine()) {
-            return null;
-        }
-
         switch (this.cachedToken.getType()) {
             case OPERATOR -> {
-                String mnemonic = this.cachedToken.getLiteral();
+                // I know what I'm doing! The tokenizer puts a List<Instruction> in, I can get a List<Instruction> out
+                @SuppressWarnings("unchecked")
+                List<Instruction> mnemonicMatches = (List<Instruction>) this.cachedToken.getValue();
                 this.cachedToken = null;
 
                 List<OperandType> operandTypes = new ArrayList<>();
@@ -57,12 +55,12 @@ public class TemplateParser {
                     }
                 }
 
-                BasicInstruction instruction = this.instructionSet.matchBasicInstruction(mnemonic, operandTypes);
-                if (instruction == null) {
+                Instruction instruction = InstructionSet.matchInstruction(mnemonicMatches, operandTypes);
+                if (!(instruction instanceof BasicInstruction basicInstruction)) {
                     throw new RuntimeException("No basic instruction found matching operands " + operandTypes);
                 }
 
-                return new TemplateStatement(instruction, operands);
+                return new TemplateStatement(basicInstruction, operands);
             }
             case TEMPLATE_SUBSTITUTION -> {
                 if (this.lineTokens.hasNext()) {
@@ -75,7 +73,6 @@ public class TemplateParser {
                 if (content.isEmpty()) {
                     throw new RuntimeException("Empty template substitution");
                 }
-                this.cachedToken = null;
 
                 AssemblerFlag flag = AssemblerFlag.fromKey(content.get(0).getLiteral());
                 if (flag == null) {
@@ -94,24 +91,24 @@ public class TemplateParser {
                     }
                 }
 
-                Iterator<Token> originalIterator = this.lineTokens;
-
                 ExpansionTemplate.Statement enabledValue = null;
                 if (2 < separatorIndex) {
                     this.lineTokens = createIterator(content.subList(2, separatorIndex));
+                    this.cachedToken = null;
 
-                    enabledValue = this.parseNextStatementInLine();
+                    enabledValue = (this.nextTokenInLine()) ? this.parseNextStatementInLine() : null;
                 }
 
                 ExpansionTemplate.Statement disabledValue = null;
                 if (separatorIndex + 1 < content.size()) {
                     this.lineTokens = createIterator(content.subList(separatorIndex + 1, content.size()));
+                    this.cachedToken = null;
 
-                    disabledValue = this.parseNextStatementInLine();
+                    disabledValue = (this.nextTokenInLine()) ? this.parseNextStatementInLine() : null;
                 }
 
+                this.lineTokens = null; // We ensured earlier that there were no more tokens in the line
                 this.cachedToken = null;
-                this.lineTokens = originalIterator;
 
                 return new FlagSubstitutionStatement(flag, enabledValue, disabledValue);
             }
@@ -157,7 +154,11 @@ public class TemplateParser {
             return this.parseSubstitution(content);
         }
         else {
-            return token.asOperand();
+            TemplateOperand operand = token.asOperand();
+            if (operand == null) {
+                throw new RuntimeException("'" + token + "' is not a valid non-label operand");
+            }
+            return operand;
         }
     }
 
@@ -226,7 +227,7 @@ public class TemplateParser {
     }
 
     private boolean nextTokenInLine() {
-        if (this.lineTokens.hasNext()) {
+        if (this.lineTokens != null && this.lineTokens.hasNext()) {
             this.cachedToken = this.lineTokens.next();
             return true;
         }
@@ -244,7 +245,7 @@ public class TemplateParser {
             }
             this.sourceLine = this.sourceLines.next();
 
-            this.lineTokens = createIterator(this.sourceLine.getTokens());
+            this.lineTokens = createIterator(this.sourceLine.tokens());
         }
 
         this.cachedToken = this.lineTokens.next();

@@ -43,8 +43,8 @@ public class Token {
     private Object value;
     private final String literal;
     private final String sourceFilename;
-    private final int sourceLine;
-    private final int sourceColumn;
+    private final int lineIndex;
+    private final int columnIndex;
     // Original program and line will differ from the above if token was defined in an included file
     private Token originalToken;
 
@@ -63,8 +63,8 @@ public class Token {
         this.value = value;
         this.literal = literal;
         this.sourceFilename = filename;
-        this.sourceLine = line;
-        this.sourceColumn = column;
+        this.lineIndex = line;
+        this.columnIndex = column;
         this.originalToken = this;
     }
 
@@ -106,6 +106,58 @@ public class Token {
     }
 
     /**
+     * Produces name of file associated with this token.
+     *
+     * @return Name of file associated with this token.
+     */
+    public String getFilename() {
+        return this.sourceFilename;
+    }
+
+    /**
+     * Get the line at which this token resides, where the first line in the file is line 0.
+     *
+     * @return The zero-based line index.
+     */
+    public int getLineIndex() {
+        return this.lineIndex;
+    }
+
+    /**
+     * Get the column at which this token starts in the source line, where the beginning of the line is column 0.
+     *
+     * @return The zero-based column index.
+     */
+    public int getColumnIndex() {
+        return this.columnIndex;
+    }
+
+    /**
+     * Get the original token that this token derives from. Returns <code>this</code> unless the token:
+     * <ul>
+     * <li>Has been included from another file (<code>.include</code>).
+     * <li>Has been substituted as a result of an equivalence (<code>.eqv</code>).
+     * <li>Has been generated from an instance of a macro (<code>.macro</code>).
+     * </ul>
+     *
+     * @return The original form of this token.
+     */
+    public Token getOriginalToken() {
+        return this.originalToken;
+    }
+
+    /**
+     * Set the original token that this token derives from. Tokens may be cloned during preprocessing as a result
+     * of macros, <code>.eqv</code>, and <code>.include</code>, and information about that process must be kept
+     * for later reference. For example, error messages and the text segment display check this information.
+     *
+     * @param token The original form of this token.
+     */
+    public void setOriginalToken(Token token) {
+        this.originalToken = token;
+    }
+
+    /**
      * Get a String representing the token.  This method is
      * equivalent to {@link #getLiteral()}.
      *
@@ -117,56 +169,15 @@ public class Token {
     }
 
     /**
-     * Produces name of file associated with this token.
+     * Determine whether this token is a valid SPIM-style macro parameter. MARS-style macro parameters start with
+     * <code>%</code>, whereas SPIM-style macro parameters start with <code>$</code>. Note that register names
+     * such as <code>$zero</code> are not accepted.
      *
-     * @return Name of file associated with this token.
+     * @return <code>true</code> if this token is an {@link TokenType#IDENTIFIER IDENTIFIER} in the form of
+     *         <code>$</code> followed by at least one character, or <code>false</code> otherwise.
      */
-    public String getSourceFilename() {
-        return this.sourceFilename;
-    }
-
-    /**
-     * Produces line number of MIPS program of this token.
-     *
-     * @return Line number in source program of this token.
-     */
-    public int getSourceLine() {
-        return this.sourceLine;
-    }
-
-    /**
-     * Produces position within source line of this token.
-     *
-     * @return First character position within source program line of this token.
-     */
-    public int getSourceColumn() {
-        return this.sourceColumn;
-    }
-
-    /**
-     * Get the original form of this token. Returns <code>this</code> unless the token:
-     * <ul>
-     * <li>Has been included from another file (<code>.include</code>).
-     * <li>Has been substituted as a result of an equivalence (<code>.eqv</code>).
-     * <li>Has been generated from an instance of a macro (<code>.macro</code>).
-     * </ul>
-     *
-     * @return Original form of this token.
-     */
-    public Token getOriginalToken() {
-        return this.originalToken;
-    }
-
-    /**
-     * Set original program and line number for this token.
-     * Line number or both may change during pre-assembly as a result
-     * of the ".include" directive, and we need to keep the original
-     * for later reference (error messages, text segment display).
-     *
-     * @param token The original form of this token.
-     */
-    public void setOriginalToken(Token token) {
-        this.originalToken = token;
+    public boolean isSPIMStyleMacroParameter() {
+        return this.type == TokenType.IDENTIFIER || this.literal.length() <= 1 || this.literal.charAt(0) != '$';
     }
 
     /**

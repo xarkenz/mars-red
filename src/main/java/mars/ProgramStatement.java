@@ -177,7 +177,7 @@ public class ProgramStatement {
                 }
                 catch (Exception e) {
                     // should never happen; should be caught before now...
-                    errors.add(new ErrorMessage(this.sourceProgram, token.getSourceLine(), token.getSourceColumn(), "invalid register name"));
+                    errors.add(new ErrorMessage(this.sourceProgram, token.getLineIndex(), token.getColumnIndex(), "invalid register name"));
                     return;
                 }
                 this.operands[this.numOperands++] = registerNumber;
@@ -189,7 +189,7 @@ public class ProgramStatement {
                 basicStatementList.addString(basicStatementElement);
                 if (registerNumber < 0) {
                     // should never happen; should be caught before now...
-                    errors.add(new ErrorMessage(this.sourceProgram, token.getSourceLine(), token.getSourceColumn(), "invalid register name"));
+                    errors.add(new ErrorMessage(this.sourceProgram, token.getLineIndex(), token.getColumnIndex(), "invalid register name"));
                     return;
                 }
                 this.operands[this.numOperands++] = registerNumber;
@@ -201,7 +201,7 @@ public class ProgramStatement {
                 basicStatementList.addString(basicStatementElement);
                 if (registerNumber < 0) {
                     // should never happen; should be caught before now...
-                    errors.add(new ErrorMessage(this.sourceProgram, token.getSourceLine(), token.getSourceColumn(), "invalid FPU register name"));
+                    errors.add(new ErrorMessage(this.sourceProgram, token.getLineIndex(), token.getColumnIndex(), "invalid FPU register name"));
                     return;
                 }
                 this.operands[this.numOperands++] = registerNumber;
@@ -209,7 +209,7 @@ public class ProgramStatement {
             else if (tokenType == TokenType.IDENTIFIER) {
                 int address = this.sourceProgram.getLocalSymbolTable().getAddressLocalOrGlobal(tokenValue);
                 if (address == SymbolTable.NOT_FOUND) { // symbol used without being defined
-                    errors.add(new ErrorMessage(this.sourceProgram, token.getSourceLine(), token.getSourceColumn(), "Symbol \"" + tokenValue + "\" not found in symbol table."));
+                    errors.add(new ErrorMessage(this.sourceProgram, token.getLineIndex(), token.getColumnIndex(), "Symbol \"" + tokenValue + "\" not found in symbol table."));
                     return;
                 }
                 boolean absoluteAddress = true; // (used below)

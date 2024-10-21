@@ -121,7 +121,7 @@ public enum TokenType {
     REAL_NUMBER,
     /**
      * A token representing a character literal. The corresponding token value is the
-     * numeric value as a {@link Character}.
+     * numeric value as an {@link Integer}.
      */
     CHARACTER,
     /**
@@ -187,6 +187,10 @@ public enum TokenType {
      */
     public boolean isFloatingPoint() {
         return this == REAL_NUMBER;
+    }
+
+    public boolean isDirectiveContinuation() {
+        return this.isInteger() || this.isFloatingPoint() || this == CHARACTER || this == STRING;
     }
 
     /**

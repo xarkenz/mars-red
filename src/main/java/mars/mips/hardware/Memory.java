@@ -1,7 +1,7 @@
 package mars.mips.hardware;
 
 import mars.Application;
-import mars.ProgramStatement;
+import mars.assembler.BasicStatement;
 import mars.mips.instructions.Instruction;
 import mars.simulator.ExceptionCause;
 import mars.util.Binary;
@@ -524,7 +524,7 @@ public class Memory {
             if (!Application.getSettings().selfModifyingCodeEnabled.get()) {
                 throw new AddressErrorException("cannot write to text segment unless self-modifying code is enabled", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
             }
-            ProgramStatement oldStatement = textRegion.storeStatement(address, new ProgramStatement(value, address));
+            BasicStatement oldStatement = textRegion.storeStatement(address, new BasicStatement(value, address));
             // Add a corresponding backstep for the write
             // TODO: make a separate restore type for program statements in the backstepper
             if (oldStatement != null && Application.isBackSteppingEnabled()) {
@@ -653,7 +653,7 @@ public class Memory {
      * @throws AddressErrorException Thrown if the given address is not word-aligned, is out of range,
      *         or does not allow this operation.
      */
-    public void storeStatement(int address, ProgramStatement statement, boolean notify) throws AddressErrorException {
+    public void storeStatement(int address, BasicStatement statement, boolean notify) throws AddressErrorException {
         enforceWordAlignment(address, ExceptionCause.ADDRESS_EXCEPTION_STORE);
 
         // Obtain the binary representation of the statement
@@ -732,7 +732,7 @@ public class Memory {
             // Burch Mod (Jan 2013): replace throw with calls to fetchStatement & getBinaryStatement
             // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
             // Sean Clarke (05/2024): don't throw, reading should be fine regardless of self-modifying code setting
-            ProgramStatement statement = textRegion.fetchStatement(address);
+            BasicStatement statement = textRegion.fetchStatement(address);
             value = statement == null ? 0 : statement.getBinaryStatement();
         }
         else {
@@ -782,7 +782,7 @@ public class Memory {
             // Burch Mod (Jan 2013): replace throw with calls to getStatementNoNotify & getBinaryStatement
             // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
             // Sean Clarke (05/2024): don't throw, reading should be fine regardless of self-modifying code setting
-            ProgramStatement statement = textRegion.fetchStatement(address);
+            BasicStatement statement = textRegion.fetchStatement(address);
             return statement == null ? null : statement.getBinaryStatement();
         }
         else {
@@ -890,10 +890,10 @@ public class Memory {
      * @throws AddressErrorException Thrown if the given address is not word-aligned, is out of range,
      *         or does not allow this operation.
      */
-    public ProgramStatement fetchStatement(int address, boolean notify) throws AddressErrorException {
+    public BasicStatement fetchStatement(int address, boolean notify) throws AddressErrorException {
         enforceWordAlignment(address, ExceptionCause.ADDRESS_EXCEPTION_FETCH);
 
-        ProgramStatement statement;
+        BasicStatement statement;
         TextRegion textRegion;
         DataRegion dataRegion;
         if ((textRegion = this.getTextRegionForAddress(address)) != null) {
@@ -906,7 +906,7 @@ public class Memory {
                 throw new AddressErrorException("cannot execute beyond text segment unless self-modifying code is enabled", ExceptionCause.ADDRESS_EXCEPTION_FETCH, address);
             }
             Integer binaryStatement = dataRegion.fetchWordOrNull(address);
-            statement = (binaryStatement == null) ? null : new ProgramStatement(binaryStatement, address);
+            statement = (binaryStatement == null) ? null : new BasicStatement(binaryStatement, address);
         }
         else {
             // Falls outside mapped addressing range
@@ -1105,7 +1105,7 @@ public class Memory {
      * <p>
      * This uses a very similar structure to {@link DataRegion}. The primary difference is that <code>DataRegion</code>
      * contains raw memory words at the innermost level, whereas this contains references to
-     * {@link ProgramStatement} objects instead. While less space-efficient, it is much more time-efficient
+     * {@link BasicStatement} objects instead. While less space-efficient, it is much more time-efficient
      * for the {@link mars.simulator.Simulator} as it reads the code in the text segment.
      * (Especially since the current code to construct a <code>ProgramStatement</code> from its binary data
      * isn't too great, which is certainly on the to-do list to improve.)
@@ -1128,7 +1128,7 @@ public class Memory {
             return wordOffset / WORDS_PER_TABLE;
         }
 
-        private final ProgramStatement[][][] tables;
+        private final BasicStatement[][][] tables;
         private final int baseAddress;
 
         /**
@@ -1143,7 +1143,7 @@ public class Memory {
             // Determine how many tables are needed to cover the region
             int tableCount = (lastAddress - this.baseAddress) / BYTES_PER_TABLE + 1;
             // Allocate an array which can hold that many tables
-            this.tables = new ProgramStatement[tableCount][][];
+            this.tables = new BasicStatement[tableCount][][];
         }
 
         /**
@@ -1155,7 +1155,7 @@ public class Memory {
          * @param statement The statement to store at the given address.
          * @return The previous statement which was overwritten (defaults to null).
          */
-        public synchronized ProgramStatement storeStatement(int address, ProgramStatement statement) {
+        public synchronized BasicStatement storeStatement(int address, BasicStatement statement) {
             // Compute the indices for the address
             int wordOffset = (address - this.baseAddress) >>> 2;
             int wordIndex = getWordIndex(wordOffset);
@@ -1163,13 +1163,13 @@ public class Memory {
             int tableIndex = getTableIndex(wordOffset);
 
             if (this.tables[tableIndex] == null) {
-                this.tables[tableIndex] = new ProgramStatement[BLOCKS_PER_TABLE][];
+                this.tables[tableIndex] = new BasicStatement[BLOCKS_PER_TABLE][];
             }
             if (this.tables[tableIndex][blockIndex] == null) {
-                this.tables[tableIndex][blockIndex] = new ProgramStatement[WORDS_PER_BLOCK];
+                this.tables[tableIndex][blockIndex] = new BasicStatement[WORDS_PER_BLOCK];
             }
 
-            ProgramStatement oldStatement = this.tables[tableIndex][blockIndex][wordIndex];
+            BasicStatement oldStatement = this.tables[tableIndex][blockIndex][wordIndex];
             this.tables[tableIndex][blockIndex][wordIndex] = statement;
             return oldStatement;
         }
@@ -1182,7 +1182,7 @@ public class Memory {
          * @param address The address of the statement to fetch.
          * @return The statement stored at the given address (defaults to null).
          */
-        public synchronized ProgramStatement fetchStatement(int address) {
+        public synchronized BasicStatement fetchStatement(int address) {
             // Compute the indices for the address
             int wordOffset = (address - this.baseAddress) >>> 2;
             int wordIndex = getWordIndex(wordOffset);

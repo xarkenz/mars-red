@@ -1,9 +1,11 @@
 package mars.mips.instructions;
 
-import mars.Application;
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.*;
 import mars.assembler.OperandType;
+import mars.assembler.SourceLine;
+import mars.assembler.extended.ExpansionTemplate;
+import mars.assembler.extended.TemplateParser;
+import mars.assembler.token.Tokenizer;
 import mars.mips.hardware.*;
 import mars.mips.instructions.syscalls.Syscall;
 import mars.simulator.ExceptionCause;
@@ -2613,8 +2615,68 @@ public class InstructionSet {
                 if (compactExpansionCode == null && compactExpansionCodeRaw != null) {
                     System.err.println("Warning: invalid match compact expansion for '" + mnemonic + "':\n\t" + compactExpansionCodeRaw);
                 }
+
+                ExtendedInstruction instruction = new ExtendedInstruction(mnemonic, operandTypes, title, description);
+
+                var statements = parseExpansionStatements(mnemonic, operandTypes, expansionCode);
+                if (statements == null) {
+                    continue;
+                }
+                instruction.setStandardExpansionTemplate(new ExpansionTemplate(instruction, statements));
+
+                if (compactExpansionCode != null) {
+                    statements = parseExpansionStatements(mnemonic, operandTypes, compactExpansionCode);
+                    if (statements != null) {
+                        instruction.setCompactExpansionTemplate(new ExpansionTemplate(instruction, statements));
+                    }
+                }
+
+                this.addExtendedInstruction(instruction);
             }
         }
+    }
+
+    private static List<ExpansionTemplate.Statement> parseExpansionStatements(String mnemonic, List<OperandType> operandTypes, String expansionCode) {
+        ErrorList errors = new ErrorList();
+        String filename = mnemonic + operandTypes; // Takes the form of "addi[reg, reg, s16]"
+
+        List<SourceLine> expansionLines = Tokenizer.tokenizeLines(
+            filename,
+            List.of(expansionCode.split("\n")),
+            errors,
+            true
+        );
+
+        if (errors.errorsOccurred()) {
+            System.err.println(errors.generateErrorAndWarningReport());
+            return null;
+        }
+
+        TemplateParser parser = new TemplateParser(operandTypes, expansionLines.iterator());
+        List<ExpansionTemplate.Statement> statements = new ArrayList<>();
+        while (true) {
+            try {
+                ExpansionTemplate.Statement statement = parser.parseNextStatement();
+                if (statement == null) {
+                    break;
+                }
+                statements.add(statement);
+            }
+            catch (RuntimeException exception) {
+                // TODO: better error handling. gosh.
+                errors.add(new ErrorMessage(filename, 0, 0, exception.getMessage()));
+            }
+        }
+
+        if (errors.errorsOccurred()) {
+            System.err.println(errors.generateErrorAndWarningReport());
+            return null;
+        }
+        else if (errors.warningsOccurred()) {
+            System.err.println(errors.generateWarningReport());
+        }
+
+        return statements;
     }
 
     private static String downcastString(Object object) {
@@ -2695,33 +2757,14 @@ public class InstructionSet {
         return matchingInstructions;
     }
 
-    public BasicInstruction matchBasicInstruction(String mnemonic, List<OperandType> givenTypes) {
-        List<BasicInstruction> matches = this.matchBasicMnemonic(mnemonic);
-
-        for (BasicInstruction match : matches) {
+    public static <T extends Instruction> T matchInstruction(List<T> mnemonicMatches, List<OperandType> givenTypes) {
+        for (T match : mnemonicMatches) {
             if (match.acceptsOperands(givenTypes)) {
                 return match;
             }
         }
 
         return null;
-    }
-
-    public ExtendedInstruction matchExtendedInstruction(String mnemonic, List<OperandType> givenTypes) {
-        List<ExtendedInstruction> matches = this.matchExtendedMnemonic(mnemonic);
-
-        for (ExtendedInstruction match : matches) {
-            if (match.acceptsOperands(givenTypes)) {
-                return match;
-            }
-        }
-
-        return null;
-    }
-
-    public Instruction matchInstruction(String mnemonic, List<OperandType> givenTypes) {
-        BasicInstruction basicInstruction = this.matchBasicInstruction(mnemonic, givenTypes);
-        return (basicInstruction != null) ? basicInstruction : this.matchExtendedInstruction(mnemonic, givenTypes);
     }
 
     /**

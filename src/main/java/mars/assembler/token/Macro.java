@@ -2,13 +2,9 @@ package mars.assembler.token;
 
 import mars.ErrorList;
 import mars.ErrorMessage;
-import mars.Program;
-import mars.mips.hardware.Coprocessor0;
-import mars.mips.hardware.Coprocessor1;
-import mars.mips.hardware.RegisterFile;
+import mars.assembler.SourceLine;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 
 /*
 Copyright (c) 2013-2014.
@@ -38,213 +34,148 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * Stores information of a macro definition.
  *
- * @author M.H.Sekhavat &lt;sekhavat17@gmail&gt;
+ * @author M.H.Sekhavat (sekhavat17@gmail.com)
  */
 public class Macro {
-    private String name;
-    private Program program;
-    private final ArrayList<String> labels;
-
-    /**
-     * First and last line number of macro definition. First line starts with
-     * .macro directive and last line is .end_macro directive.
-     */
-    private int fromLine, toLine;
-    private int origFromLine, origToLine;
+    private final String name;
     /**
      * Arguments like <code>%arg</code> will be substituted by macro expansion.
      */
-    private ArrayList<String> args;
+    private final List<Token> parameters;
+    private final List<SourceLine> lines;
+    private final Set<String> labels;
 
-    public Macro() {
-        name = "";
-        program = null;
-        fromLine = toLine = 0;
-        origFromLine = origToLine = 0;
-        args = new ArrayList<>();
-        labels = new ArrayList<>();
+    public Macro(String name, List<Token> parameters) {
+        this.name = name;
+        this.parameters = parameters;
+        this.lines = new ArrayList<>();
+        this.labels = new HashSet<>();
     }
 
     public String getName() {
-        return name;
+        return this.name;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public List<Token> getParameters() {
+        return this.parameters;
     }
 
-    public Program getProgram() {
-        return program;
+    public List<SourceLine> getLines() {
+        return this.lines;
     }
 
-    public void setProgram(Program program) {
-        this.program = program;
+    public void addParameter(Token parameter) {
+        this.parameters.add(parameter);
     }
 
-    public int getFromLine() {
-        return fromLine;
+    public void addLine(SourceLine sourceLine) {
+        this.lines.add(sourceLine);
     }
 
-    public int getOriginalFromLine() {
-        return this.origFromLine;
+    public boolean addLabel(String label) {
+        return this.labels.add(label);
     }
 
-    public void setFromLine(int fromLine) {
-        this.fromLine = fromLine;
-    }
-
-    public void setOriginalFromLine(int origFromLine) {
-        this.origFromLine = origFromLine;
-    }
-
-    public int getToLine() {
-        return toLine;
-    }
-
-    public int getOriginalToLine() {
-        return this.origToLine;
-    }
-
-    public void setToLine(int toLine) {
-        this.toLine = toLine;
-    }
-
-    public void setOriginalToLine(int origToLine) {
-        this.origToLine = origToLine;
-    }
-
-    public ArrayList<String> getArgs() {
-        return args;
-    }
-
-    public void setArgs(ArrayList<String> args) {
-        this.args = args;
-    }
-
-    /**
-     * @param obj {@link Macro} object to check if their name and count of
-     *            arguments are same.
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof Macro macro) {
-            return macro.getName().equals(name) && (macro.args.size() == args.size());
-        }
-        return super.equals(obj);
-    }
-
-    public void addArg(String value) {
-        args.add(value);
+    public boolean hasLabel(String label) {
+        return this.labels.contains(label);
     }
 
     /**
      * Substitutes macro arguments in a line of source code inside macro
      * definition to be parsed after macro expansion.
-     * <br>
-     * Also appends "_M#" to all labels defined inside macro body, where # is value of <code>counter</code>.
+     * <p>
+     * Also appends <code>_M<var>id</var></code> to all labels defined inside macro body,
+     * where <code><var>id</var></code> is the value of <code>instanceID</code>.
      *
-     * @param line    Source line number in macro definition to be substituted.
-     * @param args    List of tokens to expand to.
-     * @param counter Unique macro expansion ID.
+     * @param arguments    List of tokens to expand to.
+     * @param instanceID Unique macro expansion ID.
+     * @param callLine
      * @param errors  Destination for any errors from within this method.
      * @return The line of source code, with substituted arguments.
      */
-    public String getSubstitutedLine(int line, TokenList args, long counter, ErrorList errors) {
-        TokenList tokens = program.getTokenLists().get(line - 1);
-        String s = program.getSourceLine(line);
+    public List<SourceLine> instantiate(List<Token> arguments, int instanceID, SourceLine callLine, ErrorList errors) {
+        List<SourceLine> instanceLines = new ArrayList<>(this.lines.size());
 
-        for (int i = tokens.size() - 1; i >= 0; i--) {
-            Token token = tokens.get(i);
-            if (tokenIsMacroParameter(token.getLiteral(), true)) {
-                int repl = -1;
-                for (int j = 0; j < this.args.size(); j++) {
-                    if (this.args.get(j).equals(token.getLiteral())) {
-                        repl = j;
-                        break;
-                    }
+        for (SourceLine sourceLine : this.lines) {
+            List<Token> instanceTokens = new ArrayList<>(sourceLine.tokens().size());
+
+            for (Token token : sourceLine.tokens()) {
+                Token instanceToken;
+
+                int parameterIndex = this.checkForParameter(token, errors);
+                if (parameterIndex >= 0) {
+                    Token argument = arguments.get(parameterIndex);
+                    instanceToken = new Token(
+                        argument.getType(),
+                        argument.getValue(),
+                        argument.getLiteral(),
+                        callLine.filename(),
+                        callLine.lineIndex(),
+                        token.getColumnIndex()
+                    );
                 }
-                String substitute = token.getLiteral();
-                if (repl != -1) {
-                    substitute = args.get(repl + 1).toString();
+                else if ((token.getType() == TokenType.IDENTIFIER || token.getType() == TokenType.OPERATOR)
+                         && this.labels.contains(token.getLiteral())
+                ) {
+                    String instanceLabel = token.getLiteral() + "_M" + instanceID;
+                    instanceToken = new Token(
+                        TokenType.IDENTIFIER,
+                        null,
+                        instanceLabel,
+                        callLine.filename(),
+                        callLine.lineIndex(),
+                        token.getColumnIndex()
+                    );
                 }
                 else {
-                    errors.add(new ErrorMessage(program, token.getSourceLine(), token.getSourceColumn(), "Unknown macro parameter"));
+                    instanceToken = new Token(
+                        token.getType(),
+                        token.getValue(),
+                        token.getLiteral(),
+                        callLine.filename(),
+                        callLine.lineIndex(),
+                        token.getColumnIndex()
+                    );
                 }
-                s = replaceToken(s, token, substitute);
+
+                instanceToken.setOriginalToken(token);
+                instanceTokens.add(instanceToken);
             }
-            else if (tokenIsMacroLabel(token.getLiteral())) {
-                String substitute = token.getLiteral() + "_M" + counter;
-                s = replaceToken(s, token, substitute);
-            }
-        }
-        return s;
-    }
 
-    /**
-     * Returns true if <code>value</code> is name of a label defined in this macro's body.
-     *
-     * @param value
-     * @return
-     */
-    private boolean tokenIsMacroLabel(String value) {
-        return (Collections.binarySearch(labels, value) >= 0);
-    }
-
-    /**
-     * Replaces token <code>tokenToBeReplaced</code> which occurs in <code>source</code> with <code>substitute</code>.
-     *
-     * @param source
-     * @param tokenToBeReplaced
-     * @param substitute
-     * @return
-     */
-    // Initially the position of the substitute was based on token position but that proved problematic
-    // in that the source string does not always match the token list from which the token comes. The
-    // token list has already had .eqv equivalences applied whereas the source may not.  This is because
-    // the source comes from a macro definition?  That has proven to be a tough question to answer.
-    // DPS 12-feb-2013
-    private String replaceToken(String source, Token tokenToBeReplaced, String substitute) {
-        String stringToBeReplaced = tokenToBeReplaced.getLiteral();
-        int pos = source.indexOf(stringToBeReplaced);
-        return (pos < 0) ? source : source.substring(0, pos) + substitute + source.substring(pos + stringToBeReplaced.length());
-    }
-
-    /**
-     * Returns whether <code>tokenValue</code> is macro parameter or not.
-     *
-     * @param tokenValue
-     * @param allowSPIMStyle accepts SPIM-style parameters which begin with '$' if true
-     * @return
-     */
-    public static boolean tokenIsMacroParameter(String tokenValue, boolean allowSPIMStyle) {
-        if (tokenValue.length() <= 1) {
-            return false;
+            instanceLines.add(new SourceLine(
+                callLine.filename(),
+                callLine.lineIndex(),
+                callLine.content(),
+                instanceTokens
+            ));
         }
 
-        if (allowSPIMStyle) {
-            if (tokenValue.charAt(0) == '$') {
-                // Bug fix: SPIM accepts parameter names that start with $ instead of %.  This can
-                // lead to problems since register names also start with $.  This IF condition
-                // should filter out register names.  Originally filtered those from regular set but not
-                // from Coprocessor0 or Coprocessor1 register sets.  Expanded the condition.
-                // DPS 7-July-2014
-                return RegisterFile.getRegister(tokenValue) == null
-                    && Coprocessor0.getRegister(tokenValue) == null
-                    && Coprocessor1.getRegister(tokenValue) == null;
+        return instanceLines;
+    }
+
+    public int checkForParameter(Token token, ErrorList errors) {
+        // If this token could not possibly be a parameter, we won't bother checking
+        if (token.getType() == TokenType.MACRO_PARAMETER || token.isSPIMStyleMacroParameter()) {
+            // Do a linear search for the parameter to obtain the index. Linear search isn't great, but most
+            // macros won't have nearly enough parameters to warrant a more sophisticated solution
+            for (int index = 0; index < this.parameters.size(); index++) {
+                if (this.parameters.get(index).getLiteral().equals(token.getLiteral())) {
+                    return index;
+                }
+            }
+
+            // If no SPIM-style parameter was found, it could just be a symbol instead. But if no MARS-style
+            // parameter was found, it cannot be a symbol due to starting with %, so give an error
+            if (token.getType() == TokenType.MACRO_PARAMETER) {
+                errors.add(new ErrorMessage(
+                    token.getFilename(),
+                    token.getLineIndex(),
+                    token.getColumnIndex(),
+                    "Undefined macro parameter '" + token + "'"
+                ));
             }
         }
 
-        return tokenValue.charAt(0) == '%';
-    }
-
-    public void addLabel(String value) {
-        labels.add(value);
-    }
-
-    /**
-     * Operations to be done on this macro before it is committed in macro pool.
-     */
-    public void readyForCommit() {
-        Collections.sort(labels);
+        return -1;
     }
 }

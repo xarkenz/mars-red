@@ -151,7 +151,7 @@ public class ErrorMessage {
             }
             else {
                 SourceLine sourceLine = sourceProgram.getSourceLines().get(Math.max(0, line - 1));
-                this.line = sourceLine.getLineNumber();
+                this.line = sourceLine.lineIndex();
             }
         }
         this.position = position;

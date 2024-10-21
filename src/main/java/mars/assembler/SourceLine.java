@@ -41,21 +41,21 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class SourceLine {
     private final String filename;
-    private final int lineNumber;
+    private final int lineIndex;
     private String content;
     private final List<Token> tokens;
 
     /**
      * SourceLine constructor.
      *
-     * @param filename   The name of the file containing the source program.
-     * @param lineNumber The line number within the source program.
-     * @param content    The raw source code of the line.
-     * @param tokens     The list of tokens that the line contains.
+     * @param filename  The name of the file containing the source program.
+     * @param lineIndex The zero-based line index within the source program.
+     * @param content   The raw source code of the line.
+     * @param tokens    The list of tokens that the line contains.
      */
-    public SourceLine(String filename, int lineNumber, String content, List<Token> tokens) {
+    public SourceLine(String filename, int lineIndex, String content, List<Token> tokens) {
         this.filename = filename;
-        this.lineNumber = lineNumber;
+        this.lineIndex = lineIndex;
         this.content = content;
         this.tokens = tokens;
     }
@@ -74,8 +74,8 @@ public class SourceLine {
      *
      * @return The source line number.
      */
-    public int getLineNumber() {
-        return this.lineNumber;
+    public int getLineIndex() {
+        return this.lineIndex;
     }
 
     /**

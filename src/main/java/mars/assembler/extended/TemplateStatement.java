@@ -2,7 +2,7 @@ package mars.assembler.extended;
 
 import mars.assembler.BasicStatement;
 import mars.assembler.Operand;
-import mars.assembler.SourceLine;
+import mars.assembler.syntax.StatementSyntax;
 import mars.mips.instructions.BasicInstruction;
 
 import java.util.ArrayList;
@@ -26,13 +26,13 @@ public class TemplateStatement implements ExpansionTemplate.Statement {
     }
 
     @Override
-    public BasicStatement resolve(List<Operand> originalOperands, int address, SourceLine sourceLine) {
+    public BasicStatement resolve(List<Operand> originalOperands, int address, StatementSyntax syntax) {
         List<Operand> expansionOperands = new ArrayList<>(this.operands.size());
 
         for (TemplateOperand operand : this.operands) {
             expansionOperands.add(operand.resolve(originalOperands, address));
         }
 
-        return new BasicStatement(sourceLine, this.instruction, expansionOperands);
+        return new BasicStatement(syntax, this.instruction, expansionOperands);
     }
 }

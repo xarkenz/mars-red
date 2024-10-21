@@ -1,8 +1,8 @@
 package mars.simulator;
 
 import mars.*;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.*;
-import mars.mips.instructions.BasicInstruction;
 import mars.mips.instructions.Instruction;
 import mars.util.Binary;
 import mars.venus.execute.RunSpeedPanel;
@@ -154,7 +154,7 @@ public class SimulatorThread extends Thread {
         // Main simulation loop, repeat until the thread is interrupted or some end condition is reached
         while (true) {
             // Fetch the statement to execute from memory
-            ProgramStatement statement = this.fetchStatement();
+            BasicStatement statement = this.fetchStatement();
             if (statement == null) {
                 // A null statement indicates that execution "ran off the bottom" of the program.
                 // While a real MIPS device would keep chugging along and executing garbage data as instructions,
@@ -189,18 +189,8 @@ public class SimulatorThread extends Thread {
                         throw new ProcessingException(statement, "external interrupt", externalInterruptDevice);
                     }
 
-                    // Extract the instruction from the program statement (this is basically the "decode" stage)
-                    BasicInstruction instruction = (BasicInstruction) statement.getInstruction();
-                    if (instruction == null) {
-                        throw new ProcessingException(
-                            statement,
-                            "invalid instruction: " + Binary.intToHexString(statement.getBinaryStatement()),
-                            ExceptionCause.RESERVED_INSTRUCTION_EXCEPTION
-                        );
-                    }
-
-                    // Simulate the instruction execution
-                    instruction.simulate(statement);
+                    // Simulate the statement execution
+                    statement.simulate();
 
                     // IF statement added 7/26/06 (explanation above)
                     if (Application.isBackSteppingEnabled()) {
@@ -222,7 +212,7 @@ public class SimulatorThread extends Thread {
                     // Check for an exception handler by attempting to fetch the instruction located at the
                     // exception handler address, as determined by the memory configuration
                     int exceptionHandlerAddress = Memory.getInstance().getAddress(MemoryConfigurations.EXCEPTION_HANDLER);
-                    ProgramStatement exceptionHandler = null;
+                    BasicStatement exceptionHandler = null;
                     try {
                         exceptionHandler = Memory.getInstance().fetchStatement(exceptionHandlerAddress, true);
                     }
@@ -291,7 +281,7 @@ public class SimulatorThread extends Thread {
         }
     }
 
-    private ProgramStatement fetchStatement() throws ProcessingException {
+    private BasicStatement fetchStatement() throws ProcessingException {
         try {
             return Memory.getInstance().fetchStatement(RegisterFile.getProgramCounter(), true);
         }

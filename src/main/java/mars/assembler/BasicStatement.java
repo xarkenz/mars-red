@@ -1,19 +1,19 @@
 package mars.assembler;
 
 import mars.ProcessingException;
-import mars.assembler.syntax.Syntax;
+import mars.assembler.syntax.StatementSyntax;
 import mars.mips.instructions.BasicInstruction;
 
 import java.util.List;
 
-public class BasicStatement implements Syntax {
-    private final SourceLine sourceLine;
+public class BasicStatement implements Statement {
+    private final StatementSyntax syntax;
     private final BasicInstruction instruction;
     private final List<Operand> operands;
     private final int[] operandValues;
 
-    public BasicStatement(SourceLine sourceLine, BasicInstruction instruction, List<Operand> operands) {
-        this.sourceLine = sourceLine;
+    public BasicStatement(StatementSyntax syntax, BasicInstruction instruction, List<Operand> operands) {
+        this.syntax = syntax;
         this.instruction = instruction;
         this.operands = operands;
         this.operandValues = new int[operands.size()];
@@ -23,8 +23,8 @@ public class BasicStatement implements Syntax {
     }
 
     @Override
-    public SourceLine getSourceLine() {
-        return this.sourceLine;
+    public StatementSyntax getSyntax() {
+        return this.syntax;
     }
 
     public BasicInstruction getInstruction() {
@@ -37,6 +37,11 @@ public class BasicStatement implements Syntax {
 
     public int[] getOperandValues() {
         return this.operandValues;
+    }
+
+    @Override
+    public void handlePlacement(Assembler assembler, int address) {
+        assembler.placeStatement(this, address);
     }
 
     /**

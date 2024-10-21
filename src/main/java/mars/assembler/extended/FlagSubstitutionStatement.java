@@ -3,7 +3,7 @@ package mars.assembler.extended;
 import mars.assembler.AssemblerFlag;
 import mars.assembler.BasicStatement;
 import mars.assembler.Operand;
-import mars.assembler.SourceLine;
+import mars.assembler.syntax.StatementSyntax;
 
 import java.util.List;
 
@@ -35,9 +35,9 @@ public class FlagSubstitutionStatement implements ExpansionTemplate.Statement {
     }
 
     @Override
-    public BasicStatement resolve(List<Operand> originalOperands, int address, SourceLine sourceLine) {
+    public BasicStatement resolve(List<Operand> originalOperands, int address, StatementSyntax syntax) {
         ExpansionTemplate.Statement statement = this.getValue();
-        return (statement == null) ? null : statement.resolve(originalOperands, address, sourceLine);
+        return (statement == null) ? null : statement.resolve(originalOperands, address, syntax);
     }
 
     @Override

@@ -1,10 +1,8 @@
 package mars.assembler;
 
-import mars.ErrorList;
-import mars.ErrorMessage;
-import mars.assembler.token.Token;
-
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /*
@@ -44,6 +42,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 public class SymbolTable {
     private final String filename;
     private final Map<String, Symbol> symbols;
+    private final List<Symbol> alignableSymbols;
 
     /**
      * Create a new empty symbol table corresponding to the given filename.
@@ -54,6 +53,7 @@ public class SymbolTable {
     public SymbolTable(String filename) {
         this.filename = filename;
         this.symbols = new HashMap<>();
+        this.alignableSymbols = new ArrayList<>();
     }
 
     public String getFilename() {
@@ -63,22 +63,27 @@ public class SymbolTable {
     /**
      * Adds a Symbol object into the array of Symbols.
      *
-     * @param token   The token representing the Symbol.
-     * @param address The address of the Symbol.
-     * @param isData  The type of Symbol, true for data, false for text.
-     * @param errors  List to which to add any processing errors that occur.
+     * @param identifier The identifier representing the Symbol.
+     * @param address    The address of the Symbol.
+     * @param isData     The type of Symbol, true for data, false for text.
      */
-    public void addSymbol(Token token, int address, boolean isData, ErrorList errors) {
-        String label = token.getLiteral();
-        Symbol previousSymbol = this.symbols.put(label, new Symbol(label, address, isData));
-        if (previousSymbol != null) {
-            errors.add(new ErrorMessage(
-                token.getSourceFilename(),
-                token.getSourceLine(),
-                token.getSourceColumn(),
-                "label \"" + label + "\" is already defined"
-            ));
+    public Symbol defineSymbol(String identifier, int address, boolean isData) {
+        return this.defineSymbol(new Symbol(identifier, address, isData));
+    }
+
+    /**
+     * Adds a Symbol object into the array of Symbols.
+     *
+     * @param symbol The symbol to add.
+     */
+    public Symbol defineSymbol(Symbol symbol) {
+        // If address has changed since the last alignable symbol, this symbol marks the new alignable address
+        if (!this.alignableSymbols.isEmpty() && symbol.getAddress() != this.alignableSymbols.get(0).getAddress()) {
+            this.alignableSymbols.clear();
         }
+        this.alignableSymbols.add(symbol);
+
+        return this.symbols.put(symbol.getIdentifier(), symbol);
     }
 
     /**
@@ -86,31 +91,31 @@ public class SymbolTable {
      * This will rarely happen (only when variable is declared .globl after already
      * being defined in the local symbol table).
      *
-     * @param label The label for the symbol to remove.
+     * @param identifier The identifier for the symbol to remove.
      */
-    public void removeSymbol(String label) {
-        this.symbols.remove(label);
+    public void removeSymbol(String identifier) {
+        this.symbols.remove(identifier);
     }
 
     /**
-     * Get the address associated with the given label.
+     * Get the address associated with the given identifier.
      *
-     * @param label The label to search for.
-     * @return The memory address of the label given, or <code>null</code> if not found in symbol table.
+     * @param identifier The identifier to search for.
+     * @return The memory address of the identifier given, or <code>null</code> if not found in symbol table.
      */
-    public Integer getAddress(String label) {
-        Symbol symbol = this.getSymbol(label);
+    public Integer getAddress(String identifier) {
+        Symbol symbol = this.getSymbol(identifier);
         return (symbol == null) ? null : symbol.getAddress();
     }
 
     /**
      * Produce Symbol object from symbol table that corresponds to given String.
      *
-     * @param label The label to search for.
+     * @param identifier The identifier to search for.
      * @return Symbol object for requested target, null if not found in symbol table.
      */
-    public Symbol getSymbol(String label) {
-        return this.symbols.get(label);
+    public Symbol getSymbol(String identifier) {
+        return this.symbols.get(identifier);
     }
 
     /**
@@ -161,6 +166,17 @@ public class SymbolTable {
      */
     public void clear() {
         this.symbols.clear();
+    }
+
+    public void realignSymbols(int currentAddress, int alignedAddress) {
+        if (!this.alignableSymbols.isEmpty() && currentAddress == this.alignableSymbols.get(0).getAddress()) {
+            for (Symbol symbol : this.alignableSymbols) {
+                symbol.setAddress(alignedAddress);
+            }
+        }
+        else {
+            this.alignableSymbols.clear();
+        }
     }
 
     /**
