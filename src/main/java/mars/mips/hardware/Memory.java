@@ -524,11 +524,12 @@ public class Memory {
             if (!Application.getSettings().selfModifyingCodeEnabled.get()) {
                 throw new AddressErrorException("cannot write to text segment unless self-modifying code is enabled", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
             }
-            BasicStatement oldStatement = textRegion.storeStatement(address, new BasicStatement(value, address));
+            BasicStatement statement = Application.instructionSet.getDecoder().decodeStatement(value);
+            BasicStatement oldStatement = textRegion.storeStatement(address, statement);
             // Add a corresponding backstep for the write
             // TODO: make a separate restore type for program statements in the backstepper
             if (oldStatement != null && Application.isBackSteppingEnabled()) {
-                Application.program.getBackStepper().addMemoryRestoreWord(address, oldStatement.getBinaryStatement());
+                Application.program.getBackStepper().addMemoryRestoreWord(address, oldStatement.getBinaryEncoding());
             }
         }
         else {
@@ -657,7 +658,7 @@ public class Memory {
         enforceWordAlignment(address, ExceptionCause.ADDRESS_EXCEPTION_STORE);
 
         // Obtain the binary representation of the statement
-        int binaryStatement = (statement == null) ? 0 : statement.getBinaryStatement();
+        int binaryStatement = (statement == null) ? 0 : statement.getBinaryEncoding();
 
         TextRegion textRegion;
         DataRegion dataRegion;
@@ -733,7 +734,7 @@ public class Memory {
             // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
             // Sean Clarke (05/2024): don't throw, reading should be fine regardless of self-modifying code setting
             BasicStatement statement = textRegion.fetchStatement(address);
-            value = statement == null ? 0 : statement.getBinaryStatement();
+            value = statement == null ? 0 : statement.getBinaryEncoding();
         }
         else {
             // Falls outside mapped addressing range
@@ -783,7 +784,7 @@ public class Memory {
             // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
             // Sean Clarke (05/2024): don't throw, reading should be fine regardless of self-modifying code setting
             BasicStatement statement = textRegion.fetchStatement(address);
-            return statement == null ? null : statement.getBinaryStatement();
+            return statement == null ? null : statement.getBinaryEncoding();
         }
         else {
             // Falls outside mapped addressing range
@@ -906,7 +907,7 @@ public class Memory {
                 throw new AddressErrorException("cannot execute beyond text segment unless self-modifying code is enabled", ExceptionCause.ADDRESS_EXCEPTION_FETCH, address);
             }
             Integer binaryStatement = dataRegion.fetchWordOrNull(address);
-            statement = (binaryStatement == null) ? null : new BasicStatement(binaryStatement, address);
+            statement = (binaryStatement == null) ? null : Application.instructionSet.getDecoder().decodeStatement(binaryStatement);
         }
         else {
             // Falls outside mapped addressing range
@@ -915,7 +916,7 @@ public class Memory {
 
         if (notify) {
             // Notify listeners of the read operation
-            int binaryStatement = (statement == null) ? 0 : statement.getBinaryStatement();
+            int binaryStatement = (statement == null) ? 0 : statement.getBinaryEncoding();
             this.dispatchReadEvent(address, Instruction.BYTES_PER_INSTRUCTION, binaryStatement, address, binaryStatement);
         }
         return statement;

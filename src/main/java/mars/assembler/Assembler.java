@@ -47,13 +47,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @version August 2003
  */
 public class Assembler {
+    private final ErrorList errors;
+    private final SortedMap<Integer, StatementSyntax> parsedStatements;
+    private final SortedMap<Integer, Statement> resolvedStatements;
+    private final SortedMap<Integer, BasicStatement> assembledStatements;
+
     private final SymbolTable globalSymbolTable;
     private final Map<String, SymbolTable> localSymbolTables;
     private SymbolTable localSymbolTable;
     private final Map<String, Token> localSymbolsToGlobalize;
 
-    private List<ForwardReferencePatch> currentFilePatches;
-    private List<ForwardReferencePatch> remainingPatches;
+    private final List<ForwardReferencePatch> currentFilePatches;
+    private final List<ForwardReferencePatch> remainingPatches;
 
     public final Segment textSegment;
     public final Segment dataSegment;
@@ -65,11 +70,6 @@ public class Assembler {
     // Default is to align data from directives on appropriate boundary (word, half, byte)
     // This can be turned off for remainder of current data segment with ".align 0"
     private boolean isAutoAlignmentEnabled;
-
-    private ErrorList errors;
-    private SortedMap<Integer, StatementSyntax> parsedStatements;
-    private SortedMap<Integer, Statement> resolvedStatements;
-    private SortedMap<Integer, BasicStatement> assembledStatements;
 
     public Assembler() {
         this.globalSymbolTable = new SymbolTable("(global)");
@@ -89,10 +89,10 @@ public class Assembler {
 
         this.isAutoAlignmentEnabled = true;
 
-        this.errors = null;
-        this.parsedStatements = null;
-        this.resolvedStatements = null;
-        this.assembledStatements = null;
+        this.errors = new ErrorList();
+        this.parsedStatements = new TreeMap<>(Integer::compareUnsigned);
+        this.resolvedStatements = new TreeMap<>(Integer::compareUnsigned);
+        this.assembledStatements = new TreeMap<>(Integer::compareUnsigned);
     }
 
     /**
@@ -140,6 +140,18 @@ public class Assembler {
         this.isAutoAlignmentEnabled = enabled;
     }
 
+    public SortedMap<Integer, StatementSyntax> getParsedStatements() {
+        return this.parsedStatements;
+    }
+
+    public SortedMap<Integer, Statement> getResolvedStatements() {
+        return this.resolvedStatements;
+    }
+
+    public SortedMap<Integer, BasicStatement> getAssembledStatements() {
+        return this.assembledStatements;
+    }
+
     public void resetExternalState() {
         Memory.getInstance().reset();
         RegisterFile.reset();
@@ -148,11 +160,13 @@ public class Assembler {
     }
 
     public void assembleFilenames(List<String> sourceFilenames) throws ProcessingException {
-        this.errors = new ErrorList();
-
         List<SourceFile> sourceFiles = new ArrayList<>(sourceFilenames.size());
         for (String filename : sourceFilenames) {
             sourceFiles.add(Tokenizer.tokenizeFile(filename, this.errors));
+        }
+
+        if (this.errors.errorsOccurred()) {
+            throw new ProcessingException(this.errors);
         }
 
         this.assembleFiles(sourceFiles);
@@ -165,10 +179,9 @@ public class Assembler {
      * @param sourceFiles
      */
     public void assembleFiles(List<SourceFile> sourceFiles) throws ProcessingException {
-        this.errors = new ErrorList();
-        this.parsedStatements = new TreeMap<>();
-        this.resolvedStatements = new TreeMap<>();
-        this.assembledStatements = new TreeMap<>();
+        this.parsedStatements.clear();
+        this.resolvedStatements.clear();
+        this.assembledStatements.clear();
 
         this.resetExternalState();
 
@@ -231,7 +244,7 @@ public class Assembler {
         }
 
         // SECOND PASS OF ASSEMBLER GENERATES BASIC ASSEMBLER THEN MACHINE CODE.
-        // Generates basic assembler statements...
+        String previousFilename = null;
         for (var entry : this.parsedStatements.entrySet()) {
             if (this.errors.hasExceededErrorLimit()) {
                 break;
@@ -239,6 +252,25 @@ public class Assembler {
 
             int address = entry.getKey();
             StatementSyntax syntax = entry.getValue();
+
+            String filename = syntax.getSourceLine().getFilename();
+            if (!filename.equals(previousFilename)) {
+                previousFilename = filename;
+                this.localSymbolTable = this.localSymbolTables.get(filename);
+
+                if (this.localSymbolTable == null) {
+                    // Should not happen
+                    this.errors.add(new ErrorMessage(
+                        true,
+                        syntax.getSourceLine().getFilename(),
+                        syntax.getSourceLine().getLineIndex(),
+                        syntax.getFirstToken().getColumnIndex(),
+                        "Failed to access local symbol table",
+                        ""
+                    ));
+                }
+            }
+
             this.resolvedStatements.put(address, syntax.resolve(this, address));
         }
 
@@ -246,25 +278,6 @@ public class Assembler {
             throw new ProcessingException(this.errors);
         }
 
-        ///////////// THIRD MAJOR STEP IS PRODUCE MACHINE CODE FROM ASSEMBLY //////////
-        // Generates machine code statements from the list of basic assembler statements
-        // and writes the statement to memory.
-        for (ProgramStatement statement : this.assembledStatements) {
-            if (errors.hasExceededErrorLimit()) {
-                break;
-            }
-            statement.buildMachineStatementFromBasicStatement(errors);
-            if (Application.debug) {
-                System.out.println(statement);
-            }
-            try {
-                Memory.getInstance().storeStatement(statement.getAddress(), statement, false);
-            }
-            catch (AddressErrorException e) {
-                Token t = statement.getOriginalTokenList().get(0);
-                errors.add(new ErrorMessage(t.getFilename(), t.getLineIndex(), t.getColumnIndex(), "Invalid address for text segment: " + e.getAddress()));
-            }
-        }
         // DPS 6 Dec 2006:
         // We will now sort the ArrayList of ProgramStatements by getAddress() value.
         // This is for display purposes, since they have already been stored to Memory.
@@ -275,10 +288,9 @@ public class Assembler {
         // Such occurrences will be flagged as errors.
         // Yes, I would not have to sort here if I used SortedSet rather than ArrayList
         // but in case of duplicate I like having both statements handy for error message.
-        this.assembledStatements.sort(new ProgramStatementComparator());
-        catchDuplicateAddresses();
-        if (errors.errorsOccurred() || (errors.warningsOccurred() && warningsAreErrors)) {
-            throw new ProcessingException(errors);
+
+        if (this.errors.errorsOccurred() || (this.errors.warningsOccurred() && Application.getSettings().warningsAreErrors.get())) {
+            throw new ProcessingException(this.errors);
         }
     }
 
@@ -409,30 +421,6 @@ public class Assembler {
                 this.localSymbolTable.removeSymbol(symbol.getIdentifier());
                 this.globalSymbolTable.defineSymbol(symbol);
             }
-        }
-    }
-
-    /**
-     * Private class used as Comparator to sort the final ArrayList of
-     * ProgramStatements.
-     * Sorting is based on unsigned integer value of
-     * ProgramStatement.getAddress()
-     */
-    private static class ProgramStatementComparator implements Comparator<ProgramStatement> {
-        /**
-         * Will be used to sort the collection. Unsigned int compare, because all kernel 32-bit
-         * addresses have 1 in high order bit, which makes the int negative.
-         * "Unsigned" compare is needed when signs of the two operands differ.
-         */
-        public int compare(ProgramStatement statement1, ProgramStatement statement2) {
-            int addr1 = statement1.getAddress();
-            int addr2 = statement2.getAddress();
-            return ((addr1 < 0) != (addr2 < 0)) ? addr2 : addr1 - addr2;
-        }
-
-        // Take a hard line.
-        public boolean equals(Object obj) {
-            return this == obj;
         }
     }
 

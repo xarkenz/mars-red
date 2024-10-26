@@ -50,10 +50,13 @@ public enum OperandType {
 
     private final String name;
     private final int bitWidth;
+    private final int mask;
 
     OperandType(String name, int bitWidth) {
         this.name = name;
         this.bitWidth = bitWidth;
+        // e.g. for bitWidth = 5, shifts to get 0b100000, then subtracts 1 to get 0b011111
+        this.mask = (1 << bitWidth) - 1;
     }
 
     public String getName() {
@@ -62,6 +65,10 @@ public enum OperandType {
 
     public int getBitWidth() {
         return this.bitWidth;
+    }
+
+    public int getMask() {
+        return this.mask;
     }
 
     public boolean isInteger() {

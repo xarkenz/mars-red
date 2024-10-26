@@ -7,6 +7,7 @@ import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.RegisterFile;
 import mars.mips.instructions.BasicInstruction;
 import mars.mips.instructions.Instruction;
+import mars.mips.instructions.InstructionFormat;
 import mars.util.Binary;
 import mars.venus.NumberDisplayBaseChooser;
 
@@ -123,8 +124,8 @@ public class ProgramStatement {
             this.instruction = instr;
 
             String operandCodes = "fst";
-            String fmt = instr.getOperationMask();
-            BasicInstruction.Format instrFormat = instr.getFormat();
+            String fmt = instr.getEncodingDescriptor();
+            InstructionFormat instrFormat = instr.getFormat();
             int numOps = 0;
             for (int i = 0; i < operandCodes.length(); i++) {
                 int code = operandCodes.charAt(i);
@@ -133,10 +134,10 @@ public class ProgramStatement {
                     int k0 = 31 - fmt.lastIndexOf(code);
                     int k1 = 31 - j;
                     int operand = (binaryStatement >> k0) & ((1 << (k1 - k0 + 1)) - 1);
-                    if (instrFormat.equals(BasicInstruction.Format.I_BRANCH_FORMAT) && numOps == 2) {
+                    if (instrFormat.equals(InstructionFormat.I_TYPE_BRANCH) && numOps == 2) {
                         operand = operand << 16 >> 16;
                     }
-                    else if (instrFormat.equals(BasicInstruction.Format.J_FORMAT) && numOps == 0) {
+                    else if (instrFormat.equals(InstructionFormat.J_TYPE) && numOps == 0) {
                         operand |= (textAddress >> 2) & 0x3C000000;
                     }
                     this.operands[numOps] = operand;
@@ -232,7 +233,7 @@ public class ProgramStatement {
                 // method.  There are some comments there as well.
 
                 if (instruction instanceof BasicInstruction basicInstruction) {
-                    if (basicInstruction.getFormat() == BasicInstruction.Format.I_BRANCH_FORMAT) {
+                    if (basicInstruction.getFormat() == InstructionFormat.I_TYPE_BRANCH) {
                         //address = (address - (this.textAddress+((Globals.getSettings().getDelayedBranchingEnabled())? Instruction.INSTRUCTION_LENGTH : 0))) >> 2;
                         address = (address - (this.textAddress + Instruction.BYTES_PER_INSTRUCTION)) >> 2;
                         absoluteAddress = false;
@@ -324,10 +325,10 @@ public class ProgramStatement {
      * @param errors The list of assembly errors encountered so far.  May add to it here.
      */
     public void buildMachineStatementFromBasicStatement(ErrorList errors) {
-        BasicInstruction.Format format;
+        InstructionFormat format;
         if (instruction instanceof BasicInstruction basicInstruction) {
             // Mask indicates bit positions for 'f'irst, 's'econd, 't'hird operand
-            this.machineStatement = basicInstruction.getOperationMask();
+            this.machineStatement = basicInstruction.getEncodingDescriptor();
             format = basicInstruction.getFormat();
         }
         else {
@@ -338,7 +339,7 @@ public class ProgramStatement {
             return;
         }
 
-        if (format == BasicInstruction.Format.J_FORMAT) {
+        if (format == InstructionFormat.J_TYPE) {
             if ((this.textAddress & 0xF0000000) != (this.operands[0] & 0xF0000000)) {
                 // attempt to jump beyond 28-bit byte (26-bit word) address range.
                 // SPIM flags as warning, I'll flag as error b/c MARS text segment not long enough for it to be OK.
@@ -349,7 +350,7 @@ public class ProgramStatement {
             this.operands[0] = this.operands[0] >>> 2;
             this.insertBinaryCode(this.operands[0], Instruction.OPERAND_MASK[0], errors);
         }
-        else if (format == BasicInstruction.Format.I_BRANCH_FORMAT) {
+        else if (format == InstructionFormat.I_TYPE_BRANCH) {
             for (int i = 0; i < this.numOperands - 1; i++) {
                 this.insertBinaryCode(this.operands[i], Instruction.OPERAND_MASK[i], errors);
             }

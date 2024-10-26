@@ -10,16 +10,17 @@ public class BasicStatement implements Statement {
     private final StatementSyntax syntax;
     private final BasicInstruction instruction;
     private final List<Operand> operands;
-    private final int[] operandValues;
+    private final int binaryEncoding;
 
     public BasicStatement(StatementSyntax syntax, BasicInstruction instruction, List<Operand> operands) {
+        this(syntax, instruction, operands, instruction.encodeOperands(operands));
+    }
+
+    public BasicStatement(StatementSyntax syntax, BasicInstruction instruction, List<Operand> operands, int binaryEncoding) {
         this.syntax = syntax;
         this.instruction = instruction;
         this.operands = operands;
-        this.operandValues = new int[operands.size()];
-        for (int index = 0; index < operands.size(); index++) {
-            this.operandValues[index] = operands.get(index).getValue();
-        }
+        this.binaryEncoding = binaryEncoding;
     }
 
     @Override
@@ -35,8 +36,12 @@ public class BasicStatement implements Statement {
         return this.operands;
     }
 
-    public int[] getOperandValues() {
-        return this.operandValues;
+    public int getOperand(int index) {
+        return this.operands.get(index).getValue();
+    }
+
+    public int getBinaryEncoding() {
+        return this.binaryEncoding;
     }
 
     @Override
@@ -51,6 +56,6 @@ public class BasicStatement implements Statement {
      * @throws InterruptedException Thrown if the simulator was stopped during execution.
      */
     public void simulate() throws ProcessingException, InterruptedException {
-        this.instruction.getFunction().simulate(this.operandValues);
+        this.instruction.getFunction().simulate(this);
     }
 }

@@ -28,8 +28,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
 */
 
+import mars.assembler.Operand;
 import mars.assembler.OperandType;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -41,38 +43,25 @@ import java.util.List;
  * @version August 2003
  */
 public class BasicInstruction extends Instruction {
-    /**
-     * These are the MIPS-defined formats of basic machine instructions.  The R-format indicates
-     * the instruction works only with registers.  The I-format indicates the instruction
-     * works with an immediate value (e.g. constant).  The J-format indicates this is a Jump
-     * instruction.  The I-branch-format is defined by me, not MIPS, to to indicate this is
-     * a Branch instruction, specifically to distinguish immediate
-     * values used as target addresses.
-     *
-     * @author Pete Sanderson
-     * @version August 2003
-     */
-    public enum Format {
-        R_FORMAT,
-        I_FORMAT,
-        I_BRANCH_FORMAT,
-        J_FORMAT,
-    }
-
-    private final Format format;
+    private final InstructionFormat format;
     private final SimulationFunction function;
-
-    private final String operationMask;
-    private final int opcodeMask;  // integer with 1's where constants required (0/1 become 1, f/s/t become 0)
-    private final int opcodeMatch; // integer matching constants required (0/1 become 0/1, f/s/t become 0)
+    private final String encodingDescriptor;
+    private final int operationMask; // integer with 1's where constants required (0/1 become 1, f/s/t become 0)
+    private final int operationKey; // integer matching constants required (0/1 unchanged, f/s/t become 0)
+    private final int[] operandMasks;
+    private final int[] operandShifts;
 
     /**
      * BasicInstruction constructor.
      *
-     * @param example     An example usage of the instruction, as a String.
-     * @param format The format is R, I, I-branch or J.
-     * @param operMask    The opcode mask is a 32 character string that contains the opcode in binary in the appropriate bit positions and codes for operand positions ('f', 's', 't') in the remainding positions.
-     * @param function     The inline definition of an object and class which anonymously implements the SimulationCode interface.
+     * @param mnemonic
+     * @param operandTypes
+     * @param format
+     * @param title
+     * @param description
+     * @param encoding The opcode mask is a 32 character string that contains the opcode in binary in the appropriate bit positions and codes for operand positions ('f', 's', 't') in the remainding positions.
+     * @param function The inline definition of an object and class which anonymously implements the SimulationCode interface.
+     * @throws IllegalArgumentException
      */
     /* codes for operand positions are:
      * f == First operand
@@ -88,18 +77,72 @@ public class BasicInstruction extends Instruction {
      * It can also be used at runtime to match a binary machine instruction to the correct
      * instruction simulator -- it needs to match all and only the 0's and 1's.
      */
-    public BasicInstruction(String mnemonic, List<OperandType> operandTypes, Format format, String title, String description, String operMask, SimulationFunction function) {
+    public BasicInstruction(String mnemonic, List<OperandType> operandTypes, InstructionFormat format, String title, String description, String encoding, SimulationFunction function) {
         super(mnemonic, operandTypes, title, description);
         this.format = format;
         this.function = function;
 
-        this.operationMask = operMask.replaceAll(" ", ""); // squeeze out any/all spaces
-        if (operationMask.length() != Instruction.INSTRUCTION_LENGTH_BITS) {
-            System.out.println("mask not " + Instruction.INSTRUCTION_LENGTH_BITS + " bits!");
+        StringBuilder encodingDescriptor = new StringBuilder();
+        int operationMask = 0;
+        int operationKey = 0;
+        this.operandMasks = new int[operandTypes.size()];
+        this.operandShifts = new int[operandTypes.size()];
+
+        for (char ch : encoding.toCharArray()) {
+            // Ignore any spaces in the encoding string
+            if (ch == ' ') {
+                continue;
+            }
+            encodingDescriptor.append(ch);
+            operationMask <<= 1;
+            operationKey <<= 1;
+            for (int operandIndex = 0; operandIndex < operandTypes.size(); operandIndex++) {
+                this.operandMasks[operandIndex] <<= 1;
+            }
+            switch (ch) {
+                case '0' -> {
+                    operationMask |= 1;
+                }
+                case '1' -> {
+                    operationMask |= 1;
+                    operationKey |= 1;
+                }
+                case 'f' -> {
+                    if (operandTypes.isEmpty()) {
+                        throw new IllegalArgumentException("encoding for instruction " + mnemonic + operandTypes + " contains 'f' but has no first operand");
+                    }
+                    this.operandMasks[0] |= 1;
+                }
+                case 's' -> {
+                    if (operandTypes.size() < 2) {
+                        throw new IllegalArgumentException("encoding for instruction " + mnemonic + operandTypes + " contains 's' but has no second operand");
+                    }
+                    this.operandMasks[1] |= 1;
+                }
+                case 't' -> {
+                    if (operandTypes.size() < 3) {
+                        throw new IllegalArgumentException("encoding for instruction " + mnemonic + operandTypes + " contains 't' but has no third operand");
+                    }
+                    this.operandMasks[2] |= 1;
+                }
+                default -> {
+                    throw new IllegalArgumentException("unexpected character '" + ch + "' in encoding for instruction " + mnemonic + operandTypes);
+                }
+            }
+            for (int operandIndex = 0; operandIndex < operandTypes.size(); operandIndex++) {
+                if (this.operandMasks[operandIndex] == 0) {
+                    this.operandShifts[operandIndex]++;
+                }
+            }
         }
 
-        this.opcodeMask = Integer.parseUnsignedInt(this.operationMask.replaceAll("0", "1").replaceAll("[^1]", "0"), 2);
-        this.opcodeMatch = Integer.parseUnsignedInt(this.operationMask.replaceAll("[^1]", "0"), 2);
+        if (encodingDescriptor.length() != Instruction.INSTRUCTION_LENGTH_BITS) {
+            throw new IllegalArgumentException("invalid " + encodingDescriptor.length() + "-bit encoding for instruction " + mnemonic + operandTypes);
+        }
+
+        this.encodingDescriptor = encodingDescriptor.toString();
+        this.operationMask = operationMask;
+        this.operationKey = operationKey;
     }
 
     /**
@@ -113,10 +156,13 @@ public class BasicInstruction extends Instruction {
      *
      * @return The machine instruction format, R, I, J or I-branch.
      */
-    public Format getFormat() {
+    public InstructionFormat getFormat() {
         return this.format;
     }
 
+    /**
+     * @return
+     */
     public SimulationFunction getFunction() {
         return this.function;
     }
@@ -130,15 +176,48 @@ public class BasicInstruction extends Instruction {
      *
      * @return The 32 bit mask, as a String
      */
-    public String getOperationMask() {
+    public String getEncodingDescriptor() {
+        return this.encodingDescriptor;
+    }
+
+    /**
+     * @return
+     */
+    public int getOperationMask() {
         return this.operationMask;
     }
 
-    public int getOpcodeMask() {
-        return this.opcodeMask;
+    /**
+     * @return
+     */
+    public int getOperationKey() {
+        return this.operationKey;
     }
 
-    public int getOpcodeMatch() {
-        return this.opcodeMatch;
+    /**
+     * @param operands
+     * @return
+     */
+    public int encodeOperands(List<Operand> operands) {
+        int binary = this.operationKey;
+        for (int operandIndex = 0; operandIndex < this.operandTypes.size(); operandIndex++) {
+            int value = operands.get(operandIndex).getValue();
+            binary |= (value << this.operandShifts[operandIndex]) & this.operandMasks[operandIndex];
+        }
+        return binary;
+    }
+
+    /**
+     * @param binary
+     * @return
+     */
+    public List<Operand> decodeOperands(int binary) {
+        List<Operand> operands = new ArrayList<>(this.operandTypes.size());
+        for (int operandIndex = 0; operandIndex < this.operandTypes.size(); operandIndex++) {
+            OperandType type = this.operandTypes.get(operandIndex);
+            int value = (binary & this.operandMasks[operandIndex]) >>> this.operandShifts[operandIndex];
+            operands.add(new Operand(type, value));
+        }
+        return operands;
     }
 }

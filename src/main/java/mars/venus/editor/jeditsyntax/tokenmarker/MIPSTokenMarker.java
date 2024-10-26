@@ -230,7 +230,7 @@ public class MIPSTokenMarker extends TokenMarker {
                 helpItems = new ArrayList<>();
                 for (Instruction instruction : instructionMatches) {
                     if (Application.getSettings().extendedAssemblerEnabled.get() || instruction instanceof BasicInstruction) {
-                        helpItems.add(new PopupHelpItem(tokenText, instruction.getExampleFormat(), instruction.getDescription()));
+                        helpItems.add(new PopupHelpItem(tokenText, instruction.generateExample(), instruction.getDescription()));
                         realMatches++;
                     }
                 }
@@ -412,7 +412,7 @@ public class MIPSTokenMarker extends TokenMarker {
         for (Instruction instruction : instructionMatches) {
             if (Application.getSettings().extendedAssemblerEnabled.get() || instruction instanceof BasicInstruction) {
                 if (isExact) {
-                    results.add(new PopupHelpItem(tokenText, instruction.getExampleFormat(), instruction.getDescription(), true));
+                    results.add(new PopupHelpItem(tokenText, instruction.generateExample(), instruction.getDescription(), true));
                 }
                 else {
                     if (!mnemonicDescriptions.containsKey(instruction.getMnemonic())) {

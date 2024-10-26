@@ -1,6 +1,6 @@
 package mars;
 
-import mars.assembler.SourceLine;
+import mars.assembler.BasicStatement;
 
 import java.util.ArrayList;
 import java.util.regex.Matcher;
@@ -140,23 +140,23 @@ public class ErrorMessage {
      */
     public ErrorMessage(boolean isWarning, Program sourceProgram, int line, int position, String message) {
         this.isWarning = isWarning;
-        if (sourceProgram == null) {
+//        if (sourceProgram == null) {
             this.filename = "";
             this.line = line;
-        }
-        else {
-            this.filename = sourceProgram.getFilename();
-            if (sourceProgram.getSourceLines() == null) {
-                this.line = line;
-            }
-            else {
-                SourceLine sourceLine = sourceProgram.getSourceLines().get(Math.max(0, line - 1));
-                this.line = sourceLine.lineIndex();
-            }
-        }
+//        }
+//        else {
+//            this.filename = sourceProgram.getFilename();
+//            if (sourceProgram.getSourceLines() == null) {
+//                this.line = line;
+//            }
+//            else {
+//                SourceLine sourceLine = sourceProgram.getSourceLines().get(Math.max(0, line - 1));
+//                this.line = sourceLine.getLineIndex();
+//            }
+//        }
         this.position = position;
         this.message = message;
-        this.macroExpansionHistory = getExpansionHistory(sourceProgram);
+        this.macroExpansionHistory = "";//getExpansionHistory(sourceProgram);
     }
 
     /**
@@ -166,11 +166,14 @@ public class ErrorMessage {
      * @param message   String containing appropriate error message.
      */
     // Added January 2013
-    public ErrorMessage(ProgramStatement statement, String message) {
+    public ErrorMessage(BasicStatement statement, String message) {
         this.isWarning = false;
-        this.filename = (statement.getSourceMIPSprogram() == null) ? "" : statement.getSourceMIPSprogram().getFilename();
+        this.filename = (statement.getSyntax() == null) ? "" : statement.getSyntax().getSourceLine().getFilename();
         this.position = 0;
         this.message = message;
+        // temporary
+        this.line = 0;
+        this.macroExpansionHistory = "";
         // Somewhere along the way we lose the macro history, but can
         // normally recreate it here.  The line number for macro use (in the
         // expansion) comes with the ProgramStatement.getSourceLine().
@@ -183,7 +186,7 @@ public class ErrorMessage {
         // Looks bass-ackwards, but to get the line numbers to display correctly
         // for runtime error occurring in macro expansion (expansion->definition), need
         // to assign to the opposite variables.
-        ArrayList<Integer> defineLine = parseMacroHistory(statement.getSource());
+        /*ArrayList<Integer> defineLine = parseMacroHistory(statement.getSource());
         if (defineLine.isEmpty()) {
             this.line = statement.getSourceLine();
             this.macroExpansionHistory = "";
@@ -191,7 +194,7 @@ public class ErrorMessage {
         else {
             this.line = defineLine.get(0);
             this.macroExpansionHistory = Integer.toString(statement.getSourceLine());
-        }
+        }*/
     }
 
     private static ArrayList<Integer> parseMacroHistory(String string) {
@@ -279,10 +282,10 @@ public class ErrorMessage {
     }
 
     // Added by Mohammad Sekavat Dec 2012
-    private static String getExpansionHistory(Program sourceProgram) {
+    /*private static String getExpansionHistory(Program sourceProgram) {
         if (sourceProgram == null || sourceProgram.getLocalMacroPool() == null) {
             return "";
         }
         return sourceProgram.getLocalMacroPool().getExpansionHistory();
-    }
+    }*/
 }

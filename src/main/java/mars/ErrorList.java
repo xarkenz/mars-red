@@ -59,6 +59,12 @@ public class ErrorList {
         this.warningCount = 0;
     }
 
+    public void clear() {
+        this.messages.clear();
+        this.errorCount = 0;
+        this.warningCount = 0;
+    }
+
     /**
      * Obtain the list of error messages.
      *

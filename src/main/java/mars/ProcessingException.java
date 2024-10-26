@@ -1,5 +1,6 @@
 package mars;
 
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Coprocessor0;
 import mars.mips.hardware.RegisterFile;
@@ -72,7 +73,7 @@ public class ProcessingException extends Exception {
      * @param statement ProgramStatement of statement causing runtime exception
      * @param message   String containing specialized error message
      */
-    public ProcessingException(ProgramStatement statement, String message) {
+    public ProcessingException(BasicStatement statement, String message) {
         this.errors = new ErrorList();
         this.errors.add(new ErrorMessage(
             statement,
@@ -94,7 +95,7 @@ public class ProcessingException extends Exception {
      * @param message   String containing specialized error message
      * @param cause     exception cause (see Exceptions class for list)
      */
-    public ProcessingException(ProgramStatement statement, String message, int cause) {
+    public ProcessingException(BasicStatement statement, String message, int cause) {
         this(statement, message);
         Coprocessor0.updateRegisters(cause);
     }
@@ -105,7 +106,7 @@ public class ProcessingException extends Exception {
      * @param statement a ProgramStatement of statement causing runtime exception
      * @param exception AddressErrorException object containing specialized error message, cause, address
      */
-    public ProcessingException(ProgramStatement statement, AddressErrorException exception) {
+    public ProcessingException(BasicStatement statement, AddressErrorException exception) {
         this(statement, exception.getMessage());
         Coprocessor0.updateRegisters(exception.getType(), exception.getAddress());
     }

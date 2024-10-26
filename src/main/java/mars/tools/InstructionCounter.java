@@ -32,6 +32,7 @@ import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.MemoryConfigurations;
 import mars.mips.instructions.BasicInstruction;
+import mars.mips.instructions.InstructionFormat;
 
 import javax.swing.*;
 import java.awt.*;
@@ -200,14 +201,14 @@ public class InstructionCounter extends AbstractMarsTool {
         try {
             ProgramStatement stmt = Memory.getInstance().fetchStatement(wordAddress, false);
             BasicInstruction instr = (BasicInstruction) stmt.getInstruction();
-            BasicInstruction.Format format = instr.getFormat();
-			if (format == BasicInstruction.Format.R_FORMAT) {
+            InstructionFormat format = instr.getFormat();
+			if (format == InstructionFormat.R_TYPE) {
 				counterR++;
 			}
-			else if (format == BasicInstruction.Format.I_FORMAT || format == BasicInstruction.Format.I_BRANCH_FORMAT) {
+			else if (format == InstructionFormat.I_TYPE || format == InstructionFormat.I_TYPE_BRANCH) {
 				counterI++;
 			}
-			else if (format == BasicInstruction.Format.J_FORMAT) {
+			else if (format == InstructionFormat.J_TYPE) {
 				counterJ++;
 			}
         }

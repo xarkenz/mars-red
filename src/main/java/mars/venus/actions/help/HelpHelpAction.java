@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Vector;
 
 /*
@@ -286,11 +286,11 @@ public class HelpHelpAction extends VenusAction {
     }
 
     private JScrollPane createMipsInstructionHelpPane(Class<? extends Instruction> instructionClass) {
-        ArrayList<Instruction> instructionList = Application.instructionSet.getAllInstructions();
+        List<Instruction> instructionList = Application.instructionSet.getAllInstructions();
         Vector<String> exampleList = new Vector<>(instructionList.size());
         for (Instruction instruction : instructionList) {
             if (instructionClass.isInstance(instruction)) {
-                String example = instruction.getExampleFormat();
+                String example = instruction.generateExample();
                 exampleList.add(example + " ".repeat(Math.max(0, 24 - example.length())) + instruction.getDescription());
             }
         }

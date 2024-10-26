@@ -51,10 +51,10 @@ public abstract class Instruction {
      */
     public static final char[] OPERAND_MASK = {'f', 's', 't'};
 
-    private final String mnemonic;
-    private final List<OperandType> operandTypes;
-    private final String title;
-    private final String description;
+    protected final String mnemonic;
+    protected final List<OperandType> operandTypes;
+    protected final String title;
+    protected final String description;
 
     protected Instruction(String mnemonic, List<OperandType> operandTypes, String title, String description) {
         this.mnemonic = mnemonic;
@@ -111,5 +111,10 @@ public abstract class Instruction {
         }
 
         return true;
+    }
+
+    public String generateExample() {
+        // TODO
+        return this.mnemonic + this.operandTypes;
     }
 }
