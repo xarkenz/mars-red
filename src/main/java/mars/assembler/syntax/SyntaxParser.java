@@ -135,6 +135,9 @@ public class SyntaxParser {
                 List<Instruction> mnemonicMatches = (List<Instruction>) firstToken.getValue();
 
                 Instruction instruction = InstructionSet.matchInstruction(mnemonicMatches, operandTypes);
+                if (instruction == null) {
+                    this.log.logError(firstToken.getLocation(), "No instruction  '" + firstToken + "' found matching operands " + operandTypes);
+                }
 
                 return new StatementSyntax(this.sourceLine, firstToken, instruction, operands);
             }

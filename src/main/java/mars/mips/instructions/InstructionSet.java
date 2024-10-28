@@ -124,26 +124,29 @@ public class InstructionSet {
     }
     
     public void loadBasicInstructions() {
+        // TODO: ideally there would be a better way of doing this
         List<OperandType> formatR = List.of(OperandType.REGISTER);
-        List<OperandType> formatI = List.of(OperandType.INTEGER_16_SIGNED);
-        List<OperandType> formatL = List.of(OperandType.LABEL);
+        List<OperandType> formatI = List.of(OperandType.INTEGER_16);
+        List<OperandType> formatJ = List.of(OperandType.JUMP_LABEL);
+        List<OperandType> formatB = List.of(OperandType.BRANCH_OFFSET);
         List<OperandType> formatRR = List.of(OperandType.REGISTER, OperandType.REGISTER);
         List<OperandType> formatRF = List.of(OperandType.REGISTER, OperandType.FP_REGISTER);
-        List<OperandType> formatRI = List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED);
-        List<OperandType> formatRL = List.of(OperandType.REGISTER, OperandType.LABEL);
+        List<OperandType> formatRS = List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED);
+        List<OperandType> formatRI = List.of(OperandType.REGISTER, OperandType.INTEGER_16);
+        List<OperandType> formatRB = List.of(OperandType.REGISTER, OperandType.BRANCH_OFFSET);
         List<OperandType> formatFF = List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER);
-        List<OperandType> format3L = List.of(OperandType.INTEGER_3_UNSIGNED, OperandType.LABEL);
+        List<OperandType> format3B = List.of(OperandType.INTEGER_3_UNSIGNED, OperandType.BRANCH_OFFSET);
         List<OperandType> formatRRR = List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.REGISTER);
         List<OperandType> formatRR3 = List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.INTEGER_3_UNSIGNED);
         List<OperandType> formatRR5 = List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.INTEGER_5_UNSIGNED);
-        List<OperandType> formatRRI = List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.INTEGER_16_SIGNED);
+        List<OperandType> formatRRS = List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.INTEGER_16_SIGNED);
         List<OperandType> formatRRU = List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.INTEGER_16_UNSIGNED);
-        List<OperandType> formatRRL = List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.LABEL);
-        List<OperandType> formatRIP = List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER);
+        List<OperandType> formatRRB = List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.BRANCH_OFFSET);
+        List<OperandType> formatRSP = List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER);
         List<OperandType> formatFFF = List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.FP_REGISTER);
         List<OperandType> formatFFR = List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.REGISTER);
         List<OperandType> formatFF3 = List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.INTEGER_3_UNSIGNED);
-        List<OperandType> formatFIP = List.of(OperandType.FP_REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER);
+        List<OperandType> formatFSP = List.of(OperandType.FP_REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER);
         List<OperandType> format3FF = List.of(OperandType.INTEGER_3_UNSIGNED, OperandType.FP_REGISTER, OperandType.FP_REGISTER);
 
         //////////////////////////////// BASIC INSTRUCTIONS START HERE ////////////////////////////////
@@ -195,10 +198,10 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "addi",
-            formatRRI,
+            formatRRS,
             InstructionFormat.I_TYPE,
             "ADDition Immediate",
-            "set $t1 to ($t2 plus signed 16-bit immediate)",
+            "set $t1 to ($t2 plus sign-extended 16-bit immediate)",
             "001000 sssss fffff tttttttttttttttt",
             statement -> {
                 int add1 = RegisterFile.getValue(statement.getOperand(1));
@@ -216,7 +219,7 @@ public class InstructionSet {
             formatRRR,
             InstructionFormat.R_TYPE,
             "ADDition Unsigned",
-            "set $t1 to ($t2 plus $t3), no overflow",
+            "set $t1 to ($t2 plus $t3), no exception on overflow",
             "000000 sssss ttttt fffff 00000 100001",
             statement -> {
                 RegisterFile.updateRegister(statement.getOperand(0), RegisterFile.getValue(statement.getOperand(1)) + RegisterFile.getValue(statement.getOperand(2)));
@@ -227,7 +230,7 @@ public class InstructionSet {
             formatRRR,
             InstructionFormat.R_TYPE,
             "SUBtraction Unsigned",
-            "set $t1 to ($t2 minus $t3), no overflow",
+            "set $t1 to ($t2 minus $t3), no exception on overflow",
             "000000 sssss ttttt fffff 00000 100011",
             statement -> {
                 RegisterFile.updateRegister(statement.getOperand(0), RegisterFile.getValue(statement.getOperand(1)) - RegisterFile.getValue(statement.getOperand(2)));
@@ -235,10 +238,10 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "addiu",
-            formatRRI,
+            formatRRS,
             InstructionFormat.I_TYPE,
             "ADDition Immediate Unsigned",
-            "set $t1 to ($t2 plus signed 16-bit immediate), no overflow",
+            "set $t1 to ($t2 plus sign-extended 16-bit immediate), no exception on overflow",
             "001001 sssss fffff tttttttttttttttt",
             statement -> {
                 RegisterFile.updateRegister(statement.getOperand(0), RegisterFile.getValue(statement.getOperand(1)) + (statement.getOperand(2) << 16 >> 16));
@@ -581,7 +584,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "lw",
-            formatRIP,
+            formatRSP,
             InstructionFormat.I_TYPE,
             "Load Word",
             "set $t1 to contents of effective memory word address",
@@ -597,7 +600,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "ll",
-            formatRIP,
+            formatRSP,
             InstructionFormat.I_TYPE,
             "Load Linked",
             "paired with Store Conditional (sc) to perform atomic read-modify-write; equivalent to Load Word (lw) because MARS does not simulate multiple processors",
@@ -621,7 +624,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "lwl",
-            formatRIP,
+            formatRSP,
             InstructionFormat.I_TYPE,
             "Load Word Left",
             "load from 1 to 4 bytes left-justified into $t1, starting with effective memory byte address and continuing through the low-order byte of its word",
@@ -642,7 +645,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "lwr",
-            formatRIP,
+            formatRSP,
             InstructionFormat.I_TYPE,
             "Load Word Right",
             "load from 1 to 4 bytes right-justified into $t1, starting with effective memory byte address and continuing through the high-order byte of its word",
@@ -663,7 +666,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "sw",
-            formatRIP,
+            formatRSP,
             InstructionFormat.I_TYPE,
             "Store Word",
             "store contents of $t1 into effective memory word address",
@@ -679,7 +682,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "sc",
-            formatRIP,
+            formatRSP,
             InstructionFormat.I_TYPE,
             "Store Conditional",
             "paired with Load Linked (ll) to perform atomic read-modify-write; store content $t1 into effective address, then set $t1 to 1 for success (always succeeds because MARS does not simulate multiple processors)",
@@ -698,7 +701,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "swl",
-            formatRIP,
+            formatRSP,
             InstructionFormat.I_TYPE,
             "Store Word Left",
             "store high-order 1 to 4 bytes of $t1 into memory, starting with effective byte address and continuing through the low-order byte of its word",
@@ -718,7 +721,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "swr",
-            formatRIP,
+            formatRSP,
             InstructionFormat.I_TYPE,
             "Store Word Right",
             "store low-order 1 to 4 bytes of $t1 into memory, starting with high-order byte of word containing effective byte address and continuing through that byte address",
@@ -749,7 +752,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "beq",
-            formatRRL,
+            formatRRB,
             InstructionFormat.I_TYPE_BRANCH,
             "Branch if EQual",
             "branch to statement at label's address if $t1 is equal to $t2",
@@ -762,7 +765,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "bne",
-            formatRRL,
+            formatRRB,
             InstructionFormat.I_TYPE_BRANCH,
             "Branch if Not Equal",
             "branch to statement at label's address unless $t1 is equal to $t2",
@@ -775,7 +778,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "bgez",
-            formatRL,
+            formatRB,
             InstructionFormat.I_TYPE_BRANCH,
             "Branch if Greater than or Equal to Zero",
             "branch to statement at label's address if $t1 is greater than or equal to zero",
@@ -788,7 +791,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "bgezal",
-            formatRL,
+            formatRB,
             InstructionFormat.I_TYPE_BRANCH,
             "Branch if Greater than or Equal to Zero And Link",
             "if $t1 is greater than or equal to zero, set $ra to the Program Counter and branch to statement at label's address",
@@ -803,7 +806,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "bgtz",
-            formatRL,
+            formatRB,
             InstructionFormat.I_TYPE_BRANCH,
             "Branch if Greater Than Zero",
             "branch to statement at label's address if $t1 is greater than zero",
@@ -816,7 +819,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "blez",
-            formatRL,
+            formatRB,
             InstructionFormat.I_TYPE_BRANCH,
             "Branch if Less than or Equal to Zero",
             "branch to statement at label's address if $t1 is less than or equal to zero",
@@ -829,7 +832,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "bltz",
-            formatRL,
+            formatRB,
             InstructionFormat.I_TYPE_BRANCH,
             "Branch if Less Than Zero",
             "branch to statement at label's address if $t1 is less than zero",
@@ -842,7 +845,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "bltzal",
-            formatRL,
+            formatRB,
             InstructionFormat.I_TYPE_BRANCH,
             "Branch if Less Than Zero And Link",
             "if $t1 is less than or equal to zero, set $ra to the Program Counter and branch to statement at label's address",
@@ -879,7 +882,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "slti",
-            formatRRI,
+            formatRRS,
             InstructionFormat.I_TYPE,
             "Set Less Than Immediate",
             "if $t2 is less than sign-extended 16-bit immediate, set $t1 to 1, otherwise set $t1 to 0",
@@ -891,7 +894,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "sltiu",
-            formatRRI,
+            formatRRS,
             InstructionFormat.I_TYPE,
             "Set Less Than Immediate Unsigned",
             "if $t2 is less than sign-extended 16-bit immediate using unsigned comparison, set $t1 to 1, otherwise set $t1 to 0",
@@ -1014,7 +1017,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "j",
-            formatL,
+            formatJ,
             InstructionFormat.J_TYPE,
             "Jump",
             "jump execution to statement at label's address",
@@ -1036,7 +1039,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "jal",
-            formatL,
+            formatJ,
             InstructionFormat.J_TYPE,
             "Jump And Link",
             "set $ra to the Program Counter (return address) then jump execution to statement at label's address",
@@ -1072,7 +1075,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "lb",
-            formatRIP,
+            formatRSP,
             InstructionFormat.I_TYPE,
             "Load Byte",
             "set $t1 to sign-extended 8-bit value from effective memory byte address",
@@ -1088,7 +1091,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "lbu",
-            formatRIP,
+            formatRSP,
             InstructionFormat.I_TYPE,
             "Load Byte Unsigned",
             "Set $t1 to zero-extended 8-bit value from effective memory byte address",
@@ -1105,7 +1108,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "lh",
-            formatRIP,
+            formatRSP,
             InstructionFormat.I_TYPE,
             "Load Halfword",
             "set $t1 to sign-extended 16-bit value from effective memory halfword address",
@@ -1121,7 +1124,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "lhu",
-            formatRIP,
+            formatRSP,
             InstructionFormat.I_TYPE,
             "Load Halfword Unsigned",
             "set $t1 to zero-extended 16-bit value from effective memory halfword address",
@@ -1138,7 +1141,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "sb",
-            formatRIP,
+            formatRSP,
             InstructionFormat.I_TYPE,
             "Store Byte",
             "store the low-order 8 bits of $t1 into the effective memory byte address",
@@ -1154,7 +1157,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "sh",
-            formatRIP,
+            formatRSP,
             InstructionFormat.I_TYPE,
             "Store Halfword",
             "store the low-order 16 bits of $t1 into the effective memory halfword address",
@@ -1896,7 +1899,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "bc1f",
-            formatL,
+            formatB,
             InstructionFormat.I_TYPE_BRANCH,
             "Branch if Coprocessor 1 condition flag False (BC1F, not BCLF)",
             "branch to statement at label's address only if Coprocessor 1 condition flag 0 is false (bit value 0)",
@@ -1909,7 +1912,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "bc1f",
-            format3L,
+            format3B,
             InstructionFormat.I_TYPE_BRANCH,
             "Branch if Coprocessor 1 condition flag False (BC1F, not BCLF)",
             "branch to statement at label's address only if Coprocessor 1 condition flag specified by the first operand is false (bit value 0)",
@@ -1922,7 +1925,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "bc1t",
-            formatL,
+            formatB,
             InstructionFormat.I_TYPE_BRANCH,
             "Branch if Coprocessor 1 condition flag True (BC1T, not BCLT)",
             "branch to statement at label's address only if Coprocessor 1 condition flag 0 is true (bit value 1)",
@@ -1935,7 +1938,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "bc1t",
-            format3L,
+            format3B,
             InstructionFormat.I_TYPE_BRANCH,
             "Branch if Coprocessor 1 condition flag True (BC1T, not BCLT)",
             "branch to statement at label's address only if Coprocessor 1 condition flag specified by the first operand is true (bit value 1)",
@@ -2268,7 +2271,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "lwc1",
-            formatFIP,
+            formatFSP,
             InstructionFormat.I_TYPE,
             "Load Word into Coprocessor 1 (FPU)",
             "set $f1 to 32-bit value from effective memory word address",
@@ -2285,7 +2288,7 @@ public class InstructionSet {
         // No printed reference, got opcode from SPIM
         this.addBasicInstruction(new BasicInstruction(
             "ldc1",
-            formatFIP,
+            formatFSP,
             InstructionFormat.I_TYPE,
             "Load Doubleword into Coprocessor 1 (FPU)",
             "set $f2 to 64-bit value from effective memory doubleword address",
@@ -2304,7 +2307,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "swc1",
-            formatFIP,
+            formatFSP,
             InstructionFormat.I_TYPE,
             "Store Word from Coprocessor 1 (FPU)",
             "store 32-bit value in $f1 at effective memory word address",
@@ -2321,7 +2324,7 @@ public class InstructionSet {
         // No printed reference, got opcode from SPIM
         this.addBasicInstruction(new BasicInstruction(
             "sdc1",
-            formatFIP,
+            formatFSP,
             InstructionFormat.I_TYPE,
             "Store Doubleword from Coprocessor 1 (FPU)",
             "store 64-bit value in $f2 at effective memory doubleword address",
@@ -2356,7 +2359,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "teqi",
-            formatRI,
+            formatRS,
             InstructionFormat.I_TYPE,
             "Trap if EQual to Immediate",
             "trap if $t1 is equal to sign-extended 16-bit immediate",
@@ -2382,7 +2385,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "tnei",
-            formatRI,
+            formatRS,
             InstructionFormat.I_TYPE,
             "Trap if Not Equal to Immediate",
             "trap unless $t1 is equal to sign-extended 16-bit immediate",
@@ -2421,7 +2424,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "tgei",
-            formatRI,
+            formatRS,
             InstructionFormat.I_TYPE,
             "Trap if Greater than or Equal Immediate",
             "trap if $t1 is greater than or equal to sign-extended 16-bit immediate",
@@ -2434,7 +2437,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "tgeiu",
-            formatRI,
+            formatRS,
             InstructionFormat.I_TYPE,
             "Trap if Greater than or Equal Immediate Unsigned",
             "trap if $t1 is greater than or equal to sign-extended 16-bit immediate using unsigned comparison",
@@ -2473,7 +2476,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "tlti",
-            formatRI,
+            formatRS,
             InstructionFormat.I_TYPE,
             "Trap if Less Than Immediate",
             "trap if $t1 is less than sign-extended 16-bit immediate",
@@ -2486,7 +2489,7 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "tltiu",
-            formatRI,
+            formatRS,
             InstructionFormat.I_TYPE,
             "Trap if Less Than Immediate Unsigned",
             "trap if $t1 is less than sign-extended 16-bit immediate using unsigned comparison",
@@ -2733,6 +2736,16 @@ public class InstructionSet {
     public static <T extends Instruction> T matchInstruction(List<T> mnemonicMatches, List<OperandType> givenTypes) {
         for (T match : mnemonicMatches) {
             if (match.acceptsOperands(givenTypes)) {
+                return match;
+            }
+        }
+
+        return null;
+    }
+
+    public static <T extends Instruction> T matchInstructionLoosely(List<T> mnemonicMatches, List<OperandType> givenTypes) {
+        for (T match : mnemonicMatches) {
+            if (match.acceptsOperandsLoosely(givenTypes)) {
                 return match;
             }
         }

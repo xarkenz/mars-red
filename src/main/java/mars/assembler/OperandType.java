@@ -46,7 +46,9 @@ public enum OperandType {
     FP_REGISTER("freg", 5),
     PAREN_REGISTER("(reg)", 5),
     LABEL("label", 32),
-    LABEL_OFFSET("label+", 32);
+    LABEL_OFFSET("label+", 32),
+    BRANCH_OFFSET("broff", 16),
+    JUMP_LABEL("jlabel", 26);
 
     private final String name;
     private final int bitWidth;
@@ -82,35 +84,121 @@ public enum OperandType {
     }
 
     /**
+     * Determine whether this type "accepts" another type; that is, whether an operand with the given type can be
+     * interpreted as having this type. This is used to determine which instruction variant is matched by the syntax
+     * of a statement.
+     * <p>
+     * The following table describes the return value, where a "✓" indicates that the row type accepts the column type.
+     * <p>
      * <table border="1">
-     * <tr><th></th><th><code>u3</code></th><th><code>u5</code></th><th><code>u15</code></th><th><code>s16</code></th><th><code>u16</code></th><th><code>i16</code></th><th><code>i32</code></th><th><code>reg</code></th><th><code>freg</code></th><th><code>(reg)</code></th><th><code>label</code></th><th><code>label+</code></th></tr>
-     * <tr><th><code>u3</code></th><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
-     * <tr><th><code>u5</code></th><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
-     * <tr><th><code>u15</code></th><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
-     * <tr><th><code>s16</code></th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
-     * <tr><th><code>u16</code></th><td>✓</td><td>✓</td><td>✓</td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
-     * <tr><th><code>i16</code></th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
-     * <tr><th><code>i32</code></th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
-     * <tr><th><code>reg</code></th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td></tr>
-     * <tr><th><code>freg</code></th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td> </td><td> </td></tr>
-     * <tr><th><code>(reg)</code></th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td> </td></tr>
-     * <tr><th><code>label</code></th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td></tr>
-     * <tr><th><code>label+</code></th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td>✓</td></tr>
+     * <tr><th></th><th><code>u3</code></th><th><code>u5</code></th><th><code>u15</code></th><th><code>s16</code></th><th><code>u16</code></th><th><code>i16</code></th><th><code>i32</code></th><th><code>reg</code></th><th><code>freg</code></th><th><code>(reg)</code></th><th><code>label</code></th><th><code>label+</code></th><th><code>broff</code></th><th><code>jlabel</code></th></tr>
+     * <tr><th><code>u3</code>    </th><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>u5</code>    </th><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>u15</code>   </th><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>s16</code>   </th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>u16</code>   </th><td>✓</td><td>✓</td><td>✓</td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>i16</code>   </th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>i32</code>   </th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>reg</code>   </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>freg</code>  </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>(reg)</code> </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>label</code> </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>label+</code></th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td>✓</td><td> </td><td> </td></tr>
+     * <tr><th><code>broff</code> </th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td>✓</td><td> </td></tr>
+     * <tr><th><code>jlabel</code></th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td> </td><td>✓</td></tr>
      * </table>
      *
-     * @param type
-     * @return
+     * @param fromType The type to check for acceptance.
+     * @return <code>true</code> if this type accepts <code>fromType</code> according to the table above,
+     *         or <code>false</code> otherwise.
      */
-    public boolean accepts(OperandType type) {
-        // TODO: not my finest piece of code
-        if (this == type) {
+    public boolean accepts(OperandType fromType) {
+        // This could just take the form of a lookup table, but that could get pretty large, and there are patterns
+        // we can take advantage of, with few exceptions
+        if (this == fromType) {
+            // In the trivial case, any type accepts itself
             return true;
         }
-        else if (this.isInteger() && type.isInteger()) {
-            return this.ordinal() > type.ordinal() && !(this == INTEGER_16_UNSIGNED && type == INTEGER_16_SIGNED);
+        else if (this.isInteger() && fromType.isInteger()) {
+            // For integer types, a wider type accepts a narrower type because no information is lost,
+            // but not the other way around. The enum variants are purposely ordered by bit width for this purpose
+            return this.ordinal() > fromType.ordinal()
+                // The exception to this rule is that purely signed and purely unsigned integers cannot be mixed
+                // (only need to check one case because the ordinal check above covers the other case)
+                && !(this == INTEGER_16_UNSIGNED && fromType == INTEGER_16_SIGNED);
+        }
+        else if (this == BRANCH_OFFSET) {
+            // A branch offset can be either a label or a signed 16-bit immediate
+            return fromType == LABEL || (fromType.isInteger() && fromType.ordinal() <= INTEGER_16_UNSIGNED.ordinal());
+        }
+        else if (this == JUMP_LABEL) {
+            // A label can be interpreted as a jump label
+            return fromType == LABEL;
         }
         else {
-            return this == LABEL_OFFSET && type == LABEL;
+            // A label without an offset can be interpreted as a label with an offset of 0
+            return (this == LABEL_OFFSET && fromType == LABEL);
+        }
+    }
+
+    /**
+     * Determine whether this type "accepts" another type; that is, whether an operand with the given type can be
+     * interpreted as having this type. This is used to determine which instruction variant is matched by the syntax
+     * of a statement.
+     * <p>
+     * The following table describes the return value, where a "✓" indicates that the row type accepts the column type.
+     * <p>
+     * <table border="1">
+     * <tr><th></th><th><code>u3</code></th><th><code>u5</code></th><th><code>u15</code></th><th><code>s16</code></th><th><code>u16</code></th><th><code>i16</code></th><th><code>i32</code></th><th><code>reg</code></th><th><code>freg</code></th><th><code>(reg)</code></th><th><code>label</code></th><th><code>label+</code></th><th><code>broff</code></th><th><code>jlabel</code></th></tr>
+     * <tr><th><code>u3</code>    </th><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>u5</code>    </th><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>u15</code>   </th><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>s16</code>   </th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>u16</code>   </th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>i16</code>   </th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>i32</code>   </th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>reg</code>   </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>freg</code>  </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>(reg)</code> </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>label</code> </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td>✓</td><td> </td><td> </td></tr>
+     * <tr><th><code>label+</code></th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td>✓</td><td> </td><td> </td></tr>
+     * <tr><th><code>broff</code> </th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td>✓</td><td>✓</td><td> </td></tr>
+     * <tr><th><code>jlabel</code></th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td>✓</td><td> </td><td>✓</td></tr>
+     * </table>
+     *
+     * @param fromType The type to check for acceptance.
+     * @return <code>true</code> if this type accepts <code>fromType</code> according to the table above,
+     *         or <code>false</code> otherwise.
+     */
+    public boolean acceptsLoosely(OperandType fromType) {
+        // This could just take the form of a lookup table, but that could get pretty large, and there are patterns
+        // we can take advantage of, with few exceptions
+        if (this == fromType) {
+            // In the trivial case, any type accepts itself
+            return true;
+        }
+        else if (this.isInteger() && fromType.isInteger()) {
+            // For integer types, a wider type accepts a narrower type because no information is lost,
+            // but not the other way around. Since we are loosely checking, signedness is ignored
+            return this.getBitWidth() >= fromType.getBitWidth();
+        }
+        else if (this == BRANCH_OFFSET) {
+            // A branch offset can be either a label or a any 16-bit immediate
+            return fromType == LABEL
+                || fromType == LABEL_OFFSET
+                || (fromType.isInteger() && fromType.getBitWidth() <= INTEGER_16.getBitWidth());
+        }
+        else if (this == JUMP_LABEL) {
+            // A label can be interpreted as a jump label
+            return fromType == LABEL || fromType == LABEL_OFFSET;
+        }
+        else {
+            // A label without an offset can be interpreted as a label with an offset of 0, and vice versa
+            return (this == LABEL_OFFSET && fromType == LABEL)
+                || (this == LABEL && fromType == LABEL_OFFSET)
+                // A (reg) can be interpreted as a reg and vice versa, mainly for extended instruction template purposes
+                || (this == REGISTER && fromType == PAREN_REGISTER)
+                || (this == PAREN_REGISTER && fromType == REGISTER);
         }
     }
 
@@ -133,6 +221,7 @@ public enum OperandType {
             case "(reg)" -> PAREN_REGISTER;
             case "label" -> LABEL;
             case "label+" -> LABEL_OFFSET;
+            case "broff" -> BRANCH_OFFSET;
             default -> null;
         };
     }

@@ -1,5 +1,6 @@
 package mars.assembler.extended;
 
+import mars.assembler.Assembler;
 import mars.assembler.BasicStatement;
 import mars.assembler.Operand;
 import mars.assembler.syntax.StatementSyntax;
@@ -26,11 +27,14 @@ public class TemplateStatement implements ExpansionTemplate.Statement {
     }
 
     @Override
-    public BasicStatement resolve(List<Operand> originalOperands, int address, StatementSyntax syntax) {
+    public BasicStatement resolve(List<Operand> originalOperands, StatementSyntax syntax, Assembler assembler, int address) {
         List<Operand> expansionOperands = new ArrayList<>(this.operands.size());
 
-        for (TemplateOperand operand : this.operands) {
-            expansionOperands.add(operand.resolve(originalOperands, address));
+        for (int index = 0; index < this.operands.size(); index++) {
+            Operand operand = this.operands.get(index).resolve(originalOperands, address);
+            // Perform type conversion if needed
+            operand = operand.convertToType(this.instruction.getOperandTypes().get(index), syntax, assembler, address);
+            expansionOperands.add(operand);
         }
 
         return new BasicStatement(syntax, this.instruction, expansionOperands);

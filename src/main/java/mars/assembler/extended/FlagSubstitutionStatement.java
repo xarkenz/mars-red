@@ -1,5 +1,6 @@
 package mars.assembler.extended;
 
+import mars.assembler.Assembler;
 import mars.assembler.AssemblerFlag;
 import mars.assembler.BasicStatement;
 import mars.assembler.Operand;
@@ -35,9 +36,9 @@ public class FlagSubstitutionStatement implements ExpansionTemplate.Statement {
     }
 
     @Override
-    public BasicStatement resolve(List<Operand> originalOperands, int address, StatementSyntax syntax) {
+    public BasicStatement resolve(List<Operand> originalOperands, StatementSyntax syntax, Assembler assembler, int address) {
         ExpansionTemplate.Statement statement = this.getValue();
-        return (statement == null) ? null : statement.resolve(originalOperands, address, syntax);
+        return (statement == null) ? null : statement.resolve(originalOperands, syntax, assembler, address);
     }
 
     @Override

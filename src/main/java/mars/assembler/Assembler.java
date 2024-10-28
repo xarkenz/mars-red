@@ -94,11 +94,11 @@ public class Assembler {
         this.currentFilePatches = new ArrayList<>();
         this.remainingPatches = new ArrayList<>();
 
-        this.dataSegment = new Segment(true, MemoryConfigurations.DATA_LOW, MemoryConfigurations.DATA_HIGH);
-        this.textSegment = new Segment(false, MemoryConfigurations.TEXT_LOW, MemoryConfigurations.TEXT_HIGH);
-        this.kernelDataSegment = new Segment(true, MemoryConfigurations.KERNEL_DATA_LOW, MemoryConfigurations.KERNEL_DATA_HIGH);
-        this.kernelTextSegment = new Segment(false, MemoryConfigurations.KERNEL_TEXT_LOW, MemoryConfigurations.KERNEL_TEXT_HIGH);
-        this.externSegment = new Segment(true, MemoryConfigurations.EXTERN_LOW, MemoryConfigurations.EXTERN_HIGH);
+        this.dataSegment = new Segment(true);
+        this.textSegment = new Segment(false);
+        this.kernelDataSegment = new Segment(true);
+        this.kernelTextSegment = new Segment(false);
+        this.externSegment = new Segment(true);
         this.segment = this.textSegment;
 
         this.isAutoAlignmentEnabled = true;
@@ -485,10 +485,10 @@ public class Assembler {
         private int lastAddress;
         private int address;
 
-        private Segment(boolean isData, int lowKey, int highKey) {
+        private Segment(boolean isData) {
             this.isData = isData;
-            this.firstAddress = Memory.getInstance().getAddress(lowKey);
-            this.lastAddress = Memory.getInstance().getAddress(highKey);
+            this.firstAddress = 0;
+            this.lastAddress = 0;
             this.resetAddress();
         }
 
@@ -504,9 +504,9 @@ public class Assembler {
             return this.lastAddress;
         }
 
-        public void setBounds(int firstAddress, int lastAddress) {
-            this.firstAddress = firstAddress;
-            this.lastAddress = lastAddress;
+        public void setBounds(int lowKey, int highKey) {
+            this.firstAddress = Memory.getInstance().getAddress(lowKey);
+            this.lastAddress = Memory.getInstance().getAddress(highKey);
         }
 
         public int getAddress() {

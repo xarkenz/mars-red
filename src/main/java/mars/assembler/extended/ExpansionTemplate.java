@@ -1,5 +1,6 @@
 package mars.assembler.extended;
 
+import mars.assembler.Assembler;
 import mars.assembler.BasicStatement;
 import mars.assembler.Operand;
 import mars.assembler.syntax.StatementSyntax;
@@ -11,7 +12,7 @@ import java.util.List;
 
 public class ExpansionTemplate {
     public interface Statement {
-        BasicStatement resolve(List<Operand> originalOperands, int address, StatementSyntax syntax);
+        BasicStatement resolve(List<Operand> originalOperands, StatementSyntax syntax, Assembler assembler, int address);
 
         default boolean isActive() {
             return true;
@@ -26,11 +27,11 @@ public class ExpansionTemplate {
         this.statements = statements;
     }
 
-    public ExtendedStatement resolve(List<Operand> operands, int address, StatementSyntax syntax) {
+    public ExtendedStatement resolve(List<Operand> operands, StatementSyntax syntax, Assembler assembler, int address) {
         List<BasicStatement> expansion = new ArrayList<>(this.statements.size());
 
         for (Statement statement : this.statements) {
-            BasicStatement resolvedStatement = statement.resolve(operands, address, syntax);
+            BasicStatement resolvedStatement = statement.resolve(operands, syntax, assembler, address);
             if (resolvedStatement != null) {
                 expansion.add(resolvedStatement);
                 address += resolvedStatement.getInstruction().getSizeBytes();

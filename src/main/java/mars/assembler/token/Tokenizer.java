@@ -305,21 +305,6 @@ public class Tokenizer {
                 }
                 // Something else
                 default -> {
-                    if (startChar == '+' || startChar == '-') {
-                        // Either binary (e.g. label+4), which gets its own token, or unary (e.g. -10).
-                        // If a plus or minus immediately follows an identifier, it is considered binary.
-                        // Hacky, but it will have to do for now.
-                        if (!tokens.isEmpty() && tokens.get(tokens.size() - 1).getType() == TokenType.IDENTIFIER) {
-                            preprocessor.processToken(tokens, new Token(
-                                startLocation,
-                                Character.toString(startChar),
-                                (startChar == '+') ? TokenType.PLUS : TokenType.MINUS,
-                                null
-                            ));
-                            continue;
-                        }
-                    }
-
                     // Check for either a number or identifier of some kind
                     if (Character.isLetterOrDigit(startChar) || startChar == '+' || startChar == '-'
                         || startChar == '_' || startChar == '.' || startChar == '$' || startChar == '%'
@@ -360,6 +345,26 @@ public class Tokenizer {
                         }
 
                         String literal = builder.toString();
+
+                        // See if it is plus or minus as a binary operator
+                        if (literal.equals("+")) {
+                            preprocessor.processToken(tokens, new Token(
+                                startLocation,
+                                literal,
+                                TokenType.PLUS,
+                                null
+                            ));
+                            continue;
+                        }
+                        else if (literal.equals("-")) {
+                            preprocessor.processToken(tokens, new Token(
+                                startLocation,
+                                literal,
+                                TokenType.MINUS,
+                                null
+                            ));
+                            continue;
+                        }
 
                         // See if it is a macro parameter
                         if (startChar == '%') {

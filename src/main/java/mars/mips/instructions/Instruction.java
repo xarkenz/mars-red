@@ -45,11 +45,6 @@ public abstract class Instruction {
      */
     public static final int BYTES_PER_INSTRUCTION = Memory.BYTES_PER_WORD;
     public static final int INSTRUCTION_LENGTH_BITS = BYTES_PER_INSTRUCTION * Byte.SIZE;
-    /**
-     * Characters used in instruction mask to indicate bit positions
-     * for 'f'irst, 's'econd, and 't'hird operands.
-     */
-    public static final char[] OPERAND_MASK = {'f', 's', 't'};
 
     protected final String mnemonic;
     protected final List<OperandType> operandTypes;
@@ -106,6 +101,20 @@ public abstract class Instruction {
 
         for (int index = 0; index < this.operandTypes.size(); index++) {
             if (!this.operandTypes.get(index).accepts(givenTypes.get(index))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public boolean acceptsOperandsLoosely(List<OperandType> givenTypes) {
+        if (givenTypes.size() != this.operandTypes.size()) {
+            return false;
+        }
+
+        for (int index = 0; index < this.operandTypes.size(); index++) {
+            if (!this.operandTypes.get(index).acceptsLoosely(givenTypes.get(index))) {
                 return false;
             }
         }

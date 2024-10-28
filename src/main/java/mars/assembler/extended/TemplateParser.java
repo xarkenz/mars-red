@@ -40,6 +40,7 @@ public class TemplateParser {
     public ExpansionTemplate.Statement parseNextStatementInLine() throws RuntimeException {
         switch (this.cachedToken.getType()) {
             case OPERATOR -> {
+                String mnemonic = this.cachedToken.getLiteral();
                 // I know what I'm doing! The tokenizer puts a List<Instruction> in, I can get a List<Instruction> out
                 @SuppressWarnings("unchecked")
                 List<Instruction> mnemonicMatches = (List<Instruction>) this.cachedToken.getValue();
@@ -55,9 +56,9 @@ public class TemplateParser {
                     }
                 }
 
-                Instruction instruction = InstructionSet.matchInstruction(mnemonicMatches, operandTypes);
+                Instruction instruction = InstructionSet.matchInstructionLoosely(mnemonicMatches, operandTypes);
                 if (!(instruction instanceof BasicInstruction basicInstruction)) {
-                    throw new RuntimeException("No basic instruction found matching operands " + operandTypes);
+                    throw new RuntimeException("No basic instruction '" + mnemonic + "' found matching operands " + operandTypes);
                 }
 
                 return new TemplateStatement(basicInstruction, operands);

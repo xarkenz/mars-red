@@ -48,8 +48,12 @@ public class StatementSyntax implements Syntax {
 
     public Statement resolve(Assembler assembler, int address) {
         List<Operand> resolvedOperands = new ArrayList<>(this.operands.size());
-        for (SyntaxOperand operand : this.operands) {
-            resolvedOperands.add(operand.resolve(assembler));
+
+        for (int index = 0; index < this.operands.size(); index++) {
+            Operand operand = this.operands.get(index).resolve(assembler);
+            // Perform type conversion if needed
+            operand = operand.convertToType(this.instruction.getOperandTypes().get(index), this, assembler, address);
+            resolvedOperands.add(operand);
         }
 
         // TODO: Not a fan of this downcasting approach
@@ -57,7 +61,7 @@ public class StatementSyntax implements Syntax {
             return new BasicStatement(this, basicInstruction, resolvedOperands);
         }
         else if (this.instruction instanceof ExtendedInstruction extendedInstruction) {
-            return extendedInstruction.getExpansionTemplate().resolve(resolvedOperands, address, this);
+            return extendedInstruction.getExpansionTemplate().resolve(resolvedOperands, this, assembler, address);
         }
         else {
             // This should never happen

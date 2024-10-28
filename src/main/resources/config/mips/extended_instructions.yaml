@@ -503,21 +503,21 @@
     - description: "Branch to statement at {0} unconditionally"
       operands: [ label ]
       expansion: |
-        bgez $0, {0:B}
+        bgez $0, {0}
 - mnemonic: beqz
   title: "Branch if EQual Zero"
   matches:
     - description: "Branch to statement at {1} if {0} is equal to zero"
       operands: [ reg, label ]
       expansion: |
-        beq {0}, $0, {1:B}
+        beq {0}, $0, {1}
 - mnemonic: bnez
   title: "Branch if Not Equal Zero"
   matches:
     - description: "Branch to statement at {1} if {0} is not equal to zero"
       operands: [ reg, label ]
       expansion: |
-        bne {0}, $0, {1:B}
+        bne {0}, $0, {1}
 
 - mnemonic: beq
   title: "Branch if EQual"
@@ -526,13 +526,13 @@
       operands: [ reg, s16, label ]
       expansion: |
         addi $1, $0, {1:AL}
-        beq $1, {0}, {2:B}
+        beq $1, {0}, {2}
     - description: "Branch to statement at {2} if {0} is equal to 32-bit immediate"
       operands: [ reg, i32, label ]
       expansion: |
         lui $1, {1:H}
         ori $1, $1, {1:L}
-        beq $1, {0}, {2:B}
+        beq $1, {0}, {2}
 - mnemonic: bne
   title: "Branch if Not Equal"
   matches:
@@ -540,13 +540,13 @@
       operands: [ reg, s16, label ]
       expansion: |
         addi $1, $0, {1:AL}
-        bne $1, {0}, {2:B}
+        bne $1, {0}, {2}
     - description: "Branch to statement at {2} if {0} is not equal to 32-bit immediate"
       operands: [ reg, i32, label ]
       expansion: |
         lui $1, {1:H}
         ori $1, $1, {1:L}
-        bne $1, {0}, {2:B}
+        bne $1, {0}, {2}
 
 - mnemonic: bge
   title: "Branch if Greater or Equal"
@@ -555,19 +555,19 @@
       operands: [ reg, reg, label ]
       expansion: |
         slt $1, {0}, {1}
-        beq $1, $0, {2:B}
+        beq $1, $0, {2}
     - description: "Branch to statement at {2} if {0} is greater or equal to 16-bit immediate"
       operands: [ reg, s16, label ]
       expansion: |
         slti $1, {0}, {1:AL}
-        beq $1, $0, {2:B}
+        beq $1, $0, {2}
     - description: "Branch to statement at {2} if {0} is greater or equal to 32-bit immediate"
       operands: [ reg, i32, label ]
       expansion: |
         lui $1, {1:H}
         ori $1, $1, {1:L}
         slt $1, {0}, $1
-        beq $1, $0, {2:B}
+        beq $1, $0, {2}
 
 - mnemonic: bgeu
   title: "Branch if Greater or Equal Unsigned"
@@ -576,19 +576,19 @@
       operands: [ reg, reg, label ]
       expansion: |
         sltu $1, {0}, {1}
-        beq $1, $0, {2:B}
+        beq $1, $0, {2}
     - description: "Branch to statement at {2} if {0} is greater or equal to 16-bit immediate (unsigned compare)"
       operands: [ reg, s16, label ]
       expansion: |
         sltiu $1, {0}, {1:AL}
-        beq $1, $0, {2:B}
+        beq $1, $0, {2}
     - description: "Branch to statement at {2} if {0} is greater or equal to 32-bit immediate (unsigned compare)"
       operands: [ reg, i32, label ]
       expansion: |
         lui $1, {1:H}
         ori $1, $1, {1:L}
         sltu $1, {0}, $1
-        beq $1, $0, {2:B}
+        beq $1, $0, {2}
 
 - mnemonic: bgt
   title: "Branch if Greater Than"
@@ -597,20 +597,20 @@
       operands: [ reg, reg, label ]
       expansion: |
         slt $1, {1}, {0}
-        bne $1, $0, {2:B}
+        bne $1, $0, {2}
     - description: "Branch to statement at {2} if {0} is greater than 16-bit immediate"
       operands: [ reg, s16, label ]
       expansion: |
         addi $1, $0, {1:AL}
         slt $1, $1, {0}
-        bne $1, $0, {2:B}
+        bne $1, $0, {2}
     - description: "Branch to statement at {2} if {0} is greater than 32-bit immediate"
       operands: [ reg, i32, label ]
       expansion: |
         lui $1, {1:+1,H}
         ori $1, $1, {1:+1,L}
         slt $1, {0}, $1
-        beq $1, $0, {2:B}
+        beq $1, $0, {2}
 
 - mnemonic: bgtu
   title: "Branch if Greater Than Unsigned"
@@ -619,20 +619,20 @@
       operands: [ reg, reg, label ]
       expansion: |
         sltu $1, {1}, {0}
-        bne $1, $0, {2:B}
+        bne $1, $0, {2}
     - description: "Branch to statement at {2} if {0} is greater than 16-bit immediate (unsigned compare)"
       operands: [ reg, s16, label ]
       expansion: |
         addi $1, $0, {1:AL}
         sltu $1, $1, {0}
-        bne $1, $0, {2:B}
+        bne $1, $0, {2}
     - description: "Branch to statement at {2} if {0} is greater than 16-bit immediate (unsigned compare)"
       operands: [ reg, i32, label ]
       expansion: |
         lui $1, {1:H}
         ori $1, $1, {1:L}
         sltu $1, $1, {0}
-        bne $1, $0, {2:B}
+        bne $1, $0, {2}
 
 - mnemonic: ble
   title: "Branch if Less or Equal"
@@ -641,20 +641,20 @@
       operands: [ reg, reg, label ]
       expansion: |
         slt $1, {1}, {0}
-        beq $1, $0, {2:B}
+        beq $1, $0, {2}
     - description: "Branch to statement at {2} if {0} is less than or equal to 16-bit immediate"
       operands: [ reg, s16, label ]
       expansion: |
         addi $1, {0}, -1
         slti $1, $1, {1:AL}
-        bne $1, $0, {2:B}
+        bne $1, $0, {2}
     - description: "Branch to statement at {2} if {0} is less than or equal to 32-bit immediate"
       operands: [ reg, i32, label ]
       expansion: |
         lui $1, {1:+1,H}
         ori $1, $1, {1:+1,L}
         slt $1, {0}, $1
-        bne $1, $0, {2:B}
+        bne $1, $0, {2}
 
 - mnemonic: bleu
   title: "Branch if Less or Equal Unsigned"
@@ -663,20 +663,20 @@
       operands: [ reg, reg, label ]
       expansion: |
         sltu $1, {1}, {0}
-        beq $1, $0, {2:B}
+        beq $1, $0, {2}
     - description: "Branch to statement at {2} if {0} is less than or equal to 16-bit immediate (unsigned compare)"
       operands: [ reg, s16, label ]
       expansion: |
         addi $1, $0, {1:AL}
         sltu $1, $1, {0}
-        beq $1, $0, {2:B}
+        beq $1, $0, {2}
     - description: "Branch to statement at {2} if {0} is less than or equal to 32-bit immediate (unsigned compare)"
       operands: [ reg, i32, label ]
       expansion: |
         lui $1, {1:H}
         ori $1, $1, {1:L}
         sltu $1, $1, {0}
-        beq $1, $0, {2:B}
+        beq $1, $0, {2}
 
 - mnemonic: blt
   title: "Branch if Less Than"
@@ -685,19 +685,19 @@
       operands: [ reg, reg, label ]
       expansion: |
         slt $1, {0}, {1}
-        bne $1, $0, {2:B}
+        bne $1, $0, {2}
     - description: "Branch to statement at {2} if {0} is less than 16-bit immediate"
       operands: [ reg, s16, label ]
       expansion: |
         slti $1, {0}, {1:AL}
-        bne $1, $0, {2:B}
+        bne $1, $0, {2}
     - description: "Branch to statement at {2} if {0} is less than 32-bit immediate"
       operands: [ reg, i32, label ]
       expansion: |
         lui $1, {1:H}
         ori $1, $1, {1:L}
         slt $1, {0}, $1
-        bne $1, $0, {2:B}
+        bne $1, $0, {2}
 
 - mnemonic: bltu
   title: "Branch if Less Than Unsigned"
@@ -706,19 +706,19 @@
       operands: [ reg, reg, label ]
       expansion: |
         sltu $1, {0}, {1}
-        bne $1, $0, {2:B}
+        bne $1, $0, {2}
     - description: "Branch to statement at {2} if {0} is less than 16-bit immediate"
       operands: [ reg, s16, label ]
       expansion: |
         sltiu $1, {0}, {1:AL}
-        bne $1, $0, {2:B}
+        bne $1, $0, {2}
     - description: "Branch to statement at {2} if {0} is less than 32-bit immediate"
       operands: [ reg, i32, label ]
       expansion: |
         lui $1, {1:H}
         ori $1, $1, {1:L}
         sltu $1, {0}, $1
-        bne $1, $0, {2:B}
+        bne $1, $0, {2}
 
 - mnemonic: rol
   title: "ROtate Left"
@@ -1731,7 +1731,7 @@
       operands: [ reg, u16 ]
       expansion: |
         ori $1, $0, {1:L}
-        swr {0}, 0
+        swr {0}, 0($1)
     - description: "Store low-order 1 to 4 bytes of {0} into memory, starting with high-order byte of word containing effective memory byte address and continuing through that byte address"
       operands: [ reg, i32 ]
       expansion: |
