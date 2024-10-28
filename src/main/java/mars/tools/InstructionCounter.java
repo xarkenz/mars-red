@@ -27,7 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package mars.tools;
 
-import mars.ProgramStatement;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.MemoryConfigurations;
@@ -199,8 +199,8 @@ public class InstructionCounter extends AbstractMarsTool {
 
         counter++;
         try {
-            ProgramStatement stmt = Memory.getInstance().fetchStatement(wordAddress, false);
-            BasicInstruction instr = (BasicInstruction) stmt.getInstruction();
+            BasicStatement stmt = Memory.getInstance().fetchStatement(wordAddress, false);
+            BasicInstruction instr = stmt.getInstruction();
             InstructionFormat format = instr.getFormat();
 			if (format == InstructionFormat.R_TYPE) {
 				counterR++;

@@ -5,6 +5,9 @@ import mars.simulator.*;
 
 import javax.swing.*;
 import javax.swing.text.*;
+import java.io.BufferedOutputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /*

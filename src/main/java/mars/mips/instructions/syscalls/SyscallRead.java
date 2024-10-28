@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
@@ -58,13 +58,13 @@ public class SyscallRead extends AbstractSyscall {
      * and $a2 specifies length.  Number of characters read is returned in $v0 (starting MARS 3.7).
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException {
+    public void simulate(BasicStatement statement) throws SimulatorException, InterruptedException {
         int descriptor = RegisterFile.getValue(4); // $a0: file descriptor
         int byteAddress = RegisterFile.getValue(5); // $a1: destination of characters to read from file
         int maxLength = RegisterFile.getValue(6); // $a2: user-requested length
 
         if (maxLength < 0) {
-            throw new ProcessingException(statement, "Length value in $a2 cannot be negative for " + this.getName() + " (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            throw new SimulatorException(statement, "Length value in $a2 cannot be negative for " + this.getName() + " (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
         ByteBuffer buffer = ByteBuffer.allocateDirect(maxLength);
 
@@ -81,7 +81,7 @@ public class SyscallRead extends AbstractSyscall {
             }
         }
         catch (AddressErrorException exception) {
-            throw new ProcessingException(statement, exception);
+            throw new SimulatorException(statement, exception);
         }
     }
 }

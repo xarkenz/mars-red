@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -47,8 +47,8 @@ public class SyscallExit extends AbstractSyscall {
      * Performs syscall function to exit the MIPS program.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(BasicStatement statement) throws SimulatorException {
         // Empty error list indicates a clean exit
-        throw new ProcessingException();
+        throw new SimulatorException();
     }
 }

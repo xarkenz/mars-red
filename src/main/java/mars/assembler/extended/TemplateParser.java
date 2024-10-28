@@ -2,7 +2,7 @@ package mars.assembler.extended;
 
 import mars.assembler.AssemblerFlag;
 import mars.assembler.OperandType;
-import mars.assembler.SourceLine;
+import mars.assembler.token.SourceLine;
 import mars.assembler.token.Token;
 import mars.assembler.token.TokenType;
 import mars.mips.instructions.BasicInstruction;
@@ -154,7 +154,7 @@ public class TemplateParser {
             return this.parseSubstitution(content);
         }
         else {
-            TemplateOperand operand = token.asOperand();
+            TemplateOperand operand = token.toOperand();
             if (operand == null) {
                 throw new RuntimeException("'" + token + "' is not a valid non-label operand");
             }
@@ -245,7 +245,7 @@ public class TemplateParser {
             }
             this.sourceLine = this.sourceLines.next();
 
-            this.lineTokens = createIterator(this.sourceLine.tokens());
+            this.lineTokens = createIterator(this.sourceLine.getTokens());
         }
 
         this.cachedToken = this.lineTokens.next();

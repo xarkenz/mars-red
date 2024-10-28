@@ -224,7 +224,7 @@ public class MIPSTokenMarker extends TokenMarker {
     public ArrayList<PopupHelpItem> getTokenExactMatchHelp(Token token, String tokenText) {
         ArrayList<PopupHelpItem> helpItems = null;
         if (token != null && token.id == Token.INSTRUCTION) {
-            ArrayList<Instruction> instructionMatches = Application.instructionSet.matchMnemonic(tokenText);
+            List<Instruction> instructionMatches = Application.instructionSet.matchMnemonic(tokenText);
             if (!instructionMatches.isEmpty()) {
                 int realMatches = 0;
                 helpItems = new ArrayList<>();

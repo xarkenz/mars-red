@@ -1,8 +1,8 @@
 package mars.mips.instructions.syscalls;
 
 import mars.Application;
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.RegisterFile;
 
 /*
@@ -51,13 +51,13 @@ public class SyscallExit2 extends AbstractSyscall {
      * return value is displayed in the message console.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(BasicStatement statement) throws SimulatorException {
         int exitCode = RegisterFile.getValue(4);
 
         if (Application.getGUI() == null) {
             Application.exitCode = exitCode;
         }
         // Empty error list indicates a clean exit
-        throw new ProcessingException(exitCode);
+        throw new SimulatorException(exitCode);
     }
 }

@@ -1,6 +1,6 @@
 package mars.tools;
 
-import mars.ProgramStatement;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.*;
 import mars.mips.instructions.Instruction;
 import mars.util.Binary;
@@ -108,8 +108,8 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
 
         int registerDataCameFrom;
         try {
-            ProgramStatement statement = Memory.getInstance().fetchStatement(RegisterFile.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION, false);
-            registerDataCameFrom = statement.getBinaryStatement();
+            BasicStatement statement = Memory.getInstance().fetchStatement(RegisterFile.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION, false);
+            registerDataCameFrom = statement.getBinaryEncoding();
             registerDataCameFrom &= 0x1F0000;
             registerDataCameFrom >>= 16;
         }
@@ -159,8 +159,8 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
     private synchronized boolean isReturnAddress(int address) {
         if (Memory.getInstance().isInTextSegment(address)) {
             try {
-                ProgramStatement statement = Memory.getInstance().fetchStatement(address - Instruction.BYTES_PER_INSTRUCTION, false);
-                return statement != null && statement.getBasicAssemblyStatement().startsWith("jal");
+                BasicStatement statement = Memory.getInstance().fetchStatement(address - Instruction.BYTES_PER_INSTRUCTION, false);
+                return statement != null && statement.getInstruction().getMnemonic().startsWith("jal");
             }
             catch (AddressErrorException exception) {
                 return false;

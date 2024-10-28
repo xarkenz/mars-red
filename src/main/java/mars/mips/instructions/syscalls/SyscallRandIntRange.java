@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.RegisterFile;
 import mars.simulator.ExceptionCause;
 
@@ -53,7 +53,7 @@ public class SyscallRandIntRange extends AbstractSyscall {
      * and the specified value (exclusive), drawn from this random number generator's sequence.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(BasicStatement statement) throws SimulatorException {
         // Input arguments:
         //    $a0 = index of pseudorandom number generator
         //    $a1 = the upper bound of range of returned values.
@@ -67,7 +67,7 @@ public class SyscallRandIntRange extends AbstractSyscall {
             RegisterFile.updateRegister(4, stream.nextInt(RegisterFile.getValue(5)));
         }
         catch (IllegalArgumentException exception) {
-            throw new ProcessingException(statement, "upper bound of range cannot be negative (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            throw new SimulatorException(statement, "upper bound of range cannot be negative (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
     }
 }

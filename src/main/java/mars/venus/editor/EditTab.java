@@ -1,8 +1,6 @@
 package mars.venus.editor;
 
 import mars.Application;
-import mars.Program;
-import mars.ProcessingException;
 import mars.venus.DynamicTabbedPane;
 import mars.util.FilenameFinder;
 import mars.venus.VenusUI;
@@ -13,10 +11,8 @@ import javax.swing.filechooser.FileFilter;
 import java.awt.*;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -231,27 +227,14 @@ public class EditTab extends DynamicTabbedPane {
             fileEditorTab.setFile(file);
 
             if (file.canRead()) {
-                Application.program = new Program();
                 try {
-                    Application.program.readSource(file.getPath());
+                    fileEditorTab.setSourceCode(Files.readString(file.toPath()), true);
                 }
-                catch (ProcessingException exception) {
+                catch (IOException exception) {
                     unopenedFiles.add(file);
                     continue;
                 }
-                // DPS 1 Nov 2006.  Defined a StringBuffer to receive all file contents,
-                // one line at a time, before adding to the Edit pane with one setText.
-                // StringBuffer is preallocated to full file length to eliminate dynamic
-                // expansion as lines are added to it. Previously, each line was appended
-                // to the Edit pane as it was read, way slower due to dynamic string alloc.
-                StringBuilder fileContents = new StringBuilder((int) file.length());
-                int lineNumber = 1;
-                String line = Application.program.getSourceLine(lineNumber++);
-                while (line != null) {
-                    fileContents.append(line).append('\n');
-                    line = Application.program.getSourceLine(lineNumber++);
-                }
-                fileEditorTab.setSourceCode(fileContents.toString(), true);
+
                 // The above operation generates an undoable edit by setting the initial
                 // text area contents. That should not be seen as undoable by the Undo
                 // action, so let's get rid of it.

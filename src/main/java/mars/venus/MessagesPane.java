@@ -1,6 +1,5 @@
 package mars.venus;
 
-import mars.ErrorList;
 import mars.Application;
 import mars.simulator.*;
 import mars.venus.editor.EditTab;
@@ -76,63 +75,63 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
                 int lineStart = 0;
                 int lineEnd = 0;
                 try {
-                    int line = messages.getLineOfOffset(messages.viewToModel2D(event.getPoint()));
-                    lineStart = messages.getLineStartOffset(line);
-                    lineEnd = messages.getLineEndOffset(line);
-                    text = messages.getText(lineStart, lineEnd - lineStart);
+                    int line = MessagesPane.this.messages.getLineOfOffset(messages.viewToModel2D(event.getPoint()));
+                    lineStart = MessagesPane.this.messages.getLineStartOffset(line);
+                    lineEnd = MessagesPane.this.messages.getLineEndOffset(line);
+                    text = MessagesPane.this.messages.getText(lineStart, lineEnd - lineStart);
                 }
                 catch (BadLocationException exception) {
                     text = "";
                 }
                 if (!text.isBlank()) {
                     // If error or warning, parse out the line and column number.
-                    if (text.startsWith(ErrorList.ERROR_MESSAGE_PREFIX) || text.startsWith(ErrorList.WARNING_MESSAGE_PREFIX)) {
-                        messages.select(lineStart, lineEnd);
-                        messages.setSelectionColor(Color.YELLOW);
-                        messages.repaint();
-                        int separatorPosition = text.indexOf(ErrorList.MESSAGE_SEPARATOR);
-                        if (separatorPosition >= 0) {
-                            text = text.substring(0, separatorPosition);
-                        }
-                        String[] stringTokens = text.split("\\s"); // tokenize with whitespace delimiter
-                        String lineToken = ErrorList.LINE_PREFIX.strip();
-                        String columnToken = ErrorList.POSITION_PREFIX.strip();
-                        String lineString = "";
-                        String columnString = "";
-                        for (int i = 0; i < stringTokens.length; i++) {
-                            if (stringTokens[i].equals(lineToken) && i < stringTokens.length - 1) {
-                                lineString = stringTokens[i + 1];
-                            }
-                            if (stringTokens[i].equals(columnToken) && i < stringTokens.length - 1) {
-                                columnString = stringTokens[i + 1];
-                            }
-                        }
-                        int line;
-                        int column;
-                        try {
-                            line = Integer.parseInt(lineString);
-                        }
-                        catch (NumberFormatException nfe) {
-                            line = 0;
-                        }
-                        try {
-                            column = Integer.parseInt(columnString);
-                        }
-                        catch (NumberFormatException exception) {
-                            column = 0;
-                        }
-                        // everything between FILENAME_PREFIX and LINE_PREFIX is filename.
-                        int fileNameStart = text.indexOf(ErrorList.FILENAME_PREFIX) + ErrorList.FILENAME_PREFIX.length();
-                        int fileNameEnd = text.indexOf(ErrorList.LINE_PREFIX);
-                        String fileName = "";
-                        if (fileNameStart < fileNameEnd && fileNameStart >= ErrorList.FILENAME_PREFIX.length()) {
-                            fileName = text.substring(fileNameStart, fileNameEnd).strip();
-                        }
-                        if (!fileName.isEmpty()) {
-                            selectEditorTextLine(fileName, line, column);
-                            selectErrorMessage(fileName, line, column);
-                        }
-                    }
+                    // TODO: this is broken now :)
+//                    if (text.startsWith(ErrorList.ERROR_MESSAGE_PREFIX) || text.startsWith(ErrorList.WARNING_MESSAGE_PREFIX)) {
+//                        MessagesPane.this.messages.select(lineStart, lineEnd);
+//                        MessagesPane.this.messages.setSelectionColor(Color.YELLOW);
+//                        MessagesPane.this.messages.repaint();
+//                        int separatorPosition = text.indexOf(ErrorList.MESSAGE_SEPARATOR);
+//                        if (separatorPosition >= 0) {
+//                            text = text.substring(0, separatorPosition);
+//                        }
+//                        String[] stringTokens = text.split("\\s"); // tokenize with whitespace delimiter
+//                        String lineToken = ErrorList.LINE_PREFIX.strip();
+//                        String columnToken = ErrorList.POSITION_PREFIX.strip();
+//                        String lineString = "";
+//                        String columnString = "";
+//                        for (int i = 0; i < stringTokens.length; i++) {
+//                            if (stringTokens[i].equals(lineToken) && i < stringTokens.length - 1) {
+//                                lineString = stringTokens[i + 1];
+//                            }
+//                            if (stringTokens[i].equals(columnToken) && i < stringTokens.length - 1) {
+//                                columnString = stringTokens[i + 1];
+//                            }
+//                        }
+//                        int line;
+//                        int column;
+//                        try {
+//                            line = Integer.parseInt(lineString);
+//                        }
+//                        catch (NumberFormatException nfe) {
+//                            line = 0;
+//                        }
+//                        try {
+//                            column = Integer.parseInt(columnString);
+//                        }
+//                        catch (NumberFormatException exception) {
+//                            column = 0;
+//                        }
+//                        // everything between FILENAME_PREFIX and LINE_PREFIX is filename.
+//                        int fileNameStart = text.indexOf(ErrorList.FILENAME_PREFIX) + ErrorList.FILENAME_PREFIX.length();
+//                        int fileNameEnd = text.indexOf(ErrorList.LINE_PREFIX);
+//                        String fileName = "";
+//                        if (fileNameStart < fileNameEnd && fileNameStart >= ErrorList.FILENAME_PREFIX.length()) {
+//                            fileName = text.substring(fileNameStart, fileNameEnd).strip();
+//                        }
+//                        if (!fileName.isEmpty()) {
+//                            MessagesPane.this.selectEditorTextLine(fileName, line, column);
+//                        }
+//                    }
                 }
             }
         });
@@ -164,38 +163,6 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
         buttonBox.add(buttonRow);
         buttonBox.add(Box.createVerticalGlue());
         return buttonBox;
-    }
-
-    /**
-     * Will select the Mars Messages tab error message that matches the given
-     * specifications, if it is found. Matching is done by constructing
-     * a string using the parameter values and searching the text area for the last
-     * occurrence of that string.
-     *
-     * @param filename A String containing the file path name.
-     * @param line     Line number for error message
-     * @param column   Column number for error message
-     */
-    public void selectErrorMessage(String filename, int line, int column) {
-        String errorReportSubstring = new File(filename).getName() + ErrorList.LINE_PREFIX + line + ErrorList.POSITION_PREFIX + column;
-        int textPosition = this.messages.getText().lastIndexOf(errorReportSubstring);
-        if (textPosition >= 0) {
-            int textLine;
-            int lineStart;
-            int lineEnd;
-            try {
-                textLine = this.messages.getLineOfOffset(textPosition);
-                lineStart = this.messages.getLineStartOffset(textLine);
-                lineEnd = this.messages.getLineEndOffset(textLine);
-                this.messages.setSelectionColor(Color.YELLOW);
-                this.messages.select(lineStart, lineEnd);
-                this.messages.getCaret().setSelectionVisible(true);
-                this.messages.repaint();
-            }
-            catch (BadLocationException exception) {
-                // If there is a problem, simply skip the selection
-            }
-        }
     }
 
     /**
@@ -355,7 +322,7 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
                 }
                 else {
                     this.console.writeOutput("\n--- program terminated due to error(s): ---\n");
-                    this.console.writeOutput(event.getException().getErrors().generateErrorReport());
+                    this.console.writeOutput(event.getException().getMessage());
                     this.console.writeOutput("--- end of error report ---\n\n");
                 }
                 this.setSelectedComponent(this.consoleTab);

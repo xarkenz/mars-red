@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -72,7 +72,7 @@ public interface Syscall {
      * Performs syscall function.  It will be invoked when the service is invoked
      * at simulation time.  Service is identified by value stored in $v0.
      *
-     * @param statement ProgramStatement for this syscall statement.
+     * @param statement BasicStatement for this syscall statement.
      */
-    void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException;
+    void simulate(BasicStatement statement) throws SimulatorException, InterruptedException;
 }

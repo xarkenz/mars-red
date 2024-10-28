@@ -1,6 +1,6 @@
 package mars.mips.hardware;
 
-import mars.Application;
+import mars.simulator.Simulator;
 import mars.util.Binary;
 
 /*
@@ -235,8 +235,8 @@ public class Coprocessor1 {
             return 0;
         }
 
-        if (Application.isBackSteppingEnabled()) {
-            Application.program.getBackStepper().addCoprocessor1Restore(number, previousValue);
+        if (Simulator.getInstance().getBackStepper().isEnabled()) {
+            Simulator.getInstance().getBackStepper().addCoprocessor1Restore(number, previousValue);
         }
 
         return previousValue;
@@ -312,12 +312,12 @@ public class Coprocessor1 {
         if (flag >= 0 && flag < CONDITION_FLAG_COUNT) {
             int oldFlagValue = Binary.bitValue(CONDITION_FLAGS.getValueNoNotify(), flag);
             CONDITION_FLAGS.setValue(Binary.setBit(CONDITION_FLAGS.getValueNoNotify(), flag));
-            if (Application.isBackSteppingEnabled()) {
+            if (Simulator.getInstance().getBackStepper().isEnabled()) {
                 if (oldFlagValue == 0) {
-                    Application.program.getBackStepper().addConditionFlagClear(flag);
+                    Simulator.getInstance().getBackStepper().addConditionFlagClear(flag);
                 }
                 else {
-                    Application.program.getBackStepper().addConditionFlagSet(flag);
+                    Simulator.getInstance().getBackStepper().addConditionFlagSet(flag);
                 }
             }
         }
@@ -332,12 +332,12 @@ public class Coprocessor1 {
         if (flag >= 0 && flag < CONDITION_FLAG_COUNT) {
             int oldFlagValue = Binary.bitValue(CONDITION_FLAGS.getValueNoNotify(), flag);
             CONDITION_FLAGS.setValue(Binary.clearBit(CONDITION_FLAGS.getValueNoNotify(), flag));
-            if (Application.isBackSteppingEnabled()) {
+            if (Simulator.getInstance().getBackStepper().isEnabled()) {
                 if (oldFlagValue == 0) {
-                    Application.program.getBackStepper().addConditionFlagClear(flag);
+                    Simulator.getInstance().getBackStepper().addConditionFlagClear(flag);
                 }
                 else {
-                    Application.program.getBackStepper().addConditionFlagSet(flag);
+                    Simulator.getInstance().getBackStepper().addConditionFlagSet(flag);
                 }
             }
         }

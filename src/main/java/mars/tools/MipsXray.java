@@ -1,7 +1,7 @@
 package mars.tools;
 
 import mars.Application;
-import mars.ProgramStatement;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.MemoryConfigurations;
 import mars.venus.VenusUI;
@@ -163,8 +163,8 @@ public class MipsXray extends AbstractMarsTool {
         }
         lastAddress = wordAddress;
 
-        ProgramStatement statement = new ProgramStatement(wordValue, wordAddress);
-        instructionBinary = statement.getMachineStatement();
+        BasicStatement statement = Application.instructionSet.getDecoder().decodeStatement(wordValue);
+        instructionBinary = statement.getInstruction().getEncodingDescriptor();
 
         this.getContentPane().removeAll();
         // Class panel that runs datapath animation

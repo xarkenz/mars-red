@@ -27,7 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package mars.tools;
 
-import mars.ProgramStatement;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.*;
 import mars.tools.bhtsim.BHTSimGUI;
 import mars.tools.bhtsim.BHTableModel;
@@ -177,14 +177,12 @@ public class BHTSimulator extends AbstractMarsTool {
      *
      * @param statement The branch statement that is executed.
      */
-    protected void handlePreBranchInst(ProgramStatement statement) {
-        String statementString = statement.getBasicAssemblyStatement();
-        int address = statement.getAddress();
+    protected void handlePreBranchInst(int address, BasicStatement statement) {
         String addressString = Binary.intToHexString(address);
         int index = tableModel.getIndexForAddress(address);
 
         // Update the GUI
-        this.gui.getInstructionTextField().setText(statementString);
+        this.gui.getInstructionTextField().setText(statement.toString());
         this.gui.getInstructionAddressTextField().setText(addressString);
         this.gui.getInstructionIndexTextField().setText(Integer.toString(index));
 
@@ -193,8 +191,8 @@ public class BHTSimulator extends AbstractMarsTool {
         this.gui.getTable().addRowSelectionInterval(index, index);
 
         // Add output to log
-        this.gui.getLogTextField().append("instruction " + statementString + " at address " + addressString + ", maps to index " + index + "\n");
-        this.gui.getLogTextField().append("branches to address " + Binary.intToHexString(BHTSimulator.extractBranchAddress(statement)) + "\n");
+        this.gui.getLogTextField().append("instruction " + statement.toString() + " at address " + addressString + ", maps to index " + index + "\n");
+        this.gui.getLogTextField().append("branches to address " + Binary.intToHexString(BHTSimulator.extractBranchAddress(address, statement)) + "\n");
         this.gui.getLogTextField().append("prediction is: " + (this.tableModel.getPrediction(index) ? "take" : "do not take") + "...\n");
         this.gui.getLogTextField().setCaretPosition(this.gui.getLogTextField().getDocument().getLength());
     }
@@ -231,11 +229,11 @@ public class BHTSimulator extends AbstractMarsTool {
      * @param statement the statement to investigate
      * @return true, if statement is a branch instruction, otherwise false
      */
-    protected static boolean isBranchInstruction(ProgramStatement statement) {
+    protected static boolean isBranchInstruction(BasicStatement statement) {
         // Highest 6 bits
-        int opcode = statement.getBinaryStatement() >>> (32 - 6);
+        int opcode = statement.getBinaryEncoding() >>> (32 - 6);
         // Lowest 5 bits
-        int funct = statement.getBinaryStatement() & 0x1F;
+        int funct = statement.getBinaryEncoding() & 0x1F;
 
         if (opcode == 0x01) {
             if (0x00 <= funct && funct <= 0x07) {
@@ -259,11 +257,11 @@ public class BHTSimulator extends AbstractMarsTool {
      * @param statement The branch instruction to be investigated.
      * @return true if the branch will be taken, otherwise false.
      */
-    protected static boolean willBranch(ProgramStatement statement) {
-        int opcode = statement.getBinaryStatement() >>> (32 - 6);
-        int funct = statement.getBinaryStatement() & 0x1F;
-        int rs = statement.getBinaryStatement() >>> (32 - 6 - 5) & 0x1F;
-        int rt = statement.getBinaryStatement() >>> (32 - 6 - 5 - 5) & 0x1F;
+    protected static boolean willBranch(BasicStatement statement) {
+        int opcode = statement.getBinaryEncoding() >>> (32 - 6);
+        int funct = statement.getBinaryEncoding() & 0x1F;
+        int rs = statement.getBinaryEncoding() >>> (32 - 6 - 5) & 0x1F;
+        int rt = statement.getBinaryEncoding() >>> (32 - 6 - 5 - 5) & 0x1F;
 
         int valRS = RegisterFile.getRegisters()[rs].getValue();
         int valRT = RegisterFile.getRegisters()[rt].getValue();
@@ -299,9 +297,9 @@ public class BHTSimulator extends AbstractMarsTool {
      * @param statement The branch instruction.
      * @return The address of the instruction that is executed if the branch is taken.
      */
-    protected static int extractBranchAddress(ProgramStatement statement) {
-        short offset = (short) (statement.getBinaryStatement() & 0xFFFF);
-        return statement.getAddress() + (offset << 2) + 4;
+    protected static int extractBranchAddress(int address, BasicStatement statement) {
+        short offset = (short) (statement.getBinaryEncoding() & 0xFFFF);
+        return address + (offset << 2) + 4;
     }
 
     /**
@@ -313,7 +311,7 @@ public class BHTSimulator extends AbstractMarsTool {
      */
     @Override
     public void memoryRead(int address, int length, int value, int wordAddress, int wordValue) {
-        ProgramStatement statement;
+        BasicStatement statement;
         try {
             // Access the statement in the text segment without causing an infinite loop
             statement = Memory.getInstance().fetchStatement(address, false);
@@ -337,9 +335,9 @@ public class BHTSimulator extends AbstractMarsTool {
 
             // If current instruction is branch instruction
             if (isBranchInstruction(statement)) {
-                this.handlePreBranchInst(statement);
+                this.handlePreBranchInst(address, statement);
                 this.lastBranchTaken = willBranch(statement);
-                this.pendingBranchInstructionAddress = statement.getAddress();
+                this.pendingBranchInstructionAddress = address;
                 clearTextFields = false;
             }
 

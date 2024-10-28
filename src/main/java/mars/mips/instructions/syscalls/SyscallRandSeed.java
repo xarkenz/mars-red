@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.RegisterFile;
 
 /*
@@ -48,7 +48,7 @@ public class SyscallRandSeed extends AbstractSyscall {
      * Set the seed of the underlying Java pseudorandom number generator.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(BasicStatement statement) throws SimulatorException {
         // Arguments:
         //   $a0 = index of pseudorandom number generator
         //   $a1 = seed for pseudorandom number generator.

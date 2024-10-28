@@ -1,7 +1,7 @@
 package mars.mips.dump;
 
 import mars.Application;
-import mars.ProgramStatement;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
 import mars.util.Binary;
@@ -130,10 +130,10 @@ public class SegmentWindowDumpFormat extends AbstractDumpFormat {
                 }
                 string += Binary.intToHexString(temp) + "  ";
                 try {
-                    ProgramStatement ps = Memory.getInstance().fetchStatement(address, false);
-                    string += (ps.getPrintableBasicAssemblyStatement() + "                      ").substring(0, 22);
-                    string += (((ps.getSource().isEmpty()) ? "" : Integer.valueOf(ps.getSourceLine()).toString()) + "     ").substring(0, 5);
-                    string += ps.getSource();
+                    BasicStatement ps = Memory.getInstance().fetchStatement(address, false);
+                    string += (ps.toString() + "                      ").substring(0, 22);
+                    string += (((ps.getSyntax() == null) ? "" : Integer.toString(ps.getSyntax().getSourceLine().getLocation().getLineIndex())) + "     ").substring(0, 5);
+                    string += (ps.getSyntax() == null) ? "" : ps.getSyntax().getSourceLine().getContent();
                 }
                 catch (AddressErrorException ignored) {
                 }

@@ -1,8 +1,6 @@
 package mars.assembler.token;
 
-import mars.ErrorList;
-import mars.ErrorMessage;
-import mars.assembler.SourceLine;
+import mars.assembler.log.AssemblerLog;
 
 import java.util.*;
 
@@ -64,14 +62,6 @@ public class Macro {
         return this.lines;
     }
 
-    public void addParameter(Token parameter) {
-        this.parameters.add(parameter);
-    }
-
-    public void addLine(SourceLine sourceLine) {
-        this.lines.add(sourceLine);
-    }
-
     public boolean addLabel(String label) {
         return this.labels.add(label);
     }
@@ -80,80 +70,7 @@ public class Macro {
         return this.labels.contains(label);
     }
 
-    /**
-     * Substitutes macro arguments in a line of source code inside macro
-     * definition to be parsed after macro expansion.
-     * <p>
-     * Also appends <code>_M<var>id</var></code> to all labels defined inside macro body,
-     * where <code><var>id</var></code> is the value of <code>instanceID</code>.
-     *
-     * @param arguments    List of tokens to expand to.
-     * @param instanceID Unique macro expansion ID.
-     * @param callLine
-     * @param errors  Destination for any errors from within this method.
-     * @return The line of source code, with substituted arguments.
-     */
-    public List<SourceLine> instantiate(List<Token> arguments, int instanceID, SourceLine callLine, ErrorList errors) {
-        List<SourceLine> instanceLines = new ArrayList<>(this.lines.size());
-
-        for (SourceLine sourceLine : this.lines) {
-            List<Token> instanceTokens = new ArrayList<>(sourceLine.tokens().size());
-
-            for (Token token : sourceLine.tokens()) {
-                Token instanceToken;
-
-                int parameterIndex = this.checkForParameter(token, errors);
-                if (parameterIndex >= 0) {
-                    Token argument = arguments.get(parameterIndex);
-                    instanceToken = new Token(
-                        argument.getType(),
-                        argument.getValue(),
-                        argument.getLiteral(),
-                        callLine.filename(),
-                        callLine.lineIndex(),
-                        token.getColumnIndex()
-                    );
-                }
-                else if ((token.getType() == TokenType.IDENTIFIER || token.getType() == TokenType.OPERATOR)
-                         && this.labels.contains(token.getLiteral())
-                ) {
-                    String instanceLabel = token.getLiteral() + "_M" + instanceID;
-                    instanceToken = new Token(
-                        TokenType.IDENTIFIER,
-                        null,
-                        instanceLabel,
-                        callLine.filename(),
-                        callLine.lineIndex(),
-                        token.getColumnIndex()
-                    );
-                }
-                else {
-                    instanceToken = new Token(
-                        token.getType(),
-                        token.getValue(),
-                        token.getLiteral(),
-                        callLine.filename(),
-                        callLine.lineIndex(),
-                        token.getColumnIndex()
-                    );
-                }
-
-                instanceToken.setOriginalToken(token);
-                instanceTokens.add(instanceToken);
-            }
-
-            instanceLines.add(new SourceLine(
-                callLine.filename(),
-                callLine.lineIndex(),
-                callLine.content(),
-                instanceTokens
-            ));
-        }
-
-        return instanceLines;
-    }
-
-    public int checkForParameter(Token token, ErrorList errors) {
+    public int checkForParameter(Token token, AssemblerLog log) {
         // If this token could not possibly be a parameter, we won't bother checking
         if (token.getType() == TokenType.MACRO_PARAMETER || token.isSPIMStyleMacroParameter()) {
             // Do a linear search for the parameter to obtain the index. Linear search isn't great, but most
@@ -167,12 +84,10 @@ public class Macro {
             // If no SPIM-style parameter was found, it could just be a symbol instead. But if no MARS-style
             // parameter was found, it cannot be a symbol due to starting with %, so give an error
             if (token.getType() == TokenType.MACRO_PARAMETER) {
-                errors.add(new ErrorMessage(
-                    token.getFilename(),
-                    token.getLineIndex(),
-                    token.getColumnIndex(),
+                log.logError(
+                    token.getLocation(),
                     "Undefined macro parameter '" + token + "'"
-                ));
+                );
             }
         }
 

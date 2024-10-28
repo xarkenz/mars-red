@@ -1,6 +1,5 @@
 package mars.assembler.syntax;
 
-import mars.ErrorMessage;
 import mars.assembler.Assembler;
 import mars.assembler.Operand;
 import mars.assembler.OperandType;
@@ -43,13 +42,11 @@ public class LabelOperand implements SyntaxOperand {
         Symbol symbol = assembler.getSymbol(this.labelToken.getLiteral());
         // Make sure the symbol actually exists
         if (symbol == null) {
-            assembler.getErrorList().add(new ErrorMessage(
-                this.labelToken.getFilename(),
-                this.labelToken.getLineIndex(),
-                this.labelToken.getColumnIndex(),
+            assembler.logError(
+                this.labelToken.getLocation(),
                 "Undefined symbol '" + this.labelToken + "'"
-            ));
-            // Return a dummy operand
+            );
+            // Resolve to a dummy operand
             return new Operand(this.type, 0xDEADBEEF);
         }
 

@@ -41,61 +41,50 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @author Pete Sanderson
  * @version August 2003
  */
-public class ProcessingException extends Exception {
-    private final ErrorList errors;
-    private int exitCode = 0;
+public class SimulatorException extends Exception {
+    private Integer exitCode = null;
 
     /**
      * Constructor for ProcessingException.
      *
-     * @param errorList An ErrorList which is an ArrayList of ErrorMessage objects.  Each ErrorMessage
-     *                  represents one processing error.
+     * @param message
      */
-    public ProcessingException(ErrorList errorList) {
-        errors = errorList;
+    public SimulatorException(String message) {
+        super(message);
     }
 
     /**
      * Constructor for ProcessingException.
      *
-     * @param errorList ErrorList which is an ArrayList of ErrorMessage objects.  Each ErrorMessage
-     *            represents one processing error.
      * @param exception AddressErrorException object containing specialized error message, cause, address
      */
-    public ProcessingException(ErrorList errorList, AddressErrorException exception) {
-        this.errors = errorList;
+    public SimulatorException(AddressErrorException exception) {
+        super(exception);
         Coprocessor0.updateRegisters(exception.getType(), exception.getAddress());
     }
 
     /**
      * Constructor for ProcessingException to handle runtime exceptions
      *
-     * @param statement ProgramStatement of statement causing runtime exception
+     * @param statement BasicStatement of statement causing runtime exception
      * @param message   String containing specialized error message
      */
-    public ProcessingException(BasicStatement statement, String message) {
-        this.errors = new ErrorList();
-        this.errors.add(new ErrorMessage(
-            statement,
+    public SimulatorException(BasicStatement statement, String message) {
+        super(
             "Runtime exception at " + Binary.intToHexString(
                 RegisterFile.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION
             ) + ": " + message
-        ));
-        // Stopped using ps.getAddress() because of pseudo-instructions.  All instructions in
-        // the macro expansion point to the same ProgramStatement, and thus all will return the
-        // same value for getAddress(). But only the first such expanded instruction will
-        // be stored at that address.  So now I use the program counter (which has already
-        // been incremented).
+        );
     }
 
     /**
      * Constructor for ProcessingException to handle runtime exceptions
      *
-     * @param statement ProgramStatement of statement causing runtime exception
+     * @param statement BasicStatement of statement causing runtime exception
      * @param message   String containing specialized error message
      * @param cause     exception cause (see Exceptions class for list)
      */
-    public ProcessingException(BasicStatement statement, String message, int cause) {
+    public SimulatorException(BasicStatement statement, String message, int cause) {
         this(statement, message);
         Coprocessor0.updateRegisters(cause);
     }
@@ -103,10 +92,10 @@ public class ProcessingException extends Exception {
     /**
      * Constructor for ProcessingException to handle address runtime exceptions
      *
-     * @param statement a ProgramStatement of statement causing runtime exception
+     * @param statement a BasicStatement of statement causing runtime exception
      * @param exception AddressErrorException object containing specialized error message, cause, address
      */
-    public ProcessingException(BasicStatement statement, AddressErrorException exception) {
+    public SimulatorException(BasicStatement statement, AddressErrorException exception) {
         this(statement, exception.getMessage());
         Coprocessor0.updateRegisters(exception.getType(), exception.getAddress());
     }
@@ -119,8 +108,8 @@ public class ProcessingException extends Exception {
      *
      * @param exitCode exit code
      */
-    public ProcessingException(int exitCode) {
-        this.errors = null;
+    public SimulatorException(int exitCode) {
+        super();
         this.exitCode = exitCode;
     }
 
@@ -130,20 +119,9 @@ public class ProcessingException extends Exception {
      * No parameter and thus no error list.  Use this for normal MIPS
      * program termination (e.g. syscall 10 for exit).
      */
-    public ProcessingException() {
-        this.errors = null;
+    public SimulatorException() {
+        super();
         this.exitCode = 0;
-    }
-
-    /**
-     * Produce the list of error messages.
-     *
-     * @return Returns ErrorList of error messages.
-     * @see ErrorList
-     * @see ErrorMessage
-     */
-    public ErrorList getErrors() {
-        return this.errors;
     }
 
     /**
@@ -151,7 +129,7 @@ public class ProcessingException extends Exception {
      *
      * @return Returns the error code.
      */
-    public int getExitCode() {
+    public Integer getExitCode() {
         return this.exitCode;
     }
 }

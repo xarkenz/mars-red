@@ -47,6 +47,7 @@ public class Simulator {
 
     private final List<SimulatorListener> guiListeners;
     private final List<SimulatorListener> threadListeners;
+    private final BackStepper backStepper;
     private final SystemIO systemIO;
     private Integer delayedJumpAddress;
     /**
@@ -62,7 +63,7 @@ public class Simulator {
     /**
      * Returns the singleton instance of the MIPS simulator.
      *
-     * @return The Simulator object in use.
+     * @return The <code>Simulator</code> object in use.
      */
     public static Simulator getInstance() {
         if (Simulator.instance == null) {
@@ -74,11 +75,16 @@ public class Simulator {
     private Simulator() {
         this.guiListeners = new ArrayList<>();
         this.threadListeners = new ArrayList<>();
+        this.backStepper = new BackStepper();
         this.systemIO = new SystemIO();
         this.delayedJumpAddress = null;
         this.externalInterruptDevice = null;
         this.thread = null;
         this.hasQueuedStepEvent = false;
+    }
+
+    public BackStepper getBackStepper() {
+        return this.backStepper;
     }
 
     /**
@@ -94,6 +100,7 @@ public class Simulator {
         RegisterFile.reset();
         Coprocessor1.reset();
         Coprocessor0.reset();
+        this.backStepper.reset();
         this.systemIO.resetFiles();
         this.delayedJumpAddress = null;
         this.externalInterruptDevice = null;
@@ -213,21 +220,20 @@ public class Simulator {
     /**
      * Simulate execution of given MIPS program.  It must have already been assembled.
      *
-     * @param program        The program to be simulated.
      * @param programCounter Address of first instruction to simulate; this is the initial value of the program counter.
      * @param maxSteps       Maximum number of steps to perform before returning false (0 or less means no max).
      * @param breakpoints    Array of breakpoint program counter values. (Can be null.)
-     * @throws ProcessingException Throws exception if run-time exception occurs.
+     * @throws SimulatorException Throws exception if run-time exception occurs.
      */
-    public void simulate(Program program, int programCounter, int maxSteps, int[] breakpoints) throws ProcessingException {
-        this.thread = new SimulatorThread(this, program, programCounter, maxSteps, breakpoints);
+    public void simulate(int programCounter, int maxSteps, int[] breakpoints) throws SimulatorException {
+        this.thread = new SimulatorThread(this, programCounter, maxSteps, breakpoints);
         this.thread.start();
 
         if (Application.getGUI() == null) {
             // The simulator was run from the command line
 
             // This is a slightly hacky way to get the exception out of the simulator thread (we love Java)
-            final ProcessingException[] exception = new ProcessingException[1];
+            final SimulatorException[] exception = new SimulatorException[1];
             SimulatorListener exceptionListener = new SimulatorListener() {
                 @Override
                 public void simulatorFinished(SimulatorFinishEvent event) {
@@ -320,7 +326,7 @@ public class Simulator {
      * Called when the simulator has finished execution of the current program.
      * Invokes {@link SimulatorListener#simulatorFinished(SimulatorFinishEvent)} for all listeners.
      */
-    public void dispatchFinishEvent(int programCounter, SimulatorFinishEvent.Reason reason, ProcessingException exception) {
+    public void dispatchFinishEvent(int programCounter, SimulatorFinishEvent.Reason reason, SimulatorException exception) {
         final SimulatorFinishEvent event = new SimulatorFinishEvent(this, programCounter, reason, exception);
         for (SimulatorListener listener : this.threadListeners) {
             listener.simulatorFinished(event);

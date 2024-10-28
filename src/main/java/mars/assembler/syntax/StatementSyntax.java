@@ -1,6 +1,7 @@
 package mars.assembler.syntax;
 
 import mars.assembler.*;
+import mars.assembler.token.SourceLine;
 import mars.assembler.token.Token;
 import mars.mips.instructions.BasicInstruction;
 import mars.mips.instructions.ExtendedInstruction;

@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
@@ -51,14 +51,14 @@ public class SyscallPrintString extends AbstractSyscall {
      * Performs syscall function to print string stored starting at address in $a0.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(BasicStatement statement) throws SimulatorException {
         try {
             // Read a null-terminated string from memory
             String stringValue = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
             Simulator.getInstance().getSystemIO().printString(stringValue);
         }
         catch (AddressErrorException exception) {
-            throw new ProcessingException(statement, exception);
+            throw new SimulatorException(statement, exception);
         }
     }
 }

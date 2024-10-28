@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.Memory;
@@ -53,7 +53,7 @@ public class SyscallInputDialogFloat extends AbstractSyscall {
      * System call to input data.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(BasicStatement statement) throws SimulatorException {
         // Input arguments: $a0 = address of null-terminated string that is the message to user
         // Outputs:
         //    $f0 contains value of float read
@@ -69,7 +69,7 @@ public class SyscallInputDialogFloat extends AbstractSyscall {
             message = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
         }
         catch (AddressErrorException exception) {
-            throw new ProcessingException(statement, exception);
+            throw new SimulatorException(statement, exception);
         }
 
         // Values returned by Java's InputDialog:

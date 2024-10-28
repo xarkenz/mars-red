@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.RegisterFile;
 
@@ -53,7 +53,7 @@ public class SyscallRandFloat extends AbstractSyscall {
      * from this random number generator's sequence.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(BasicStatement statement) throws SimulatorException {
         // Input arguments: $a0 = index of pseudorandom number generator
         // Return: $f0 = the next pseudorandom, uniformly distributed float value between 0.0 and 1.0
         // from this random number generator's sequence.

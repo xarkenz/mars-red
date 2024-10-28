@@ -1,8 +1,6 @@
 package mars.assembler.token;
 
-import mars.ErrorList;
-import mars.Program;
-import mars.assembler.SourceLine;
+import mars.assembler.log.AssemblerLog;
 
 import java.util.*;
 
@@ -36,7 +34,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * <p>
  * Will be used in first pass of assembling MIPS source code.
  * <p>
- * Each {@link Program} will have one {@link MacroHandler}.
+ * Each {@link Preprocessor} will have one {@link MacroHandler}.
  * <p>
  * NOTE: Forward referencing macros (macro expansion before its definition in
  * source code) and nested macro definitions (defining a macro inside another macro
@@ -87,7 +85,7 @@ public class MacroHandler {
     /**
      * @param name
      * @return true if any macros have been defined with name <code>name</code>
-     *     by now, regardless of argument count.
+     *         by now, regardless of argument count.
      */
     public boolean hasMacroName(String name) {
         return this.macroNames.contains(name);
@@ -132,41 +130,38 @@ public class MacroHandler {
      * Also appends <code>_M<var>id</var></code> to all labels defined inside macro body,
      * where <code><var>id</var></code> is the value of <code>instanceID</code>.
      *
-     * @param arguments    List of tokens to expand to.
-     * @param callerLine
-     * @param errors  Destination for any errors from within this method.
-     * @return The line of source code, with substituted arguments.
+     * @param arguments  The macro arguments used in the call syntax.
+     * @param callerLine The line containing the macro call.
+     * @param log        The log to be populated with any errors produced.
+     * @return The expanded form of the macro, including the expansion of any nested macro calls.
      */
-    public List<SourceLine> instantiate(Macro macro, List<Token> arguments, SourceLine callerLine, ErrorList errors) {
+    public List<SourceLine> instantiate(Macro macro, List<Token> arguments, SourceLine callerLine, AssemblerLog log) {
         List<SourceLine> callStack = new ArrayList<>();
         callStack.add(callerLine);
-        return this.instantiate(macro, arguments, callStack, errors);
+        return this.instantiate(macro, arguments, callStack, log);
     }
 
-    private List<SourceLine> instantiate(Macro macro, List<Token> arguments, List<SourceLine> callStack, ErrorList errors) {
-        SourceLine callerLine = callStack.get(callStack.size() - 1);
+    private List<SourceLine> instantiate(Macro macro, List<Token> arguments, List<SourceLine> callStack, AssemblerLog log) {
         int instanceID = this.getNextInstanceID();
         List<SourceLine> instanceLines = new ArrayList<>(macro.getLines().size());
 
         lineLoop: for (SourceLine sourceLine : macro.getLines()) {
-            List<Token> tokens = sourceLine.tokens();
-            List<Token> instanceTokens = new ArrayList<>(sourceLine.tokens().size());
+            List<Token> tokens = sourceLine.getTokens();
+            List<Token> instanceTokens = new ArrayList<>(sourceLine.getTokens().size());
 
             for (Token token : tokens) {
                 Token instanceToken;
 
                 // Check for a macro parameter
-                int parameterIndex = macro.checkForParameter(token, errors);
+                int parameterIndex = macro.checkForParameter(token, log);
                 if (parameterIndex >= 0) {
                     // Substitute the argument passed by the caller
                     Token argument = arguments.get(parameterIndex);
                     instanceToken = new Token(
-                        argument.getType(),
-                        argument.getValue(),
+                        argument.getLocation(),
                         argument.getLiteral(),
-                        callerLine.filename(),
-                        callerLine.lineIndex(),
-                        token.getColumnIndex()
+                        argument.getType(),
+                        argument.getValue()
                     );
                 }
                 // Check for a label defined in the original macro
@@ -176,27 +171,22 @@ public class MacroHandler {
                     // Add a suffix to the label based on this macro instance ID
                     String instanceLabel = token.getLiteral() + "_M" + instanceID;
                     instanceToken = new Token(
-                        TokenType.IDENTIFIER,
-                        null,
+                        token.getLocation(),
                         instanceLabel,
-                        callerLine.filename(),
-                        callerLine.lineIndex(),
-                        token.getColumnIndex()
+                        TokenType.IDENTIFIER,
+                        null
                     );
                 }
                 else {
-                    // Clone the token to the caller line
+                    // Clone the token
                     instanceToken = new Token(
-                        token.getType(),
-                        token.getValue(),
+                        token.getLocation(),
                         token.getLiteral(),
-                        callerLine.filename(),
-                        callerLine.lineIndex(),
-                        token.getColumnIndex()
+                        token.getType(),
+                        token.getValue()
                     );
                 }
 
-                instanceToken.setOriginalToken(token);
                 instanceTokens.add(instanceToken);
             }
 
@@ -222,28 +212,30 @@ public class MacroHandler {
 
                 // Expand the macro with the current arguments
                 callStack.add(sourceLine);
-                List<SourceLine> innerInstanceLines = this.instantiate(calleeMacro, calleeArguments, sourceLine, errors);
+                List<SourceLine> innerInstanceLines = this.instantiate(calleeMacro, calleeArguments, sourceLine, log);
                 callStack.remove(callStack.size() - 1);
 
-                // Remove the macro call from the original line, but still keep the beginning of the line
-                // in case it has a label or something before the call
-                instanceTokens.subList(index, instanceTokens.size()).clear();
+                if (index != 0) {
+                    // Remove the macro call from the original line, but still keep the beginning of the line
+                    // in case it has a label or something before the call
+                    instanceTokens.subList(index, instanceTokens.size()).clear();
 
-                // Add the modified line, then paste in the macro expansion
-                instanceLines.add(new SourceLine(
-                    callerLine.filename(),
-                    callerLine.lineIndex(),
-                    callerLine.content(),
-                    instanceTokens
-                ));
+                    // Add the modified line
+                    instanceLines.add(new SourceLine(
+                        sourceLine.getLocation(),
+                        sourceLine.getContent(),
+                        instanceTokens
+                    ));
+                }
+
+                // Paste in the expansion
                 instanceLines.addAll(innerInstanceLines);
                 continue lineLoop;
             }
 
             instanceLines.add(new SourceLine(
-                callerLine.filename(),
-                callerLine.lineIndex(),
-                callerLine.content(),
+                sourceLine.getLocation(),
+                sourceLine.getContent(),
                 instanceTokens
             ));
         }

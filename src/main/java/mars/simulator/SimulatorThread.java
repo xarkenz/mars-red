@@ -15,7 +15,6 @@ import java.util.Arrays;
  */
 public class SimulatorThread extends Thread {
     private final Simulator simulator;
-    private final Program program;
     private final int maxSteps;
     private final int[] breakPoints;
     private int programCounter;
@@ -24,15 +23,13 @@ public class SimulatorThread extends Thread {
     /**
      * Create a new <code>SimulatorThread</code> without starting it.
      *
-     * @param program        The program to be simulated.
      * @param programCounter Address in text segment of first instruction to simulate.
      * @param maxSteps       Maximum number of instruction steps to simulate.  Default of -1 means no maximum.
      * @param breakPoints    Array of breakpoints (instruction addresses) specified by user.
      */
-    public SimulatorThread(Simulator simulator, Program program, int programCounter, int maxSteps, int[] breakPoints) {
+    public SimulatorThread(Simulator simulator, int programCounter, int maxSteps, int[] breakPoints) {
         super("MIPS");
         this.simulator = simulator;
-        this.program = program;
         this.maxSteps = maxSteps;
         this.breakPoints = breakPoints;
         this.programCounter = programCounter;
@@ -89,7 +86,7 @@ public class SimulatorThread extends Thread {
         try {
             this.runSimulation();
         }
-        catch (ProcessingException exception) {
+        catch (SimulatorException exception) {
             // An unhandled exception occurred during simulation
             this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.EXCEPTION, exception);
         }
@@ -108,7 +105,7 @@ public class SimulatorThread extends Thread {
     /**
      * The main simulation logic. This is run on the simulator thread, and is always called from {@link #run()}.
      */
-    private void runSimulation() throws ProcessingException, InterruptedException {
+    private void runSimulation() throws SimulatorException, InterruptedException {
         if (this.breakPoints != null) {
             // Must be pre-sorted for binary search
             Arrays.sort(this.breakPoints);
@@ -186,24 +183,24 @@ public class SimulatorThread extends Thread {
                     // Handle external interrupt if necessary
                     Integer externalInterruptDevice = this.simulator.checkExternalInterruptDevice();
                     if (externalInterruptDevice != null) {
-                        throw new ProcessingException(statement, "external interrupt", externalInterruptDevice);
+                        throw new SimulatorException(statement, "external interrupt", externalInterruptDevice);
                     }
 
                     // Simulate the statement execution
                     statement.simulate();
 
                     // IF statement added 7/26/06 (explanation above)
-                    if (Application.isBackSteppingEnabled()) {
-                        Application.program.getBackStepper().addDoNothing(this.programCounter);
+                    if (this.simulator.getBackStepper().isEnabled()) {
+                        this.simulator.getBackStepper().addDoNothing(this.programCounter);
                     }
                 }
-                catch (ProcessingException exception) {
+                catch (SimulatorException exception) {
                     // If execution were to terminate at this point, we don't want the program counter
                     // to appear as if it was incremented past the instruction that caused the termination,
                     // so we will just undo the incrementation of the program counter
                     RegisterFile.setProgramCounter(this.programCounter);
 
-                    if (exception.getErrors() == null) {
+                    if (exception.getExitCode() != null) {
                         // There are no errors attached, so this was caused by an exit syscall
                         this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.EXIT_SYSCALL, exception);
                         return;
@@ -281,7 +278,7 @@ public class SimulatorThread extends Thread {
         }
     }
 
-    private BasicStatement fetchStatement() throws ProcessingException {
+    private BasicStatement fetchStatement() throws SimulatorException {
         try {
             return Memory.getInstance().fetchStatement(RegisterFile.getProgramCounter(), true);
         }
@@ -291,16 +288,7 @@ public class SimulatorThread extends Thread {
             // incremented.  In this case, bad address is the instruction fetch itself so program counter has
             // not yet been incremented.  We'll set the EPC directly here.  DPS 8-July-2013
             Coprocessor0.updateRegister(Coprocessor0.EPC, RegisterFile.getProgramCounter());
-
-            ErrorList errors = new ErrorList();
-            errors.add(new ErrorMessage(
-                this.program,
-                0,
-                0,
-                "invalid program counter value: " + Binary.intToHexString(RegisterFile.getProgramCounter())
-            ));
-
-            throw new ProcessingException(errors, exception);
+            throw new SimulatorException("invalid program counter value: " + Binary.intToHexString(RegisterFile.getProgramCounter()));
         }
     }
 }

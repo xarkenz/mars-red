@@ -1,6 +1,6 @@
 package mars.venus.actions.run;
 
-import mars.Application;
+import mars.simulator.Simulator;
 import mars.venus.RegistersPane;
 import mars.venus.execute.ExecuteTab;
 import mars.venus.actions.VenusAction;
@@ -56,14 +56,14 @@ public class RunStepBackwardAction extends VenusAction {
         ExecuteTab executeTab = this.gui.getMainPane().getExecuteTab();
         executeTab.getTextSegmentWindow().setCodeHighlighting(true);
 
-        boolean inDelaySlot = Application.program.getBackStepper().isInDelaySlot(); // Added 25 June 2007
+        boolean inDelaySlot = Simulator.getInstance().getBackStepper().isInDelaySlot(); // Added 25 June 2007
 
         executeTab.getDataSegmentWindow().startObservingMemory();
         registersPane.getRegistersWindow().startObservingRegisters();
         registersPane.getCoprocessor0Window().startObservingRegisters();
         registersPane.getCoprocessor1Window().startObservingRegisters();
 
-        Application.program.getBackStepper().backStep();
+        Simulator.getInstance().getBackStepper().backStep();
 
         executeTab.getDataSegmentWindow().stopObservingMemory();
         registersPane.getRegistersWindow().stopObservingRegisters();
@@ -80,6 +80,8 @@ public class RunStepBackwardAction extends VenusAction {
 
     @Override
     public void update() {
-        this.setEnabled(this.gui.getProgramStatus().isRunnable() && Application.isBackSteppingEnabled() && !Application.program.getBackStepper().isEmpty());
+        this.setEnabled(this.gui.getProgramStatus().isRunnable()
+            && Simulator.getInstance().getBackStepper().isEnabled()
+            && !Simulator.getInstance().getBackStepper().isEmpty());
     }
 }

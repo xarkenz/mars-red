@@ -1,7 +1,9 @@
 package mars.assembler.token;
 
-import mars.*;
-import mars.assembler.*;
+import mars.Application;
+import mars.assembler.Directive;
+import mars.assembler.log.AssemblerLog;
+import mars.assembler.log.SourceLocation;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.Register;
 import mars.mips.hardware.RegisterFile;
@@ -65,26 +67,24 @@ public class Tokenizer {
      * Note: Equivalences, includes, and macros are handled by the {@link Preprocessor} at this stage.
      *
      * @param filename The name of the file containing source code to be tokenized.
-     * @param errors   The error list, which will be populated with any tokenizing errors in the given lines.
+     * @param log      The error list, which will be populated with any tokenizing errors in the given lines.
      * @return The tokenized source file.
      */
-    public static SourceFile tokenizeFile(String filename, ErrorList errors) {
-        return tokenizeFile(filename, errors, new Preprocessor());
+    public static SourceFile tokenizeFile(String filename, AssemblerLog log) {
+        return tokenizeFile(filename, log, new Preprocessor());
     }
 
-    public static SourceFile tokenizeFile(String filename, ErrorList errors, Preprocessor preprocessor) {
+    public static SourceFile tokenizeFile(String filename, AssemblerLog log, Preprocessor preprocessor) {
         try {
             BufferedReader inputFile = new BufferedReader(new FileReader(filename));
             // Gather all lines from the source file into a list of strings
-            return tokenizeLines(filename, inputFile.lines().toList(), errors, false, preprocessor);
+            return tokenizeLines(filename, inputFile.lines().toList(), log, false, preprocessor);
         }
         catch (IOException exception) {
-            errors.add(new ErrorMessage(
-                filename,
-                0,
-                0,
+            log.logError(
+                new SourceLocation(filename),
                 "Unable to read file: " + exception
-            ));
+            );
             return new SourceFile(filename, new ArrayList<>());
         }
     }
@@ -97,26 +97,26 @@ public class Tokenizer {
      *
      * @param filename The filename indicating where the given source code is from.
      * @param lines    The source code to be tokenized.
-     * @param errors   The error list, which will be populated with any tokenizing errors in the given lines.
+     * @param log      The error list, which will be populated with any tokenizing errors in the given lines.
      * @return The tokenized source file.
      */
-    public static SourceFile tokenizeLines(String filename, List<String> lines, ErrorList errors) {
-        return tokenizeLines(filename, lines, errors, false);
+    public static SourceFile tokenizeLines(String filename, List<String> lines, AssemblerLog log) {
+        return tokenizeLines(filename, lines, log, false);
     }
 
-    public static SourceFile tokenizeLines(String filename, List<String> lines, ErrorList errors, boolean isInExpansionTemplate) {
-        return tokenizeLines(filename, lines, errors, isInExpansionTemplate, new Preprocessor());
+    public static SourceFile tokenizeLines(String filename, List<String> lines, AssemblerLog log, boolean isInExpansionTemplate) {
+        return tokenizeLines(filename, lines, log, isInExpansionTemplate, new Preprocessor());
     }
 
-    public static SourceFile tokenizeLines(String filename, List<String> lines, ErrorList errors, boolean isInExpansionTemplate, Preprocessor preprocessor) {
+    public static SourceFile tokenizeLines(String filename, List<String> lines, AssemblerLog log, boolean isInExpansionTemplate, Preprocessor preprocessor) {
         // It's reasonable to guess that the number of lines output will equal the number of lines input...
         // the only exception is the .include directive, which pastes all lines from another file
         List<SourceLine> sourceLines = new ArrayList<>(lines.size());
 
         int lineIndex = 0;
         for (String line : lines) {
-            SourceLine sourceLine = tokenizeLine(filename, line, lineIndex++, errors, preprocessor, isInExpansionTemplate);
-            preprocessor.processLine(sourceLines, sourceLine, errors);
+            SourceLine sourceLine = tokenizeLine(filename, line, lineIndex++, log, preprocessor, isInExpansionTemplate);
+            preprocessor.processLine(sourceLines, sourceLine, log);
         }
 
         return new SourceFile(filename, sourceLines);
@@ -129,60 +129,64 @@ public class Tokenizer {
      * @param filename     The filename indicating where the given source code is from.
      * @param line         The content of the line to be tokenized.
      * @param lineIndex    The line index in the source file (for error reporting).
-     * @param errors       The error list, which will be populated with any tokenizing errors in the given lines.
+     * @param log          The error list, which will be populated with any tokenizing errors in the given lines.
      * @param preprocessor The current preprocessor instance, which will process token substitutions.
      * @return The generated tokens for the given line.
      */
-    public static SourceLine tokenizeLine(String filename, String line, int lineIndex, ErrorList errors, Preprocessor preprocessor) {
-        return tokenizeLine(filename, line, lineIndex, errors, preprocessor, false);
+    public static SourceLine tokenizeLine(String filename, String line, int lineIndex, AssemblerLog log, Preprocessor preprocessor) {
+        return tokenizeLine(filename, line, lineIndex, log, preprocessor, false);
     }
 
-    public static SourceLine tokenizeLine(String filename, String line, int lineIndex, ErrorList errors, Preprocessor preprocessor, boolean isInExpansionTemplate) {
+    public static SourceLine tokenizeLine(String filename, String line, int lineIndex, AssemblerLog log, Preprocessor preprocessor, boolean isInExpansionTemplate) {
+        SourceLocation lineLocation = new SourceLocation(filename, lineIndex);
         List<Token> tokens = new ArrayList<>();
 
         if (line.isBlank()) {
-            return new SourceLine(filename, lineIndex, line, tokens);
+            return new SourceLine(lineLocation, line, tokens);
         }
 
-        int index = 0;
-        mainLoop: while (index < line.length()) {
-            char startChar = line.charAt(index);
+        int columnIndex = 0;
+        mainLoop: while (columnIndex < line.length()) {
+            char startChar = line.charAt(columnIndex);
+
+            // Check for indentation / invisible delimiter (not a token, ignored)
+            if (Character.isWhitespace(startChar)) {
+                // Move on to the next character
+                columnIndex++;
+                continue;
+            }
+
+            int startIndex = columnIndex;
+            SourceLocation startLocation = lineLocation.toColumnLocation(startIndex);
 
             switch (startChar) {
-                // Invisible delimiter (not a token, ignored)
-                case ' ', '\t', '\r' -> {
-                    // Move on to the next character
-                    index++;
-                }
                 // Visible delimiter (is a token, but only relevant for syntax highlighting)
                 case ',' -> {
                     preprocessor.processToken(tokens, new Token(
-                        TokenType.DELIMITER,
-                        null,
+                        startLocation,
                         Character.toString(startChar),
-                        filename,
-                        lineIndex,
-                        index
+                        TokenType.DELIMITER,
+                        null
                     ));
                     // Move on to the next character
-                    index++;
+                    columnIndex++;
                 }
                 // Line comment
                 case '#' -> {
                     preprocessor.processToken(tokens, new Token(
+                        startLocation,
+                        line.substring(columnIndex),
                         TokenType.COMMENT,
-                        null,
-                        line.substring(index),
-                        filename,
-                        lineIndex,
-                        index
+                        null
                     ));
                     // Skip to the end of the line
-                    index = line.length();
+                    columnIndex = line.length();
                 }
                 // Single-character tokens (excluding plus and minus, which are handled by the default case)
                 case ':', '(', ')' -> {
                     preprocessor.processToken(tokens, new Token(
+                        startLocation,
+                        Character.toString(startChar),
                         switch (startChar) {
                             case ':' -> TokenType.COLON;
                             case '(' -> TokenType.LEFT_PAREN;
@@ -190,134 +194,113 @@ public class Tokenizer {
                             // Should not happen, only included to satisfy the compiler
                             default -> TokenType.ERROR;
                         },
-                        null,
-                        Character.toString(startChar),
-                        filename,
-                        lineIndex,
-                        index
+                        null
                     ));
                     // Move on to the next character
-                    index++;
+                    columnIndex++;
                 }
                 // Character literal
                 case '\'' -> {
                     // This is handled almost exactly like a string, except the number of characters must be 1
-                    int startIndex = index;
                     StringBuilder value = new StringBuilder();
                     // Move on to the content of the literal
-                    index++;
-                    while (index < line.length()) {
-                        char ch = line.charAt(index);
+                    columnIndex++;
+                    while (columnIndex < line.length()) {
+                        char ch = line.charAt(columnIndex);
                         switch (ch) {
                             // End of the character literal
                             case '\'' -> {
                                 // Move on to the next character after the quote
-                                index++;
+                                columnIndex++;
                                 if (value.isEmpty()) {
-                                    errors.add(new ErrorMessage(
-                                        filename,
-                                        lineIndex,
-                                        startIndex,
+                                    log.logError(
+                                        startLocation,
                                         "Empty character literal"
-                                    ));
+                                    );
                                     continue mainLoop;
                                 }
                                 else if (value.length() > 1) {
-                                    errors.add(new ErrorMessage(
-                                        filename,
-                                        lineIndex,
-                                        startIndex,
+                                    log.logError(
+                                        startLocation,
                                         "Too many characters in character literal"
-                                    ));
+                                    );
                                 }
                                 preprocessor.processToken(tokens, new Token(
+                                    startLocation,
+                                    line.substring(startIndex, columnIndex),
                                     TokenType.CHARACTER,
-                                    (int) value.charAt(0),
-                                    line.substring(startIndex, index),
-                                    filename,
-                                    lineIndex,
-                                    startIndex
+                                    (int) value.charAt(0)
                                 ));
                                 continue mainLoop;
                             }
                             // Escape sequence
                             case '\\' -> {
-                                index++;
-                                index = handleCharEscape(value, filename, lineIndex, index, line, errors);
+                                columnIndex++;
+                                columnIndex = handleCharEscape(value, lineLocation, columnIndex, line, log);
                             }
                             // Literal character
                             default -> {
                                 value.append(ch);
-                                index++;
+                                columnIndex++;
                             }
                         }
                     }
                     // If execution reaches this point, the literal was not properly terminated
-                    errors.add(new ErrorMessage(
-                        filename,
-                        lineIndex,
-                        startIndex,
+                    log.logError(
+                        startLocation,
                         "Unclosed character literal"
-                    ));
+                    );
                     if (!value.isEmpty()) {
                         preprocessor.processToken(tokens, new Token(
-                            TokenType.CHARACTER,
-                            (int) value.charAt(0),
+                            startLocation,
                             line.substring(startIndex),
-                            filename,
-                            lineIndex,
-                            startIndex
+                            TokenType.ERROR,
+                            (int) value.charAt(0)
                         ));
                     }
                 }
                 // String literal
                 case '"' -> {
-                    int startIndex = index;
                     StringBuilder value = new StringBuilder();
                     // Move on to the content of the literal
-                    index++;
-                    while (index < line.length()) {
-                        char ch = line.charAt(index);
+                    columnIndex++;
+                    while (columnIndex < line.length()) {
+                        char ch = line.charAt(columnIndex);
                         switch (ch) {
                             // End of the string literal
                             case '"' -> {
                                 // Move on to the next character after the quote
-                                index++;
+                                columnIndex++;
                                 preprocessor.processToken(tokens, new Token(
+                                    startLocation,
+                                    line.substring(startIndex, columnIndex),
                                     TokenType.STRING,
-                                    value.toString(),
-                                    line.substring(startIndex, index),
-                                    filename,
-                                    lineIndex,
-                                    startIndex
+                                    value.toString()
                                 ));
                                 continue mainLoop;
                             }
                             // Escape sequence
                             case '\\' -> {
-                                index = handleCharEscape(value, filename, lineIndex, ++index, line, errors);
+                                columnIndex++;
+                                columnIndex = handleCharEscape(value, lineLocation, columnIndex, line, log);
                             }
                             // Literal character
                             default -> {
                                 value.append(ch);
-                                index++;
+                                columnIndex++;
                             }
                         }
                     }
                     // If execution reaches this point, the literal was not properly terminated
-                    errors.add(new ErrorMessage(
-                        filename,
-                        lineIndex,
-                        startIndex,
+                    log.logError(
+                        startLocation,
                         "Unclosed string literal"
-                    ));
+                    );
                     preprocessor.processToken(tokens, new Token(
-                        TokenType.STRING,
-                        value.toString(),
+                        startLocation,
                         line.substring(startIndex),
-                        filename,
-                        lineIndex,
-                        startIndex
+                        TokenType.ERROR,
+                        value.toString()
                     ));
                 }
                 // Something else
@@ -328,12 +311,10 @@ public class Tokenizer {
                         // Hacky, but it will have to do for now.
                         if (!tokens.isEmpty() && tokens.get(tokens.size() - 1).getType() == TokenType.IDENTIFIER) {
                             preprocessor.processToken(tokens, new Token(
-                                (startChar == '+') ? TokenType.PLUS : TokenType.MINUS,
-                                null,
+                                startLocation,
                                 Character.toString(startChar),
-                                filename,
-                                lineIndex,
-                                index
+                                (startChar == '+') ? TokenType.PLUS : TokenType.MINUS,
+                                null
                             ));
                             continue;
                         }
@@ -343,23 +324,22 @@ public class Tokenizer {
                     if (Character.isLetterOrDigit(startChar) || startChar == '+' || startChar == '-'
                         || startChar == '_' || startChar == '.' || startChar == '$' || startChar == '%'
                     ) {
-                        int startIndex = index;
                         // Assume the first character to be part of whatever this is
                         StringBuilder builder = new StringBuilder();
                         builder.append(startChar);
-                        index++;
+                        columnIndex++;
 
                         // A number can either start with a digit or a prefix followed by a digit
                         // Decimal point, plus, and minus are all valid prefixes
                         boolean isNumber = Character.isDigit(startChar) || (
                             (startChar == '.' || startChar == '+' || startChar == '-')
-                            && index < line.length()
-                            && Character.isDigit(line.charAt(index))
+                            && columnIndex < line.length()
+                            && Character.isDigit(line.charAt(columnIndex))
                         );
 
                         // Accumulate characters as long as they fit a number or identifier
-                        while (index < line.length()) {
-                            char ch = line.charAt(index);
+                        while (columnIndex < line.length()) {
+                            char ch = line.charAt(columnIndex);
                             if (Character.isLetterOrDigit(ch) || ch == '_' || ch == '.' || ch == '$') {
                                 builder.append(ch);
                             }
@@ -376,6 +356,7 @@ public class Tokenizer {
                             else {
                                 break;
                             }
+                            columnIndex++;
                         }
 
                         String literal = builder.toString();
@@ -384,21 +365,17 @@ public class Tokenizer {
                         if (startChar == '%') {
                             TokenType type = TokenType.MACRO_PARAMETER;
                             if (literal.length() <= 1) {
-                                errors.add(new ErrorMessage(
-                                    filename,
-                                    lineIndex,
-                                    index,
+                                log.logError(
+                                    startLocation,
                                     "'%' is not a valid macro parameter name"
-                                ));
+                                );
                                 type = TokenType.ERROR;
                             }
                             preprocessor.processToken(tokens, new Token(
-                                type,
-                                null,
+                                startLocation,
                                 literal,
-                                filename,
-                                lineIndex,
-                                startIndex
+                                type,
+                                null
                             ));
                             continue;
                         }
@@ -407,14 +384,12 @@ public class Tokenizer {
                         Register register = RegisterFile.getRegister(literal);
                         if (register != null) {
                             preprocessor.processToken(tokens, new Token(
+                                startLocation,
+                                literal,
                                 (register.getName().equals(literal))
                                     ? TokenType.REGISTER_NAME
                                     : TokenType.REGISTER_NUMBER,
-                                register.getNumber(),
-                                literal,
-                                filename,
-                                lineIndex,
-                                startIndex
+                                register.getNumber()
                             ));
                             continue;
                         }
@@ -423,12 +398,10 @@ public class Tokenizer {
                         register = Coprocessor1.getRegister(literal);
                         if (register != null) {
                             preprocessor.processToken(tokens, new Token(
-                                TokenType.FP_REGISTER_NAME,
-                                register.getNumber(),
+                                startLocation,
                                 literal,
-                                filename,
-                                lineIndex,
-                                startIndex
+                                TokenType.FP_REGISTER_NAME,
+                                register.getNumber()
                             ));
                             break;
                         }
@@ -449,7 +422,7 @@ public class Tokenizer {
                              * pseudo-instructions.
                              *
                              * This modification also appears in buildBasicStatementFromBasicInstruction()
-                             * in mars.ProgramStatement.
+                             * in mars.BasicStatement.
                              *
                              * ///// Begin modification 1/4/05 KENV   ///////////////////////////////////////////
                              * // We have decided to interpret non-signed (no + or -) 16-bit hexadecimal immediate
@@ -474,12 +447,10 @@ public class Tokenizer {
                              * END DPS 3-July-2008 COMMENTS */
 
                             preprocessor.processToken(tokens, new Token(
-                                TokenType.fromIntegerValue(intValue),
-                                intValue,
+                                startLocation,
                                 literal,
-                                filename,
-                                lineIndex,
-                                startIndex
+                                TokenType.fromIntegerValue(intValue),
+                                intValue
                             ));
                             break;
                         }
@@ -493,12 +464,10 @@ public class Tokenizer {
                         try {
                             double doubleValue = Double.parseDouble(literal);
                             preprocessor.processToken(tokens, new Token(
-                                TokenType.REAL_NUMBER,
-                                doubleValue,
+                                startLocation,
                                 literal,
-                                filename,
-                                lineIndex,
-                                startIndex
+                                TokenType.REAL_NUMBER,
+                                doubleValue
                             ));
                             break;
                         }
@@ -511,22 +480,18 @@ public class Tokenizer {
                             Directive directive = Directive.fromName(literal);
                             if (directive != null) {
                                 if (isInExpansionTemplate) {
-                                    errors.add(new ErrorMessage(
-                                        filename,
-                                        lineIndex,
-                                        startIndex,
+                                    log.logError(
+                                        startLocation,
                                         "Directives such as '" + directive + "' are not allowed in expansion templates"
-                                    ));
+                                    );
                                     break;
                                 }
 
                                 preprocessor.processToken(tokens, new Token(
-                                    TokenType.DIRECTIVE,
-                                    directive,
+                                    startLocation,
                                     literal,
-                                    filename,
-                                    lineIndex,
-                                    startIndex
+                                    TokenType.DIRECTIVE,
+                                    directive
                                 ));
                                 break;
                             }
@@ -536,12 +501,10 @@ public class Tokenizer {
                         List<Instruction> mnemonicMatches = Application.instructionSet.matchMnemonic(literal);
                         if (!mnemonicMatches.isEmpty()) {
                             preprocessor.processToken(tokens, new Token(
-                                TokenType.OPERATOR,
-                                mnemonicMatches,
+                                startLocation,
                                 literal,
-                                filename,
-                                lineIndex,
-                                startIndex
+                                TokenType.OPERATOR,
+                                mnemonicMatches
                             ));
                             break;
                         }
@@ -551,105 +514,88 @@ public class Tokenizer {
                         // the lexical specifications of an identifier, and those need to be recognized first.
                         if (isValidIdentifier(literal)) {
                             preprocessor.processToken(tokens, new Token(
-                                TokenType.IDENTIFIER,
-                                null,
+                                startLocation,
                                 literal,
-                                filename,
-                                lineIndex,
-                                startIndex
+                                TokenType.IDENTIFIER,
+                                null
                             ));
                             break;
                         }
 
                         // Doesn't match any MIPS language token, so produce an error
                         if (isNumber) {
-                            errors.add(new ErrorMessage(
-                                filename,
-                                lineIndex,
-                                startIndex,
+                            log.logError(
+                                startLocation,
                                 "Invalid number: " + literal
-                            ));
+                            );
                         }
                         else {
-                            errors.add(new ErrorMessage(
-                                filename,
-                                lineIndex,
-                                startIndex,
+                            log.logError(
+                                startLocation,
                                 "Invalid language element: " + literal
-                            ));
+                            );
                         }
                         preprocessor.processToken(tokens, new Token(
-                            TokenType.ERROR,
-                            null,
+                            startLocation,
                             literal,
-                            filename,
-                            lineIndex,
-                            startIndex
+                            TokenType.ERROR,
+                            null
                         ));
                     }
                     // Check for some sort of template substitution, but only in an expansion template
                     else if (isInExpansionTemplate && startChar == '{') {
-                        int startIndex = index;
-                        index++;
+                        columnIndex++;
 
                         // Find the end of the substitution, accounting for possible nesting of curly braces
                         int nestLevel = 1;
-                        while (index < line.length() && nestLevel > 0) {
-                            char ch = line.charAt(index);
+                        while (columnIndex < line.length() && nestLevel > 0) {
+                            char ch = line.charAt(columnIndex);
                             if (ch == '{') {
                                 nestLevel++;
                             }
                             else if (ch == '}') {
                                 nestLevel--;
                             }
-                            index++;
+                            columnIndex++;
                         }
 
                         if (nestLevel != 0) {
-                            errors.add(new ErrorMessage(
-                                filename,
-                                lineIndex,
-                                startIndex,
+                            log.logError(
+                                startLocation,
                                 "Unclosed substitution syntax in expansion template"
-                            ));
+                            );
                             break;
                         }
 
-                        String subLine = line.substring(startIndex + 1, index - 1);
-                        SourceLine tokenizedSubLine = tokenizeLine(filename, subLine, lineIndex, errors, preprocessor, true);
+                        String subLine = line.substring(startIndex + 1, columnIndex - 1);
+                        SourceLine tokenizedSubLine = tokenizeLine(filename, subLine, lineIndex, log, preprocessor, true);
 
                         preprocessor.processToken(tokens, new Token(
+                            startLocation,
+                            line.substring(startIndex, columnIndex),
                             TokenType.TEMPLATE_SUBSTITUTION,
-                            tokenizedSubLine.getTokens(),
-                            line.substring(startIndex, index),
-                            filename,
-                            lineIndex,
-                            startIndex
+                            tokenizedSubLine.getTokens()
                         ));
                     }
                     else {
                         // startChar is some character that isn't recognized as the start of a token
-                        errors.add(new ErrorMessage(
-                            filename,
-                            lineIndex,
-                            index,
+                        log.logError(
+                            startLocation,
                             "Unexpected character: " + startChar
                                 + " (0x" + Integer.toUnsignedString(startChar, 16) + ")"
-                        ));
+                        );
                         preprocessor.processToken(tokens, new Token(
-                            TokenType.ERROR,
-                            null,
+                            startLocation,
                             Character.toString(startChar),
-                            filename,
-                            lineIndex,
-                            index
+                            TokenType.ERROR,
+                            null
                         ));
                     }
                 }
             }
         }
 
-        return new SourceLine(filename, lineIndex, line, tokens);
+        return new SourceLine(lineLocation, line, tokens);
     }
 
     /**
@@ -675,22 +621,21 @@ public class Tokenizer {
      * Handle an escape for a character or string literal. It is assumed that <code>index</code> has already been
      * incremented past the initial backslash.
      *
-     * @param value The destination where the resulting character value will be appended.
-     * @param filename The filename of the current source file.
-     * @param lineIndex The line index in the source file (for error reporting).
-     * @param index The index in <code>line</code> of the character immediately following the initial backslash.
-     * @param line The raw form of the current line of source code.
-     * @param errors The error list, which will be added to in case of an invalid character escape.
+     * @param value        The destination where the resulting character value will be appended.
+     * @param lineLocation The filename of the current source file.
+     * @param columnIndex  The index in <code>line</code> of the character immediately following the initial backslash.
+     * @param line         The raw form of the current line of source code.
+     * @param log          The error list, which will be added to in case of an invalid character escape.
      * @return The new value of <code>index</code>, which corresponds to the next character in the line.
      */
-    public static int handleCharEscape(StringBuilder value, String filename, int lineIndex, int index, String line, ErrorList errors) {
+    public static int handleCharEscape(StringBuilder value, SourceLocation lineLocation, int columnIndex, String line, AssemblerLog log) {
         // If the line ends abruptly, leave the index as is... other code will deal with it
-        if (index >= line.length()) {
-            return index;
+        if (columnIndex >= line.length()) {
+            return columnIndex;
         }
 
         // Get the first character of the escape sequence
-        char ch = line.charAt(index);
+        char ch = line.charAt(columnIndex);
         switch (ch) {
             // Line feed (newline)
             case 'n' -> value.append('\n');
@@ -711,22 +656,24 @@ public class Tokenizer {
                 // assuming that a character is stored in 8 bits, and this makes the behavior more predictable anyway)
                 // For consistency, `index` always represents the index of the last known valid digit
                 for (int digit = 0; digit < 2; digit++) {
-                    ch = line.charAt(index + 1);
+                    // If the line ends abruptly, stop here... other code will deal with it
+                    if (columnIndex + 1 >= line.length()) {
+                        return columnIndex + 1;
+                    }
+                    ch = line.charAt(columnIndex + 1);
                     int digitValue = hexadecimalDigitValue(ch);
                     if (digitValue >= 0) {
                         // This is a valid hexadecimal digit
-                        index++;
+                        columnIndex++;
                         // Insert the new digit as the least significant 4 bits
                         hexadecimalValue = (hexadecimalValue << 4) | digitValue;
                     }
                     else {
                         // Not a valid hexadecimal digit, so generate an error
-                        errors.add(new ErrorMessage(
-                            filename,
-                            lineIndex,
-                            index + 1,
+                        log.logError(
+                            lineLocation.toColumnLocation(columnIndex + 1),
                             "Expected two hexadecimal digits following \\x, got: " + ch
-                        ));
+                        );
                         break;
                     }
                 }
@@ -744,11 +691,11 @@ public class Tokenizer {
                     int octalValue = ch - '0';
                     // Start by checking for a second digit because the first has already been handled
                     // For consistency, `index` always represents the index of the last known valid digit
-                    for (int digit = 1; digit < maxDigits && index + 1 < line.length(); digit++) {
-                        ch = line.charAt(index + 1);
+                    for (int digit = 1; digit < maxDigits && columnIndex + 1 < line.length(); digit++) {
+                        ch = line.charAt(columnIndex + 1);
                         if ('0' <= ch && ch <= '7') {
                             // This is a valid octal digit
-                            index++;
+                            columnIndex++;
                             // Insert the new digit as the least significant 3 bits
                             octalValue = (octalValue << 3) | (ch - '0');
                         }
@@ -762,18 +709,16 @@ public class Tokenizer {
                 }
                 else {
                     // Invalid escape
-                    errors.add(new ErrorMessage(
-                        filename,
-                        lineIndex,
-                        index,
+                    log.logError(
+                        lineLocation.toColumnLocation(columnIndex),
                         "Unrecognized character escape: \\" + ch
-                    ));
+                    );
                 }
             }
         }
 
         // Move to the first character following the escape
-        return index + 1;
+        return columnIndex + 1;
     }
 
     /**

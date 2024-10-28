@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.RegisterFile;
 import mars.simulator.ExceptionCause;
 import mars.simulator.Simulator;
@@ -25,14 +25,14 @@ public class SyscallSeek extends AbstractSyscall {
      * and $a2 specifies whence.  New position of file descriptor is returned in $v0.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(BasicStatement statement) throws SimulatorException {
         int descriptor = RegisterFile.getValue(4); // $a0: file descriptor
         int offset = RegisterFile.getValue(5); // $a1: position offset
         int whenceOrdinal = RegisterFile.getValue(6); // $a2: position whence
 
         SystemIO.SeekWhence whence = SystemIO.SeekWhence.valueOf(whenceOrdinal);
         if (whence == null) {
-            throw new ProcessingException(statement, "Invalid whence value in $a2 for " + this.getName() + " (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            throw new SimulatorException(statement, "Invalid whence value in $a2 for " + this.getName() + " (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
 
         long newPosition = Simulator.getInstance().getSystemIO().seekFile(descriptor, offset, whence);

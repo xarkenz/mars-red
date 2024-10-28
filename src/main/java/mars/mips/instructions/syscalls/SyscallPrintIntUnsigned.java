@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.RegisterFile;
 import mars.simulator.Simulator;
 
@@ -50,7 +50,7 @@ public class SyscallPrintIntUnsigned extends AbstractSyscall {
      * The value is treated as unsigned.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(BasicStatement statement) throws SimulatorException {
         int intValue = RegisterFile.getValue(4);
 
         Simulator.getInstance().getSystemIO().printString(Integer.toUnsignedString(intValue));

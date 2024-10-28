@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.InvalidRegisterAccessException;
 import mars.simulator.ExceptionCause;
@@ -52,18 +52,18 @@ public class SyscallReadDouble extends AbstractSyscall {
      * Performs syscall function to read the bits of input double into $f0 and $f1.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException {
+    public void simulate(BasicStatement statement) throws SimulatorException, InterruptedException {
         try {
             double doubleValue = Simulator.getInstance().getSystemIO().readDouble();
 
             Coprocessor1.setRegisterPairToDouble(0, doubleValue);
         }
         catch (NumberFormatException exception) {
-            throw new ProcessingException(statement, "invalid double input (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            throw new SimulatorException(statement, "invalid double input (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
         catch (InvalidRegisterAccessException exception) {
             // This should not occur because $f0 is always a valid double target
-            throw new ProcessingException(statement, "internal error writing double to register (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            throw new SimulatorException(statement, "internal error writing double to register (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
     }
 }

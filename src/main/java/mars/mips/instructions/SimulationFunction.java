@@ -1,6 +1,6 @@
 package mars.mips.instructions;
 
-import mars.ProcessingException;
+import mars.SimulatorException;
 import mars.assembler.BasicStatement;
 
 /*
@@ -41,8 +41,8 @@ public interface SimulationFunction {
      * Simulate the execution of a statement in a program.
      *
      * @param statement The statement to simulate execution of.
-     * @throws ProcessingException  Thrown if a runtime exception was generated during execution.
+     * @throws SimulatorException   Thrown if a runtime exception was generated during execution.
      * @throws InterruptedException Thrown if the simulator was stopped during execution.
      */
-    void simulate(BasicStatement statement) throws ProcessingException, InterruptedException;
+    void simulate(BasicStatement statement) throws SimulatorException, InterruptedException;
 }

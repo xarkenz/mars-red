@@ -1,9 +1,12 @@
 package mars;
 
+import mars.assembler.Assembler;
+import mars.assembler.log.AssemblyError;
 import mars.mips.dump.DumpFormat;
 import mars.mips.dump.DumpFormatManager;
 import mars.mips.hardware.*;
 import mars.simulator.ProgramArgumentList;
+import mars.simulator.Simulator;
 import mars.util.Binary;
 import mars.util.FilenameFinder;
 import mars.util.MemoryDump;
@@ -57,7 +60,7 @@ public class MarsLauncher {
 
     private boolean simulate;
     private boolean verbose; // display register name or address along with contents
-    private boolean assembleProject; // assemble only the given file or all files in its directory
+    private boolean assembleFolder; // assemble only the given file or all files in its directory
     private boolean pseudo; // pseudo instructions allowed in source code or not.
     private boolean delayedBranching; // MIPS delayed branching is enabled.
     private boolean warningsAreErrors; // Whether assembler warnings should be considered errors.
@@ -69,7 +72,6 @@ public class MarsLauncher {
     private ArrayList<String> registerDisplayList;
     private ArrayList<String> memoryDisplayList;
     private ArrayList<String> filenameList;
-    private Program code;
     private int maxSteps;
     private int instructionCount;
     private PrintStream out; // stream for display of command line output
@@ -144,40 +146,38 @@ public class MarsLauncher {
         Application.initialize();
         if (args.length == 0) {
             // Running graphical user interface
-            launchGUI();
+            this.launchGUI();
         }
         else {
             // Running from command line
             // Assure command mode works in headless environment (generates exception if not)
             System.setProperty("java.awt.headless", "true");
-            simulate = true;
-            displayFormat = HEXADECIMAL;
-            verbose = true;
-            assembleProject = false;
-            pseudo = true;
-            delayedBranching = false;
-            warningsAreErrors = false;
-            startAtMain = false;
-            countInstructions = false;
-            selfModifyingCode = false;
-            instructionCount = 0;
-            assembleErrorExitCode = 0;
-            simulateErrorExitCode = 0;
-            registerDisplayList = new ArrayList<>();
-            memoryDisplayList = new ArrayList<>();
-            filenameList = new ArrayList<>();
+            this.simulate = true;
+            this.displayFormat = HEXADECIMAL;
+            this.verbose = true;
+            this.assembleFolder = false;
+            this.pseudo = true;
+            this.delayedBranching = false;
+            this.warningsAreErrors = false;
+            this.startAtMain = false;
+            this.countInstructions = false;
+            this.selfModifyingCode = false;
+            this.instructionCount = 0;
+            this.assembleErrorExitCode = 0;
+            this.simulateErrorExitCode = 0;
+            this.registerDisplayList = new ArrayList<>();
+            this.memoryDisplayList = new ArrayList<>();
+            this.filenameList = new ArrayList<>();
             MemoryConfigurations.setCurrentConfiguration(MemoryConfigurations.getDefaultConfiguration());
-            // do NOT use Globals.program for command line MARS -- it triggers 'backstep' log.
-            code = new Program();
-            maxSteps = -1;
-            out = System.out;
-            if (parseCommandArgs(args)) {
-                if (runCommand()) {
-                    displayMiscellaneousPostMortem();
-                    displayRegistersPostMortem();
-                    displayMemoryPostMortem();
+            this.maxSteps = -1;
+            this.out = System.out;
+            if (this.parseCommandArgs(args)) {
+                if (this.runCommand()) {
+                    this.displayMiscellaneousPostMortem();
+                    this.displayRegistersPostMortem();
+                    this.displayMemoryPostMortem();
                 }
-                dumpSegments();
+                this.dumpSegments();
             }
             System.exit(Application.exitCode);
         }
@@ -360,7 +360,7 @@ public class MarsLauncher {
                 continue;
             }
             if (args[i].equalsIgnoreCase("p")) {
-                assembleProject = true;
+                assembleFolder = true;
                 continue;
             }
             if (args[i].equalsIgnoreCase("dec")) {
@@ -457,22 +457,20 @@ public class MarsLauncher {
      * @return true if a simulation (run) occurs, false otherwise.
      */
     private boolean runCommand() {
-        if (filenameList.isEmpty()) {
+        if (this.filenameList.isEmpty()) {
             return false;
         }
-        boolean programRan = false;
         try {
-            Application.getSettings().delayedBranchingEnabled.setNonPersistent(delayedBranching);
-            Application.getSettings().selfModifyingCodeEnabled.setNonPersistent(selfModifyingCode);
-            File mainFile = new File(filenameList.get(0)).getAbsoluteFile(); // First file is "main" file
+            Application.getSettings().delayedBranchingEnabled.setNonPersistent(this.delayedBranching);
+            Application.getSettings().selfModifyingCodeEnabled.setNonPersistent(this.selfModifyingCode);
             List<String> filesToAssemble;
-            if (assembleProject) {
-                filesToAssemble = FilenameFinder.findFilenames(mainFile.getParent(), Application.FILE_EXTENSIONS);
-                if (filenameList.size() > 1) {
+            if (this.assembleFolder) {
+                filesToAssemble = FilenameFinder.findFilenames(new File(this.filenameList.get(0)).getParent(), Application.FILE_EXTENSIONS);
+                if (this.filenameList.size() > 1) {
                     // Using "p" project option PLUS listing more than one filename on command line.
                     // Add the additional files, avoiding duplicates.
-                    filenameList.remove(0); // First one has already been processed
-                    List<String> moreFilesToAssemble = FilenameFinder.findFilenames(filenameList, FilenameFinder.MATCH_ALL_EXTENSIONS);
+                    this.filenameList.remove(0); // First one has already been processed
+                    List<String> moreFilesToAssemble = FilenameFinder.findFilenames(this.filenameList, FilenameFinder.MATCH_ALL_EXTENSIONS);
                     // Remove any duplicates then merge the two lists.
                     for (int index = 0; index < moreFilesToAssemble.size(); index++) {
                         for (String fileToAssemble : filesToAssemble) {
@@ -489,45 +487,43 @@ public class MarsLauncher {
                 }
             }
             else {
-                filesToAssemble = FilenameFinder.findFilenames(filenameList, FilenameFinder.MATCH_ALL_EXTENSIONS);
+                filesToAssemble = FilenameFinder.findFilenames(this.filenameList, FilenameFinder.MATCH_ALL_EXTENSIONS);
             }
             if (Application.debug) {
-                out.println("--------  TOKENIZING BEGINS  -----------");
+                this.out.println("--------  ASSEMBLY BEGINS  -----------");
             }
-            List<Program> programsToAssemble = code.prepareFilesForAssembly(filesToAssemble, mainFile.getAbsolutePath(), null);
-            if (Application.debug) {
-                out.println("--------  ASSEMBLY BEGINS  -----------");
-            }
-            // Added logic to check for warnings and print if any. DPS 11/28/06
-            ErrorList warnings = code.assemble(programsToAssemble, pseudo, warningsAreErrors);
-            if (warnings != null && warnings.warningsOccurred()) {
-                out.println(warnings.generateWarningReport());
-            }
-            RegisterFile.initializeProgramCounter(startAtMain); // DPS 3/9/09
-            if (simulate) {
+            Assembler assembler = new Assembler();
+            assembler.getLog().setOutput(this.out::println);
+            assembler.assembleFilenames(filesToAssemble);
+            RegisterFile.initializeProgramCounter(this.startAtMain); // DPS 3/9/09
+            if (this.simulate) {
                 // store program args (if any) in MIPS memory
-                new ProgramArgumentList(programArgumentList).storeProgramArguments();
+                new ProgramArgumentList(this.programArgumentList).storeProgramArguments();
                 // establish observer if specified
-                establishObserver();
+                this.establishObserver();
                 if (Application.debug) {
-                    out.println("--------  SIMULATION BEGINS  -----------");
+                    this.out.println("--------  SIMULATION BEGINS  -----------");
                 }
-                programRan = true;
-                code.simulate(maxSteps);
-                if (maxSteps > 0) {
-                    out.println("\nProgram terminated after " + maxSteps + " steps.");
+                Simulator.getInstance().simulate(RegisterFile.getProgramCounter(), this.maxSteps, null);
+                if (this.maxSteps > 0) {
+                    this.out.println("\nProgram terminated after " + this.maxSteps + " steps.");
                 }
             }
             if (Application.debug) {
-                out.println("\n--------  ALL PROCESSING COMPLETE  -----------");
+                this.out.println("\n--------  ALL PROCESSING COMPLETE  -----------");
             }
         }
-        catch (ProcessingException exception) {
-            Application.exitCode = (programRan) ? simulateErrorExitCode : assembleErrorExitCode;
-            out.println(exception.getErrors().generateErrorAndWarningReport());
-            out.println("Processing terminated due to errors.");
+        catch (AssemblyError error) {
+            Application.exitCode = this.assembleErrorExitCode;
+            this.out.println("Processing terminated due to errors.");
+            return false;
         }
-        return programRan;
+        catch (SimulatorException exception) {
+            Application.exitCode = this.simulateErrorExitCode;
+            this.out.println(exception.getMessage());
+            this.out.println("Processing terminated due to errors.");
+        }
+        return true;
     }
 
     /**

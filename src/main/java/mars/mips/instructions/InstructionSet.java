@@ -3,7 +3,10 @@ package mars.mips.instructions;
 import mars.*;
 import mars.assembler.BasicStatement;
 import mars.assembler.OperandType;
-import mars.assembler.SourceFile;
+import mars.assembler.log.AssemblerLog;
+import mars.assembler.log.LogLevel;
+import mars.assembler.log.SourceLocation;
+import mars.assembler.token.SourceFile;
 import mars.assembler.extended.ExpansionTemplate;
 import mars.assembler.extended.TemplateParser;
 import mars.assembler.token.Tokenizer;
@@ -167,7 +170,7 @@ public class InstructionSet {
                 int sum = add1 + add2;
                 // overflow on A+B detected when A and B have same sign and A+B has other sign.
                 if ((add1 >= 0 && add2 >= 0 && sum < 0) || (add1 < 0 && add2 < 0 && sum >= 0)) {
-                    throw new ProcessingException(statement, "arithmetic overflow", ExceptionCause.ARITHMETIC_OVERFLOW_EXCEPTION);
+                    throw new SimulatorException(statement, "arithmetic overflow", ExceptionCause.ARITHMETIC_OVERFLOW_EXCEPTION);
                 }
                 RegisterFile.updateRegister(statement.getOperand(0), sum);
             }
@@ -185,7 +188,7 @@ public class InstructionSet {
                 int diff = sub1 - sub2;
                 // overflow on A-B detected when A and B have opposite signs and A-B has B's sign
                 if ((sub1 >= 0 && sub2 < 0 && diff < 0) || (sub1 < 0 && sub2 >= 0 && diff >= 0)) {
-                    throw new ProcessingException(statement, "arithmetic overflow", ExceptionCause.ARITHMETIC_OVERFLOW_EXCEPTION);
+                    throw new SimulatorException(statement, "arithmetic overflow", ExceptionCause.ARITHMETIC_OVERFLOW_EXCEPTION);
                 }
                 RegisterFile.updateRegister(statement.getOperand(0), diff);
             }
@@ -203,7 +206,7 @@ public class InstructionSet {
                 int sum = add1 + add2;
                 // overflow on A+B detected when A and B have same sign and A+B has other sign.
                 if ((add1 >= 0 && add2 >= 0 && sum < 0) || (add1 < 0 && add2 < 0 && sum >= 0)) {
-                    throw new ProcessingException(statement, "arithmetic overflow", ExceptionCause.ARITHMETIC_OVERFLOW_EXCEPTION);
+                    throw new SimulatorException(statement, "arithmetic overflow", ExceptionCause.ARITHMETIC_OVERFLOW_EXCEPTION);
                 }
                 RegisterFile.updateRegister(statement.getOperand(0), sum);
             }
@@ -393,7 +396,7 @@ public class InstructionSet {
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
-            "mflo $t1",
+            "mflo",
             formatR,
             InstructionFormat.R_TYPE,
             "Move From LO register",
@@ -588,7 +591,7 @@ public class InstructionSet {
                     RegisterFile.updateRegister(statement.getOperand(0), Memory.getInstance().fetchWord(RegisterFile.getValue(statement.getOperand(2)) + statement.getOperand(1), true));
                 }
                 catch (AddressErrorException exception) {
-                    throw new ProcessingException(statement, exception);
+                    throw new SimulatorException(statement, exception);
                 }
             }
         ));
@@ -612,7 +615,7 @@ public class InstructionSet {
                     RegisterFile.updateRegister(statement.getOperand(0), Memory.getInstance().fetchWord(RegisterFile.getValue(statement.getOperand(2)) + statement.getOperand(1), true));
                 }
                 catch (AddressErrorException exception) {
-                    throw new ProcessingException(statement, exception);
+                    throw new SimulatorException(statement, exception);
                 }
             }
         ));
@@ -633,7 +636,7 @@ public class InstructionSet {
                     RegisterFile.updateRegister(statement.getOperand(0), result);
                 }
                 catch (AddressErrorException exception) {
-                    throw new ProcessingException(statement, exception);
+                    throw new SimulatorException(statement, exception);
                 }
             }
         ));
@@ -654,7 +657,7 @@ public class InstructionSet {
                     RegisterFile.updateRegister(statement.getOperand(0), result);
                 }
                 catch (AddressErrorException exception) {
-                    throw new ProcessingException(statement, exception);
+                    throw new SimulatorException(statement, exception);
                 }
             }
         ));
@@ -670,7 +673,7 @@ public class InstructionSet {
                     Memory.getInstance().storeWord(RegisterFile.getValue(statement.getOperand(2)) + statement.getOperand(1), RegisterFile.getValue(statement.getOperand(0)), true);
                 }
                 catch (AddressErrorException exception) {
-                    throw new ProcessingException(statement, exception);
+                    throw new SimulatorException(statement, exception);
                 }
             }
         ));
@@ -688,7 +691,7 @@ public class InstructionSet {
                     Memory.getInstance().storeWord(RegisterFile.getValue(statement.getOperand(2)) + statement.getOperand(1), RegisterFile.getValue(statement.getOperand(0)), true);
                 }
                 catch (AddressErrorException exception) {
-                    throw new ProcessingException(statement, exception);
+                    throw new SimulatorException(statement, exception);
                 }
                 RegisterFile.updateRegister(statement.getOperand(0), 1); // always succeeds
             }
@@ -709,7 +712,7 @@ public class InstructionSet {
                     }
                 }
                 catch (AddressErrorException exception) {
-                    throw new ProcessingException(statement, exception);
+                    throw new SimulatorException(statement, exception);
                 }
             }
         ));
@@ -729,7 +732,7 @@ public class InstructionSet {
                     }
                 }
                 catch (AddressErrorException exception) {
-                    throw new ProcessingException(statement, exception);
+                    throw new SimulatorException(statement, exception);
                 }
             }
         ));
@@ -984,7 +987,7 @@ public class InstructionSet {
             "terminate program execution with the specified exception code",
             "000000 ffffffffffffffffffff 001101",
             statement -> {
-                throw new ProcessingException(statement, "break instruction executed; code = " + statement.getOperand(0) + ".", ExceptionCause.BREAKPOINT_EXCEPTION);
+                throw new SimulatorException(statement, "break instruction executed; code = " + statement.getOperand(0) + ".", ExceptionCause.BREAKPOINT_EXCEPTION);
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -995,7 +998,7 @@ public class InstructionSet {
             "terminate program execution with an exception",
             "000000 00000 00000 00000 00000 001101",
             statement -> {
-                throw new ProcessingException(statement, "break instruction executed; no code given.", ExceptionCause.BREAKPOINT_EXCEPTION);
+                throw new SimulatorException(statement, "break instruction executed; no code given.", ExceptionCause.BREAKPOINT_EXCEPTION);
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -1079,7 +1082,7 @@ public class InstructionSet {
                     RegisterFile.updateRegister(statement.getOperand(0), Memory.getInstance().fetchByte(RegisterFile.getValue(statement.getOperand(2)) + (statement.getOperand(1) << 16 >> 16), true) << 24 >> 24);
                 }
                 catch (AddressErrorException exception) {
-                    throw new ProcessingException(statement, exception);
+                    throw new SimulatorException(statement, exception);
                 }
             }
         ));
@@ -1096,7 +1099,7 @@ public class InstructionSet {
                     RegisterFile.updateRegister(statement.getOperand(0), Memory.getInstance().fetchByte(RegisterFile.getValue(statement.getOperand(2)) + (statement.getOperand(1) << 16 >> 16), true));
                 }
                 catch (AddressErrorException exception) {
-                    throw new ProcessingException(statement, exception);
+                    throw new SimulatorException(statement, exception);
                 }
             }
         ));
@@ -1112,7 +1115,7 @@ public class InstructionSet {
                     RegisterFile.updateRegister(statement.getOperand(0), Memory.getInstance().fetchHalfword(RegisterFile.getValue(statement.getOperand(2)) + (statement.getOperand(1) << 16 >> 16), true) << 16 >> 16);
                 }
                 catch (AddressErrorException exception) {
-                    throw new ProcessingException(statement, exception);
+                    throw new SimulatorException(statement, exception);
                 }
             }
         ));
@@ -1129,7 +1132,7 @@ public class InstructionSet {
                     RegisterFile.updateRegister(statement.getOperand(0), Memory.getInstance().fetchHalfword(RegisterFile.getValue(statement.getOperand(2)) + (statement.getOperand(1) << 16 >> 16), true));
                 }
                 catch (AddressErrorException exception) {
-                    throw new ProcessingException(statement, exception);
+                    throw new SimulatorException(statement, exception);
                 }
             }
         ));
@@ -1145,7 +1148,7 @@ public class InstructionSet {
                     Memory.getInstance().storeByte(RegisterFile.getValue(statement.getOperand(2)) + (statement.getOperand(1) << 16 >> 16), RegisterFile.getValue(statement.getOperand(0)), true);
                 }
                 catch (AddressErrorException exception) {
-                    throw new ProcessingException(statement, exception);
+                    throw new SimulatorException(statement, exception);
                 }
             }
         ));
@@ -1161,7 +1164,7 @@ public class InstructionSet {
                     Memory.getInstance().storeHalfword(RegisterFile.getValue(statement.getOperand(2)) + (statement.getOperand(1) << 16 >> 16), RegisterFile.getValue(statement.getOperand(0)), true);
                 }
                 catch (AddressErrorException exception) {
-                    throw new ProcessingException(statement, exception);
+                    throw new SimulatorException(statement, exception);
                 }
             }
         ));
@@ -1251,7 +1254,7 @@ public class InstructionSet {
                     Coprocessor1.setRegisterPairToDouble(statement.getOperand(0), Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1)) + Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(2)));
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "all registers must be even-numbered");
+                    throw new SimulatorException(statement, "all registers must be even-numbered");
                 }
             }
         ));
@@ -1278,7 +1281,7 @@ public class InstructionSet {
                     Coprocessor1.setRegisterPairToDouble(statement.getOperand(0), Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1)) - Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(2)));
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "all registers must be even-numbered");
+                    throw new SimulatorException(statement, "all registers must be even-numbered");
                 }
             }
         ));
@@ -1305,7 +1308,7 @@ public class InstructionSet {
                     Coprocessor1.setRegisterPairToDouble(statement.getOperand(0), Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1)) * Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(2)));
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "all registers must be even-numbered");
+                    throw new SimulatorException(statement, "all registers must be even-numbered");
                 }
             }
         ));
@@ -1332,7 +1335,7 @@ public class InstructionSet {
                     Coprocessor1.setRegisterPairToDouble(statement.getOperand(0), Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1)) / Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(2)));
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "all registers must be even-numbered");
+                    throw new SimulatorException(statement, "all registers must be even-numbered");
                 }
             }
         ));
@@ -1361,7 +1364,7 @@ public class InstructionSet {
                     Coprocessor1.setRegisterPairToLong(statement.getOperand(0), Coprocessor1.getLongFromRegisterPair(statement.getOperand(1)) ^ Long.MIN_VALUE);
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "both registers must be even-numbered");
+                    throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
             }
         ));
@@ -1390,7 +1393,7 @@ public class InstructionSet {
                     Coprocessor1.setRegisterPairToLong(statement.getOperand(0), Coprocessor1.getLongFromRegisterPair(statement.getOperand(1)) & Long.MAX_VALUE);
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "both registers must be even-numbered");
+                    throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
             }
         ));
@@ -1427,7 +1430,7 @@ public class InstructionSet {
                     Coprocessor1.setRegisterPairToDouble(statement.getOperand(0), Math.sqrt(Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1))));
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "both registers must be even-numbered");
+                    throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
             }
         ));
@@ -1474,7 +1477,7 @@ public class InstructionSet {
                     Coprocessor1.updateRegister(statement.getOperand(0), result);
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "second register must be even-numbered");
+                    throw new SimulatorException(statement, "second register must be even-numbered");
                 }
             }
         ));
@@ -1521,7 +1524,7 @@ public class InstructionSet {
                     Coprocessor1.updateRegister(statement.getOperand(0), result);
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "second register must be even-numbered");
+                    throw new SimulatorException(statement, "second register must be even-numbered");
                 }
             }
         ));
@@ -1619,7 +1622,7 @@ public class InstructionSet {
                     Coprocessor1.updateRegister(statement.getOperand(0), result);
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "second register must be even-numbered");
+                    throw new SimulatorException(statement, "second register must be even-numbered");
                 }
             }
         ));
@@ -1665,7 +1668,7 @@ public class InstructionSet {
                     Coprocessor1.updateRegister(statement.getOperand(0), result);
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "second register must be even-numbered");
+                    throw new SimulatorException(statement, "second register must be even-numbered");
                 }
             }
         ));
@@ -1718,7 +1721,7 @@ public class InstructionSet {
                     }
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "both registers must be even-numbered");
+                    throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
             }
         ));
@@ -1739,7 +1742,7 @@ public class InstructionSet {
                     }
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "both registers must be even-numbered");
+                    throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
             }
         ));
@@ -1792,7 +1795,7 @@ public class InstructionSet {
                     }
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "both registers must be even-numbered");
+                    throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
             }
         ));
@@ -1813,7 +1816,7 @@ public class InstructionSet {
                     }
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "both registers must be even-numbered");
+                    throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
             }
         ));
@@ -1866,7 +1869,7 @@ public class InstructionSet {
                     }
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "both registers must be even-numbered");
+                    throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
             }
         ));
@@ -1887,7 +1890,7 @@ public class InstructionSet {
                     }
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "both registers must be even-numbered");
+                    throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
             }
         ));
@@ -1956,7 +1959,7 @@ public class InstructionSet {
                     Coprocessor1.setRegisterToFloat(statement.getOperand(0), (float) Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1)));
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "second register must be even-numbered");
+                    throw new SimulatorException(statement, "second register must be even-numbered");
                 }
             }
         ));
@@ -1973,7 +1976,7 @@ public class InstructionSet {
                     Coprocessor1.setRegisterPairToDouble(statement.getOperand(0), Coprocessor1.getFloatFromRegister(statement.getOperand(1)));
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "first register must be even-numbered");
+                    throw new SimulatorException(statement, "first register must be even-numbered");
                 }
             }
         ));
@@ -2002,7 +2005,7 @@ public class InstructionSet {
                     Coprocessor1.updateRegister(statement.getOperand(0), (int) Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1)));
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "second register must be even-numbered");
+                    throw new SimulatorException(statement, "second register must be even-numbered");
                 }
             }
         ));
@@ -2031,7 +2034,7 @@ public class InstructionSet {
                     Coprocessor1.setRegisterPairToDouble(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "first register must be even-numbered");
+                    throw new SimulatorException(statement, "first register must be even-numbered");
                 }
             }
         ));
@@ -2055,7 +2058,7 @@ public class InstructionSet {
             "010001 10001 00000 sssss fffff 000110",
             statement -> {
                 if (statement.getOperand(0) % 2 == 1 || statement.getOperand(1) % 2 == 1) {
-                    throw new ProcessingException(statement, "both registers must be even-numbered");
+                    throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
                 Coprocessor1.updateRegister(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
                 Coprocessor1.updateRegister(statement.getOperand(0) + 1, Coprocessor1.getValue(statement.getOperand(1) + 1));
@@ -2096,7 +2099,7 @@ public class InstructionSet {
             "010001 10001 000 00 sssss fffff 010001",
             statement -> {
                 if (statement.getOperand(0) % 2 == 1 || statement.getOperand(1) % 2 == 1) {
-                    throw new ProcessingException(statement, "both registers must be even-numbered");
+                    throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
                 if (Coprocessor1.getConditionFlag(0) == 0) {
                     Coprocessor1.updateRegister(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
@@ -2113,7 +2116,7 @@ public class InstructionSet {
             "010001 10001 ttt 00 sssss fffff 010001",
             statement -> {
                 if (statement.getOperand(0) % 2 == 1 || statement.getOperand(1) % 2 == 1) {
-                    throw new ProcessingException(statement, "both registers must be even-numbered");
+                    throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
                 if (Coprocessor1.getConditionFlag(statement.getOperand(2)) == 0) {
                     Coprocessor1.updateRegister(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
@@ -2156,7 +2159,7 @@ public class InstructionSet {
             "010001 10001 000 01 sssss fffff 010001",
             statement -> {
                 if (statement.getOperand(0) % 2 == 1 || statement.getOperand(1) % 2 == 1) {
-                    throw new ProcessingException(statement, "both registers must be even-numbered");
+                    throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
                 if (Coprocessor1.getConditionFlag(0) == 1) {
                     Coprocessor1.updateRegister(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
@@ -2173,7 +2176,7 @@ public class InstructionSet {
             "010001 10001 ttt 01 sssss fffff 010001",
             statement -> {
                 if (statement.getOperand(0) % 2 == 1 || statement.getOperand(1) % 2 == 1) {
-                    throw new ProcessingException(statement, "both registers must be even-numbered");
+                    throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
                 if (Coprocessor1.getConditionFlag(statement.getOperand(2)) == 1) {
                     Coprocessor1.updateRegister(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
@@ -2203,7 +2206,7 @@ public class InstructionSet {
             "010001 10001 ttttt sssss fffff 010011",
             statement -> {
                 if (statement.getOperand(0) % 2 == 1 || statement.getOperand(1) % 2 == 1) {
-                    throw new ProcessingException(statement, "both registers must be even-numbered");
+                    throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
                 if (RegisterFile.getValue(statement.getOperand(2)) != 0) {
                     Coprocessor1.updateRegister(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
@@ -2233,7 +2236,7 @@ public class InstructionSet {
             "010001 10001 ttttt sssss fffff 010010",
             statement -> {
                 if (statement.getOperand(0) % 2 == 1 || statement.getOperand(1) % 2 == 1) {
-                    throw new ProcessingException(statement, "both registers must be even-numbered");
+                    throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
                 if (RegisterFile.getValue(statement.getOperand(2)) == 0) {
                     Coprocessor1.updateRegister(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
@@ -2275,7 +2278,7 @@ public class InstructionSet {
                     Coprocessor1.updateRegister(statement.getOperand(0), Memory.getInstance().fetchWord(RegisterFile.getValue(statement.getOperand(2)) + statement.getOperand(1), true));
                 }
                 catch (AddressErrorException exception) {
-                    throw new ProcessingException(statement, exception);
+                    throw new SimulatorException(statement, exception);
                 }
             }
         ));
@@ -2292,10 +2295,10 @@ public class InstructionSet {
                     Coprocessor1.setRegisterPairToLong(statement.getOperand(0), Memory.getInstance().fetchDoubleword(RegisterFile.getValue(statement.getOperand(2)) + statement.getOperand(1), true));
                 }
                 catch (AddressErrorException exception) {
-                    throw new ProcessingException(statement, exception);
+                    throw new SimulatorException(statement, exception);
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "first register must be even-numbered");
+                    throw new SimulatorException(statement, "first register must be even-numbered");
                 }
             }
         ));
@@ -2311,7 +2314,7 @@ public class InstructionSet {
                     Memory.getInstance().storeWord(RegisterFile.getValue(statement.getOperand(2)) + statement.getOperand(1), Coprocessor1.getValue(statement.getOperand(0)), true);
                 }
                 catch (AddressErrorException exception) {
-                    throw new ProcessingException(statement, exception);
+                    throw new SimulatorException(statement, exception);
                 }
             }
         ));
@@ -2328,10 +2331,10 @@ public class InstructionSet {
                     Memory.getInstance().storeDoubleword(RegisterFile.getValue(statement.getOperand(2)) + statement.getOperand(1), Coprocessor1.getLongFromRegisterPair(statement.getOperand(0)), true);
                 }
                 catch (AddressErrorException exception) {
-                    throw new ProcessingException(statement, exception);
+                    throw new SimulatorException(statement, exception);
                 }
                 catch (InvalidRegisterAccessException exception) {
-                    throw new ProcessingException(statement, "first register must be even-numbered");
+                    throw new SimulatorException(statement, "first register must be even-numbered");
                 }
             }
         ));
@@ -2347,7 +2350,7 @@ public class InstructionSet {
             "000000 fffff sssss 00000 00000 110100",
             statement -> {
                 if (RegisterFile.getValue(statement.getOperand(0)) == RegisterFile.getValue(statement.getOperand(1))) {
-                    throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
                 }
             }
         ));
@@ -2360,7 +2363,7 @@ public class InstructionSet {
             "000001 fffff 01100 ssssssssssssssss",
             statement -> {
                 if (RegisterFile.getValue(statement.getOperand(0)) == (statement.getOperand(1) << 16 >> 16)) {
-                    throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
                 }
             }
         ));
@@ -2373,7 +2376,7 @@ public class InstructionSet {
             "000000 fffff sssss 00000 00000 110110",
             statement -> {
                 if (RegisterFile.getValue(statement.getOperand(0)) != RegisterFile.getValue(statement.getOperand(1))) {
-                    throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
                 }
             }
         ));
@@ -2386,7 +2389,7 @@ public class InstructionSet {
             "000001 fffff 01110 ssssssssssssssss",
             statement -> {
                 if (RegisterFile.getValue(statement.getOperand(0)) != (statement.getOperand(1) << 16 >> 16)) {
-                    throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
                 }
             }
         ));
@@ -2399,7 +2402,7 @@ public class InstructionSet {
             "000000 fffff sssss 00000 00000 110000",
             statement -> {
                 if (RegisterFile.getValue(statement.getOperand(0)) >= RegisterFile.getValue(statement.getOperand(1))) {
-                    throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
                 }
             }
         ));
@@ -2412,7 +2415,7 @@ public class InstructionSet {
             "000000 fffff sssss 00000 00000 110001",
             statement -> {
                 if (Integer.compareUnsigned(RegisterFile.getValue(statement.getOperand(0)), RegisterFile.getValue(statement.getOperand(1))) >= 0) {
-                    throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
                 }
             }
         ));
@@ -2425,7 +2428,7 @@ public class InstructionSet {
             "000001 fffff 01000 ssssssssssssssss",
             statement -> {
                 if (RegisterFile.getValue(statement.getOperand(0)) >= (statement.getOperand(1) << 16 >> 16)) {
-                    throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
                 }
             }
         ));
@@ -2438,7 +2441,7 @@ public class InstructionSet {
             "000001 fffff 01001 ssssssssssssssss",
             statement -> {
                 if (Integer.compareUnsigned(RegisterFile.getValue(statement.getOperand(0)), statement.getOperand(1) << 16 >> 16) >= 0) {
-                    throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
                 }
             }
         ));
@@ -2451,7 +2454,7 @@ public class InstructionSet {
             "000000 fffff sssss 00000 00000 110010",
             statement -> {
                 if (RegisterFile.getValue(statement.getOperand(0)) < RegisterFile.getValue(statement.getOperand(1))) {
-                    throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
                 }
             }
         ));
@@ -2464,7 +2467,7 @@ public class InstructionSet {
             "000000 fffff sssss 00000 00000 110011",
             statement -> {
                 if (Integer.compareUnsigned(RegisterFile.getValue(statement.getOperand(0)), RegisterFile.getValue(statement.getOperand(1))) < 0) {
-                    throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
                 }
             }
         ));
@@ -2477,7 +2480,7 @@ public class InstructionSet {
             "000001 fffff 01010 ssssssssssssssss",
             statement -> {
                 if (RegisterFile.getValue(statement.getOperand(0)) < (statement.getOperand(1) << 16 >> 16)) {
-                    throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
                 }
             }
         ));
@@ -2490,7 +2493,7 @@ public class InstructionSet {
             "000001 fffff 01011 ssssssssssssssss",
             statement -> {
                 if (Integer.compareUnsigned(RegisterFile.getValue(statement.getOperand(0)), statement.getOperand(1) << 16 >> 16) < 0) {
-                    throw new ProcessingException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
                 }
             }
         ));
@@ -2612,43 +2615,38 @@ public class InstructionSet {
     }
 
     private static List<ExpansionTemplate.Statement> parseExpansionStatements(String mnemonic, List<OperandType> operandTypes, String expansionCode) {
-        ErrorList errors = new ErrorList();
+        AssemblerLog log = new AssemblerLog();
+        log.setOutput(System.err::println);
         String filename = mnemonic + operandTypes; // Takes the form of "addi[reg, reg, s16]"
 
         SourceFile expansionLines = Tokenizer.tokenizeLines(
             filename,
             List.of(expansionCode.split("\n")),
-            errors,
+            log,
             true
         );
 
-        if (errors.errorsOccurred()) {
-            System.err.println(errors.generateErrorAndWarningReport());
+        if (log.hasMessages(LogLevel.ERROR)) {
             return null;
         }
 
         TemplateParser parser = new TemplateParser(operandTypes, expansionLines.getLines().iterator());
         List<ExpansionTemplate.Statement> statements = new ArrayList<>();
-        while (true) {
-            try {
+        try {
+            while (true) {
                 ExpansionTemplate.Statement statement = parser.parseNextStatement();
                 if (statement == null) {
                     break;
                 }
                 statements.add(statement);
             }
-            catch (RuntimeException exception) {
-                // TODO: better error handling. gosh.
-                errors.add(new ErrorMessage(filename, 0, 0, exception.getMessage()));
-            }
+        }
+        catch (RuntimeException exception) {
+            log.logError(new SourceLocation(filename), exception.getMessage());
         }
 
-        if (errors.errorsOccurred()) {
-            System.err.println(errors.generateErrorAndWarningReport());
+        if (log.hasMessages(LogLevel.ERROR)) {
             return null;
-        }
-        else if (errors.warningsOccurred()) {
-            System.err.println(errors.generateWarningReport());
         }
 
         return statements;
@@ -2745,13 +2743,13 @@ public class InstructionSet {
     /**
      * Method to find and invoke a syscall given its service number.
      */
-    private void processSyscall(BasicStatement statement, int number) throws ProcessingException, InterruptedException {
+    private void processSyscall(BasicStatement statement, int number) throws SimulatorException, InterruptedException {
         Syscall service = SyscallManager.getSyscall(number);
         if (service != null) {
             service.simulate(null);
             return;
         }
-        throw new ProcessingException(statement, "invalid or unimplemented syscall service: " + number, ExceptionCause.SYSCALL_EXCEPTION);
+        throw new SimulatorException(statement, "invalid or unimplemented syscall service: " + number, ExceptionCause.SYSCALL_EXCEPTION);
     }
 
     /**
@@ -2766,7 +2764,7 @@ public class InstructionSet {
     // the shift has been removed.  It is left in as commented-out code below.
     // This has the effect of always branching as if delayed branching is enabled,
     // even if it isn't.  This mod must work in conjunction with
-    // ProgramStatement.java, buildBasicStatementFromBasicInstruction() method near
+    // BasicStatement.java, buildBasicStatementFromBasicInstruction() method near
     // the bottom (currently line 194, heavily commented).
     private void processBranch(int displacement) {
         Simulator.getInstance().processJump(RegisterFile.getProgramCounter() + (displacement << 2));

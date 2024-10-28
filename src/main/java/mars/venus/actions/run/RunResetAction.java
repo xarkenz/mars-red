@@ -1,7 +1,9 @@
 package mars.venus.actions.run;
 
 import mars.Application;
-import mars.ProcessingException;
+import mars.SimulatorException;
+import mars.assembler.log.AssemblyError;
+import mars.assembler.token.SourceFile;
 import mars.mips.hardware.*;
 import mars.simulator.Simulator;
 import mars.venus.RegistersPane;
@@ -12,6 +14,7 @@ import mars.venus.execute.ProgramStatus;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
+import java.util.List;
 
 /*
 Copyright (c) 2003-2009,  Pete Sanderson and Kenneth Vollmar
@@ -63,9 +66,12 @@ public class RunResetAction extends VenusAction {
         // I am choosing the second approach although it will slow down the reset
         // operation.  The first approach requires additional Memory class methods.
         try {
-            Application.program.assemble(RunAssembleAction.programsToAssemble, Application.getSettings().extendedAssemblerEnabled.get(), Application.getSettings().warningsAreErrors.get());
+            // Must get a copy of the tokenized files since getTokenizedFiles() returns the underlying list
+            // (which is cleared when restarting the assembly process)
+            List<SourceFile> tokenizedFiles = List.copyOf(Application.assembler.getTokenizedFiles());
+            Application.assembler.assembleFiles(tokenizedFiles);
         }
-        catch (ProcessingException exception) {
+        catch (AssemblyError error) {
             this.gui.getMessagesPane().getMessages().writeOutput(this.getName() + ": unable to reset.  Please close file then re-open and re-assemble.\n");
             return;
         }

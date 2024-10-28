@@ -34,10 +34,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * A table of Symbol objects.
+ * A symbol table used by the assembler to map symbols to the corresponding addresses.
  *
- * @author Jason Bumgarner, Jason Shrewsbury
- * @version June 2003
+ * @author Jason Bumgarner &amp; Jason Shrewsbury, June 2003
  */
 public class SymbolTable {
     private final String filename;

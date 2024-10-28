@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.simulator.Simulator;
 import mars.simulator.SystemIO;
 
@@ -22,7 +22,7 @@ public class SyscallPrintIOMessage extends AbstractSyscall {
      * in {@link SystemIO#getFileOperationMessage()}, followed by a newline.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(BasicStatement statement) throws SimulatorException {
         String fileOperationMessage = Simulator.getInstance().getSystemIO().getFileOperationMessage();
         if (fileOperationMessage == null) {
             return;

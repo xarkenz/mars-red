@@ -1,6 +1,6 @@
-package mars.assembler;
+package mars.assembler.token;
 
-import mars.assembler.token.Token;
+import mars.assembler.log.SourceLocation;
 
 import java.util.List;
 
@@ -40,46 +40,34 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * line and possibly different program but the migration should not be visible to the user.
  */
 public class SourceLine {
-    private final String filename;
-    private final int lineIndex;
+    private final SourceLocation location;
     private String content;
     private final List<Token> tokens;
 
     /**
-     * SourceLine constructor.
+     * Create a new <code>SourceLine</code> with the given information.
      *
-     * @param filename  The name of the file containing the source program.
-     * @param lineIndex The zero-based line index within the source program.
-     * @param content   The raw source code of the line.
-     * @param tokens    The list of tokens that the line contains.
+     * @param location The location of the line in the source code.
+     * @param content  The raw source code of the line.
+     * @param tokens   The list of tokens that the line contains.
      */
-    public SourceLine(String filename, int lineIndex, String content, List<Token> tokens) {
-        this.filename = filename;
-        this.lineIndex = lineIndex;
+    public SourceLine(SourceLocation location, String content, List<Token> tokens) {
+        this.location = location;
         this.content = content;
         this.tokens = tokens;
     }
 
     /**
-     * Retrieve the name of the file containing the source program.
+     * Get the location of this line in the source code.
      *
-     * @return The source filename.
+     * @return The line location.
      */
-    public String getFilename() {
-        return this.filename;
+    public SourceLocation getLocation() {
+        return this.location;
     }
 
     /**
-     * Retrieve the line number within the source program.
-     *
-     * @return The source line number.
-     */
-    public int getLineIndex() {
-        return this.lineIndex;
-    }
-
-    /**
-     * Retrieve the raw source code of the line.
+     * Get the raw source code of the line.
      *
      * @return The line content.
      */
@@ -92,7 +80,7 @@ public class SourceLine {
     }
 
     /**
-     * Retrieve the list of tokens that the line contains.
+     * Get the list of tokens that the line contains.
      *
      * @return The token list.
      */

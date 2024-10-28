@@ -1,7 +1,7 @@
 package mars.venus.execute;
 
 import mars.Application;
-import mars.ProgramStatement;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.*;
 import mars.simulator.*;
 import mars.util.Binary;
@@ -126,7 +126,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         int addressBase = this.gui.getMainPane().getExecuteTab().getAddressDisplayBase();
         this.codeHighlighting = true;
         this.breakpointsEnabled = true;
-        List<ProgramStatement> statements = Application.program.getMachineStatements();
+        SortedMap<Integer, BasicStatement> statements = Application.assembler.getAssembledStatements();
         this.data = new Object[statements.size()][COLUMN_NAMES.length];
         this.intAddresses = new int[this.data.length];
         this.addressRows = new Hashtable<>(this.data.length);
@@ -135,34 +135,39 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         // In multi-file situation, this will not necessarily be the last line b/c statements contains
         // source lines from all files.  DPS 03-Oct-2010
         int maxSourceLineNumber = 0;
-        for (ProgramStatement statement : statements) {
-            if (statement.getSourceLine() > maxSourceLineNumber) {
-                maxSourceLineNumber = statement.getSourceLine();
+        for (BasicStatement statement : statements.values()) {
+            int lineNumber = statement.getSyntax().getSourceLine().getLocation().getLineIndex() + 1;
+            if (lineNumber > maxSourceLineNumber) {
+                maxSourceLineNumber = lineNumber;
             }
         }
         int maxSourceLineDigits = Integer.toUnsignedString(maxSourceLineNumber).length();
         int leadingSpaces;
         int lastLine = -1;
-        for (int row = 0; row < statements.size(); row++) {
-            ProgramStatement statement = statements.get(row);
-            this.intAddresses[row] = statement.getAddress();
-            this.addressRows.put(this.intAddresses[row], row);
+        int row = 0;
+        for (var entry : statements.entrySet()) {
+            int address = entry.getKey();
+            BasicStatement statement = entry.getValue();
+            this.intAddresses[row] = address;
+            this.addressRows.put(address, row);
             this.data[row][BREAKPOINT_COLUMN] = Boolean.FALSE;
-            this.data[row][ADDRESS_COLUMN] = NumberDisplayBaseChooser.formatUnsignedInteger(statement.getAddress(), addressBase);
-            this.data[row][CODE_COLUMN] = NumberDisplayBaseChooser.formatNumber(statement.getBinaryStatement(), 16);
-            this.data[row][BASIC_COLUMN] = statement.getPrintableBasicAssemblyStatement();
+            this.data[row][ADDRESS_COLUMN] = NumberDisplayBaseChooser.formatUnsignedInteger(address, addressBase);
+            this.data[row][CODE_COLUMN] = NumberDisplayBaseChooser.formatNumber(statement.getBinaryEncoding(), 16);
+            this.data[row][BASIC_COLUMN] = statement.toString();
             String sourceString = "";
-            if (!statement.getSource().isEmpty()) {
-                String sourceLineString = Integer.toUnsignedString(statement.getSourceLine());
-                leadingSpaces = maxSourceLineDigits - sourceLineString.length();
-                String lineNumber = " ".repeat(leadingSpaces) + sourceLineString + ": ";
-                if (statement.getSourceLine() == lastLine) {
-                    lineNumber = " ".repeat(maxSourceLineDigits) + "  ";
-                }
-                sourceString = lineNumber + EditorFont.substituteSpacesForTabs(statement.getSource(), this.gui.getSettings().editorTabSize.get());
-            }
+            // TODO
+//            if (!statement.getSource().isEmpty()) {
+//                String sourceLineString = Integer.toUnsignedString(statement.getSourceLine());
+//                leadingSpaces = maxSourceLineDigits - sourceLineString.length();
+//                String lineNumber = " ".repeat(leadingSpaces) + sourceLineString + ": ";
+//                if (statement.getSourceLine() == lastLine) {
+//                    lineNumber = " ".repeat(maxSourceLineDigits) + "  ";
+//                }
+//                sourceString = lineNumber + EditorFont.substituteSpacesForTabs(statement.getSource(), this.gui.getSettings().editorTabSize.get());
+//            }
             this.data[row][SOURCE_COLUMN] = sourceString;
-            lastLine = statement.getSourceLine();
+//            lastLine = statement.getSourceLine();
+            row++;
         }
         this.getContentPane().removeAll();
         this.tableModel = new TextTableModel(this.data);
@@ -293,29 +298,31 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
             // No content to change
             return;
         }
-        List<ProgramStatement> statements = Application.program.getMachineStatements();
-        for (int row = 0; row < statements.size(); row++) {
+        SortedMap<Integer, BasicStatement> statements = Application.assembler.getAssembledStatements();
+        int row = 0;
+        for (var entry : statements.entrySet()) {
+            int address = entry.getKey();
+            BasicStatement statement = entry.getValue();
             // Loop has been extended to cover self-modifying code.  If code at this memory location has been
-            // modified at runtime, construct a ProgramStatement from the current address and binary code
+            // modified at runtime, construct a BasicStatement from the current address and binary code
             // then display its basic code.  DPS 11-July-2013
             if (this.executeMods.get(row) == null) {
                 // Not modified, so use original logic
-                ProgramStatement statement = statements.get(row);
-                this.table.getModel().setValueAt(statement.getPrintableBasicAssemblyStatement(), row, BASIC_COLUMN);
+                this.table.getModel().setValueAt(statement.toString(), row, BASIC_COLUMN);
             }
             else {
                 try {
-                    ProgramStatement statement = new ProgramStatement(
-                        Binary.decodeInteger(this.table.getModel().getValueAt(row, CODE_COLUMN).toString()),
-                        Binary.decodeInteger(this.table.getModel().getValueAt(row, ADDRESS_COLUMN).toString())
+                    statement = Application.instructionSet.getDecoder().decodeStatement(
+                        Binary.decodeInteger(this.table.getModel().getValueAt(row, CODE_COLUMN).toString())
                     );
-                    this.table.getModel().setValueAt(statement.getPrintableBasicAssemblyStatement(), row, BASIC_COLUMN);
+                    this.table.getModel().setValueAt(statement.toString(), row, BASIC_COLUMN);
                 }
                 catch (NumberFormatException exception) {
                     // Should never happen, but just in case...
                     this.table.getModel().setValueAt("", row, BASIC_COLUMN);
                 }
             }
+            row++;
         }
     }
 
@@ -347,8 +354,8 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
                 this.tableModel.getValueAt(row, SOURCE_COLUMN)
             );
             this.executeMods.put(row, modification);
-            // Make a ProgramStatement and get basic code to display in BASIC_COLUMN
-            strBasic = new ProgramStatement(wordValue, wordAddress).getPrintableBasicAssemblyStatement();
+            // Make a BasicStatement and get basic code to display in BASIC_COLUMN
+            strBasic = Application.instructionSet.getDecoder().decodeStatement(wordValue).toString();
             strSource = MODIFIED_CODE_MARKER;
         }
         else {
@@ -361,8 +368,8 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
                 this.executeMods.remove(row);
             }
             else {
-                // Make a ProgramStatement and get basic code to display in BASIC_COLUMN
-                strBasic = new ProgramStatement(wordValue, wordAddress).getPrintableBasicAssemblyStatement();
+                // Make a BasicStatement and get basic code to display in BASIC_COLUMN
+                strBasic = Application.instructionSet.getDecoder().decodeStatement(wordValue).toString();
                 strSource = MODIFIED_CODE_MARKER;
             }
         }

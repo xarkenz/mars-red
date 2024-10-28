@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
@@ -52,7 +52,7 @@ public class SyscallMessageDialog extends AbstractSyscall {
      * System call to display a message to user.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(BasicStatement statement) throws SimulatorException {
         // Input arguments:
         //   $a0 = address of null-terminated string that is the message to user
         //   $a1 = the type of the message to the user, which is one of:
@@ -77,7 +77,7 @@ public class SyscallMessageDialog extends AbstractSyscall {
             JOptionPane.showMessageDialog(null, message, null, messageType);
         }
         catch (AddressErrorException exception) {
-            throw new ProcessingException(statement, exception);
+            throw new SimulatorException(statement, exception);
         }
     }
 }

@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.RegisterFile;
 
 import java.util.Random;
@@ -51,7 +51,7 @@ public class SyscallRandInt extends AbstractSyscall {
      * Return in $a0 the next pseudorandom, uniformly distributed int value from this random number generator's sequence.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(BasicStatement statement) throws SimulatorException {
         // Input arguments: $a0 = index of pseudorandom number generator
         // Return: $a0 = the next pseudorandom, uniformly distributed int value from this random number generator's sequence.
 

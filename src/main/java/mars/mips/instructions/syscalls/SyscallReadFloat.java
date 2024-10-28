@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.Coprocessor1;
 import mars.simulator.ExceptionCause;
 import mars.simulator.Simulator;
@@ -50,14 +50,14 @@ public class SyscallReadFloat extends AbstractSyscall {
      * Performs syscall function to read the bits of input float into $f0.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException {
+    public void simulate(BasicStatement statement) throws SimulatorException, InterruptedException {
         try {
             float floatValue = Simulator.getInstance().getSystemIO().readFloat();
 
             Coprocessor1.updateRegister(0, Float.floatToRawIntBits(floatValue));
         }
         catch (NumberFormatException exception) {
-            throw new ProcessingException(statement, "invalid float input (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            throw new SimulatorException(statement, "invalid float input (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
     }
 }

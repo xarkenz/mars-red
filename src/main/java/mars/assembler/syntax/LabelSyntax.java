@@ -1,8 +1,7 @@
 package mars.assembler.syntax;
 
-import mars.ErrorMessage;
 import mars.assembler.Assembler;
-import mars.assembler.SourceLine;
+import mars.assembler.token.SourceLine;
 import mars.assembler.Symbol;
 import mars.assembler.token.Token;
 
@@ -40,9 +39,10 @@ public class LabelSyntax implements Syntax {
         );
         Symbol replacedSymbol = assembler.getLocalSymbolTable().defineSymbol(labelSymbol);
         if (replacedSymbol != null) {
-            assembler.getErrorList().add(new ErrorMessage(
-                //
-            ));
+            assembler.logError(
+                this.firstToken.getLocation(),
+                "Label '" + this.labelName + "' has already been defined"
+            );
         }
     }
 }

@@ -28,7 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 package mars.tools;
 
-import mars.ProgramStatement;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.MemoryConfigurations;
@@ -225,9 +225,9 @@ public class InstructionStatistics extends AbstractMarsTool {
      * @see InstructionStatistics#CATEGORY_MEM
      * @see InstructionStatistics#CATEGORY_OTHER
      */
-    protected int getInstructionCategory(ProgramStatement stmt) {
-        int opcode = stmt.getBinaryStatement() >>> (32 - 6);
-        int funct = stmt.getBinaryStatement() & 0x1F;
+    protected int getInstructionCategory(BasicStatement stmt) {
+        int opcode = stmt.getBinaryEncoding() >>> (32 - 6);
+        int funct = stmt.getBinaryEncoding() & 0x1F;
 
         if (opcode == 0x00) {
             if (funct == 0x00) {
@@ -291,7 +291,7 @@ public class InstructionStatistics extends AbstractMarsTool {
 
         try {
             // Access the statement in the text segment without causing infinite recursion
-            ProgramStatement stmt = Memory.getInstance().fetchStatement(wordAddress, false);
+            BasicStatement stmt = Memory.getInstance().fetchStatement(wordAddress, false);
 
             // necessary to handle possible null pointers at the end of the program
             // (e.g., if the simulator tries to execute the next instruction after the last instruction in the text segment)

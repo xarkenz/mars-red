@@ -1,9 +1,11 @@
 package mars.simulator;
 
 import mars.Application;
-import mars.ProgramStatement;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.*;
 import mars.mips.instructions.Instruction;
+
+import java.util.Arrays;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -64,6 +66,10 @@ public class BackStepper {
         backSteps = new BackStepStack(Application.MAXIMUM_BACKSTEPS);
     }
 
+    public void reset() {
+        this.backSteps.clear();
+    }
+
     /**
      * Determine whether execution "undo" steps are currently being recorded.
      *
@@ -115,7 +121,7 @@ public class BackStepper {
     // Use a do-while loop based on the backstep's program statement reference.
     public void backStep() {
         if (isEnabled && !backSteps.isEmpty()) {
-            ProgramStatement statement = backSteps.peek().statement;
+            BasicStatement statement = backSteps.peek().statement;
             isEnabled = false; // MUST DO THIS SO METHOD CALL IN SWITCH WILL NOT RESULT IN NEW ACTION ON STACK!
             do {
                 BackStep step = backSteps.pop();
@@ -294,7 +300,7 @@ public class BackStepper {
         private int programCounter; // program counter value when original step occurred
         private int param1; // optional first parameter required by that action
         private int param2; // optional second parameter required by that action
-        private ProgramStatement statement; // statement whose action is being "undone" here
+        private BasicStatement statement; // statement whose action is being "undone" here
         private boolean isInDelaySlot; // true if instruction executed in "delay slot" (delayed branching enabled)
 
         /**
@@ -359,6 +365,12 @@ public class BackStepper {
             for (int i = 0; i < capacity; i++) {
                 this.stack[i] = new BackStep();
             }
+        }
+
+        private synchronized void clear() {
+            this.size = 0;
+            this.top = -1;
+            Arrays.fill(this.stack, null);
         }
 
         private synchronized boolean isEmpty() {

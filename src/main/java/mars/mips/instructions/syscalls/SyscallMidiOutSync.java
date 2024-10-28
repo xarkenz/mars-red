@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.RegisterFile;
 
 import java.util.concurrent.CancellationException;
@@ -80,7 +80,7 @@ public class SyscallMidiOutSync extends AbstractSyscall {
      * use the range 1-128.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException {
+    public void simulate(BasicStatement statement) throws SimulatorException, InterruptedException {
         int pitch = RegisterFile.getValue(4); // $a0
         int duration = RegisterFile.getValue(5); // $a1
         int instrument = RegisterFile.getValue(6); // $a2

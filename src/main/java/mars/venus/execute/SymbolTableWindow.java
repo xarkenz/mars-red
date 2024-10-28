@@ -1,7 +1,6 @@
 package mars.venus.execute;
 
 import mars.Application;
-import mars.Program;
 import mars.assembler.Symbol;
 import mars.assembler.SymbolTable;
 import mars.mips.hardware.Memory;
@@ -9,7 +8,6 @@ import mars.util.Binary;
 import mars.venus.SimpleCellRenderer;
 import mars.venus.NumberDisplayBaseChooser;
 import mars.venus.VenusUI;
-import mars.venus.actions.run.RunAssembleAction;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -190,8 +188,8 @@ public class SymbolTableWindow extends JInternalFrame {
         this.symbolTableDisplays.clear();
         SymbolTableDisplay globalSymbolTableDisplay = new SymbolTableDisplay(null);
         this.symbolTableDisplays.add(globalSymbolTableDisplay);
-        for (Program program : RunAssembleAction.programsToAssemble) {
-            this.symbolTableDisplays.add(new SymbolTableDisplay(program));
+        for (String sourceFilename : Application.assembler.getSourceFilenames()) {
+            this.symbolTableDisplays.add(new SymbolTableDisplay(sourceFilename));
         }
 
         Box allSymbolTables = Box.createVerticalBox();
@@ -333,7 +331,6 @@ public class SymbolTableWindow extends JInternalFrame {
      * Represents one symbol table for the display.
      */
     private class SymbolTableDisplay {
-        private final Program program;
         private Object[][] labelData;
         private JTable labelTable;
         private Symbol[] symbols;
@@ -343,40 +340,38 @@ public class SymbolTableWindow extends JInternalFrame {
         /**
          * Create a new instance.
          *
-         * @param program Associated <code>Program</code> object.  If null, this represents global symbol table.
+         * @param filename Associated <code>Program</code> object.  If null, this represents global symbol table.
          */
-        public SymbolTableDisplay(Program program) {
-            this.program = program;
-            this.symbolTable = (program == null) ? Application.globalSymbolTable : program.getLocalSymbolTable();
-            this.tableName = (program == null) ? "Global Symbols" : "From \"" + new File(program.getFilename()).getName() + "\"";
+        public SymbolTableDisplay(String filename) {
+            this.symbolTable = Application.assembler.getSymbolTable(filename);
+            this.tableName = (filename == null) ? "Global Symbols" : "From \"" + new File(filename).getName() + "\"";
         }
 
         /**
          * Returns the name of the symbol table this object represents.
          */
         public String getSymbolTableName() {
-            return tableName;
+            return this.tableName;
         }
 
         public boolean hasSymbols() {
-            return symbolTable.getSize() != 0;
+            return this.symbolTable.getSize() != 0;
         }
 
         /**
          * Builds the table containing labels and addresses for this symbol table.
          */
         private JTable generateLabelTable() {
-            SymbolTable symbolTable = (this.program == null) ? Application.globalSymbolTable : this.program.getLocalSymbolTable();
             int addressBase = SymbolTableWindow.this.gui.getMainPane().getExecuteTab().getAddressDisplayBase();
 
             if (SymbolTableWindow.this.textLabels.isSelected() && SymbolTableWindow.this.dataLabels.isSelected()) {
-                this.symbols = symbolTable.getAllSymbols();
+                this.symbols = this.symbolTable.getAllSymbols();
             }
             else if (SymbolTableWindow.this.textLabels.isSelected()) {
-                this.symbols = symbolTable.getTextSymbols();
+                this.symbols = this.symbolTable.getTextSymbols();
             }
             else if (SymbolTableWindow.this.dataLabels.isSelected()) {
-                this.symbols = symbolTable.getDataSymbols();
+                this.symbols = this.symbolTable.getDataSymbols();
             }
             else {
                 // Eh, don't wanna deal with null checks

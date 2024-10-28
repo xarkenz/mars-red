@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.*;
 import mars.simulator.ExceptionCause;
 
@@ -51,7 +51,7 @@ public class SyscallInputDialogDouble extends AbstractSyscall {
      * System call to input data.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(BasicStatement statement) throws SimulatorException {
         // Input arguments: $a0 = address of null-terminated string that is the message to user
         // Outputs:
         //    $f0 and $f1 contains value of double read. $f1 contains high order word of the double.
@@ -67,7 +67,7 @@ public class SyscallInputDialogDouble extends AbstractSyscall {
             message = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
         }
         catch (AddressErrorException exception) {
-            throw new ProcessingException(statement, exception);
+            throw new SimulatorException(statement, exception);
         }
 
         // Values returned by Java's InputDialog:
@@ -96,7 +96,7 @@ public class SyscallInputDialogDouble extends AbstractSyscall {
         }
         catch (InvalidRegisterAccessException exception) {
             RegisterFile.updateRegister(5, -1);  // set $a1 to -1 flag
-            throw new ProcessingException(statement, "invalid register access during double input (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            throw new SimulatorException(statement, "invalid register access during double input (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
         catch (NumberFormatException exception) {
             // Unsuccessful parse of input data

@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.InvalidRegisterAccessException;
 import mars.mips.hardware.RegisterFile;
@@ -55,7 +55,7 @@ public class SyscallRandDouble extends AbstractSyscall {
      * from this random number generator's sequence.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(BasicStatement statement) throws SimulatorException {
         // Input arguments: $a0 = index of pseudorandom number generator
         // Return: $f0 = the next pseudorandom, uniformly distributed double value between 0.0 and 1.0
         // from this random number generator's sequence.
@@ -68,7 +68,7 @@ public class SyscallRandDouble extends AbstractSyscall {
         }
         catch (InvalidRegisterAccessException exception) {
             // This should not occur because $f0 is always a valid double target
-            throw new ProcessingException(statement, "internal error writing double to register (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            throw new SimulatorException(statement, "internal error writing double to register (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
     }
 }

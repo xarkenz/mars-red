@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
@@ -59,7 +59,7 @@ public class SyscallOpen extends AbstractSyscall {
      * Mode ($a2) is ignored.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(BasicStatement statement) throws SimulatorException {
         // NOTE: with MARS 3.7, return changed from $a0 to $v0 and the terminology
         // of 'flags' and 'mode' was corrected (they had been reversed).
         //
@@ -80,7 +80,7 @@ public class SyscallOpen extends AbstractSyscall {
             filename = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
         }
         catch (AddressErrorException exception) {
-            throw new ProcessingException(statement, exception);
+            throw new SimulatorException(statement, exception);
         }
 
         int descriptor = Simulator.getInstance().getSystemIO().openFile(Path.of(filename), RegisterFile.getValue(5));

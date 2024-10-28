@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
@@ -54,7 +54,7 @@ public class SyscallReadString extends AbstractSyscall {
      * newline to end.  In either case, then pad with null byte.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException {
+    public void simulate(BasicStatement statement) throws SimulatorException, InterruptedException {
         int buf = RegisterFile.getValue(4); // buf addr in $a0
         int maxLength = RegisterFile.getValue(5) - 1; // $a1
         boolean addNullByte = true;
@@ -80,7 +80,7 @@ public class SyscallReadString extends AbstractSyscall {
             }
         }
         catch (AddressErrorException exception) {
-            throw new ProcessingException(statement, exception);
+            throw new SimulatorException(statement, exception);
         }
     }
 }

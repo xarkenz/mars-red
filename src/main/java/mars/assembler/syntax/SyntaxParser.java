@@ -1,11 +1,11 @@
 package mars.assembler.syntax;
 
-import mars.ErrorList;
-import mars.ErrorMessage;
 import mars.assembler.Directive;
 import mars.assembler.Operand;
 import mars.assembler.OperandType;
-import mars.assembler.SourceLine;
+import mars.assembler.log.AssemblerLog;
+import mars.assembler.log.SourceLocation;
+import mars.assembler.token.SourceLine;
 import mars.assembler.token.Token;
 import mars.assembler.token.TokenType;
 import mars.mips.instructions.Instruction;
@@ -17,23 +17,35 @@ import java.util.List;
 
 public class SyntaxParser {
     private final Iterator<SourceLine> sourceLines;
-    private final ErrorList errors;
+    private final AssemblerLog log;
     private SourceLine sourceLine;
     private Iterator<Token> lineTokens;
     private Token cachedToken;
 
-    public SyntaxParser(Iterator<SourceLine> sourceLines, ErrorList errors) {
+    public SyntaxParser(Iterator<SourceLine> sourceLines, AssemblerLog log) {
         this.sourceLines = sourceLines;
-        this.errors = errors;
+        this.log = log;
         this.sourceLine = null;
         this.lineTokens = null;
         this.cachedToken = null;
     }
 
+    public SourceLocation getCurrentLocation() {
+        if (this.cachedToken != null) {
+            return this.cachedToken.getLocation();
+        }
+        else if (this.sourceLine != null) {
+            return this.sourceLine.getLocation().toColumnLocation(this.sourceLine.getContent().length());
+        }
+        else {
+            return null;
+        }
+    }
+
     public Syntax parseNextSyntax() {
         Syntax syntax;
         do {
-            syntax = tryParseNextSyntax();
+            syntax = this.tryParseNextSyntax();
         }
         while (syntax == null && (this.cachedToken != null || this.nextToken()));
 
@@ -144,7 +156,7 @@ public class SyntaxParser {
         }
 
         Token operandToken = this.cachedToken;
-        SyntaxOperand operand = operandToken.asOperand();
+        SyntaxOperand operand = operandToken.toOperand();
 
         if (operand == null) {
             // When expecting an operand, an operator is just treated as a plain identifier
@@ -198,23 +210,17 @@ public class SyntaxParser {
     }
 
     private void logWarning(String message) {
-        this.errors.add(new ErrorMessage(
-            true,
-            this.sourceLine.getFilename(),
-            this.sourceLine.getLineIndex(),
-            (this.cachedToken == null) ? this.sourceLine.getContent().length() : this.cachedToken.getColumnIndex(),
-            message,
-            ""
-        ));
+        this.log.logWarning(
+            this.getCurrentLocation(),
+            message
+        );
     }
 
     private void logError(String message) {
-        this.errors.add(new ErrorMessage(
-            this.sourceLine.getFilename(),
-            this.sourceLine.getLineIndex(),
-            (this.cachedToken == null) ? this.sourceLine.getContent().length() : this.cachedToken.getColumnIndex(),
+        this.log.logError(
+            this.getCurrentLocation(),
             message
-        ));
+        );
     }
 
     private boolean nextTokenInLine() {

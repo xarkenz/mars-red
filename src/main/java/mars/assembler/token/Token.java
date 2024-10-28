@@ -30,138 +30,100 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import mars.assembler.Operand;
 import mars.assembler.OperandType;
+import mars.assembler.log.SourceLocation;
 
 /**
  * Represents one token in the input MIPS program.  Each Token carries, along with its
  * type and value, the position (line, column) in which its source appears in the MIPS program.
  *
- * @author Pete Sanderson
- * @version August 2003
+ * @author Pete Sanderson, August 2003; Sean Clarke, June 2024
  */
 public class Token {
     private TokenType type;
     private Object value;
     private final String literal;
-    private final String sourceFilename;
-    private final int lineIndex;
-    private final int columnIndex;
-    // Original program and line will differ from the above if token was defined in an included file
-    private Token originalToken;
+    private final SourceLocation location;
 
     /**
-     * Constructor for Token class.
+     * Create a new <code>Token</code> with the given information.
      *
-     * @param type     The token type that this token has. (e.g. REGISTER_NAME)
-     * @param value
-     * @param literal  The source literal for this token. (e.g. $t3)
-     * @param filename The name of the file containing this token.
-     * @param line     The line number in source program in which this token appears.
-     * @param column   The starting position in that line number of this token's source value.
+     * @param location The location of this token in the source code.
+     * @param literal  The underlying fragment of source code.
+     * @param type     The type of this token.
+     * @param value    The "value" of this token, dependent on <code>type</code>.
+     * @see TokenType
      */
-    public Token(TokenType type, Object value, String literal, String filename, int line, int column) {
+    public Token(SourceLocation location, String literal, TokenType type, Object value) {
         this.type = type;
         this.value = value;
         this.literal = literal;
-        this.sourceFilename = filename;
-        this.lineIndex = line;
-        this.columnIndex = column;
-        this.originalToken = this;
+        this.location = location;
     }
 
     /**
-     * Produces token type of this token.
+     * Get the type of this token.
      *
-     * @return TokenType of this token.
+     * @return The type of this token.
      */
     public TokenType getType() {
         return this.type;
     }
 
     /**
-     * Set or modify token type.  Generally used to note that
-     * an identifier that matches an instruction name is
-     * actually being used as a label.
+     * Modify the type of this token. This is typically used when the parsing stage of assembly reinterprets
+     * the token type, e.g. using an operator mnemonic as a label identifier.
+     * <p>
+     * Note: {@link #setValue(Object)} should be used alongside this method to ensure the token value remains valid.
      *
-     * @param type New type for this token.
+     * @param type The new type for this token.
      */
     public void setType(TokenType type) {
         this.type = type;
     }
 
+    /**
+     * Get the "value" this token represents, if any. The object returned by this method is dependent on this token's
+     * {@link #getType() type}; the documentation for each variant of {@link TokenType} indicates what to expect
+     * from this method.
+     *
+     * @return The token type-dependent value for this token.
+     */
     public Object getValue() {
         return this.value;
     }
 
+    /**
+     * Modify the "value" this token represents. The new value must follow the guidelines of this token's
+     * {@link #getType() type}.
+     *
+     * @param value The new value for this token.
+     */
     public void setValue(Object value) {
         this.value = value;
     }
 
     /**
-     * Produces source code of this token.
+     * Get the underlying fragment of source code this token was created from.
      *
-     * @return String containing source code of this token.
+     * @return The literal form of this token.
      */
     public String getLiteral() {
         return this.literal;
     }
 
     /**
-     * Produces name of file associated with this token.
+     * Get the location of this token in the source code.
      *
      * @return Name of file associated with this token.
      */
-    public String getFilename() {
-        return this.sourceFilename;
+    public SourceLocation getLocation() {
+        return this.location;
     }
 
     /**
-     * Get the line at which this token resides, where the first line in the file is line 0.
+     * Get the string representation of this token. This method is equivalent to {@link #getLiteral()}.
      *
-     * @return The zero-based line index.
-     */
-    public int getLineIndex() {
-        return this.lineIndex;
-    }
-
-    /**
-     * Get the column at which this token starts in the source line, where the beginning of the line is column 0.
-     *
-     * @return The zero-based column index.
-     */
-    public int getColumnIndex() {
-        return this.columnIndex;
-    }
-
-    /**
-     * Get the original token that this token derives from. Returns <code>this</code> unless the token:
-     * <ul>
-     * <li>Has been included from another file (<code>.include</code>).
-     * <li>Has been substituted as a result of an equivalence (<code>.eqv</code>).
-     * <li>Has been generated from an instance of a macro (<code>.macro</code>).
-     * </ul>
-     *
-     * @return The original form of this token.
-     */
-    public Token getOriginalToken() {
-        return this.originalToken;
-    }
-
-    /**
-     * Set the original token that this token derives from. Tokens may be cloned during preprocessing as a result
-     * of macros, <code>.eqv</code>, and <code>.include</code>, and information about that process must be kept
-     * for later reference. For example, error messages and the text segment display check this information.
-     *
-     * @param token The original form of this token.
-     */
-    public void setOriginalToken(Token token) {
-        this.originalToken = token;
-    }
-
-    /**
-     * Get a String representing the token.  This method is
-     * equivalent to {@link #getLiteral()}.
-     *
-     * @return String version of the token.
+     * @return The literal form of this token.
      */
     @Override
     public String toString() {
@@ -186,7 +148,7 @@ public class Token {
      *
      * @return An operand based on the value of this token, or <code>null</code> if the conversion fails.
      */
-    public Operand asOperand() {
+    public Operand toOperand() {
         TokenType type = this.type;
 
         // Character literals should just be treated as plain integers

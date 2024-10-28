@@ -1,6 +1,6 @@
 package mars.simulator;
 
-import mars.ProcessingException;
+import mars.SimulatorException;
 
 import java.util.EventObject;
 
@@ -40,7 +40,7 @@ public class SimulatorFinishEvent extends EventObject {
 
     private final int programCounter;
     private final Reason reason;
-    private final ProcessingException exception;
+    private final SimulatorException exception;
 
     /**
      * Construct a new event with the given parameters.
@@ -50,7 +50,7 @@ public class SimulatorFinishEvent extends EventObject {
      * @param reason         The reason why the program finished or terminated.
      * @param exception      The exception causing the program to terminate (only applies to {@link Reason#EXCEPTION}).
      */
-    public SimulatorFinishEvent(Simulator simulator, int programCounter, Reason reason, ProcessingException exception) {
+    public SimulatorFinishEvent(Simulator simulator, int programCounter, Reason reason, SimulatorException exception) {
         super(simulator);
         this.programCounter = programCounter;
         this.reason = reason;
@@ -74,7 +74,7 @@ public class SimulatorFinishEvent extends EventObject {
     /**
      * The exception causing the program to terminate (only applies to {@link Reason#EXCEPTION}).
      */
-    public ProcessingException getException() {
+    public SimulatorException getException() {
         return this.exception;
     }
 }

@@ -1,6 +1,10 @@
 package mars.assembler;
 
 import mars.*;
+import mars.assembler.log.AssemblerLog;
+import mars.assembler.log.AssemblyError;
+import mars.assembler.log.LogLevel;
+import mars.assembler.log.SourceLocation;
 import mars.assembler.syntax.StatementSyntax;
 import mars.assembler.syntax.Syntax;
 import mars.assembler.syntax.SyntaxParser;
@@ -46,8 +50,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @author Pete Sanderson
  * @version August 2003
  */
+// FIXME: basic assembler setting, exception handler
 public class Assembler {
-    private final ErrorList errors;
+    private final AssemblerLog log;
+    private final List<String> sourceFilenames;
+    private final List<SourceFile> tokenizedFiles;
     private final SortedMap<Integer, StatementSyntax> parsedStatements;
     private final SortedMap<Integer, Statement> resolvedStatements;
     private final SortedMap<Integer, BasicStatement> assembledStatements;
@@ -72,6 +79,13 @@ public class Assembler {
     private boolean isAutoAlignmentEnabled;
 
     public Assembler() {
+        this.log = new AssemblerLog();
+        this.sourceFilenames = new ArrayList<>();
+        this.tokenizedFiles = new ArrayList<>();
+        this.parsedStatements = new TreeMap<>(Integer::compareUnsigned);
+        this.resolvedStatements = new TreeMap<>(Integer::compareUnsigned);
+        this.assembledStatements = new TreeMap<>(Integer::compareUnsigned);
+
         this.globalSymbolTable = new SymbolTable("(global)");
         this.localSymbolTables = new HashMap<>();
         this.localSymbolTable = null;
@@ -85,23 +99,25 @@ public class Assembler {
         this.kernelDataSegment = new Segment(true, MemoryConfigurations.KERNEL_DATA_LOW, MemoryConfigurations.KERNEL_DATA_HIGH);
         this.kernelTextSegment = new Segment(false, MemoryConfigurations.KERNEL_TEXT_LOW, MemoryConfigurations.KERNEL_TEXT_HIGH);
         this.externSegment = new Segment(true, MemoryConfigurations.EXTERN_LOW, MemoryConfigurations.EXTERN_HIGH);
-        this.segment = null;
+        this.segment = this.textSegment;
 
         this.isAutoAlignmentEnabled = true;
-
-        this.errors = new ErrorList();
-        this.parsedStatements = new TreeMap<>(Integer::compareUnsigned);
-        this.resolvedStatements = new TreeMap<>(Integer::compareUnsigned);
-        this.assembledStatements = new TreeMap<>(Integer::compareUnsigned);
     }
 
-    /**
-     * Get list of assembler errors and warnings
-     *
-     * @return ErrorList of any assembler errors and warnings.
-     */
-    public ErrorList getErrorList() {
-        return this.errors;
+    public AssemblerLog getLog() {
+        return this.log;
+    }
+
+    public void logInfo(SourceLocation location, String content) {
+        this.log.logInfo(location, content);
+    }
+
+    public void logWarning(SourceLocation location, String content) {
+        this.log.logWarning(location, content);
+    }
+
+    public void logError(SourceLocation location, String content) {
+        this.log.logError(location, content);
     }
 
     public Symbol getSymbol(String identifier) {
@@ -119,8 +135,16 @@ public class Assembler {
         return this.localSymbolTable;
     }
 
+    public SymbolTable getLocalSymbolTable(String filename) {
+        return this.localSymbolTables.get(filename);
+    }
+
     public SymbolTable getGlobalSymbolTable() {
         return this.globalSymbolTable;
+    }
+
+    public SymbolTable getSymbolTable(String filename) {
+        return (filename == null) ? this.getGlobalSymbolTable() : this.getLocalSymbolTable(filename);
     }
 
     public Segment getSegment() {
@@ -138,6 +162,14 @@ public class Assembler {
 
     public void setAutoAlignmentEnabled(boolean enabled) {
         this.isAutoAlignmentEnabled = enabled;
+    }
+
+    public List<String> getSourceFilenames() {
+        return this.sourceFilenames;
+    }
+
+    public List<SourceFile> getTokenizedFiles() {
+        return this.tokenizedFiles;
     }
 
     public SortedMap<Integer, StatementSyntax> getParsedStatements() {
@@ -159,17 +191,49 @@ public class Assembler {
         Coprocessor1.reset();
     }
 
-    public void assembleFilenames(List<String> sourceFilenames) throws ProcessingException {
-        List<SourceFile> sourceFiles = new ArrayList<>(sourceFilenames.size());
+    public void reset() {
+        this.log.clear();
+        this.sourceFilenames.clear();
+        this.tokenizedFiles.clear();
+        this.parsedStatements.clear();
+        this.resolvedStatements.clear();
+        this.assembledStatements.clear();
+
+        this.globalSymbolTable.clear();
+        this.localSymbolTables.clear();
+        this.localSymbolTable = null;
+        this.localSymbolsToGlobalize.clear();
+
+        this.currentFilePatches.clear();
+        this.remainingPatches.clear();
+
+        this.dataSegment.setBounds(MemoryConfigurations.DATA_LOW, MemoryConfigurations.DATA_HIGH);
+        this.dataSegment.resetAddress();
+        this.textSegment.setBounds(MemoryConfigurations.TEXT_LOW, MemoryConfigurations.TEXT_HIGH);
+        this.textSegment.resetAddress();
+        this.kernelDataSegment.setBounds(MemoryConfigurations.KERNEL_DATA_LOW, MemoryConfigurations.KERNEL_DATA_HIGH);
+        this.kernelDataSegment.resetAddress();
+        this.kernelTextSegment.setBounds(MemoryConfigurations.KERNEL_TEXT_LOW, MemoryConfigurations.KERNEL_TEXT_HIGH);
+        this.kernelTextSegment.resetAddress();
+        this.externSegment.setBounds(MemoryConfigurations.EXTERN_LOW, MemoryConfigurations.EXTERN_HIGH);
+        this.externSegment.resetAddress();
+        this.segment = this.textSegment;
+
+        this.resetExternalState();
+    }
+
+    public void assembleFilenames(List<String> sourceFilenames) throws AssemblyError {
+        this.reset();
+
         for (String filename : sourceFilenames) {
-            sourceFiles.add(Tokenizer.tokenizeFile(filename, this.errors));
+            this.tokenizedFiles.add(Tokenizer.tokenizeFile(filename, this.log));
         }
 
-        if (this.errors.errorsOccurred()) {
-            throw new ProcessingException(this.errors);
+        if (this.log.hasMessages(LogLevel.ERROR)) {
+            throw new AssemblyError(this.log);
         }
 
-        this.assembleFiles(sourceFiles);
+        this.assembleFiles();
     }
 
     /**
@@ -178,14 +242,21 @@ public class Assembler {
      *
      * @param sourceFiles
      */
-    public void assembleFiles(List<SourceFile> sourceFiles) throws ProcessingException {
-        this.parsedStatements.clear();
-        this.resolvedStatements.clear();
-        this.assembledStatements.clear();
+    public void assembleFiles(List<SourceFile> sourceFiles) throws AssemblyError {
+        this.reset();
 
-        this.resetExternalState();
+        for (SourceFile sourceFile : sourceFiles) {
+            this.sourceFilenames.add(sourceFile.getFilename());
+        }
 
-        if (sourceFiles.isEmpty()) {
+        this.tokenizedFiles.clear();
+        this.tokenizedFiles.addAll(sourceFiles);
+
+        this.assembleFiles();
+    }
+
+    private void assembleFiles() throws AssemblyError {
+        if (this.tokenizedFiles.isEmpty()) {
             return;
         }
 
@@ -193,20 +264,22 @@ public class Assembler {
         // TO SECOND PASS. THIS ASSURES ALL SYMBOL TABLES ARE CORRECTLY BUILT.
         // THERE IS ONE GLOBAL SYMBOL TABLE (for identifiers declared .globl) PLUS
         // ONE LOCAL SYMBOL TABLE FOR EACH SOURCE FILE.
-        for (SourceFile sourceFile : sourceFiles) {
-            if (this.errors.hasExceededErrorLimit()) {
+        for (SourceFile sourceFile : this.tokenizedFiles) {
+            if (this.log.hasExceededMaxErrorCount()) {
                 break;
             }
 
-            // Clear out (initialize) symbol table related structures.
+            // Create a new local symbol table for the file
             this.localSymbolTable = new SymbolTable(sourceFile.getFilename());
             this.localSymbolTables.put(sourceFile.getFilename(), this.localSymbolTable);
+            // Start in text segment by default
+            this.segment = this.textSegment;
 
             // FIRST PASS OF ASSEMBLER VERIFIES SYNTAX, GENERATES SYMBOL TABLE, INITIALIZES DATA SEGMENT
 
-            SyntaxParser parser = new SyntaxParser(sourceFile.getLines().iterator(), this.errors);
+            SyntaxParser parser = new SyntaxParser(sourceFile.getLines().iterator(), this.log);
             Syntax syntax;
-            while ((syntax = parser.parseNextSyntax()) != null && !this.errors.hasExceededErrorLimit()) {
+            while ((syntax = parser.parseNextSyntax()) != null && !this.log.hasExceededMaxErrorCount()) {
                 syntax.process(this);
             }
 
@@ -230,56 +303,50 @@ public class Assembler {
         // and require error message.
         this.remainingPatches.removeIf(patch -> patch.resolve(this.globalSymbolTable));
         for (ForwardReferencePatch patch : this.remainingPatches) {
-            this.errors.add(new ErrorMessage(
-                patch.identifier.getFilename(),
-                patch.identifier.getLineIndex(),
-                patch.identifier.getColumnIndex(),
+            this.log.logError(
+                patch.getSourceLocation(),
                 "Undefined symbol '" + patch.identifier + "'"
-            ));
+            );
         }
 
         // If the first pass produced any errors, throw them instead of progressing to the second pass
-        if (this.errors.errorsOccurred()) {
-            throw new ProcessingException(this.errors);
+        if (this.log.hasMessages(LogLevel.ERROR)) {
+            throw new AssemblyError(this.log);
         }
 
         // SECOND PASS OF ASSEMBLER GENERATES BASIC ASSEMBLER THEN MACHINE CODE.
-        String previousFilename = null;
+        String previousLineFilename = null;
         for (var entry : this.parsedStatements.entrySet()) {
-            if (this.errors.hasExceededErrorLimit()) {
+            if (this.log.hasExceededMaxErrorCount()) {
                 break;
             }
 
             int address = entry.getKey();
             StatementSyntax syntax = entry.getValue();
 
-            String filename = syntax.getSourceLine().getFilename();
-            if (!filename.equals(previousFilename)) {
-                previousFilename = filename;
-                this.localSymbolTable = this.localSymbolTables.get(filename);
+            String lineFilename = syntax.getSourceLine().getLocation().getFilename();
+            if (!lineFilename.equals(previousLineFilename)) {
+                previousLineFilename = lineFilename;
+                this.localSymbolTable = this.localSymbolTables.get(lineFilename);
 
+                // Should always be able to access the local symbol table, but log a warning if it somehow fails
                 if (this.localSymbolTable == null) {
-                    // Should not happen
-                    this.errors.add(new ErrorMessage(
-                        true,
-                        syntax.getSourceLine().getFilename(),
-                        syntax.getSourceLine().getLineIndex(),
-                        syntax.getFirstToken().getColumnIndex(),
-                        "Failed to access local symbol table",
-                        ""
-                    ));
+                    this.log.logWarning(
+                        syntax.getFirstToken().getLocation(),
+                        "Failed to access local symbol table (this is a bug!)"
+                    );
                 }
             }
 
             this.resolvedStatements.put(address, syntax.resolve(this, address));
         }
 
-        if (this.errors.errorsOccurred()) {
-            throw new ProcessingException(this.errors);
+        if (this.log.hasMessages(LogLevel.ERROR)) {
+            throw new AssemblyError(this.log);
         }
 
         // DPS 6 Dec 2006:
-        // We will now sort the ArrayList of ProgramStatements by getAddress() value.
+        // We will now sort the ArrayList of BasicStatements by getAddress() value.
         // This is for display purposes, since they have already been stored to Memory.
         // Use of .ktext and .text with address operands has two implications:
         // (1) the addresses may not be ordered at this point. Requires unsigned int
@@ -289,25 +356,23 @@ public class Assembler {
         // Yes, I would not have to sort here if I used SortedSet rather than ArrayList
         // but in case of duplicate I like having both statements handy for error message.
 
-        if (this.errors.errorsOccurred() || (this.errors.warningsOccurred() && Application.getSettings().warningsAreErrors.get())) {
-            throw new ProcessingException(this.errors);
+        if (this.log.hasMessages(LogLevel.ERROR) || (
+            Application.getSettings().warningsAreErrors.get() && this.log.hasMessages(LogLevel.WARNING)
+        )) {
+            throw new AssemblyError(this.log);
         }
     }
 
     public void addParsedStatement(StatementSyntax statement) {
         StatementSyntax replacedStatement = this.parsedStatements.put(this.segment.getAddress(), statement);
         if (replacedStatement != null) {
-            this.errors.add(new ErrorMessage(
-                statement.getSourceLine().getFilename(),
-                statement.getSourceLine().getLineIndex(),
-                statement.getFirstToken().getColumnIndex(),
+            this.log.logError(
+                statement.getFirstToken().getLocation(),
                 "Attempted to place the statement at address "
                     + Binary.intToHexString(this.segment.getAddress())
                     + ", but a statement was already placed there from "
-                    + replacedStatement.getSourceLine().getFilename()
-                    + ", line "
-                    + (replacedStatement.getSourceLine().getLineIndex() + 1)
-            ));
+                    + replacedStatement.getSourceLine().getLocation()
+            );
         }
 
         // Increment the current address by the statement size
@@ -317,29 +382,23 @@ public class Assembler {
     public void placeStatement(BasicStatement statement, int address) {
         BasicStatement replacedStatement = this.assembledStatements.put(address, statement);
         if (replacedStatement != null) {
-            this.errors.add(new ErrorMessage(
-                statement.getSyntax().getFirstToken().getFilename(),
-                statement.getSyntax().getFirstToken().getLineIndex(),
-                statement.getSyntax().getFirstToken().getColumnIndex(),
+            this.log.logError(
+                statement.getSyntax().getFirstToken().getLocation(),
                 "Attempted to place the statement at address "
-                + Binary.intToHexString(address)
+                + Binary.intToHexString(this.segment.getAddress())
                 + ", but a statement was already placed there from "
-                + replacedStatement.getSyntax().getFirstToken().getFilename()
-                + ", line "
-                + (replacedStatement.getSyntax().getFirstToken().getLineIndex() + 1)
-            ));
+                + replacedStatement.getSyntax().getSourceLine().getLocation()
+            );
         }
 
         try {
             Memory.getInstance().storeStatement(address, statement, true);
         }
         catch (AddressErrorException exception) {
-            this.errors.add(new ErrorMessage(
-                statement.getSyntax().getFirstToken().getFilename(),
-                statement.getSyntax().getFirstToken().getLineIndex(),
-                statement.getSyntax().getFirstToken().getColumnIndex(),
+            this.log.logError(
+                statement.getSyntax().getFirstToken().getLocation(),
                 "Cannot place statement at " + Binary.intToHexString(address) + ": " + exception.getMessage()
-            ));
+            );
         }
     }
 
@@ -374,14 +433,11 @@ public class Assembler {
         // Check to ensure the identifier does not conflict with any existing global symbols
         Token previousIdentifier = this.localSymbolsToGlobalize.get(identifier.getLiteral());
         if (previousIdentifier != null) {
-            this.errors.add(new ErrorMessage(
-                false,
-                identifier.getFilename(),
-                identifier.getLineIndex(),
-                identifier.getColumnIndex(),
-                "Symbol '" + identifier + "' was previously declared as global on line " + previousIdentifier.getLineIndex(),
-                ""
-            ));
+            this.log.logWarning(
+                identifier.getLocation(),
+                "Symbol '" + identifier + "' was previously declared as global on line "
+                    + previousIdentifier.getLocation().getLineIndex()
+            );
         }
         else {
             this.localSymbolsToGlobalize.put(identifier.getLiteral(), identifier);
@@ -397,24 +453,16 @@ public class Assembler {
         for (Token identifier : this.localSymbolsToGlobalize.values()) {
             Symbol symbol = this.localSymbolTable.getSymbol(identifier.getLiteral());
             if (symbol == null) {
-                this.errors.add(new ErrorMessage(
-                    false,
-                    identifier.getFilename(),
-                    identifier.getLineIndex(),
-                    identifier.getColumnIndex(),
-                    "Symbol '" + identifier.getLiteral() + "' has not been defined in this file",
-                    ""
-                ));
+                this.log.logError(
+                    identifier.getLocation(),
+                    "Symbol '" + identifier + "' has not been defined in this file"
+                );
             }
             else if (this.globalSymbolTable.getSymbol(identifier.getLiteral()) != null) {
-                this.errors.add(new ErrorMessage(
-                    false,
-                    identifier.getFilename(),
-                    identifier.getLineIndex(),
-                    identifier.getColumnIndex(),
-                    "Symbol '" + identifier + "' was declared as global in another file",
-                    ""
-                ));
+                this.log.logError(
+                    identifier.getLocation(),
+                    "Symbol '" + identifier + "' was declared as global in another file"
+                );
             }
             else {
                 // Transfer the symbol from local to global
@@ -422,6 +470,9 @@ public class Assembler {
                 this.globalSymbolTable.defineSymbol(symbol);
             }
         }
+
+        // We have now transfered all local symbols that needed to be globalized
+        this.localSymbolsToGlobalize.clear();
     }
 
     /**
@@ -430,8 +481,8 @@ public class Assembler {
      */
     public static class Segment {
         private final boolean isData;
-        private final int firstAddress;
-        private final int lastAddress;
+        private int firstAddress;
+        private int lastAddress;
         private int address;
 
         private Segment(boolean isData, int lowKey, int highKey) {
@@ -451,6 +502,11 @@ public class Assembler {
 
         public int getLastAddress() {
             return this.lastAddress;
+        }
+
+        public void setBounds(int firstAddress, int lastAddress) {
+            this.firstAddress = firstAddress;
+            this.lastAddress = lastAddress;
         }
 
         public int getAddress() {
@@ -487,6 +543,10 @@ public class Assembler {
      * - the label's identifier. Normally need only the name but error message needs more.
      */
     private record ForwardReferencePatch(int address, int length, Token identifier) {
+        public SourceLocation getSourceLocation() {
+            return this.identifier.getLocation();
+        }
+
         /**
          * Will traverse the list of forward references, attempting to resolve them.
          * For each entry it will first search the provided local symbol table and

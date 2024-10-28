@@ -1,7 +1,9 @@
 package mars.mips.hardware;
 
 import mars.Application;
+import mars.assembler.Symbol;
 import mars.assembler.SymbolTable;
+import mars.simulator.Simulator;
 import mars.util.Binary;
 
 /*
@@ -115,8 +117,8 @@ public class RegisterFile {
             return 0;
         }
 
-        if (Application.isBackSteppingEnabled()) {
-            Application.program.getBackStepper().addRegisterFileRestore(number, previousValue);
+        if (Simulator.getInstance().getBackStepper().isEnabled()) {
+            Simulator.getInstance().getBackStepper().addRegisterFileRestore(number, previousValue);
         }
 
         return previousValue;
@@ -251,9 +253,11 @@ public class RegisterFile {
      *                    will set program counter to default reset value.
      */
     public static void initializeProgramCounter(boolean startAtMain) {
-        int mainAddress = Application.globalSymbolTable.getAddress(SymbolTable.getStartLabel());
-        if (startAtMain && mainAddress != SymbolTable.NOT_FOUND && (Memory.getInstance().isInTextSegment(mainAddress) || Memory.getInstance().isInKernelTextSegment(mainAddress))) {
-            initializeProgramCounter(mainAddress);
+        if (startAtMain) {
+            Symbol symbol = Application.assembler.getGlobalSymbolTable().getSymbol(SymbolTable.getStartLabel());
+            if (symbol != null && symbol.isText()) {
+                initializeProgramCounter(symbol.getAddress());
+            }
         }
         else {
             initializeProgramCounter(PROGRAM_COUNTER_REGISTER.getDefaultValue());
@@ -277,8 +281,8 @@ public class RegisterFile {
      */
     public static int setProgramCounter(int value) {
         int previousValue = PROGRAM_COUNTER_REGISTER.setValue(value);
-        if (Application.isBackSteppingEnabled()) {
-            Application.program.getBackStepper().addPCRestore(previousValue);
+        if (Simulator.getInstance().getBackStepper().isEnabled()) {
+            Simulator.getInstance().getBackStepper().addPCRestore(previousValue);
         }
         return previousValue;
     }

@@ -1,6 +1,6 @@
 package mars.assembler;
 
-import mars.ProcessingException;
+import mars.SimulatorException;
 import mars.assembler.syntax.StatementSyntax;
 import mars.mips.instructions.BasicInstruction;
 
@@ -52,10 +52,10 @@ public class BasicStatement implements Statement {
     /**
      * Simulate the execution of a specific MIPS basic instruction.
      *
-     * @throws ProcessingException  Thrown if a runtime exception was generated during execution.
+     * @throws SimulatorException  Thrown if a runtime exception was generated during execution.
      * @throws InterruptedException Thrown if the simulator was stopped during execution.
      */
-    public void simulate() throws ProcessingException, InterruptedException {
+    public void simulate() throws SimulatorException, InterruptedException {
         this.instruction.getFunction().simulate(this);
     }
 }

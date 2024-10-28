@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.RegisterFile;
 import mars.util.Binary;
 
@@ -52,7 +52,7 @@ public class SyscallTime extends AbstractSyscall {
      * and $a1 (high order 32 bits).
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(BasicStatement statement) throws SimulatorException {
         long value = new Date().getTime();
         RegisterFile.updateRegister(4, Binary.lowOrderLongToInt(value)); // $a0
         RegisterFile.updateRegister(5, Binary.highOrderLongToInt(value)); // $a1

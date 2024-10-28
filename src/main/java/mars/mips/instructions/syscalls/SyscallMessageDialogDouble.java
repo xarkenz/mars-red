@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.*;
 import mars.simulator.ExceptionCause;
 
@@ -51,7 +51,7 @@ public class SyscallMessageDialogDouble extends AbstractSyscall {
      * System call to display a message to user.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(BasicStatement statement) throws SimulatorException {
         // Input arguments:
         //   $a0 = address of null-terminated string that is an information-type message to user
         //   $f12 = double value to display in string form after the first message
@@ -67,11 +67,11 @@ public class SyscallMessageDialogDouble extends AbstractSyscall {
             JOptionPane.showMessageDialog(null, message + doubleValue, null, JOptionPane.INFORMATION_MESSAGE);
         }
         catch (AddressErrorException exception) {
-            throw new ProcessingException(statement, exception);
+            throw new SimulatorException(statement, exception);
         }
         catch (InvalidRegisterAccessException exception) {
             // This should not occur because $f12 is always a valid double target
-            throw new ProcessingException(statement, "internal error reading double from register (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            throw new SimulatorException(statement, "internal error reading double from register (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
     }
 }

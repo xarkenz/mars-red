@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -39,7 +39,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Mars will detect a qualifying syscall upon startup, create an instance
  * using its no-argument constructor and add it to its syscall list.
  * When its service is invoked at runtime ("syscall" instruction
- * with its service number stored in register $v0), its {@link #simulate(ProgramStatement)}
+ * with its service number stored in register $v0), its {@link #simulate(BasicStatement)}
  * method will be invoked.
  */
 public abstract class AbstractSyscall implements Syscall {
@@ -95,8 +95,8 @@ public abstract class AbstractSyscall implements Syscall {
      * Performs syscall function.  It will be invoked when the service is invoked
      * at simulation time.  Service is identified by value stored in $v0.
      *
-     * @param statement ProgramStatement object for this syscall instruction.
+     * @param statement BasicStatement object for this syscall instruction.
      */
     @Override
-    public abstract void simulate(ProgramStatement statement) throws ProcessingException, InterruptedException;
+    public abstract void simulate(BasicStatement statement) throws SimulatorException, InterruptedException;
 }

@@ -3,7 +3,7 @@ package mars;
 import com.formdev.flatlaf.*;
 import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 import com.formdev.flatlaf.themes.FlatMacLightLaf;
-import mars.assembler.SymbolTable;
+import mars.assembler.Assembler;
 import mars.mips.hardware.*;
 import mars.mips.instructions.InstructionSet;
 import mars.settings.Settings;
@@ -129,14 +129,8 @@ public class Application {
      * The set of implemented MIPS instructions.
      */
     public static InstructionSet instructionSet;
-    /**
-     * the program currently being worked with.  Used by GUI only, not command line.
-     */
-    public static Program program;
-    /**
-     * Symbol table for file currently being assembled.
-     */
-    public static SymbolTable globalSymbolTable;
+    // TODO: i do not like this. find better place.
+    public static Assembler assembler;
     /**
      * Storage object for config values loaded from file. The properties are loaded when first used.
      */
@@ -170,7 +164,7 @@ public class Application {
             settings = new Settings();
             instructionSet = new InstructionSet();
             instructionSet.populate();
-            globalSymbolTable = new SymbolTable("(global)");
+            assembler = new Assembler();
             initialized = true;
             debug = false;
 
@@ -322,16 +316,6 @@ public class Application {
     public static String getConfigString(String key, String defaultValue) {
         ensureConfigValuesLoaded();
         return configValues.getProperty(key, defaultValue);
-    }
-
-    /**
-     * Return whether backstepping is permitted at this time.  Backstepping is ability to undo execution
-     * steps one at a time.  Available only in GUI mode.
-     *
-     * @return true if backstepping is permitted, false otherwise.
-     */
-    public static boolean isBackSteppingEnabled() {
-        return program != null && program.getBackStepper() != null && program.getBackStepper().isEnabled();
     }
 
     /**

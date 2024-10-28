@@ -1,6 +1,5 @@
 package mars.assembler;
 
-import mars.ErrorMessage;
 import mars.assembler.syntax.DirectiveSyntax;
 import mars.assembler.token.Token;
 import mars.assembler.token.TokenType;
@@ -139,21 +138,21 @@ public enum Directive {
         false,
         (syntax, assembler) -> {
             if (!assembler.getSegment().isData()) {
-                error(syntax, assembler, "Directive '" + syntax.getDirective() + "' only applies to data segments");
+                logError(syntax, assembler, "Directive '" + syntax.getDirective() + "' only applies to data segments");
                 return;
             }
             else if (syntax.getContent().size() != 1) {
-                error(syntax, assembler, "Directive '" + syntax.getDirective() + "' requires one operand: an integer size");
+                logError(syntax, assembler, "Directive '" + syntax.getDirective() + "' requires one operand: an integer size");
                 return;
             }
             Token sizeToken = syntax.getContent().get(0);
             if (!sizeToken.getType().isInteger()) {
-                error(syntax, assembler, "Directive '" + syntax.getDirective() + "' expected an integer size, got: " + sizeToken);
+                logError(syntax, assembler, "Directive '" + syntax.getDirective() + "' expected an integer size, got: " + sizeToken);
                 return;
             }
             int size = (Integer) sizeToken.getValue();
             if (size < 0) {
-                error(syntax, assembler, "Directive '" + syntax.getDirective() + "' expected a non-negative integer, got: " + size);
+                logError(syntax, assembler, "Directive '" + syntax.getDirective() + "' expected a non-negative integer, got: " + size);
                 return;
             }
 
@@ -166,21 +165,21 @@ public enum Directive {
         false,
         (syntax, assembler) -> {
             if (!assembler.getSegment().isData()) {
-                error(syntax, assembler, "Directive '" + syntax.getDirective() + "' only applies to data segments");
+                logError(syntax, assembler, "Directive '" + syntax.getDirective() + "' only applies to data segments");
                 return;
             }
             else if (syntax.getContent().size() != 1) {
-                error(syntax, assembler, "Directive '" + syntax.getDirective() + "' requires one operand: an integer alignment");
+                logError(syntax, assembler, "Directive '" + syntax.getDirective() + "' requires one operand: an integer alignment");
                 return;
             }
             Token alignmentToken = syntax.getContent().get(0);
             if (!alignmentToken.getType().isInteger()) {
-                error(syntax, assembler, "Directive '" + syntax.getDirective() + "' expected an integer alignment, got: " + alignmentToken);
+                logError(syntax, assembler, "Directive '" + syntax.getDirective() + "' expected an integer alignment, got: " + alignmentToken);
                 return;
             }
             int alignmentPower = (Integer) alignmentToken.getValue();
             if (alignmentPower < 0) {
-                error(syntax, assembler, "Directive '" + syntax.getDirective() + "' expected a non-negative integer, got: " + alignmentPower);
+                logError(syntax, assembler, "Directive '" + syntax.getDirective() + "' expected a non-negative integer, got: " + alignmentPower);
                 return;
             }
 
@@ -198,22 +197,22 @@ public enum Directive {
         false,
         (syntax, assembler) -> {
             if (syntax.getContent().size() != 2) {
-                error(syntax, assembler, "Directive '" + syntax.getDirective() + "' requires two operands: a label and an integer size");
+                logError(syntax, assembler, "Directive '" + syntax.getDirective() + "' requires two operands: a label and an integer size");
                 return;
             }
             Token identifier = syntax.getContent().get(0);
             if (identifier.getType() != TokenType.IDENTIFIER && identifier.getType() != TokenType.OPERATOR) {
-                error(syntax, assembler, "Directive '" + syntax.getDirective() + "' expected an identifier, got: " + identifier);
+                logError(syntax, assembler, "Directive '" + syntax.getDirective() + "' expected an identifier, got: " + identifier);
                 return;
             }
             Token sizeToken = syntax.getContent().get(1);
             if (!sizeToken.getType().isInteger()) {
-                error(syntax, assembler, "Directive '" + syntax.getDirective() + "' expected an integer size, got: " + sizeToken);
+                logError(syntax, assembler, "Directive '" + syntax.getDirective() + "' expected an integer size, got: " + sizeToken);
                 return;
             }
             int size = (Integer) sizeToken.getValue();
             if (size < 0) {
-                error(syntax, assembler, "Directive '" + syntax.getDirective() + "' expected a non-negative integer, got: " + size);
+                logError(syntax, assembler, "Directive '" + syntax.getDirective() + "' expected a non-negative integer, got: " + size);
                 return;
             }
 
@@ -226,13 +225,13 @@ public enum Directive {
         true,
         (syntax, assembler) -> {
             if (syntax.getContent().isEmpty()) {
-                error(syntax, assembler, "Directive '" + syntax.getDirective() + "' requires one or more identifiers");
+                logError(syntax, assembler, "Directive '" + syntax.getDirective() + "' requires one or more identifiers");
                 return;
             }
             // SPIM limits .globl list to one label, why not extend it to a list?
             for (Token token : syntax.getContent()) {
                 if (token.getType() != TokenType.IDENTIFIER && token.getType() != TokenType.OPERATOR) {
-                    error(syntax, assembler, "Directive '" + syntax.getDirective() + "' expected an identifier, got: " + token);
+                    logError(syntax, assembler, "Directive '" + syntax.getDirective() + "' expected an identifier, got: " + token);
                     return;
                 }
 
@@ -281,7 +280,7 @@ public enum Directive {
         "Set assembler variables. Currently ignored but included for SPIM compatability",
         false,
         (syntax, assembler) -> {
-            warn(syntax, assembler, "Directive '" + syntax.getDirective() + "' is not currently supported by MARS; ignored");
+            logWarning(syntax, assembler, "Directive '" + syntax.getDirective() + "' is not currently supported by MARS; ignored");
         }
     );
 
@@ -366,7 +365,7 @@ public enum Directive {
      *
      * @param syntax    The syntax applied to this directive in the source code.
      * @param assembler The assembler whose state should be updated by this directive if needed.
-     * @see Assembler#getErrorList()
+     * @see Assembler#getLog()
      */
     public void process(DirectiveSyntax syntax, Assembler assembler) {
         this.function.apply(syntax, assembler);
@@ -386,36 +385,24 @@ public enum Directive {
         void apply(DirectiveSyntax syntax, Assembler assembler);
     }
 
-    private static void warn(DirectiveSyntax syntax, Assembler assembler, String message) {
-        warn(syntax.getFirstToken(), assembler, message);
+    private static void logWarning(DirectiveSyntax syntax, Assembler assembler, String message) {
+        logWarning(syntax.getFirstToken(), assembler, message);
     }
 
-    private static void warn(Token token, Assembler assembler, String message) {
-        assembler.getErrorList().add(new ErrorMessage(
-            true,
-            token.getFilename(),
-            token.getLineIndex(),
-            token.getColumnIndex(),
-            message,
-            ""
-        ));
+    private static void logWarning(Token token, Assembler assembler, String message) {
+        assembler.logWarning(token.getLocation(), message);
     }
 
-    private static void error(DirectiveSyntax syntax, Assembler assembler, String message) {
-        error(syntax.getFirstToken(), assembler, message);
+    private static void logError(DirectiveSyntax syntax, Assembler assembler, String message) {
+        logError(syntax.getFirstToken(), assembler, message);
     }
 
-    private static void error(Token token, Assembler assembler, String message) {
-        assembler.getErrorList().add(new ErrorMessage(
-            token.getFilename(),
-            token.getLineIndex(),
-            token.getColumnIndex(),
-            message
-        ));
+    private static void logError(Token token, Assembler assembler, String message) {
+        assembler.logError(token.getLocation(), message);
     }
 
-    private static void error(Token token, Assembler assembler, AddressErrorException exception) {
-        error(token, assembler, "Cannot write to " + Binary.intToHexString(assembler.getSegment().getAddress()) + ": " + exception.getMessage());
+    private static void logError(Token token, Assembler assembler, AddressErrorException exception) {
+        logError(token, assembler, "Cannot write to " + Binary.intToHexString(assembler.getSegment().getAddress()) + ": " + exception.getMessage());
     }
 
     private record NumericStorageFunction(boolean isFloatingPoint, int numBytes) implements Function {
@@ -423,11 +410,11 @@ public enum Directive {
         public void apply(DirectiveSyntax syntax, Assembler assembler) {
             // DPS 11/20/06, added text segment prohibition
             if (!assembler.getSegment().isData()) {
-                error(syntax, assembler, "Directive '" + syntax.getDirective() + "' only applies to data segments");
+                logError(syntax, assembler, "Directive '" + syntax.getDirective() + "' only applies to data segments");
                 return;
             }
             if (syntax.getContent().isEmpty()) {
-                error(syntax, assembler, "Directive '" + syntax.getDirective() + "' requires one or more values");
+                logError(syntax, assembler, "Directive '" + syntax.getDirective() + "' requires one or more values");
                 return;
             }
 
@@ -456,11 +443,11 @@ public enum Directive {
                         // Handle the "value : n" format, which replicates the value "n" times.
                         if (repeatColon != null) {
                             if (assembler.getSegment().getAddress() == initialAddress) {
-                                error(repeatColon, assembler, "Missing value to repeat before ':'");
+                                logError(repeatColon, assembler, "Missing value to repeat before ':'");
                                 return;
                             }
                             else if (value <= 0) {
-                                error(token, assembler, "Expected a positive integer repetition count, got: " + token);
+                                logError(token, assembler, "Expected a positive integer repetition count, got: " + token);
                                 return;
                             }
 
@@ -515,7 +502,7 @@ public enum Directive {
                     // be patched later by the assembler since symbol addresses aren't fully resolved yet
                     else if (token.getType() == TokenType.IDENTIFIER) {
                         if (this.isFloatingPoint) {
-                            error(token, assembler, "Directive '" + syntax.getDirective() + "' does not support label addresses as values");
+                            logError(token, assembler, "Directive '" + syntax.getDirective() + "' does not support label addresses as values");
                             return;
                         }
 
@@ -543,19 +530,19 @@ public enum Directive {
                         assembler.getSegment().incrementAddress(this.numBytes);
                     }
                     else {
-                        error(token, assembler, "Directive '" + syntax.getDirective() + "' expected a numeric value, got: " + token);
+                        logError(token, assembler, "Directive '" + syntax.getDirective() + "' expected a numeric value, got: " + token);
                         return;
                     }
                 }
                 catch (AddressErrorException exception) {
-                    error(token, assembler, exception);
+                    logError(token, assembler, exception);
                     return;
                 }
             }
 
             // If there's still a repeat colon, the repetition count is invalid or missing
             if (repeatColon != null) {
-                error(repeatColon, assembler, "Expected an integer repetition count following ':'");
+                logError(repeatColon, assembler, "Expected an integer repetition count following ':'");
             }
         }
 
@@ -564,8 +551,9 @@ public enum Directive {
                 Memory.getInstance().storeDoubleword(assembler.getSegment().getAddress(), Double.doubleToRawLongBits(value), true);
             }
             else {
-                if (DataTypes.outOfRange(syntax.getDirective(), value)) {
-                    warn(token, assembler, "Floating-point value '" + token + "' is out of range for directive '" + syntax.getDirective() + "' and will be truncated to fit");
+                // Issue a warning if the exponent of the value is too large to be stored in a float
+                if (Double.isFinite(value) && Math.abs(value) > Float.MAX_VALUE) {
+                    logWarning(token, assembler, "Floating-point value '" + token + "' is out of range for directive '" + syntax.getDirective() + "' and will be truncated to fit");
                 }
                 Memory.getInstance().storeWord(assembler.getSegment().getAddress(), Float.floatToRawIntBits((float) value), true);
             }
@@ -573,12 +561,17 @@ public enum Directive {
         }
 
         private void storeInteger(DirectiveSyntax syntax, Assembler assembler, Token token, int value) throws AddressErrorException {
-            // DPS 4-Jan-2013.  Overriding 6-Jan-2005 KENV changes.
+            // DPS 4-Jan-2013. Overriding 6-Jan-2005 KENV changes.
             // If value is out of range for the directive, will simply truncate
             // the leading bits (includes sign bits). This is what SPIM does.
             // But will issue a warning (not error) which SPIM does not do.
-            if (DataTypes.outOfRange(syntax.getDirective(), value)) {
-                warn(token, assembler, "Integer value '" + token + "' is out of range for directive '" + syntax.getDirective() + "' and will be truncated to fit");
+            if (
+                // Out of range for byte?
+                this.numBytes == 1 && (value < -0x80 || value > 0xFF)
+                // Out of range for halfword?
+                || this.numBytes == Memory.BYTES_PER_HALFWORD && (value < -0x8000 || value > 0xFFFF)
+            ) {
+                logWarning(token, assembler, "Integer value '" + token + "' is out of range for directive '" + syntax.getDirective() + "' and will be truncated to fit");
             }
             Memory.getInstance().store(assembler.getSegment().getAddress(), value, this.numBytes, true);
             assembler.getSegment().incrementAddress(this.numBytes);
@@ -589,17 +582,17 @@ public enum Directive {
         @Override
         public void apply(DirectiveSyntax syntax, Assembler assembler) {
             if (!assembler.getSegment().isData()) {
-                error(syntax, assembler, "Directive '" + syntax.getDirective() + "' only applies to data segments");
+                logError(syntax, assembler, "Directive '" + syntax.getDirective() + "' only applies to data segments");
                 return;
             }
             if (syntax.getContent().isEmpty()) {
-                error(syntax, assembler, "Directive '" + syntax.getDirective() + "' requires one or more strings");
+                logError(syntax, assembler, "Directive '" + syntax.getDirective() + "' requires one or more strings");
                 return;
             }
 
             for (Token token : syntax.getContent()) {
                 if (token.getType() != TokenType.STRING) {
-                    error(token, assembler, "Directive '" + syntax.getDirective() + "' expected a string");
+                    logError(token, assembler, "Directive '" + syntax.getDirective() + "' expected a string");
                     continue;
                 }
 
@@ -608,7 +601,7 @@ public enum Directive {
                         Memory.getInstance().storeByte(assembler.getSegment().getAddress(), charValue, true);
                     }
                     catch (AddressErrorException exception) {
-                        error(token, assembler, exception);
+                        logError(token, assembler, exception);
                         return;
                     }
                     assembler.getSegment().incrementAddress(1);
@@ -619,7 +612,7 @@ public enum Directive {
                         Memory.getInstance().storeByte(assembler.getSegment().getAddress(), 0, true);
                     }
                     catch (AddressErrorException exception) {
-                        error(token, assembler, exception);
+                        logError(token, assembler, exception);
                         return;
                     }
                     assembler.getSegment().incrementAddress(1);

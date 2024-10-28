@@ -1,8 +1,8 @@
 package mars.mips.hardware;
 
-import mars.Application;
 import mars.mips.instructions.Instruction;
 import mars.simulator.ExceptionCause;
+import mars.simulator.Simulator;
 import mars.util.Binary;
 
 /*
@@ -86,8 +86,8 @@ public class Coprocessor0 {
             if (register.getNumber() == number) {
                 int previousValue = register.setValue(value);
 
-                if (Application.isBackSteppingEnabled()) {
-                    Application.program.getBackStepper().addCoprocessor0Restore(number, previousValue);
+                if (Simulator.getInstance().getBackStepper().isEnabled()) {
+                    Simulator.getInstance().getBackStepper().addCoprocessor0Restore(number, previousValue);
                 }
 
                 return previousValue;

@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.InvalidRegisterAccessException;
 import mars.simulator.ExceptionCause;
@@ -52,7 +52,7 @@ public class SyscallPrintDouble extends AbstractSyscall {
      * Performs syscall function to print double whose bits are stored in $f12 and $f13.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(BasicStatement statement) throws SimulatorException {
         try {
             double doubleValue = Coprocessor1.getDoubleFromRegisterPair(12);
 
@@ -60,7 +60,7 @@ public class SyscallPrintDouble extends AbstractSyscall {
         }
         catch (InvalidRegisterAccessException exception) {
             // This should not occur because $f12 is always a valid double target
-            throw new ProcessingException(statement, "internal error reading double from register (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            throw new SimulatorException(statement, "internal error reading double from register (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
     }
 }

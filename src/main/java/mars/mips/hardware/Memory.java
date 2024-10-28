@@ -4,6 +4,7 @@ import mars.Application;
 import mars.assembler.BasicStatement;
 import mars.mips.instructions.Instruction;
 import mars.simulator.ExceptionCause;
+import mars.simulator.Simulator;
 import mars.util.Binary;
 
 import java.util.*;
@@ -513,8 +514,8 @@ public class Memory {
             // Falls within a region containing data
             int oldValue = dataRegion.storeWord(address, value);
             // Add a corresponding backstep for the write
-            if (Application.isBackSteppingEnabled()) {
-                Application.program.getBackStepper().addMemoryRestoreWord(address, oldValue);
+            if (Simulator.getInstance().getBackStepper().isEnabled()) {
+                Simulator.getInstance().getBackStepper().addMemoryRestoreWord(address, oldValue);
             }
         }
         else if ((textRegion = this.getTextRegionForAddress(address)) != null) {
@@ -528,8 +529,8 @@ public class Memory {
             BasicStatement oldStatement = textRegion.storeStatement(address, statement);
             // Add a corresponding backstep for the write
             // TODO: make a separate restore type for program statements in the backstepper
-            if (oldStatement != null && Application.isBackSteppingEnabled()) {
-                Application.program.getBackStepper().addMemoryRestoreWord(address, oldStatement.getBinaryEncoding());
+            if (oldStatement != null && Simulator.getInstance().getBackStepper().isEnabled()) {
+                Simulator.getInstance().getBackStepper().addMemoryRestoreWord(address, oldStatement.getBinaryEncoding());
             }
         }
         else {
@@ -1108,7 +1109,7 @@ public class Memory {
      * contains raw memory words at the innermost level, whereas this contains references to
      * {@link BasicStatement} objects instead. While less space-efficient, it is much more time-efficient
      * for the {@link mars.simulator.Simulator} as it reads the code in the text segment.
-     * (Especially since the current code to construct a <code>ProgramStatement</code> from its binary data
+     * (Especially since the current code to construct a <code>BasicStatement</code> from its binary data
      * isn't too great, which is certainly on the to-do list to improve.)
      */
     public static class TextRegion {
@@ -1313,7 +1314,7 @@ public class Memory {
     }
 
     private void dispatchReadEvent(int address, int length, int value, int wordAddress, int wordValue) {
-        if (Application.program != null || Application.getGUI() == null) {
+        if (Application.getGUI() == null) {
             for (ListenerRange range : this.getListeners(address, length)) {
                 range.listener.memoryRead(address, length, value, wordAddress, wordValue);
             }
@@ -1321,7 +1322,7 @@ public class Memory {
     }
 
     private void dispatchWriteEvent(int address, int length, int value, int wordAddress, int wordValue) {
-        if (Application.program != null || Application.getGUI() == null) {
+        if (Application.getGUI() == null) {
             for (ListenerRange range : this.getListeners(address, length)) {
                 range.listener.memoryWritten(address, length, value, wordAddress, wordValue);
             }

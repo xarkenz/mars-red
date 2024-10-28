@@ -1,9 +1,14 @@
 package mars.venus.actions.run;
 
-import mars.*;
-import mars.mips.hardware.*;
+import mars.Application;
+import mars.assembler.log.AssemblyError;
+import mars.assembler.log.LogLevel;
+import mars.assembler.log.LogMessage;
+import mars.mips.hardware.Memory;
+import mars.mips.hardware.MemoryConfigurations;
 import mars.simulator.Simulator;
-import mars.venus.*;
+import mars.venus.RegistersPane;
+import mars.venus.VenusUI;
 import mars.venus.actions.VenusAction;
 import mars.venus.editor.EditTab;
 import mars.venus.editor.FileStatus;
@@ -12,7 +17,6 @@ import mars.venus.execute.ProgramStatus;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
-import java.util.ArrayList;
 import java.util.List;
 
 /*
@@ -47,17 +51,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Action for the Run -> Assemble menu item.
  */
 public class RunAssembleAction extends VenusAction {
-    /**
-     * Threshold for adding filename to printed message of files being assembled.
-     */
-    public static final int LINE_LENGTH_LIMIT = 60;
-
-    /**
-     * This is used by {@link RunResetAction} to re-assemble under identical conditions.
-     */
-    // TODO: This needs to be handled some other way please
-    public static List<Program> programsToAssemble;
-
     public RunAssembleAction(VenusUI gui, Integer mnemonic, KeyStroke accel) {
         super(gui, "Assemble", VenusUI.getSVGActionIcon("assemble.svg"), "Assemble the current file", mnemonic, accel);
     }
@@ -74,8 +67,7 @@ public class RunAssembleAction extends VenusAction {
         }
 
         // Generate the list of files to assemble
-        String leadPathname = editTab.getCurrentEditorTab().getFile().getPath();
-        List<String> pathnames = List.of(leadPathname);
+        List<String> sourceFilenames = List.of(editTab.getCurrentEditorTab().getFile().getPath());
 
         // Get the path of the exception handler, if enabled
         String exceptionHandler = null;
@@ -87,15 +79,12 @@ public class RunAssembleAction extends VenusAction {
             Simulator.getInstance().reset();
             Simulator.getInstance().getSystemIO().setWorkingDirectory(editTab.getCurrentEditorTab().getFile().getParentFile().toPath());
 
-            Application.program = new Program();
-            programsToAssemble = Application.program.prepareFilesForAssembly(pathnames, leadPathname, exceptionHandler);
-            this.gui.getMessagesPane().getMessages().writeOutput(this.buildFileNameList(this.getName() + ": assembling ", programsToAssemble));
+            this.gui.getMessagesPane().getMessages().writeOutput(this.getName() + ": assembling files.\n");
 
-            // Added logic to receive any warnings and output them.  DPS 11/28/06
-            ErrorList warnings = Application.program.assemble(programsToAssemble, Application.getSettings().extendedAssemblerEnabled.get(), Application.getSettings().warningsAreErrors.get());
+            Application.assembler.getLog().setOutput(message -> this.gui.getMessagesPane().getMessages().writeOutput(message.toString()));
+            Application.assembler.assembleFilenames(sourceFilenames);
 
-            if (warnings.warningsOccurred()) {
-                this.gui.getMessagesPane().getMessages().writeOutput(warnings.generateWarningReport());
+            if (Application.assembler.getLog().hasMessages(LogLevel.WARNING)) {
                 this.gui.getMessagesPane().selectMessagesTab();
             }
             else {
@@ -120,28 +109,30 @@ public class RunAssembleAction extends VenusAction {
             registersPane.getCoprocessor1Window().clearWindow();
             registersPane.getCoprocessor0Window().clearWindow();
         }
-        catch (ProcessingException exception) {
-            String errorReport = exception.getErrors().generateErrorAndWarningReport();
-            this.gui.getMessagesPane().getMessages().writeOutput(errorReport);
+        catch (AssemblyError error) {
             this.gui.getMessagesPane().getMessages().writeOutput(this.getName() + ": operation completed with errors.\n");
             this.gui.getMessagesPane().selectMessagesTab();
 
             // Select editor line containing first error, and corresponding error message.
-            ArrayList<ErrorMessage> errorMessages = exception.getErrors().getErrorMessages();
-            for (ErrorMessage message : errorMessages) {
+            for (LogMessage message : error.getLog().getMessages()) {
                 // No line or position may mean File Not Found (e.g. exception file). Don't try to open. DPS 3-Oct-2010
-                if (message.getLine() == 0 && message.getPosition() == 0) {
+                if (message.getLocation().getLineIndex() < 0) {
                     continue;
                 }
-                if (!message.isWarning() || Application.getSettings().warningsAreErrors.get()) {
-                    this.gui.getMessagesPane().selectErrorMessage(message.getFilename(), message.getLine(), message.getPosition());
+                if (message.getLevel() == LogLevel.ERROR || (
+                    message.getLevel() == LogLevel.WARNING && this.gui.getSettings().warningsAreErrors.get()
+                )) {
                     // Bug workaround: Line selection does not work correctly for the JEditTextArea editor
                     // when the file is opened then automatically assembled (assemble-on-open setting).
                     // Automatic assemble happens in EditTabbedPane's openFile() method, by invoking
                     // this method (actionPerformed) explicitly with null argument.  Thus e!=null test.
                     // DPS 9-Aug-2010
                     if (event != null) {
-                        this.gui.getMessagesPane().selectEditorTextLine(message.getFilename(), message.getLine(), message.getPosition());
+                        this.gui.getMessagesPane().selectEditorTextLine(
+                            message.getLocation().getFilename(),
+                            message.getLocation().getLineIndex() + 1,
+                            message.getLocation().getColumnIndex()
+                        );
                     }
                     break;
                 }
@@ -154,30 +145,5 @@ public class RunAssembleAction extends VenusAction {
     @Override
     public void update() {
         this.setEnabled(this.gui.getFileStatus() != FileStatus.NO_FILE && this.gui.getProgramStatus() != ProgramStatus.RUNNING);
-    }
-
-    /**
-     * Handy little utility for building comma-separated list of filenames
-     * while not letting line length get out of hand.
-     */
-    private String buildFileNameList(String preamble, List<Program> programList) {
-        StringBuilder result = new StringBuilder(preamble);
-        int lineLength = result.length();
-        for (int i = 0; i < programList.size(); i++) {
-            String filename = programList.get(i).getFilename();
-            result.append(filename);
-            if (i < programList.size() - 1) {
-                result.append(", ");
-            }
-            lineLength += filename.length();
-            if (lineLength > LINE_LENGTH_LIMIT) {
-                result.append('\n');
-                lineLength = 0;
-            }
-        }
-        if (lineLength > 0) {
-            result.append('\n');
-        }
-        return result.toString();
     }
 }

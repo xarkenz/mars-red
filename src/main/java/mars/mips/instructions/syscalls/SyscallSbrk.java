@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
-import mars.ProcessingException;
-import mars.ProgramStatement;
+import mars.SimulatorException;
+import mars.assembler.BasicStatement;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.RegisterFile;
 import mars.simulator.ExceptionCause;
@@ -50,7 +50,7 @@ public class SyscallSbrk extends AbstractSyscall {
      * Performs syscall function to allocate amount of heap memory specified in $a0, putting address into $v0.
      */
     @Override
-    public void simulate(ProgramStatement statement) throws ProcessingException {
+    public void simulate(BasicStatement statement) throws SimulatorException {
         int numBytes = RegisterFile.getValue(4); // $a0: number of bytes to allocate
 
         try {
@@ -58,7 +58,7 @@ public class SyscallSbrk extends AbstractSyscall {
             RegisterFile.updateRegister(2, address); // Put address into $v0
         }
         catch (IllegalArgumentException exception) {
-            throw new ProcessingException(statement, exception.getMessage() + " (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            throw new SimulatorException(statement, exception.getMessage() + " (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
     }
 }
