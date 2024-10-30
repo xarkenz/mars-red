@@ -91,7 +91,11 @@ public class SyntaxParser {
                 Directive directive = (Directive) firstToken.getValue();
 
                 List<Token> content = new ArrayList<>();
+                this.cachedToken = null;
                 do {
+                    if (this.cachedToken != null) {
+                        content.add(this.cachedToken);
+                    }
                     while (this.nextTokenInLine()) {
                         content.add(this.cachedToken);
                     }
@@ -121,13 +125,14 @@ public class SyntaxParser {
                         SyntaxOperand operand = this.parseNextOperand();
                         if (operand == null) {
                             // An error occurred while parsing the operand, so skip the rest of the line
+                            this.cachedToken = null;
                             this.lineTokens = null;
                             return null;
                         }
                         operands.add(operand);
                         operandTypes.add(operand.getType());
                     }
-                    while (this.nextTokenInLine());
+                    while (this.cachedToken != null || this.nextTokenInLine());
                 }
 
                 // I know what I'm doing! The tokenizer puts a List<Instruction> in, I can get a List<Instruction> out
@@ -136,13 +141,15 @@ public class SyntaxParser {
 
                 Instruction instruction = InstructionSet.matchInstruction(mnemonicMatches, operandTypes);
                 if (instruction == null) {
-                    this.log.logError(firstToken.getLocation(), "No instruction  '" + firstToken + "' found matching operands " + operandTypes);
+                    this.log.logError(firstToken.getLocation(), "No instruction '" + firstToken + "' found matching operands " + operandTypes);
+                    return null;
                 }
 
                 return new StatementSyntax(this.sourceLine, firstToken, instruction, operands);
             }
             default -> {
                 this.logError("Unexpected token: " + firstToken);
+                this.cachedToken = null;
                 return null;
             }
         }
@@ -185,18 +192,25 @@ public class SyntaxParser {
                 }
 
                 int offset = offsetSign * (Integer) this.cachedToken.getValue();
+                this.cachedToken = null;
+
                 operand = new LabelOperand(operandToken, offset);
             }
             else {
                 operand = new LabelOperand(operandToken);
             }
         }
+        else {
+            this.cachedToken = null;
+        }
 
         if (parenthesized) {
             if (!this.nextTokenInLine() || this.cachedToken.getType() != TokenType.RIGHT_PAREN) {
                 this.logError("Unclosed '('");
+                this.cachedToken = null;
                 return null;
             }
+            this.cachedToken = null;
 
             if (operand instanceof Operand basicOperand && operand.getType() == OperandType.REGISTER) {
                 operand = new Operand(OperandType.PAREN_REGISTER, basicOperand.getValue());
@@ -206,8 +220,6 @@ public class SyntaxParser {
                 return null;
             }
         }
-
-        this.cachedToken = null;
 
         return operand;
     }

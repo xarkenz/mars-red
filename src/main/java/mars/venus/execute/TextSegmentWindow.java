@@ -18,7 +18,6 @@ import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.*;
-import java.util.List;
 
 /*
 Copyright (c) 2003-2007,  Pete Sanderson and Kenneth Vollmar
@@ -143,7 +142,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         }
         int maxSourceLineDigits = Integer.toUnsignedString(maxSourceLineNumber).length();
         int leadingSpaces;
-        int lastLine = -1;
+        int prevLineNumber = -1;
         int row = 0;
         for (var entry : statements.entrySet()) {
             int address = entry.getKey();
@@ -154,19 +153,20 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
             this.data[row][ADDRESS_COLUMN] = NumberDisplayBaseChooser.formatUnsignedInteger(address, addressBase);
             this.data[row][CODE_COLUMN] = NumberDisplayBaseChooser.formatNumber(statement.getBinaryEncoding(), 16);
             this.data[row][BASIC_COLUMN] = statement.toString();
+            int lineNumber = -1;
             String sourceString = "";
-            // TODO
-//            if (!statement.getSource().isEmpty()) {
-//                String sourceLineString = Integer.toUnsignedString(statement.getSourceLine());
-//                leadingSpaces = maxSourceLineDigits - sourceLineString.length();
-//                String lineNumber = " ".repeat(leadingSpaces) + sourceLineString + ": ";
-//                if (statement.getSourceLine() == lastLine) {
-//                    lineNumber = " ".repeat(maxSourceLineDigits) + "  ";
-//                }
-//                sourceString = lineNumber + EditorFont.substituteSpacesForTabs(statement.getSource(), this.gui.getSettings().editorTabSize.get());
-//            }
+            if (statement.getSyntax() != null) {
+                lineNumber = statement.getSyntax().getSourceLine().getLocation().getLineIndex() + 1;
+                String lineNumberString = Integer.toUnsignedString(lineNumber);
+                leadingSpaces = maxSourceLineDigits - lineNumberString.length();
+                String linePrefix = " ".repeat(leadingSpaces) + lineNumberString + ": ";
+                if (lineNumber == prevLineNumber) {
+                    linePrefix = " ".repeat(maxSourceLineDigits) + "  ";
+                }
+                sourceString = linePrefix + EditorFont.substituteSpacesForTabs(statement.getSyntax().getSourceLine().getContent(), this.gui.getSettings().editorTabSize.get());
+            }
             this.data[row][SOURCE_COLUMN] = sourceString;
-//            lastLine = statement.getSourceLine();
+            prevLineNumber = lineNumber;
             row++;
         }
         this.getContentPane().removeAll();

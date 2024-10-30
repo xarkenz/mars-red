@@ -86,6 +86,10 @@ public class InstructionSet {
         return this.instructionList;
     }
 
+    public Set<String> getAllMnemonics() {
+        return this.allInstructions.keySet();
+    }
+
     public InstructionDecoder getDecoder() {
         return this.decoder;
     }
@@ -97,6 +101,7 @@ public class InstructionSet {
             .add(instruction);
         this.allInstructionsTrie.computeIfAbsent(instruction.getMnemonic(), mnemonic -> new ArrayList<>())
             .add(instruction);
+        this.instructionList.add(instruction);
 
         this.decoder.addInstruction(instruction);
     }
@@ -108,6 +113,7 @@ public class InstructionSet {
             .add(instruction);
         this.allInstructionsTrie.computeIfAbsent(instruction.getMnemonic(), mnemonic -> new ArrayList<>())
             .add(instruction);
+        this.instructionList.add(instruction);
     }
 
     /**
@@ -2620,7 +2626,7 @@ public class InstructionSet {
     private static List<ExpansionTemplate.Statement> parseExpansionStatements(String mnemonic, List<OperandType> operandTypes, String expansionCode) {
         AssemblerLog log = new AssemblerLog();
         log.setOutput(System.err::println);
-        String filename = mnemonic + operandTypes; // Takes the form of "addi[reg, reg, s16]"
+        String filename = mnemonic + " " + operandTypes; // Takes the form of "addi [reg, reg, s16]"
 
         SourceFile expansionLines = Tokenizer.tokenizeLines(
             filename,

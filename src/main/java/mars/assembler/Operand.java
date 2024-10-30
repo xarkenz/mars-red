@@ -86,4 +86,15 @@ public class Operand implements SyntaxOperand, TemplateOperand {
             }
         }
     }
+
+    @Override
+    public String toString() {
+        return switch (this.type) {
+            case REGISTER -> "$" + this.value;
+            case FP_REGISTER -> "$f" + this.value;
+            case PAREN_REGISTER -> "($" + this.value + ")";
+            case INTEGER_3_UNSIGNED, INTEGER_5_UNSIGNED -> Integer.toString(this.value);
+            default -> Binary.intToHexString(this.value);
+        };
+    }
 }

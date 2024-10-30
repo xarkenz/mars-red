@@ -305,6 +305,22 @@ public class Tokenizer {
                 }
                 // Something else
                 default -> {
+                    if (startChar == '+' || startChar == '-') {
+                        // Either binary (e.g. label+4), which gets its own token, or unary (e.g. -10).
+                        // If a plus or minus immediately follows an identifier, it is considered binary.
+                        // Hacky, but it will have to do for now.
+                        if (!tokens.isEmpty() && tokens.get(tokens.size() - 1).getType() == TokenType.IDENTIFIER) {
+                            preprocessor.processToken(tokens, new Token(
+                                startLocation,
+                                Character.toString(startChar),
+                                (startChar == '+') ? TokenType.PLUS : TokenType.MINUS,
+                                null
+                            ));
+                            columnIndex++;
+                            continue;
+                        }
+                    }
+
                     // Check for either a number or identifier of some kind
                     if (Character.isLetterOrDigit(startChar) || startChar == '+' || startChar == '-'
                         || startChar == '_' || startChar == '.' || startChar == '$' || startChar == '%'
@@ -346,7 +362,7 @@ public class Tokenizer {
 
                         String literal = builder.toString();
 
-                        // See if it is plus or minus as a binary operator
+                        // If all we have is a plus or minus, it will be treated as a standalone token
                         if (literal.equals("+")) {
                             preprocessor.processToken(tokens, new Token(
                                 startLocation,
@@ -366,7 +382,7 @@ public class Tokenizer {
                             continue;
                         }
 
-                        // See if it is a macro parameter
+                        // See if it is a MARS-style macro parameter starting with %
                         if (startChar == '%') {
                             TokenType type = TokenType.MACRO_PARAMETER;
                             if (literal.length() <= 1) {
@@ -385,7 +401,7 @@ public class Tokenizer {
                             continue;
                         }
 
-                        // See if it is a register name or number
+                        // See if it is a general-purpose register name or number (includes CP0 registers)
                         Register register = RegisterFile.getRegister(literal);
                         if (register != null) {
                             preprocessor.processToken(tokens, new Token(
@@ -399,7 +415,7 @@ public class Tokenizer {
                             continue;
                         }
 
-                        // See if it is a floating point register name
+                        // See if it is a floating point (CP1) register name
                         register = Coprocessor1.getRegister(literal);
                         if (register != null) {
                             preprocessor.processToken(tokens, new Token(

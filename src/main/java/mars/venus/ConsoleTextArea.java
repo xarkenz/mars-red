@@ -5,9 +5,6 @@ import mars.simulator.*;
 
 import javax.swing.*;
 import javax.swing.text.*;
-import java.io.BufferedOutputStream;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /*
@@ -141,6 +138,7 @@ public class ConsoleTextArea extends JTextArea {
         // Do some crude trimming to save memory.  If the number of lines exceeds the maximum,
         // trim off the excess old lines, plus some extra lines so we only have to do this occasionally.
         // This will limit scrolling, but the maximum line count can be set reasonably high.
+        // FIXME: doing the trimming AFTER the buffer is flushed to the GUI is a significant oversight
         int lineCount = this.getLineCount();
         if (lineCount > MAXIMUM_LINE_COUNT) {
             try {

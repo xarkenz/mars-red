@@ -217,7 +217,12 @@ public class StringTrie<V> extends AbstractMap<String, V> {
 
         @Override
         public int size() {
-            return StringTrie.this.size();
+            // Eh, just iterate over the elements
+            int size = 0;
+            for (Entry<String, V> ignored : this) {
+                size++;
+            }
+            return size;
         }
     }
 

@@ -1314,18 +1314,14 @@ public class Memory {
     }
 
     private void dispatchReadEvent(int address, int length, int value, int wordAddress, int wordValue) {
-        if (Application.getGUI() == null) {
-            for (ListenerRange range : this.getListeners(address, length)) {
-                range.listener.memoryRead(address, length, value, wordAddress, wordValue);
-            }
+        for (ListenerRange range : this.getListeners(address, length)) {
+            range.listener.memoryRead(address, length, value, wordAddress, wordValue);
         }
     }
 
     private void dispatchWriteEvent(int address, int length, int value, int wordAddress, int wordValue) {
-        if (Application.getGUI() == null) {
-            for (ListenerRange range : this.getListeners(address, length)) {
-                range.listener.memoryWritten(address, length, value, wordAddress, wordValue);
-            }
+        for (ListenerRange range : this.getListeners(address, length)) {
+            range.listener.memoryWritten(address, length, value, wordAddress, wordValue);
         }
     }
 }

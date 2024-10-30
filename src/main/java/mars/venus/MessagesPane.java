@@ -323,7 +323,7 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
                 else {
                     this.console.writeOutput("\n--- program terminated due to error(s): ---\n");
                     this.console.writeOutput(event.getException().getMessage());
-                    this.console.writeOutput("--- end of error report ---\n\n");
+                    this.console.writeOutput("\n--- end of error report ---\n\n");
                 }
                 this.setSelectedComponent(this.consoleTab);
             }

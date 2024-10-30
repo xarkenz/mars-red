@@ -450,8 +450,8 @@ public class MIPSTokenMarker extends TokenMarker {
         if (keywords == null) {
             keywords = new KeywordMap(false);
             // Add instruction mnemonics
-            for (Instruction instruction : Application.instructionSet.getAllInstructions()) {
-                keywords.add(instruction.getMnemonic(), Token.INSTRUCTION);
+            for (String mnemonic : Application.instructionSet.getAllMnemonics()) {
+                keywords.add(mnemonic, Token.INSTRUCTION);
             }
             // Add assembler directives
             for (Directive directive : Directive.values()) {

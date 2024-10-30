@@ -93,4 +93,10 @@ public class Macro {
 
         return -1;
     }
+
+    @Override
+    public String toString() {
+        // For debug purposes
+        return this.name + this.parameters;
+    }
 }

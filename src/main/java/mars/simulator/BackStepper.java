@@ -370,7 +370,6 @@ public class BackStepper {
         private synchronized void clear() {
             this.size = 0;
             this.top = -1;
-            Arrays.fill(this.stack, null);
         }
 
         private synchronized boolean isEmpty() {

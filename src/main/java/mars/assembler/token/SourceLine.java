@@ -40,7 +40,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * line and possibly different program but the migration should not be visible to the user.
  */
 public class SourceLine {
-    private final SourceLocation location;
+    private SourceLocation location;
     private String content;
     private final List<Token> tokens;
 
@@ -64,6 +64,10 @@ public class SourceLine {
      */
     public SourceLocation getLocation() {
         return this.location;
+    }
+
+    public void setLocation(SourceLocation location) {
+        this.location = location;
     }
 
     /**

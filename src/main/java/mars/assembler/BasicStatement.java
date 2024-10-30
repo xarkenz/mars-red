@@ -58,4 +58,25 @@ public class BasicStatement implements Statement {
     public void simulate() throws SimulatorException, InterruptedException {
         this.instruction.getFunction().simulate(this);
     }
+
+    @Override
+    public String toString() {
+        StringBuilder output = new StringBuilder(this.instruction.getMnemonic());
+
+        for (int index = 0; index < this.operands.size(); index++) {
+            Operand operand = this.operands.get(index);
+            if (index == 0) {
+                while (output.length() < 8) {
+                    output.append(' ');
+                }
+            }
+            else if (operand.getType() != OperandType.PAREN_REGISTER) {
+                output.append(", ");
+            }
+
+            output.append(operand);
+        }
+
+        return output.toString();
+    }
 }

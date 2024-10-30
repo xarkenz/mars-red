@@ -13,6 +13,7 @@ package mars.venus.editor.jeditsyntax;
 import mars.venus.editor.jeditsyntax.tokenmarker.Token;
 
 import javax.swing.text.Segment;
+import java.util.ArrayList;
 
 /**
  * A <code>KeywordMap</code> is similar to a hashtable in that it maps keys
@@ -62,7 +63,7 @@ public class KeywordMap {
         if (length <= 0) {
             return Token.NULL;
         }
-        if (text.array[offset] == '%') {
+        if (text.array[offset] == '%' && length > 1) {
             return Token.MACRO_ARGUMENT; // added 12/12 M. Sekhavat
         }
         KeywordNode node = buckets[getSegmentMapKey(text, offset, length)];
@@ -117,4 +118,17 @@ public class KeywordMap {
     }
 
     private record KeywordNode(char[] keyword, byte id, KeywordNode next) {}
+
+    @Override
+    public String toString() {
+        // For debugging purposes
+        ArrayList<String> keywords = new ArrayList<>();
+        for (KeywordNode bucket : this.buckets) {
+            while (bucket != null) {
+                keywords.add(new String(bucket.keyword));
+                bucket = bucket.next;
+            }
+        }
+        return keywords.toString();
+    }
 }

@@ -124,6 +124,6 @@ public abstract class Instruction {
 
     public String generateExample() {
         // TODO
-        return this.mnemonic + this.operandTypes;
+        return this.mnemonic + " " + this.operandTypes;
     }
 }

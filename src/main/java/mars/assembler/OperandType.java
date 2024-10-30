@@ -105,7 +105,7 @@ public enum OperandType {
      * <tr><th><code>label</code> </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td> </td><td> </td></tr>
      * <tr><th><code>label+</code></th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td>✓</td><td> </td><td> </td></tr>
      * <tr><th><code>broff</code> </th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td>✓</td><td> </td></tr>
-     * <tr><th><code>jlabel</code></th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td> </td><td>✓</td></tr>
+     * <tr><th><code>jlabel</code></th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td> </td><td>✓</td></tr>
      * </table>
      *
      * @param fromType The type to check for acceptance.
@@ -129,15 +129,18 @@ public enum OperandType {
         }
         else if (this == BRANCH_OFFSET) {
             // A branch offset can be either a label or a signed 16-bit immediate
-            return fromType == LABEL || (fromType.isInteger() && fromType.ordinal() <= INTEGER_16_UNSIGNED.ordinal());
+            return fromType == LABEL
+                || (fromType.isInteger() && fromType.ordinal() <= INTEGER_16_UNSIGNED.ordinal());
         }
         else if (this == JUMP_LABEL) {
-            // A label can be interpreted as a jump label
-            return fromType == LABEL;
+            // A jump label can be either a label or a 32-bit immediate
+            return fromType == LABEL
+                || fromType == LABEL_OFFSET
+                || fromType.isInteger();
         }
         else {
             // A label without an offset can be interpreted as a label with an offset of 0
-            return (this == LABEL_OFFSET && fromType == LABEL);
+            return this == LABEL_OFFSET && fromType == LABEL;
         }
     }
 
@@ -163,7 +166,7 @@ public enum OperandType {
      * <tr><th><code>label</code> </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td>✓</td><td> </td><td> </td></tr>
      * <tr><th><code>label+</code></th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td>✓</td><td> </td><td> </td></tr>
      * <tr><th><code>broff</code> </th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td>✓</td><td>✓</td><td> </td></tr>
-     * <tr><th><code>jlabel</code></th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td>✓</td><td> </td><td>✓</td></tr>
+     * <tr><th><code>jlabel</code></th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td>✓</td><td>✓</td><td> </td><td>✓</td></tr>
      * </table>
      *
      * @param fromType The type to check for acceptance.
@@ -189,8 +192,10 @@ public enum OperandType {
                 || (fromType.isInteger() && fromType.getBitWidth() <= INTEGER_16.getBitWidth());
         }
         else if (this == JUMP_LABEL) {
-            // A label can be interpreted as a jump label
-            return fromType == LABEL || fromType == LABEL_OFFSET;
+            // A jump label can be either a label or a 32-bit immediate
+            return fromType == LABEL
+                || fromType == LABEL_OFFSET
+                || fromType.isInteger();
         }
         else {
             // A label without an offset can be interpreted as a label with an offset of 0, and vice versa

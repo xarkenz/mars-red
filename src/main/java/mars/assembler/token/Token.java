@@ -139,7 +139,7 @@ public class Token {
      *         <code>$</code> followed by at least one character, or <code>false</code> otherwise.
      */
     public boolean isSPIMStyleMacroParameter() {
-        return this.type == TokenType.IDENTIFIER || this.literal.length() <= 1 || this.literal.charAt(0) != '$';
+        return this.type == TokenType.IDENTIFIER && this.literal.length() > 1 && this.literal.charAt(0) == '$';
     }
 
     /**

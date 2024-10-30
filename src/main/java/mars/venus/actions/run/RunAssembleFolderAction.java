@@ -82,7 +82,7 @@ public class RunAssembleFolderAction extends VenusAction {
 
             this.gui.getMessagesPane().getMessages().writeOutput(this.getName() + ": assembling files.\n");
 
-            Application.assembler.getLog().setOutput(message -> this.gui.getMessagesPane().getMessages().writeOutput(message.toString()));
+            Application.assembler.getLog().setOutput(message -> this.gui.getMessagesPane().getMessages().writeOutput(message.toString() + '\n'));
             Application.assembler.assembleFilenames(sourceFilenames);
 
             if (Application.assembler.getLog().hasMessages(LogLevel.WARNING)) {

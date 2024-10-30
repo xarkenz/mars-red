@@ -142,12 +142,13 @@ public class MacroHandler {
     }
 
     private List<SourceLine> instantiate(Macro macro, List<Token> arguments, List<SourceLine> callStack, AssemblerLog log) {
+        SourceLine callerLine = callStack.get(0);
         int instanceID = this.getNextInstanceID();
         List<SourceLine> instanceLines = new ArrayList<>(macro.getLines().size());
 
-        lineLoop: for (SourceLine sourceLine : macro.getLines()) {
-            List<Token> tokens = sourceLine.getTokens();
-            List<Token> instanceTokens = new ArrayList<>(sourceLine.getTokens().size());
+        lineLoop: for (SourceLine macroLine : macro.getLines()) {
+            List<Token> tokens = macroLine.getTokens();
+            List<Token> instanceTokens = new ArrayList<>(macroLine.getTokens().size());
 
             for (Token token : tokens) {
                 Token instanceToken;
@@ -211,8 +212,8 @@ public class MacroHandler {
                 }
 
                 // Expand the macro with the current arguments
-                callStack.add(sourceLine);
-                List<SourceLine> innerInstanceLines = this.instantiate(calleeMacro, calleeArguments, sourceLine, log);
+                callStack.add(macroLine);
+                List<SourceLine> innerInstanceLines = this.instantiate(calleeMacro, calleeArguments, callStack, log);
                 callStack.remove(callStack.size() - 1);
 
                 if (index != 0) {
@@ -222,8 +223,8 @@ public class MacroHandler {
 
                     // Add the modified line
                     instanceLines.add(new SourceLine(
-                        sourceLine.getLocation(),
-                        sourceLine.getContent(),
+                        callerLine.getLocation(),
+                        macroLine.getContent(),
                         instanceTokens
                     ));
                 }
@@ -234,8 +235,8 @@ public class MacroHandler {
             }
 
             instanceLines.add(new SourceLine(
-                sourceLine.getLocation(),
-                sourceLine.getContent(),
+                callerLine.getLocation(),
+                macroLine.getContent(),
                 instanceTokens
             ));
         }

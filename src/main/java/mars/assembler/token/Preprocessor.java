@@ -38,6 +38,7 @@ public class Preprocessor {
             // Check for a macro call
             if (this.currentMacro == null && token.getType() == TokenType.IDENTIFIER) {
                 // The macro name must be the first token in the line aside from a possible label
+                // TODO: prevent first argument from being colon due to confusion with label?
                 if (index != 0 && tokens.get(index - 1).getType() != TokenType.COLON) {
                     // No need to check this token further-- equivalences have already been processed
                     continue;
@@ -90,6 +91,11 @@ public class Preprocessor {
                 Path path = Path.of(token.getLocation().getFilename()).resolveSibling(filename).toAbsolutePath();
                 // If the file fails to open, includedFile will just be empty
                 SourceFile includedFile = Tokenizer.tokenizeFile(path.toString(), log, this);
+
+                // Change the line locations
+                for (SourceLine includedLine : includedFile.getLines()) {
+                    includedLine.setLocation(line.getLocation());
+                }
 
                 // If there are extraneous tokens following the directive, clear them and warn the user
                 if (index + 2 < tokens.size()) {
@@ -166,6 +172,7 @@ public class Preprocessor {
                 // Check for .end_macro to end the current macro
                 else if (token.getValue() == Directive.END_MACRO) {
                     // End the current macro definition
+                    this.macroHandler.defineMacro(this.currentMacro);
                     this.currentMacro = null;
 
                     // If there are extraneous tokens following the directive, warn the user
@@ -268,7 +275,8 @@ public class Preprocessor {
             // Not needed by assembler, but looks better in the Text Segment Display.
             // TODO: restore the behavior mentioned in this comment?
         }
-        // Add the token to the list as usual
+
+        // No token-wise preprocessing needed, so add the token to the list as usual
         destination.add(token);
     }
 }

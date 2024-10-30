@@ -96,8 +96,8 @@ public class BasicInstruction extends Instruction {
             encodingDescriptor.append(ch);
             operationMask <<= 1;
             operationKey <<= 1;
-            for (int operandIndex = 0; operandIndex < operandTypes.size(); operandIndex++) {
-                this.operandMasks[operandIndex] <<= 1;
+            for (int index = 0; index < operandTypes.size(); index++) {
+                this.operandMasks[index] <<= 1;
             }
             switch (ch) {
                 case '0' -> {
@@ -129,15 +129,20 @@ public class BasicInstruction extends Instruction {
                     throw new IllegalArgumentException("unexpected character '" + ch + "' in encoding for instruction " + mnemonic + operandTypes);
                 }
             }
-            for (int operandIndex = 0; operandIndex < operandTypes.size(); operandIndex++) {
-                if (this.operandMasks[operandIndex] == 0) {
-                    this.operandShifts[operandIndex]++;
-                }
-            }
         }
 
         if (encodingDescriptor.length() != Instruction.INSTRUCTION_LENGTH_BITS) {
             throw new IllegalArgumentException("invalid " + encodingDescriptor.length() + "-bit encoding for instruction " + mnemonic + operandTypes);
+        }
+
+        // Determine the amount each operand is shifted from the rightmost position
+        for (int index = 0; index < operandTypes.size(); index++) {
+            int maskShiftTest = this.operandMasks[index];
+            // Shift right until reaching a 1 bit, incrementing the shift amount each time
+            while (maskShiftTest != 0 && (maskShiftTest & 1) == 0) {
+                this.operandShifts[index]++;
+                maskShiftTest >>>= 1;
+            }
         }
 
         this.encodingDescriptor = encodingDescriptor.toString();

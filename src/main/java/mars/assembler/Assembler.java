@@ -207,7 +207,7 @@ public class Assembler {
         this.currentFilePatches.clear();
         this.remainingPatches.clear();
 
-        this.dataSegment.setBounds(MemoryConfigurations.DATA_LOW, MemoryConfigurations.DATA_HIGH);
+        this.dataSegment.setBounds(MemoryConfigurations.STATIC_LOW, MemoryConfigurations.STATIC_HIGH);
         this.dataSegment.resetAddress();
         this.textSegment.setBounds(MemoryConfigurations.TEXT_LOW, MemoryConfigurations.TEXT_HIGH);
         this.textSegment.resetAddress();
@@ -225,10 +225,12 @@ public class Assembler {
     public void assembleFilenames(List<String> sourceFilenames) throws AssemblyError {
         this.reset();
 
+        // Populate the list of source filenames
         for (String filename : sourceFilenames) {
             this.tokenizedFiles.add(Tokenizer.tokenizeFile(filename, this.log));
         }
 
+        // If the tokenizer produced any errors, throw them instead of progressing to parsing and assembly
         if (this.log.hasMessages(LogLevel.ERROR)) {
             throw new AssemblyError(this.log);
         }
@@ -245,6 +247,7 @@ public class Assembler {
     public void assembleFiles(List<SourceFile> sourceFiles) throws AssemblyError {
         this.reset();
 
+        // Populate the list of source filenames
         for (SourceFile sourceFile : sourceFiles) {
             this.sourceFilenames.add(sourceFile.getFilename());
         }
@@ -260,10 +263,9 @@ public class Assembler {
             return;
         }
 
-        // PROCESS THE FIRST ASSEMBLY PASS FOR ALL SOURCE FILES BEFORE PROCEEDING
-        // TO SECOND PASS. THIS ASSURES ALL SYMBOL TABLES ARE CORRECTLY BUILT.
-        // THERE IS ONE GLOBAL SYMBOL TABLE (for identifiers declared .globl) PLUS
-        // ONE LOCAL SYMBOL TABLE FOR EACH SOURCE FILE.
+        // FIRST PASS: Parse each file into its syntax components, processing directives and populating the symbol
+        // tables as label definitions are encountered
+
         for (SourceFile sourceFile : this.tokenizedFiles) {
             if (this.log.hasExceededMaxErrorCount()) {
                 break;
@@ -274,8 +276,6 @@ public class Assembler {
             this.localSymbolTables.put(sourceFile.getFilename(), this.localSymbolTable);
             // Start in text segment by default
             this.segment = this.textSegment;
-
-            // FIRST PASS OF ASSEMBLER VERIFIES SYNTAX, GENERATES SYMBOL TABLE, INITIALIZES DATA SEGMENT
 
             SyntaxParser parser = new SyntaxParser(sourceFile.getLines().iterator(), this.log);
             Syntax syntax;
@@ -303,6 +303,10 @@ public class Assembler {
         // and require error message.
         this.remainingPatches.removeIf(patch -> patch.resolve(this.globalSymbolTable));
         for (ForwardReferencePatch patch : this.remainingPatches) {
+            if (this.log.hasExceededMaxErrorCount()) {
+                break;
+            }
+
             this.log.logError(
                 patch.getSourceLocation(),
                 "Undefined symbol '" + patch.identifier + "'"
@@ -314,7 +318,9 @@ public class Assembler {
             throw new AssemblyError(this.log);
         }
 
-        // SECOND PASS OF ASSEMBLER GENERATES BASIC ASSEMBLER THEN MACHINE CODE.
+        // SECOND PASS: Resolve the remaining label operands, etc. against the symbol table and generate
+        // basic/extended statements with fully resolved operand lists
+
         String previousLineFilename = null;
         for (var entry : this.parsedStatements.entrySet()) {
             if (this.log.hasExceededMaxErrorCount()) {
@@ -341,21 +347,27 @@ public class Assembler {
             this.resolvedStatements.put(address, syntax.resolve(this, address));
         }
 
+        // If the second pass produced any errors, throw them instead of progressing to the third pass
         if (this.log.hasMessages(LogLevel.ERROR)) {
             throw new AssemblyError(this.log);
         }
 
-        // DPS 6 Dec 2006:
-        // We will now sort the ArrayList of BasicStatements by getAddress() value.
-        // This is for display purposes, since they have already been stored to Memory.
-        // Use of .ktext and .text with address operands has two implications:
-        // (1) the addresses may not be ordered at this point. Requires unsigned int
-        // sort because kernel addresses are negative. See special Comparator.
-        // (2) It is possible for two instructions to be placed at the same address.
-        // Such occurrences will be flagged as errors.
-        // Yes, I would not have to sort here if I used SortedSet rather than ArrayList
-        // but in case of duplicate I like having both statements handy for error message.
+        // THIRD PASS: Write resolved statements to memory and store the resulting basic statements in the list
+        // of assembled statements
 
+        for (var entry : this.resolvedStatements.entrySet()) {
+            if (this.log.hasExceededMaxErrorCount()) {
+                break;
+            }
+
+            int address = entry.getKey();
+            Statement statement = entry.getValue();
+
+            // This call will take care of adding the statement(s) to this.assembledStatements
+            statement.handlePlacement(this, address);
+        }
+
+        // If the third pass produced any errors, throw them instead of returning normally
         if (this.log.hasMessages(LogLevel.ERROR) || (
             Application.getSettings().warningsAreErrors.get() && this.log.hasMessages(LogLevel.WARNING)
         )) {
