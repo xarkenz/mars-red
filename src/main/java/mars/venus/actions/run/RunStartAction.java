@@ -1,6 +1,6 @@
 package mars.venus.actions.run;
 
-import mars.SimulatorException;
+import mars.simulator.SimulatorException;
 import mars.mips.hardware.RegisterFile;
 import mars.simulator.ProgramArgumentList;
 import mars.simulator.Simulator;

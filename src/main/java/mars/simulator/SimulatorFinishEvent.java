@@ -1,7 +1,5 @@
 package mars.simulator;
 
-import mars.SimulatorException;
-
 import java.util.EventObject;
 
 /**

@@ -1,6 +1,5 @@
 package mars.venus;
 
-import mars.FileDrop;
 import mars.venus.editor.EditTab;
 import mars.venus.editor.Editor;
 import mars.venus.editor.FileEditorTab;

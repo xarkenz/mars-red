@@ -434,21 +434,21 @@ public class FileEditorTab extends JPanel {
      * Given line and column (position in the line) numbers, calculate
      * its byte stream position in text being edited.
      *
-     * @param line   Line number in file (starts with 1)
-     * @param column Position within that line (starts with 1)
+     * @param lineIndex   Line number in file (starts with 0)
+     * @param columnIndex Position within that line (starts with 0)
      * @return corresponding stream position.  Returns -1 if there is no corresponding position.
      */
-    public int convertLineColumnToStreamPosition(int line, int column) {
+    public int convertLineColumnToStreamPosition(int lineIndex, int columnIndex) {
         String source = this.getSource();
-        int textLine = 1;
-        int textColumn = 1;
+        int textLine = 0;
+        int textColumn = 0;
         for (int index = 0; index < source.length(); index++) {
-            if (textLine == line && textColumn == column) {
+            if (textLine == lineIndex && textColumn == columnIndex) {
                 return index;
             }
             if (source.charAt(index) == '\n') {
                 textLine++;
-                textColumn = 1;
+                textColumn = 0;
             }
             else {
                 textColumn++;
@@ -472,17 +472,17 @@ public class FileEditorTab extends JPanel {
      * Select the specified editor text line.  Lines are numbered starting with 1, consistent
      * with line numbers displayed by the editor.
      *
-     * @param line   The line number to select.  Numbering starts at 1, and
-     *               nothing will happen if the parameter value is less than 1
-     * @param column Desired column at which to place the cursor.
+     * @param lineIndex The line number to select.  Numbering starts at 0, and
+     *                  nothing will happen if the parameter value is less than 0
+     * @param columnIndex Desired column at which to place the cursor.
      */
-    public void selectLine(int line, int column) {
-        if (line <= 0) {
+    public void selectLine(int lineIndex, int columnIndex) {
+        if (lineIndex <= 0) {
             return;
         }
 
-        int lineStartPosition = this.convertLineColumnToStreamPosition(line, 1);
-        int lineEndPosition = this.convertLineColumnToStreamPosition(line + 1, 1) - 1;
+        int lineStartPosition = this.convertLineColumnToStreamPosition(lineIndex, 0);
+        int lineEndPosition = this.convertLineColumnToStreamPosition(lineIndex + 1, 0) - 1;
 
         if (lineEndPosition < 0) { // DPS 19 Sept 2012.  Happens if "line" is last line of file.
             lineEndPosition = this.getSource().length() - 1;
@@ -491,10 +491,10 @@ public class FileEditorTab extends JPanel {
             this.textEditingArea.select(lineStartPosition, lineEndPosition);
             this.textEditingArea.setSelectionVisible(true);
 
-            if (column > 0) {
+            if (columnIndex >= 0) {
                 // Made one attempt at setting cursor; didn't work but here's the attempt
                 // (imagine using it in the one-parameter overloaded method above)
-                this.textEditingArea.setCaretPosition(lineStartPosition + column - 1);
+//                this.textEditingArea.setCaretPosition(lineStartPosition + columnIndex);
             }
         }
     }

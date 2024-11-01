@@ -1,7 +1,7 @@
 package mars.mips.instructions.syscalls;
 
 import mars.Application;
-import mars.SimulatorException;
+import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
 import mars.mips.hardware.RegisterFile;
 

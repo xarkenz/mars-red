@@ -82,7 +82,7 @@ public class RunAssembleFolderAction extends VenusAction {
 
             this.gui.getMessagesPane().getMessages().writeOutput(this.getName() + ": assembling files.\n");
 
-            Application.assembler.getLog().setOutput(message -> this.gui.getMessagesPane().getMessages().writeOutput(message.toString() + '\n'));
+            Application.assembler.getLog().setOutput(this.gui.getMessagesPane().getMessages()::writeMessage);
             Application.assembler.assembleFilenames(sourceFilenames);
 
             if (Application.assembler.getLog().hasMessages(LogLevel.WARNING)) {
@@ -129,11 +129,7 @@ public class RunAssembleFolderAction extends VenusAction {
                     // this method (actionPerformed) explicitly with null argument.  Thus e!=null test.
                     // DPS 9-Aug-2010
                     if (event != null) {
-                        this.gui.getMessagesPane().selectEditorTextLine(
-                            message.getLocation().getFilename(),
-                            message.getLocation().getLineIndex() + 1,
-                            message.getLocation().getColumnIndex()
-                        );
+                        this.gui.getMessagesPane().highlightMessageSource(message);
                     }
                     break;
                 }

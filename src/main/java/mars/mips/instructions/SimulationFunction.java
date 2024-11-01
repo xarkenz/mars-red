@@ -1,6 +1,6 @@
 package mars.mips.instructions;
 
-import mars.SimulatorException;
+import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
 
 /*

@@ -1,6 +1,6 @@
 package mars.assembler;
 
-import mars.SimulatorException;
+import mars.simulator.SimulatorException;
 import mars.assembler.syntax.StatementSyntax;
 import mars.mips.instructions.BasicInstruction;
 

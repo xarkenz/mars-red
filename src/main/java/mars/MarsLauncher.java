@@ -7,6 +7,7 @@ import mars.mips.dump.DumpFormatManager;
 import mars.mips.hardware.*;
 import mars.simulator.ProgramArgumentList;
 import mars.simulator.Simulator;
+import mars.simulator.SimulatorException;
 import mars.util.Binary;
 import mars.util.FilenameFinder;
 import mars.util.MemoryDump;

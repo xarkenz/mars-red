@@ -1,10 +1,16 @@
 package mars.venus;
 
 import mars.Application;
+import mars.assembler.log.LogMessage;
 import mars.simulator.*;
 
 import javax.swing.*;
 import javax.swing.text.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /*
@@ -46,18 +52,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * The user input code was originally written by Ricardo Fernández Pascual (rfernandez@ditec.um.es) in December 2009.
  */
 public class ConsoleTextArea extends JTextArea {
-    // These constants are designed to keep scrolled contents of the
-    // two message areas from becoming overwhelmingly large (which
-    // seems to slow things down as new text is appended).  Once it
-    // reaches MAXIMUM_SCROLLED_CHARACTERS in length then cut off
-    // the first NUMBER_OF_CHARACTERS_TO_CUT characters.  The latter
-    // must obviously be smaller than the former.
-    public static final int MAXIMUM_SCROLLED_CHARACTERS = Application.MAXIMUM_MESSAGE_CHARACTERS;
-    public static final int NUMBER_OF_CHARACTERS_TO_CUT = Application.MAXIMUM_MESSAGE_CHARACTERS / 10; // 10%
+    // These constants are designed to keep the contents of the console from becoming overwhelmingly large
+    // (which slows things down over time and can hog and/or exhaust memory)
     public static final int MAXIMUM_LINE_COUNT = 1000;
-    public static final int EXTRA_TRIM_LINE_COUNT = 20;
+    public static final int TRIM_LINES_EXTRA_COUNT = MAXIMUM_LINE_COUNT / 20; // trim 5% extra
+    public static final int MAXIMUM_CHARACTER_COUNT = MAXIMUM_LINE_COUNT * 500; // Average 500 characters per line
+    public static final int TRIM_CHARACTERS_EXTRA_COUNT = MAXIMUM_CHARACTER_COUNT / 10; // trim 10% extra
 
     private final StringBuffer outputBuffer;
+    private int outputBufferLineCount;
+    private boolean outputBufferTrimmed;
+    private final List<TextRange<LogMessage>> outputMessages;
     private final ArrayBlockingQueue<String> inputResultQueue;
     private int inputStartPosition;
     private int inputMaxLength;
@@ -68,6 +73,9 @@ public class ConsoleTextArea extends JTextArea {
     public ConsoleTextArea() {
         super();
         this.outputBuffer = new StringBuffer();
+        this.outputBufferLineCount = 0;
+        this.outputBufferTrimmed = false;
+        this.outputMessages = new ArrayList<>();
         this.inputResultQueue = new ArrayBlockingQueue<>(1);
         // These values don't really matter because they will be reinitialized when input begins
         this.inputStartPosition = 0;
@@ -76,14 +84,61 @@ public class ConsoleTextArea extends JTextArea {
         this.setEditable(false);
         this.setBackground(UIManager.getColor("Venus.ConsoleTextArea.background"));
         this.setFont(Application.getSettings().consoleFont.get());
+
+        this.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent event) {
+                if (ConsoleTextArea.this.outputMessages.isEmpty()) {
+                    return;
+                }
+                int offset = ConsoleTextArea.this.viewToModel2D(event.getPoint());
+                if (offset < 0) {
+                    return;
+                }
+                // Perform a linear search in reverse chronological order
+                for (int index = ConsoleTextArea.this.outputMessages.size() - 1; index >= 0; index--) {
+                    TextRange<LogMessage> textRange = ConsoleTextArea.this.outputMessages.get(index);
+                    if (textRange.start <= offset) {
+                        if (offset - textRange.start < textRange.length) {
+                            // User clicked within the text range
+                            ConsoleTextArea.this.clickMessage(textRange.value);
+                        }
+                        // At least for now, we'll just assume text ranges don't overlap, so every range we check after
+                        // this point will end before the clicked offset. Thus, we can stop searching here regardless
+                        break;
+                    }
+                }
+            }
+        });
     }
 
     /**
      * Clear all text from the text area, and clear any buffered output.
+     * <p>
+     * <b>This method must be called from the GUI thread.</b>
      */
     public void clear() {
-        this.outputBuffer.setLength(0);
+        synchronized (this.outputBuffer) {
+            this.outputBuffer.setLength(0);
+            this.outputBufferLineCount = 0;
+            this.outputBufferTrimmed = false;
+        }
+        this.outputMessages.clear();
         this.setText("");
+    }
+
+    /**
+     * Write output text to the console. Console output is buffered so as to lighten the load on the GUI when
+     * calls to this method are made in rapid succession.
+     * <p>
+     * This method may be called from any thread.
+     *
+     * @param message String to append to the console output.
+     */
+    public void writeMessage(LogMessage message) {
+        String text = message.toString() + '\n';
+
+        this.writeOutput(text, message);
     }
 
     /**
@@ -103,6 +158,10 @@ public class ConsoleTextArea extends JTextArea {
      * DPS 23 Aug 2005
      */
     public void writeOutput(String text) {
+        this.writeOutput(text, null);
+    }
+
+    private void writeOutput(String text, LogMessage message) {
         // Buffering the output allows one flush to handle several writes, meaning the event queue
         // doesn't fill up with console text area updates and effectively block the GUI thread.
         // (This is what happened previously in case of e.g. infinite print loops.)
@@ -111,7 +170,64 @@ public class ConsoleTextArea extends JTextArea {
         boolean isFirstWriteSinceFlush;
         synchronized (this.outputBuffer) {
             isFirstWriteSinceFlush = this.outputBuffer.isEmpty();
-            // Add the text to the console output buffer
+
+            // Do crude trimming by character count if needed to prevent the buffer from becoming larger than necessary
+            int projectedLength = this.outputBuffer.length() + text.length();
+            if (projectedLength > MAXIMUM_CHARACTER_COUNT) {
+                if (text.length() >= MAXIMUM_CHARACTER_COUNT) {
+                    // The new text is so large that it will completely replace the buffer
+                    this.outputBuffer.setLength(0);
+                    this.outputBufferLineCount = 0;
+                    // Trim the new text to the maximum size
+                    text = text.substring(text.length() - MAXIMUM_CHARACTER_COUNT);
+                }
+                else {
+                    // The new text does not completely replace the buffer (this case is much more likely)
+                    int endOfTrim = projectedLength - MAXIMUM_CHARACTER_COUNT;
+                    // Adjust the number of lines in the buffer
+                    for (int index = 0; index < endOfTrim; index++) {
+                        if (this.outputBuffer.charAt(index) == '\n') {
+                            this.outputBufferLineCount--;
+                        }
+                    }
+                    // Trim the buffer
+                    this.outputBuffer.delete(0, endOfTrim);
+
+                    if (!this.outputMessages.isEmpty()) {
+                        // Adjust the output text range start positions
+                        int characterCount = endOfTrim;
+                        if (!this.outputBufferTrimmed) {
+                            // This is the first time the output buffer has been trimmed since a flush
+                            characterCount += this.getDocument().getLength();
+                        }
+                        this.shiftTextRanges(characterCount);
+                    }
+                }
+
+                // Flag that the output buffer has been trimmed so that when the buffer flushes, we know the buffer
+                // content effectively extends beyond its actual size (and thus fully replaces current content)
+                this.outputBufferTrimmed = true;
+            }
+
+            // Count the number of additional lines the text added to the output buffer
+            for (int index = 0; index < text.length(); index++) {
+                if (text.charAt(index) == '\n') {
+                    this.outputBufferLineCount++;
+                }
+            }
+
+            // If this is a message, create a new text range for it
+            if (message != null) {
+                this.outputMessages.add(new TextRange<>(
+                    (this.outputBufferTrimmed)
+                        ? this.outputBuffer.length()
+                        : this.getDocument().getLength() + this.outputBuffer.length(),
+                    text.length(),
+                    message
+                ));
+            }
+
+            // Add the text to the output buffer
             this.outputBuffer.append(text);
         }
 
@@ -124,34 +240,115 @@ public class ConsoleTextArea extends JTextArea {
 
     /**
      * Flush the output buffer to the GUI text area,
-     * then trim the content to have at most {@link #MAXIMUM_LINE_COUNT} lines if necessary.
+     * trimming the content to have at most {@link #MAXIMUM_LINE_COUNT} lines if necessary.
      * <p>
      * <b>This method must be called from the GUI thread.</b>
      */
     public void flushOutput() {
         synchronized (this.outputBuffer) {
+            // Trim output if needed to save memory. If the number of lines exceeds the maximum, trim off the excess
+            // old lines, plus some extra lines so we only have to do this occasionally. To account for the potential
+            // of absurdly long lines, trim using the same approach for characters if needed. Trimming will limit the
+            // amount of history kept, but the maximum counts should be set reasonably high.
+            int characterCountToTrim = 0;
+
+            int currentLineCount = (this.outputBufferTrimmed) ? 0 : this.getLineCount();
+            int currentLength = (this.outputBufferTrimmed) ? 0 : this.getDocument().getLength();
+
+            // First, trim lines if needed
+            int projectedLineCount = currentLineCount + this.outputBufferLineCount;
+            if (projectedLineCount > MAXIMUM_LINE_COUNT) {
+                try {
+                    int lastLineToTrim = projectedLineCount - MAXIMUM_LINE_COUNT + TRIM_LINES_EXTRA_COUNT;
+                    if (lastLineToTrim >= currentLineCount) {
+                        // The output buffer is so large that none of the current content will be retained,
+                        // and not all of the output buffer can be added (happens in case of a lot of output at once)
+                        lastLineToTrim -= currentLineCount;
+                        for (int index = 0; lastLineToTrim > 0; index++) {
+                            if (this.outputBuffer.charAt(index) == '\n') {
+                                lastLineToTrim--;
+                                if (lastLineToTrim == 0) {
+                                    characterCountToTrim = currentLength + index + 1;
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        // At least some (probably most) of the current content will be retained
+                        characterCountToTrim = this.getLineEndOffset(lastLineToTrim);
+                    }
+                }
+                catch (BadLocationException exception) {
+                    throw new IllegalStateException("bad trim constants", exception);
+                }
+
+            }
+
+            // Then, trim characters if trimming lines wasn't enough to reduce output
+            int projectedLength = currentLength + this.outputBuffer.length() - characterCountToTrim;
+            if (projectedLength > MAXIMUM_CHARACTER_COUNT) {
+                characterCountToTrim += projectedLength - MAXIMUM_CHARACTER_COUNT + TRIM_CHARACTERS_EXTRA_COUNT;
+            }
+
+            if (characterCountToTrim > 0) {
+                // Line and/or character limit has been exceeded, so actual trimming must be done
+                if (this.outputBufferTrimmed || characterCountToTrim >= currentLength) {
+                    // Rather than trim the buffer, clear the document, and append the new content, we can just replace
+                    // the current document text with a substring of the buffer
+                    this.setText(this.outputBuffer.substring(characterCountToTrim - currentLength));
+                }
+                else {
+                    // Trim the existing content
+                    try {
+                        this.getDocument().remove(0, characterCountToTrim);
+                    }
+                    catch (BadLocationException exception) {
+                        throw new IllegalStateException("invalid trim length", exception);
+                    }
+
+                    // Append the new content
+                    this.append(this.outputBuffer.toString());
+                }
+
+                // Adjust the output text range start positions if needed
+                this.shiftTextRanges(characterCountToTrim);
+            }
+            else {
+                // No trimming to be done, so just append the new content
+                this.append(this.outputBuffer.toString());
+            }
+
             // Flush the output buffer
-            this.append(this.outputBuffer.toString());
             this.outputBuffer.setLength(0);
-        }
+            this.outputBufferLineCount = 0;
+            this.outputBufferTrimmed = false;
 
-        // Do some crude trimming to save memory.  If the number of lines exceeds the maximum,
-        // trim off the excess old lines, plus some extra lines so we only have to do this occasionally.
-        // This will limit scrolling, but the maximum line count can be set reasonably high.
-        // FIXME: doing the trimming AFTER the buffer is flushed to the GUI is a significant oversight
-        int lineCount = this.getLineCount();
-        if (lineCount > MAXIMUM_LINE_COUNT) {
-            try {
-                int lastLineToTrim = lineCount - MAXIMUM_LINE_COUNT + EXTRA_TRIM_LINE_COUNT;
-                this.getDocument().remove(0, this.getLineEndOffset(lastLineToTrim));
-            }
-            catch (BadLocationException exception) {
-                // Only if NUMBER_OF_CHARACTERS_TO_CUT > MAXIMUM_SCROLLED_CHARACTERS
-                // (which shouldn't happen unless the constants are changed!)
+            // Place the caret after the flushed output
+            this.setCaretPosition(this.getDocument().getLength());
+        }
+    }
+
+    private void shiftTextRanges(int characterCount) {
+        Iterator<TextRange<LogMessage>> textRanges = this.outputMessages.iterator();
+        while (textRanges.hasNext()) {
+            TextRange<LogMessage> textRange = textRanges.next();
+            textRange.start -= characterCount;
+            if (textRange.start < 0) {
+                if (textRange.start + textRange.length <= 0) {
+                    // The range is now fully trimmed out
+                    textRanges.remove();
+                }
+                else {
+                    // The range extends after the trim, so cut off the trimmed part of it
+                    textRange.length += textRange.start;
+                    textRange.start = 0;
+                }
             }
         }
+    }
 
-        this.setCaretPosition(this.getDocument().getLength());
+    public void clickMessage(LogMessage message) {
+        Application.getGUI().getMessagesPane().highlightMessageSource(message);
     }
 
     /**
@@ -351,6 +548,8 @@ public class ConsoleTextArea extends JTextArea {
         }
         catch (BadLocationException exception) {
             // This should not happen, but if it somehow does, default to an empty string
+            System.err.println(this.getClass().getSimpleName() + ": failed to retrieve user input from text area:");
+            exception.printStackTrace(System.err);
             this.inputResultQueue.offer("");
         }
         // Append a newline to account for the newline stripped before submission
@@ -363,5 +562,17 @@ public class ConsoleTextArea extends JTextArea {
         ((AbstractDocument) this.getDocument()).setDocumentFilter(null);
         this.setCaretPosition(this.getDocument().getLength());
         Simulator.getInstance().removeGUIListener(this.simulatorListener);
+    }
+
+    private static class TextRange<T> {
+        public int start;
+        public int length;
+        public T value;
+
+        public TextRange(int start, int length, T value) {
+            this.start = start;
+            this.length = length;
+            this.value = value;
+        }
     }
 }

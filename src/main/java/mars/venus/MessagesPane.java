@@ -1,16 +1,15 @@
 package mars.venus;
 
 import mars.Application;
+import mars.assembler.log.LogMessage;
+import mars.assembler.log.SourceLocation;
 import mars.simulator.*;
 import mars.venus.editor.EditTab;
 import mars.venus.editor.FileEditorTab;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.text.*;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.io.File;
 
 /*
@@ -68,73 +67,6 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
         this.messagesTab.setBorder(new EmptyBorder(6, 6, 6, 6));
         this.messagesTab.add(this.createBoxForButton(messagesTabClearButton), BorderLayout.WEST);
         this.messagesTab.add(new JScrollPane(this.messages, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.CENTER);
-        this.messages.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent event) {
-                String text;
-                int lineStart = 0;
-                int lineEnd = 0;
-                try {
-                    int line = MessagesPane.this.messages.getLineOfOffset(messages.viewToModel2D(event.getPoint()));
-                    lineStart = MessagesPane.this.messages.getLineStartOffset(line);
-                    lineEnd = MessagesPane.this.messages.getLineEndOffset(line);
-                    text = MessagesPane.this.messages.getText(lineStart, lineEnd - lineStart);
-                }
-                catch (BadLocationException exception) {
-                    text = "";
-                }
-                if (!text.isBlank()) {
-                    // If error or warning, parse out the line and column number.
-                    // TODO: this is broken now :)
-//                    if (text.startsWith(ErrorList.ERROR_MESSAGE_PREFIX) || text.startsWith(ErrorList.WARNING_MESSAGE_PREFIX)) {
-//                        MessagesPane.this.messages.select(lineStart, lineEnd);
-//                        MessagesPane.this.messages.setSelectionColor(Color.YELLOW);
-//                        MessagesPane.this.messages.repaint();
-//                        int separatorPosition = text.indexOf(ErrorList.MESSAGE_SEPARATOR);
-//                        if (separatorPosition >= 0) {
-//                            text = text.substring(0, separatorPosition);
-//                        }
-//                        String[] stringTokens = text.split("\\s"); // tokenize with whitespace delimiter
-//                        String lineToken = ErrorList.LINE_PREFIX.strip();
-//                        String columnToken = ErrorList.POSITION_PREFIX.strip();
-//                        String lineString = "";
-//                        String columnString = "";
-//                        for (int i = 0; i < stringTokens.length; i++) {
-//                            if (stringTokens[i].equals(lineToken) && i < stringTokens.length - 1) {
-//                                lineString = stringTokens[i + 1];
-//                            }
-//                            if (stringTokens[i].equals(columnToken) && i < stringTokens.length - 1) {
-//                                columnString = stringTokens[i + 1];
-//                            }
-//                        }
-//                        int line;
-//                        int column;
-//                        try {
-//                            line = Integer.parseInt(lineString);
-//                        }
-//                        catch (NumberFormatException nfe) {
-//                            line = 0;
-//                        }
-//                        try {
-//                            column = Integer.parseInt(columnString);
-//                        }
-//                        catch (NumberFormatException exception) {
-//                            column = 0;
-//                        }
-//                        // everything between FILENAME_PREFIX and LINE_PREFIX is filename.
-//                        int fileNameStart = text.indexOf(ErrorList.FILENAME_PREFIX) + ErrorList.FILENAME_PREFIX.length();
-//                        int fileNameEnd = text.indexOf(ErrorList.LINE_PREFIX);
-//                        String fileName = "";
-//                        if (fileNameStart < fileNameEnd && fileNameStart >= ErrorList.FILENAME_PREFIX.length()) {
-//                            fileName = text.substring(fileNameStart, fileNameEnd).strip();
-//                        }
-//                        if (!fileName.isEmpty()) {
-//                            MessagesPane.this.selectEditorTextLine(fileName, line, column);
-//                        }
-//                    }
-                }
-            }
-        });
 
         JButton consoleClearButton = new JButton("Clear");
         consoleClearButton.setToolTipText("Clear the Console area.");
@@ -171,33 +103,36 @@ public class MessagesPane extends JTabbedPane implements SimulatorListener {
      * it will be opened in a new tab and made current, however the line will
      * not be selected (apparent apparent problem with JEditTextArea).
      *
-     * @param fileName A String containing the file path name.
-     * @param line     Line number for error message.
-     * @param column   Column number for error message.
+     * @param message The message whose source should be highlighted.
      */
-    public void selectEditorTextLine(String fileName, int line, int column) {
+    // TODO: this should not be here in my opinion
+    public void highlightMessageSource(LogMessage message) {
+        SourceLocation location = message.getLocation();
+        if (location == null || location.getFilename() == null || location.getLineIndex() < 0) {
+            return;
+        }
+
+        File file = new File(location.getFilename());
         EditTab editTab = Application.getGUI().getMainPane().getEditTab();
-        FileEditorTab fileEditorTab, currentPane = null;
-        fileEditorTab = editTab.getEditorTab(new File(fileName));
-        if (fileEditorTab != null) {
-            if (fileEditorTab != editTab.getCurrentEditorTab()) {
-                editTab.setCurrentEditorTab(fileEditorTab);
+        FileEditorTab tab = editTab.getEditorTab(file);
+        if (tab != null) {
+            if (tab != editTab.getCurrentEditorTab()) {
+                editTab.setCurrentEditorTab(tab);
             }
-            currentPane = fileEditorTab;
         }
         else {
             // File is not open.  Try to open it.
-            File file = new File(fileName);
             if (editTab.openFile(file)) {
-                currentPane = editTab.getCurrentEditorTab();
+                tab = editTab.getCurrentEditorTab();
                 Application.getGUI().addRecentFile(file);
             }
         }
-        // If editPane == null, it means the desired file was not open.  Line selection
+
+        // If tab is null, it means the desired file was not open.  Line selection
         // does not properly with the JEditTextArea editor in this situation (it works
         // fine for the original generic editor).  So we just won't do it. DPS 9-Aug-2010
-        if (fileEditorTab != null) {
-            currentPane.selectLine(line, column);
+        if (tab != null) {
+            tab.selectLine(location.getLineIndex(), location.getColumnIndex());
         }
     }
 

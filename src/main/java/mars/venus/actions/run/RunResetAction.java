@@ -1,7 +1,6 @@
 package mars.venus.actions.run;
 
 import mars.Application;
-import mars.SimulatorException;
 import mars.assembler.log.AssemblyError;
 import mars.assembler.token.SourceFile;
 import mars.mips.hardware.*;

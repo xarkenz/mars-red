@@ -34,7 +34,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Maintains list of generated error messages, regardless of source (tokenizing, parsing, assembly, execution).
+ * A log for keeping track of errors occurring during the assembly process, whether during tokenizing, parsing,
+ * or assembling. While simply throwing an {@link AssemblyError} would be a valid way to report errors, using this
+ * log allows multiple {@link LogMessage}s with varying {@link LogLevel}s to be recorded in a single pass.
+ * <p>
+ * The original version of this class, written by Pete Sanderson, was called <code>ErrorList</code>.
  *
  * @author Pete Sanderson, August 2003; Sean Clarke, October 2024
  */
@@ -46,7 +50,7 @@ public class AssemblerLog {
     private Consumer<LogMessage> output;
 
     /**
-     * Create a new <code>AssemblerLog</code>.
+     * Create a new, empty <code>AssemblerLog</code>.
      */
     public AssemblerLog() {
         this.messages = new ArrayList<>();
@@ -74,27 +78,31 @@ public class AssemblerLog {
     }
 
     /**
-     * Count the number of error messages in the list.
+     * Count the total number of logged messages, regardless of level.
      *
-     * @return Number of error messages in the list.
+     * @return The number of messages.
      */
     public int getMessageCount() {
         return this.messages.size();
     }
 
     /**
-     * Count the number of error messages in the list.
+     * Count the number of logged messages with a given level.
      *
-     * @return Number of error messages in the list.
+     * @param level The level used to filter messages.
+     * @return The number of messages whose level is <code>level</code>.
      */
     public int getMessageCount(LogLevel level) {
         return this.messageCounts[level.ordinal()];
     }
 
     /**
-     * Determine whether at least one error has occurred (excluding warnings).
+     * Determine whether at least one message has been logged with a given level.
+     * This method is equivalent to the expression {@link #getMessageCount(LogLevel) getMessageCount(level) &gt; 0}.
      *
-     * @return <code>true</code> if at least one error has occurred, or <code>false</code> otherwise.
+     * @param level The level used to filter messages.
+     * @return <code>true</code> if at least one message has been logged with level <code>level</code>,
+     *         or <code>false</code> if no such messages have been logged.
      */
     public boolean hasMessages(LogLevel level) {
         return this.getMessageCount(level) > 0;
@@ -103,20 +111,26 @@ public class AssemblerLog {
     /**
      * Get the maximum number of errors which can be produced by a single assembler run.
      *
-     * @return The error limit.
+     * @return The maximum number of messages with level {@link LogLevel#ERROR} that can be logged.
      */
     public int getMaxErrorCount() {
         return this.maxErrorCount;
     }
 
+    /**
+     * Set the maximum number of errors which can be produced by a single assembler run.
+     *
+     * @param maxErrorCount The maximum number of messages with level {@link LogLevel#ERROR} that can be logged.
+     */
     public void setMaxErrorCount(int maxErrorCount) {
         this.maxErrorCount = maxErrorCount;
     }
 
     /**
-     * Check to see if the error limit has been exceeded.
+     * Determine whether the current number of errors logged exceeds the maximum error count, indicating that the
+     * assembler should exit as soon as possible.
      *
-     * @return <code>true</code> if the error count exceeds the limit, or <code>false</code> otherwise.
+     * @return <code>true</code> if the error count exceeds the maxiumm, or <code>false</code> otherwise.
      * @see #getMaxErrorCount()
      */
     public boolean hasExceededMaxErrorCount() {
@@ -128,22 +142,24 @@ public class AssemblerLog {
     }
 
     /**
-     * Add a new error message to the end of the error list.
+     * Log a message for the current assembler run. After this call, the newly logged message is considered to be
+     * the last message in chronological order.
      *
-     * @param message Message to be added to the end of the error list.
+     * @param message The message to log
      */
     public void log(LogMessage message) {
         int errorCount = this.getMessageCount(LogLevel.ERROR);
         if (this.maxErrorCount >= 0 && errorCount >= this.maxErrorCount) {
-            if (errorCount == this.maxErrorCount) {
-                this.messages.add(LogMessage.error(null, "Maximum error count exceeded; halting assembly"));
-                this.messageCounts[LogLevel.ERROR.ordinal()]++;
+            // Ensure the message below is only logged once
+            if (errorCount > this.maxErrorCount) {
+                return;
             }
 
-            if (this.output != null) {
-                this.output.accept(message);
-            }
-            return;
+            // This message will only be logged once due to the check above
+            message = LogMessage.error(
+                null,
+                "Maximum error count exceeded; halting assembly"
+            );
         }
 
         this.messages.add(message);

@@ -1,4 +1,4 @@
-package mars;
+package mars.venus;
 
 import javax.swing.*;
 import javax.swing.border.Border;

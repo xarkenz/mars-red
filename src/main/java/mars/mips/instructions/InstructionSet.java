@@ -1,6 +1,6 @@
 package mars.mips.instructions;
 
-import mars.*;
+import mars.Application;
 import mars.assembler.BasicStatement;
 import mars.assembler.OperandType;
 import mars.assembler.log.AssemblerLog;
@@ -14,6 +14,7 @@ import mars.mips.hardware.*;
 import mars.mips.instructions.syscalls.Syscall;
 import mars.simulator.ExceptionCause;
 import mars.simulator.Simulator;
+import mars.simulator.SimulatorException;
 import mars.util.Binary;
 import mars.util.StringTrie;
 import org.yaml.snakeyaml.LoaderOptions;

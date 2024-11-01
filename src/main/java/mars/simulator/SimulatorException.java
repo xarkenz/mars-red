@@ -1,4 +1,4 @@
-package mars;
+package mars.simulator;
 
 import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
