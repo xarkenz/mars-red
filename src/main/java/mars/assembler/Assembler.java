@@ -225,8 +225,16 @@ public class Assembler {
     public void assembleFilenames(List<String> sourceFilenames) throws AssemblyError {
         this.reset();
 
-        // Populate the list of source filenames
+        StringBuilder startMessage = new StringBuilder("Assembler started with file(s):");
         for (String filename : sourceFilenames) {
+            startMessage.append("\n- ").append(filename);
+        }
+        this.log.logInfo(null, startMessage.append('\n').toString());
+
+        // Tokenize all files and add them to the list
+        for (String filename : sourceFilenames) {
+            this.log.logInfo(null, "Tokenizing '" + filename + "'...");
+
             this.tokenizedFiles.add(Tokenizer.tokenizeFile(filename, this.log));
         }
 
@@ -248,28 +256,24 @@ public class Assembler {
         this.reset();
 
         // Populate the list of source filenames
+        StringBuilder startMessage = new StringBuilder("Assembler restarted with tokenized file(s):");
         for (SourceFile sourceFile : sourceFiles) {
+            startMessage.append("\n- ").append(sourceFile.getFilename());
             this.sourceFilenames.add(sourceFile.getFilename());
         }
+        this.log.logInfo(null, startMessage.append('\n').toString());
 
-        this.tokenizedFiles.clear();
         this.tokenizedFiles.addAll(sourceFiles);
 
         this.assembleFiles();
     }
 
     private void assembleFiles() throws AssemblyError {
-        if (this.tokenizedFiles.isEmpty()) {
-            return;
-        }
-
         // FIRST PASS: Parse each file into its syntax components, processing directives and populating the symbol
         // tables as label definitions are encountered
 
         for (SourceFile sourceFile : this.tokenizedFiles) {
-            if (this.log.hasExceededMaxErrorCount()) {
-                break;
-            }
+            this.log.logInfo(null, "Parsing '" + sourceFile.getFilename() + "'...");
 
             // Create a new local symbol table for the file
             this.localSymbolTable = new SymbolTable(sourceFile.getFilename());
@@ -296,6 +300,10 @@ public class Assembler {
             ));
             this.remainingPatches.addAll(this.currentFilePatches);
             this.currentFilePatches.clear();
+
+            if (this.log.hasExceededMaxErrorCount()) {
+                throw new AssemblyError(this.log);
+            }
         }
 
         // Have processed all source files. Attempt to resolve any remaining forward label
@@ -303,14 +311,14 @@ public class Assembler {
         // and require error message.
         this.remainingPatches.removeIf(patch -> patch.resolve(this.globalSymbolTable));
         for (ForwardReferencePatch patch : this.remainingPatches) {
-            if (this.log.hasExceededMaxErrorCount()) {
-                break;
-            }
-
             this.log.logError(
                 patch.getSourceLocation(),
                 "Undefined symbol '" + patch.identifier + "'"
             );
+
+            if (this.log.hasExceededMaxErrorCount()) {
+                throw new AssemblyError(this.log);
+            }
         }
 
         // If the first pass produced any errors, throw them instead of progressing to the second pass
@@ -321,12 +329,10 @@ public class Assembler {
         // SECOND PASS: Resolve the remaining label operands, etc. against the symbol table and generate
         // basic/extended statements with fully resolved operand lists
 
+        this.log.logInfo(null, "Resolving symbols...");
+
         String previousLineFilename = null;
         for (var entry : this.parsedStatements.entrySet()) {
-            if (this.log.hasExceededMaxErrorCount()) {
-                break;
-            }
-
             int address = entry.getKey();
             StatementSyntax syntax = entry.getValue();
 
@@ -345,6 +351,10 @@ public class Assembler {
             }
 
             this.resolvedStatements.put(address, syntax.resolve(this, address));
+
+            if (this.log.hasExceededMaxErrorCount()) {
+                throw new AssemblyError(this.log);
+            }
         }
 
         // If the second pass produced any errors, throw them instead of progressing to the third pass
@@ -355,16 +365,18 @@ public class Assembler {
         // THIRD PASS: Write resolved statements to memory and store the resulting basic statements in the list
         // of assembled statements
 
-        for (var entry : this.resolvedStatements.entrySet()) {
-            if (this.log.hasExceededMaxErrorCount()) {
-                break;
-            }
+        this.log.logInfo(null, "Generating code...");
 
+        for (var entry : this.resolvedStatements.entrySet()) {
             int address = entry.getKey();
             Statement statement = entry.getValue();
 
             // This call will take care of adding the statement(s) to this.assembledStatements
             statement.handlePlacement(this, address);
+
+            if (this.log.hasExceededMaxErrorCount()) {
+                throw new AssemblyError(this.log);
+            }
         }
 
         // If the third pass produced any errors, throw them instead of returning normally
@@ -373,6 +385,8 @@ public class Assembler {
         )) {
             throw new AssemblyError(this.log);
         }
+
+        this.log.logInfo(null, "Assembling finished.");
     }
 
     public void addParsedStatement(StatementSyntax statement) {

@@ -34,25 +34,27 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @author Pete Sanderson, August 2003; Sean Clarke, October 2024
  */
 public class LogMessage {
+    private static final String INDENT = "\t";
+
     /**
      * The level of this message.
      */
     private final LogLevel level;
     /**
-     * The name of source file.
+     * The location in the source code this message refers to.
      */
     private final SourceLocation location;
     /**
-     * The message content.
+     * The textual content of this message.
      */
     private final String content;
 
     /**
      * Create a new <code>LogMessage</code>.
      *
-     * @param level    Set to WARNING if message is a warning, else set to ERROR or omit.
-     * @param location String containing name of source file in which this error appears.
-     * @param content  String containing appropriate error message.
+     * @param level    The level of the message.
+     * @param location The location in the source code the message refers to.
+     * @param content  The textual content of the message.
      */
     public LogMessage(LogLevel level, SourceLocation location, String content) {
         this.level = level;
@@ -60,14 +62,32 @@ public class LogMessage {
         this.content = content;
     }
 
+    /**
+     * Create a new <code>LogMessage</code> with level {@link LogLevel#INFO}.
+     *
+     * @param location The location in the source code the message refers to.
+     * @param content  The textual content of the message.
+     */
     public static LogMessage info(SourceLocation location, String content) {
         return new LogMessage(LogLevel.INFO, location, content);
     }
 
+    /**
+     * Create a new <code>LogMessage</code> with level {@link LogLevel#WARNING}.
+     *
+     * @param location The location in the source code the message refers to.
+     * @param content  The textual content of the message.
+     */
     public static LogMessage warning(SourceLocation location, String content) {
         return new LogMessage(LogLevel.WARNING, location, content);
     }
 
+    /**
+     * Create a new <code>LogMessage</code> with level {@link LogLevel#ERROR}.
+     *
+     * @param location The location in the source code the message refers to.
+     * @param content  The textual content of the message.
+     */
     public static LogMessage error(SourceLocation location, String content) {
         return new LogMessage(LogLevel.ERROR, location, content);
     }
@@ -82,25 +102,48 @@ public class LogMessage {
     }
 
     /**
-     * Produce name of file containing error.
+     * Get the location in the source code this message refers to.
      *
-     * @return Returns String containing name of source file containing the error.
+     * @return The location in the source code this message refers to, or <code>null</code> if this message does not
+     *         reference any particular location in the source code.
      */
     public SourceLocation getLocation() {
         return this.location;
     }
 
     /**
-     * Produce error message.
+     * Get the textual content of this message.
      *
-     * @return Returns String containing textual error message.
+     * @return The textual content of this message.
      */
     public String getContent() {
         return this.content;
     }
 
+    /**
+     * Convert this message to a string for the purpose of displaying to the user. This string representation may
+     * take up multiple lines, but does not end with a newline.
+     *
+     * @return This message converted to string form.
+     */
     @Override
     public String toString() {
-        return this.level.getDisplayName() + ' ' + this.location + ":\n    " + this.content;
+        StringBuilder output = new StringBuilder(this.level.getDisplayName());
+        if (this.location != null) {
+            output.append(' ').append(this.location).append(":\n").append(INDENT);
+        }
+        else {
+            output.append(": ");
+        }
+        // Indent each additional line of the message content
+        int lineStart = 0;
+        int lineEnd = this.content.indexOf('\n');
+        while (lineEnd >= 0) {
+            output.append(this.content, lineStart, lineEnd + 1).append(INDENT);
+            lineStart = lineEnd + 1;
+            lineEnd = this.content.indexOf('\n', lineStart);
+        }
+        output.append(this.content, lineStart, this.content.length());
+        return output.toString();
     }
 }

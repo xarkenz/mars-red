@@ -395,41 +395,6 @@ public class ConsoleTextArea extends JTextArea {
 
     private final DocumentFilter documentFilter = new DocumentFilter() {
         @Override
-        public void insertString(FilterBypass bypass, int offset, String text, AttributeSet attributes) throws BadLocationException {
-            // Aliases for brevity
-            int startPosition = ConsoleTextArea.this.inputStartPosition;
-            int maxLength = ConsoleTextArea.this.inputMaxLength;
-
-            // Prevent any edits before the initial position
-            if (offset < startPosition) {
-                ConsoleTextArea.this.getToolkit().beep();
-                return;
-            }
-
-            // If there are any newlines, act like the first one ended the input by stripping it
-            // and everything past it off. I don't know if this is the best way to handle characters
-            // after a newline, but I can't think of a better way.
-            int newlineIndex = text.indexOf('\n');
-            if (newlineIndex >= 0) {
-                text = text.substring(0, newlineIndex);
-            }
-
-            // If the character limit would be exceeded, strip the excess off and beep to let the user know
-            if (maxLength >= 0 && bypass.getDocument().getLength() + text.length() > startPosition + maxLength) {
-                int trimmedLength = Math.max(0, startPosition + maxLength - bypass.getDocument().getLength());
-                text = text.substring(0, trimmedLength);
-                ConsoleTextArea.this.getToolkit().beep();
-            }
-
-            bypass.insertString(offset, text, attributes);
-
-            // If there was a newline, submit the input
-            if (newlineIndex >= 0) {
-                ConsoleTextArea.this.submitInput();
-            }
-        }
-
-        @Override
         public void replace(FilterBypass bypass, int offset, int length, String text, AttributeSet attributes) throws BadLocationException {
             // Aliases for brevity
             int startPosition = ConsoleTextArea.this.inputStartPosition;
@@ -539,6 +504,7 @@ public class ConsoleTextArea extends JTextArea {
     }
 
     private void submitInput() {
+        this.endInput();
         try {
             int position = Math.min(this.inputStartPosition, this.getDocument().getLength());
             int length = Math.min(this.getDocument().getLength() - position, this.inputMaxLength >= 0
