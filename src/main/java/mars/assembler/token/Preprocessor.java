@@ -8,19 +8,30 @@ import java.nio.file.Path;
 import java.util.*;
 
 /**
- * @author Sean Clarke 08/2024
+ * @author Sean Clarke, August 2024
  */
 public class Preprocessor {
+    private final String rootFilename;
     private final Set<SourceLocation> knownIncludeDirectiveLocations;
     private final Map<String, List<Token>> equivalences;
     private final MacroHandler macroHandler;
     private Macro currentMacro;
 
-    public Preprocessor() {
+    public Preprocessor(String rootFilename) {
+        this.rootFilename = rootFilename;
         this.knownIncludeDirectiveLocations = new HashSet<>();
         this.equivalences = new HashMap<>();
         this.macroHandler = new MacroHandler();
         this.currentMacro = null;
+    }
+
+    public void processEndOfFile(String filename, AssemblerLog log) {
+        if (this.currentMacro != null && this.rootFilename.equals(filename)) {
+            log.logError(
+                this.currentMacro.getLocation(),
+                "Definition for macro '" + this.currentMacro.getName() + "' has no closing '.end_macro' directive"
+            );
+        }
     }
 
     public void processLine(List<SourceLine> destination, SourceLine line, AssemblerLog log) {
@@ -45,12 +56,19 @@ public class Preprocessor {
                 }
 
                 String macroName = token.getLiteral();
+                if (!this.macroHandler.hasMacroName(macroName)) {
+                    // This cannot possibly be a macro, so don't check this token further
+                    continue;
+                }
+
                 List<Token> arguments = this.macroHandler.getCallArguments(tokens.subList(index + 1, tokens.size()));
 
                 // Obtain the macro which matches the list of arguments, if one exists
                 Macro macro = this.macroHandler.findMatchingMacro(macroName, arguments);
                 if (macro == null) {
-                    // No need to check this token further
+                    // No need to check this token further, but since we know this name is used for other macros,
+                    // we can utilize the token value to pass that information along to the parser if needed
+                    token.setValue(this.macroHandler.findMatchingMacros(macroName));
                     continue;
                 }
 
@@ -207,6 +225,7 @@ public class Preprocessor {
                     );
                     continue;
                 }
+                SourceLocation location = token.getLocation();
                 // Token after .macro must be an identifier
                 token = tokens.get(index + 1);
                 if (token.getType() != TokenType.IDENTIFIER) {
@@ -222,6 +241,8 @@ public class Preprocessor {
                 List<Token> macroParameters = new ArrayList<>();
                 for (Token parameter : tokens.subList(index + 2, tokens.size())) {
                     if (parameter.getType() == TokenType.MACRO_PARAMETER || parameter.isSPIMStyleMacroParameter()) {
+                        // SPIM-style macro parameters should now be recognized as such
+                        parameter.setType(TokenType.MACRO_PARAMETER);
                         macroParameters.add(parameter);
                     }
                     else if (
@@ -236,7 +257,7 @@ public class Preprocessor {
                 }
 
                 // Start the macro definition
-                this.currentMacro = new Macro(macroName, macroParameters);
+                this.currentMacro = new Macro(location, macroName, macroParameters);
                 return;
             }
             // Check for .end_macro in case it is used incorrectly

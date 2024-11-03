@@ -50,6 +50,17 @@ public class SourceLocation implements Comparable<SourceLocation> {
     }
 
     /**
+     * Create a clone of an existing <code>SourceLocation</code>.
+     *
+     * @param location The object to clone.
+     */
+    public SourceLocation(SourceLocation location) {
+        this.filename = location.filename;
+        this.lineIndex = location.lineIndex;
+        this.columnIndex = location.columnIndex;
+    }
+
+    /**
      * Get the name of the source file referenced by this location.
      *
      * @return The source filename, or <code>null</code> if not applicable.

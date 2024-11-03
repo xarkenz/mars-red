@@ -64,22 +64,37 @@ public class SyntaxParser {
                 String labelName = firstToken.getLiteral();
 
                 if (!this.nextTokenInLine() || this.cachedToken.getType() != TokenType.COLON) {
-                    // DPS 14-July-2008
-                    // Yet Another Hack: detect unrecognized directive. MARS recognizes the same directives
-                    // as SPIM but other MIPS assemblers recognize additional directives. Compilers such
-                    // as MIPS-directed GCC generate assembly code containing these directives. We'd like
-                    // the opportunity to ignore them and continue. Tokenizer would categorize an unrecognized
-                    // directive as an TokenType.IDENTIFIER because it would not be matched as a directive and
-                    // MIPS labels can start with '.' NOTE: this can also be handled by including the
-                    // ignored directive in the Directive list. There is already a mechanism in place
-                    // for generating a warning there. But I cannot anticipate the names of all directives
-                    // so this will catch anything, including a misspelling of a valid directive (which is
-                    // a nice thing to do).
                     if (labelName.startsWith(".")) {
+                        // DPS 14-July-2008
+                        // Yet Another Hack: detect unrecognized directive. MARS recognizes the same directives
+                        // as SPIM but other MIPS assemblers recognize additional directives. Compilers such
+                        // as MIPS-directed GCC generate assembly code containing these directives. We'd like
+                        // the opportunity to ignore them and continue. Tokenizer would categorize an unrecognized
+                        // directive as an TokenType.IDENTIFIER because it would not be matched as a directive and
+                        // MIPS labels can start with '.' NOTE: this can also be handled by including the
+                        // ignored directive in the Directive list. There is already a mechanism in place
+                        // for generating a warning there. But I cannot anticipate the names of all directives
+                        // so this will catch anything, including a misspelling of a valid directive (which is
+                        // a nice thing to do).
                         this.logWarning("Directive '" + labelName + "' is not supported by MARS; ignored");
                     }
                     else {
-                        this.logError("Mnemonic '" + labelName + "' does not correspond to any known instruction");
+                        String message = "Mnemonic '" + labelName + "' does not correspond to any known instruction";
+                        // If this is a recognized macro name, but did not match any macro, the preprocessor
+                        // leaves us a list of the macros with the name, which we can use to help the user here
+                        if (firstToken.getValue() instanceof List<?> relatedMacros) {
+                            if (!relatedMacros.isEmpty()) {
+                                StringBuilder messageTip = new StringBuilder(
+                                    " (possibly a macro call with incorrect argument count for: "
+                                );
+                                messageTip.append(relatedMacros.get(0));
+                                for (Object macro : relatedMacros.subList(1, relatedMacros.size())) {
+                                    messageTip.append(", ").append(macro);
+                                }
+                                message += messageTip.append(')').toString();
+                            }
+                        }
+                        this.logError(message);
                     }
                     return null;
                 }

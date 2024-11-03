@@ -40,9 +40,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * line and possibly different program but the migration should not be visible to the user.
  */
 public class SourceLine {
-    private SourceLocation location;
+    private TracedSourceLocation location;
     private String content;
     private final List<Token> tokens;
+    private SourceLine originalLine;
 
     /**
      * Create a new <code>SourceLine</code> with the given information.
@@ -52,9 +53,25 @@ public class SourceLine {
      * @param tokens   The list of tokens that the line contains.
      */
     public SourceLine(SourceLocation location, String content, List<Token> tokens) {
-        this.location = location;
+        this.location = new TracedSourceLocation(location);
         this.content = content;
         this.tokens = tokens;
+        this.originalLine = null;
+    }
+
+    /**
+     * Create a new macro expansion <code>SourceLine</code> with the given information.
+     *
+     * @param location     The location of the line in the source code.
+     * @param content      The raw source code of the line.
+     * @param tokens       The list of tokens that the line contains.
+     * @param originalLine The line in the macro definition or included file that this line was created from.
+     */
+    public SourceLine(SourceLocation location, String content, List<Token> tokens, SourceLine originalLine) {
+        this.location = new TracedSourceLocation(location);
+        this.content = content;
+        this.tokens = tokens;
+        this.originalLine = originalLine;
     }
 
     /**
@@ -67,7 +84,7 @@ public class SourceLine {
     }
 
     public void setLocation(SourceLocation location) {
-        this.location = location;
+        this.location = new TracedSourceLocation(location);
     }
 
     /**
@@ -90,5 +107,52 @@ public class SourceLine {
      */
     public List<Token> getTokens() {
         return this.tokens;
+    }
+
+    /**
+     * Get the line in the macro definition or included file that this line was created from, if applicable.
+     *
+     * @return The original line if this line is part of a macro expansion or included file,
+     *         or <code>null</code> otherwise.
+     */
+    public SourceLine getOriginalLine() {
+        return this.originalLine;
+    }
+
+    public void setOriginalLine(SourceLine originalLine) {
+        this.originalLine = originalLine;
+    }
+
+    private class TracedSourceLocation extends SourceLocation {
+        public TracedSourceLocation(SourceLocation location) {
+            super(location);
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder output = new StringBuilder().append('(');
+            if (this.getFilename() != null) {
+                output.append(this.getFilename());
+            }
+            if (this.getLineIndex() >= 0) {
+                if (output.length() > 1) {
+                    output.append(", ");
+                }
+                output.append("line ").append(this.getLineIndex() + 1);
+                // Add the trace
+                SourceLine originalLine = SourceLine.this.getOriginalLine();
+                while (originalLine != null) {
+                    output.append(" → ").append(originalLine.location.getLineIndex() + 1);
+                    originalLine = originalLine.getOriginalLine();
+                }
+            }
+            if (this.getColumnIndex() >= 0) {
+                if (output.length() > 1) {
+                    output.append(", ");
+                }
+                output.append("column ").append(this.getColumnIndex() + 1);
+            }
+            return output.append(')').toString();
+        }
     }
 }

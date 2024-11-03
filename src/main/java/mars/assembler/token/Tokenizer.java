@@ -71,7 +71,7 @@ public class Tokenizer {
      * @return The tokenized source file.
      */
     public static SourceFile tokenizeFile(String filename, AssemblerLog log) {
-        return tokenizeFile(filename, log, new Preprocessor());
+        return tokenizeFile(filename, log, new Preprocessor(filename));
     }
 
     public static SourceFile tokenizeFile(String filename, AssemblerLog log, Preprocessor preprocessor) {
@@ -105,7 +105,7 @@ public class Tokenizer {
     }
 
     public static SourceFile tokenizeLines(String filename, List<String> lines, AssemblerLog log, boolean isInExpansionTemplate) {
-        return tokenizeLines(filename, lines, log, isInExpansionTemplate, new Preprocessor());
+        return tokenizeLines(filename, lines, log, isInExpansionTemplate, new Preprocessor(filename));
     }
 
     public static SourceFile tokenizeLines(String filename, List<String> lines, AssemblerLog log, boolean isInExpansionTemplate, Preprocessor preprocessor) {
@@ -118,6 +118,8 @@ public class Tokenizer {
             SourceLine sourceLine = tokenizeLine(filename, line, lineIndex++, log, preprocessor, isInExpansionTemplate);
             preprocessor.processLine(sourceLines, sourceLine, log);
         }
+
+        preprocessor.processEndOfFile(filename, log);
 
         return new SourceFile(filename, sourceLines);
     }

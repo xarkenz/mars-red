@@ -30,30 +30,39 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Stores information of macros defined by now.
+ * A class used by the {@link Preprocessor} to handle macro definition, lookup, and expansion.
  * <p>
- * Will be used in first pass of assembling MIPS source code.
+ * Macros can be overloaded since they are identified by both macro name and number of parameters. Defining
+ * another macro with the same name and parameter count as a previous macro overrides it.
  * <p>
- * Each {@link Preprocessor} will have one {@link MacroHandler}.
- * <p>
- * NOTE: Forward referencing macros (macro expansion before its definition in
- * source code) and nested macro definitions (defining a macro inside another macro
- * definition) are not supported.
+ * Note: Forward references (calling a macro before it is defined) and nested definitions (defining a macro inside
+ * the definition of another macro) are not supported.
  *
- * @author M.H.Sekhavat (sekhavat17@gmail.com)
+ * @author M.H.Sekhavat (sekhavat17@gmail.com), 2013; Sean Clarke, October 2024
  */
 public class MacroHandler {
+    /**
+     * A record used to determine which macro is referenced by a macro call. Since macros can be overloaded,
+     * the name alone is not enough to match a specific macro.
+     *
+     * @param name           The macro name.
+     * @param parameterCount The number of parameters the macro is defined to have.
+     */
     private record MacroSignature(String name, int parameterCount) {}
 
     /**
-     * List of macros defined by now.
+     * The macro lookup, which finds a macro based on its signature.
      */
     private final Map<MacroSignature, Macro> macros;
+    /**
+     * The set of all macro names used in {@link #macros}. The redundancy here makes it quicker to determine
+     * whether some identifier <i>could</i> represent the beginning of a macro call.
+     */
     private final Set<String> macroNames;
     private int nextInstanceID;
 
     /**
-     * Create an empty MacroPool for given program.
+     * Create a new <code>MacroHandler</code> with no defined macros.
      */
     public MacroHandler() {
         this.macros = new HashMap<>();
@@ -61,17 +70,25 @@ public class MacroHandler {
         this.nextInstanceID = 0;
     }
 
+    /**
+     * Define a macro, allowing it to be called later. If a macro already exists with the same name and parameter
+     * count, it can no longer be used in expansions after this call.
+     *
+     * @param macro The macro to define.
+     * @return The previous macro with the same name and parameter count, if applicable, or <code>null</code>
+     *         if no such macro was defined.
+     */
     public Macro defineMacro(Macro macro) {
         this.macroNames.add(macro.getName());
         return this.macros.put(new MacroSignature(macro.getName(), macro.getParameters().size()), macro);
     }
 
     /**
-     * Will be called by parser when reaches a macro expansion call
+     * Find the macro defined with the given name whose signature matches the given list of call arguments.
      *
-     * @param name
-     * @param arguments tokens passed to macro expansion call
-     * @return {@link Macro} object matching the name and argument count of tokens passed
+     * @param name      The name of the macro to find.
+     * @param arguments The list of arguments given in the macro call.
+     * @return The matching macro, if one exists, or <code>null</code> otherwise.
      */
     public Macro findMatchingMacro(String name, List<Token> arguments) {
         // If there are no macros with this name whatsoever, don't bother with further checks
@@ -83,25 +100,39 @@ public class MacroHandler {
     }
 
     /**
-     * @param name
-     * @return true if any macros have been defined with name <code>name</code>
-     *         by now, regardless of argument count.
+     * Determine whether the given name matches any defined macros. This can be used to avoid unnecessary
+     * parsing of macro arguments if the name does not match any defined macro.
+     *
+     * @param name The macro name to search for.
+     * @return <code>true</code> if any macros have been defined with name <code>name</code>, regardless of
+     *         parameter count, or <code>false</code> otherwise.
      */
     public boolean hasMacroName(String name) {
         return this.macroNames.contains(name);
     }
 
     /**
-     * {@link #nextInstanceID} will be set to 0 on construction of this class and will
-     * be incremented by each call. Parser calls this method once for every
-     * expansion. it will be a unique ID for each expansion of macro in a file.
+     * Find all macros defined with the given name, regardless of parameter count.
      *
-     * @return counter value
+     * @param name The macro name to search for.
+     * @return The matching macros, which may be an empty list if none match.
      */
-    public int getNextInstanceID() {
-        return this.nextInstanceID++;
+    public List<Macro> findMatchingMacros(String name) {
+        List<Macro> matches = new ArrayList<>();
+        for (Map.Entry<MacroSignature, Macro> entry : this.macros.entrySet()) {
+            if (entry.getKey().name.equals(name)) {
+                matches.add(entry.getValue());
+            }
+        }
+        return matches;
     }
 
+    /**
+     * Filter the tokens after a possible macro name to obtain the relevant tokens for a macro call.
+     *
+     * @param callTokens The list of tokens following the macro name token.
+     * @return The list of tokens with comments, delimiters, and possible surrounding parentheses removed.
+     */
     public List<Token> getCallArguments(List<Token> callTokens) {
         // Strip off an end-of-line comment if one is present
         if (!callTokens.isEmpty() && callTokens.get(callTokens.size() - 1).getType() == TokenType.COMMENT) {
@@ -124,32 +155,42 @@ public class MacroHandler {
     }
 
     /**
-     * Substitutes macro arguments in a line of source code inside macro
-     * definition to be parsed after macro expansion.
+     * Generate a macro call expansion using the given arguments. Nested macro calls are also expanded by this method.
      * <p>
-     * Also appends <code>_M<var>id</var></code> to all labels defined inside macro body,
-     * where <code><var>id</var></code> is the value of <code>instanceID</code>.
+     * Also appends <code>_M<var>id</var></code> to all labels defined inside the macro body, where
+     * <code><var>id</var></code> is an integer uniquely identifying the specific macro instance. This enables macros
+     * to contain labels without conflicting between different instances.
      *
      * @param arguments  The macro arguments used in the call syntax.
      * @param callerLine The line containing the macro call.
      * @param log        The log to be populated with any errors produced.
-     * @return The expanded form of the macro, including the expansion of any nested macro calls.
+     * @return The expanded form of the macro, including the expansions of any nested macro calls.
      */
     public List<SourceLine> instantiate(Macro macro, List<Token> arguments, SourceLine callerLine, AssemblerLog log) {
-        List<SourceLine> callStack = new ArrayList<>();
-        callStack.add(callerLine);
-        return this.instantiate(macro, arguments, callStack, log);
+        return this.instantiate(macro, arguments, callerLine, log, new ArrayList<>());
     }
 
-    private List<SourceLine> instantiate(Macro macro, List<Token> arguments, List<SourceLine> callStack, AssemblerLog log) {
-        SourceLine callerLine = callStack.get(0);
-        int instanceID = this.getNextInstanceID();
+    private List<SourceLine> instantiate(Macro macro, List<Token> arguments, SourceLine callerLine, AssemblerLog log, List<Macro> callStack) {
+        // Detect a recursive macro call, which happens if the call stack already contains this macro
+        if (callStack.contains(macro)) {
+            StringBuilder message = new StringBuilder("Recursive macro call detected (");
+            for (Macro previousMacro : callStack) {
+                message.append(previousMacro).append(" → ");
+            }
+            message.append(macro).append(')');
+            log.logError(callerLine.getLocation(), message.toString());
+            return new ArrayList<>();
+        }
+        callStack.add(macro);
+
+        int instanceID = this.nextInstanceID++;
         List<SourceLine> instanceLines = new ArrayList<>(macro.getLines().size());
 
         lineLoop: for (SourceLine macroLine : macro.getLines()) {
             List<Token> tokens = macroLine.getTokens();
             List<Token> instanceTokens = new ArrayList<>(macroLine.getTokens().size());
 
+            // First, substitute parameter tokens with the provided arguments
             for (Token token : tokens) {
                 Token instanceToken;
 
@@ -157,13 +198,7 @@ public class MacroHandler {
                 int parameterIndex = macro.checkForParameter(token, log);
                 if (parameterIndex >= 0) {
                     // Substitute the argument passed by the caller
-                    Token argument = arguments.get(parameterIndex);
-                    instanceToken = new Token(
-                        argument.getLocation(),
-                        argument.getLiteral(),
-                        argument.getType(),
-                        argument.getValue()
-                    );
+                    instanceToken = arguments.get(parameterIndex).copy();
                 }
                 // Check for a label defined in the original macro
                 else if ((token.getType() == TokenType.IDENTIFIER || token.getType() == TokenType.OPERATOR)
@@ -179,13 +214,8 @@ public class MacroHandler {
                     );
                 }
                 else {
-                    // Clone the token
-                    instanceToken = new Token(
-                        token.getLocation(),
-                        token.getLiteral(),
-                        token.getType(),
-                        token.getValue()
-                    );
+                    // Use the token without any changes
+                    instanceToken = token.copy();
                 }
 
                 instanceTokens.add(instanceToken);
@@ -195,6 +225,10 @@ public class MacroHandler {
             for (int index = 0; index < instanceTokens.size(); index++) {
                 // Check for a potential macro name
                 if (instanceTokens.get(index).getType() != TokenType.IDENTIFIER) {
+                    continue;
+                }
+                // If this identifier doesn't match any macro name, don't bother with further checks
+                else if (!this.hasMacroName(instanceTokens.get(index).getLiteral())) {
                     continue;
                 }
                 // The macro name must be the first token in the line aside from a possible label
@@ -208,13 +242,14 @@ public class MacroHandler {
                 // Obtain the macro which matches the list of arguments, if one exists
                 Macro calleeMacro = this.findMatchingMacro(calleeName, calleeArguments);
                 if (calleeMacro == null) {
+                    // No need to check this token further, but since we know this name is used for other macros,
+                    // we can utilize the token value to pass that information along to the parser if needed
+                    instanceTokens.get(index).setValue(this.findMatchingMacros(calleeName));
                     continue;
                 }
 
                 // Expand the macro with the current arguments
-                callStack.add(macroLine);
-                List<SourceLine> innerInstanceLines = this.instantiate(calleeMacro, calleeArguments, callStack, log);
-                callStack.remove(callStack.size() - 1);
+                List<SourceLine> innerInstanceLines = this.instantiate(calleeMacro, calleeArguments, macroLine, log, callStack);
 
                 if (index != 0) {
                     // Remove the macro call from the original line, but still keep the beginning of the line
@@ -225,22 +260,39 @@ public class MacroHandler {
                     instanceLines.add(new SourceLine(
                         callerLine.getLocation(),
                         macroLine.getContent(),
-                        instanceTokens
+                        instanceTokens,
+                        macroLine
                     ));
                 }
 
                 // Paste in the expansion
-                instanceLines.addAll(innerInstanceLines);
+                for (SourceLine innerInstanceLine : innerInstanceLines) {
+                    instanceLines.add(new SourceLine(
+                        callerLine.getLocation(),
+                        innerInstanceLine.getContent(),
+                        innerInstanceLine.getTokens(),
+                        new SourceLine(
+                            macroLine.getLocation(),
+                            innerInstanceLine.getContent(),
+                            innerInstanceLine.getTokens(),
+                            innerInstanceLine
+                        )
+                    ));
+                }
+
                 continue lineLoop;
             }
 
+            // Finished processing the line, so add it to the expansion
             instanceLines.add(new SourceLine(
                 callerLine.getLocation(),
                 macroLine.getContent(),
-                instanceTokens
+                instanceTokens,
+                macroLine
             ));
         }
 
+        callStack.remove(callStack.size() - 1);
         return instanceLines;
     }
 }

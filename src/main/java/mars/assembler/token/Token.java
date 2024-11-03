@@ -168,5 +168,19 @@ public class Token {
             default -> null;
         };
     }
+
+    /**
+     * Create a copy of this token.
+     *
+     * @return A new instance with identical data.
+     */
+    public Token copy() {
+        return new Token(
+            this.location,
+            this.literal,
+            this.type,
+            this.value
+        );
+    }
 }
 
