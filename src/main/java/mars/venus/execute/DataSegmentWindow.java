@@ -827,7 +827,7 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
          */
         @Override
         public Class<?> getColumnClass(int column) {
-            return getValueAt(0, column).getClass();
+            return this.getValueAt(0, column).getClass();
         }
 
         /**
@@ -889,7 +889,7 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
     private class AddressCellRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            int rowFirstAddress = Binary.decodeInteger(table.getValueAt(row, ADDRESS_COLUMN).toString());
+            int rowFirstAddress = DataSegmentWindow.this.firstAddress + row * BYTES_PER_ROW;
             boolean isHighlighted = DataSegmentWindow.this.gui.getSettings().memoryHighlightingEnabled.get() && DataSegmentWindow.this.addressHighlighting
                 && rowFirstAddress == DataSegmentWindow.this.addressRowFirstAddress && column == DataSegmentWindow.this.addressColumn;
 
@@ -918,7 +918,7 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
 
     /**
      * JTable subclass to provide custom tool tips for each of the
-     * register table column headers and for each register name in the first column. From
+     * register table column headers and for each address in the first column. From
      * <a href="http://java.sun.com/docs/books/tutorial/uiswing/components/table.html">Sun's JTable tutorial</a>.
      */
     private class MemoryTable extends JTable {
@@ -927,12 +927,35 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
         }
 
         private static final String[] COLUMN_TOOL_TIPS = {
-            "Base MIPS memory address for this row of the table.", // Address
-            "32-bit value stored at the base address for its row.", // Value (+0)
-            "32-bit value stored %d bytes beyond the base address for its row.", // Value (+n)
+            "Base memory address for this row of the table", // Address
+            "Word value stored at the base address for its row", // Value (+0)
+            "Word value stored %d bytes beyond the base address for its row", // Value (+n)
         };
 
-        // Implement table header tool tips.
+        @Override
+        public String getToolTipText(MouseEvent event) {
+            int row = this.rowAtPoint(event.getPoint());
+            if (row < 0) {
+                return super.getToolTipText(event);
+            }
+            int column = this.columnAtPoint(event.getPoint());
+            if (column < 0) {
+                return super.getToolTipText(event);
+            }
+
+            if (column == ADDRESS_COLUMN) {
+                return COLUMN_TOOL_TIPS[ADDRESS_COLUMN];
+            }
+            else {
+                int address = DataSegmentWindow.this.firstAddress
+                    + row * BYTES_PER_ROW
+                    + (column - 1) * BYTES_PER_VALUE;
+                int addressBase = DataSegmentWindow.this.gui.getMainPane().getExecuteTab().getAddressDisplayBase();
+                return "Word value at address " + NumberDisplayBaseChooser.formatUnsignedInteger(address, addressBase);
+            }
+        }
+
+        // Implement table header tool tips
         @Override
         protected JTableHeader createDefaultTableHeader() {
             return new JTableHeader(this.columnModel) {

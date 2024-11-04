@@ -228,6 +228,8 @@ public class Assembler {
         StringBuilder startMessage = new StringBuilder("Assembler started with file(s):");
         for (String filename : sourceFilenames) {
             startMessage.append("\n- ").append(filename);
+
+            this.sourceFilenames.add(filename);
         }
         this.log.logInfo(null, startMessage.append('\n').toString());
 

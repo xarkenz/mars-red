@@ -959,7 +959,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
                     }
                     this.setBorder(this.noFocusBorder);
                 }
-                this.setSelected(Boolean.TRUE.equals(value));
+                this.setSelected(value == Boolean.TRUE);
             }
 
             return this;

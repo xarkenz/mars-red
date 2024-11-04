@@ -188,8 +188,8 @@ public class SymbolTableWindow extends JInternalFrame {
         this.symbolTableDisplays.clear();
         SymbolTableDisplay globalSymbolTableDisplay = new SymbolTableDisplay(null);
         this.symbolTableDisplays.add(globalSymbolTableDisplay);
-        for (String sourceFilename : Application.assembler.getSourceFilenames()) {
-            this.symbolTableDisplays.add(new SymbolTableDisplay(sourceFilename));
+        for (String filename : Application.assembler.getSourceFilenames()) {
+            this.symbolTableDisplays.add(new SymbolTableDisplay(filename));
         }
 
         Box allSymbolTables = Box.createVerticalBox();
