@@ -2,6 +2,7 @@ package mars.venus.execute;
 
 import mars.Application;
 import mars.assembler.BasicStatement;
+import mars.assembler.syntax.StatementSyntax;
 import mars.mips.hardware.*;
 import mars.simulator.*;
 import mars.util.Binary;
@@ -142,31 +143,30 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         }
         int maxSourceLineDigits = Integer.toUnsignedString(maxSourceLineNumber).length();
         int leadingSpaces;
-        int prevLineNumber = -1;
+        StatementSyntax currentSyntax = null;
         int row = 0;
         for (var entry : statements.entrySet()) {
             int address = entry.getKey();
             BasicStatement statement = entry.getValue();
+
             this.intAddresses[row] = address;
             this.addressRows.put(address, row);
-            this.data[row][BREAKPOINT_COLUMN] = Boolean.FALSE;
+            this.data[row][BREAKPOINT_COLUMN] = false;
             this.data[row][ADDRESS_COLUMN] = NumberDisplayBaseChooser.formatUnsignedInteger(address, addressBase);
             this.data[row][CODE_COLUMN] = NumberDisplayBaseChooser.formatNumber(statement.getBinaryEncoding(), 16);
             this.data[row][BASIC_COLUMN] = statement.toString();
-            int lineNumber = -1;
+
             String sourceString = "";
-            if (statement.getSyntax() != null) {
-                lineNumber = statement.getSyntax().getSourceLine().getLocation().getLineIndex() + 1;
+            if (statement.getSyntax() != null && statement.getSyntax() != currentSyntax) {
+                currentSyntax = statement.getSyntax();
+                int lineNumber = currentSyntax.getSourceLine().getLocation().getLineIndex() + 1;
                 String lineNumberString = Integer.toUnsignedString(lineNumber);
                 leadingSpaces = maxSourceLineDigits - lineNumberString.length();
                 String linePrefix = " ".repeat(leadingSpaces) + lineNumberString + ": ";
-                if (lineNumber == prevLineNumber) {
-                    linePrefix = " ".repeat(maxSourceLineDigits) + "  ";
-                }
-                sourceString = linePrefix + EditorFont.substituteSpacesForTabs(statement.getSyntax().getSourceLine().getContent(), this.gui.getSettings().editorTabSize.get());
+                String line = EditorFont.substituteSpacesForTabs(currentSyntax.getSourceLine().getContent(), this.gui.getSettings().editorTabSize.get());
+                sourceString = linePrefix + line;
             }
             this.data[row][SOURCE_COLUMN] = sourceString;
-            prevLineNumber = lineNumber;
             row++;
         }
         this.getContentPane().removeAll();
