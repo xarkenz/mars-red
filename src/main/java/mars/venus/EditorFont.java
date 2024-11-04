@@ -214,14 +214,22 @@ public class EditorFont {
         if (string.indexOf('\t') < 0) {
             return string;
         }
+
         StringBuilder result = new StringBuilder();
+        int column = 0;
         for (int index = 0; index < string.length(); index++) {
             char ch = string.charAt(index);
-            if (ch == '\t') {
-                result.append(" ".repeat(Math.max(0, tabSize - (index % tabSize))));
+            if (ch == '\n') {
+                column = 0;
+            }
+            else if (ch == '\t') {
+                int charsToTabStop = tabSize - (column % tabSize);
+                result.append(" ".repeat(charsToTabStop));
+                column += charsToTabStop;
             }
             else {
                 result.append(ch);
+                column++;
             }
         }
         return result.toString();
