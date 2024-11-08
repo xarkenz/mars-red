@@ -153,8 +153,8 @@ public class SymbolTableWindow extends JInternalFrame {
         this.dataLabels = new JCheckBox("Data Segment", true);
         this.textLabels = new JCheckBox("Text Segment", true);
         ItemListener labelListener = (event) -> {
-            for (SymbolTableDisplay labelsForSymbolTable : this.symbolTableDisplays) {
-                labelsForSymbolTable.generateLabelTable();
+            for (SymbolTableDisplay display : this.symbolTableDisplays) {
+                display.generateLabelTable();
             }
         };
         this.dataLabels.addItemListener(labelListener);
@@ -237,6 +237,7 @@ public class SymbolTableWindow extends JInternalFrame {
         JScrollPane scrollPane = new JScrollPane(allSymbolTables, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setColumnHeaderView(sortPanel);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        this.gui.customizeScrollPane(scrollPane);
         return scrollPane;
     }
 

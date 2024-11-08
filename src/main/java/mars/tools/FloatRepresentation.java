@@ -3,6 +3,7 @@ package mars.tools;
 import mars.Application;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.Register;
+import mars.simulator.Simulator;
 import mars.util.Binary;
 
 import javax.swing.*;
@@ -357,15 +358,9 @@ public class FloatRepresentation extends AbstractMarsTool implements Register.Li
     // If display is attached to a register then update the register value.
     private synchronized void updateAnyAttachedRegister(int intValue) {
         if (attachedRegister != null) {
-            synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
+            Simulator.getInstance().changeState(() -> {
                 attachedRegister.setValue(intValue);
-            }
-            // HERE'S A HACK!!  Want to immediately display the updated register value in MARS
-            // but that code was not written for event-driven update (e.g. Observer) --
-            // it was written to poll the registers for their values.  So we force it to do so.
-            if (Application.getGUI() != null) {
-                Application.getGUI().getRegistersPane().getCoprocessor1Window().updateRegisters();
-            }
+            });
         }
     }
 

@@ -88,7 +88,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
      * to 16); the latter is used for highlighting.  Both structures will remain
      * consistent once set up, since address column is not editable.
      */
-    private int[] intAddresses; // Index is table model row, value is text address
+    private int[] rowAddresses; // Index is table model row, value is text address
     private Hashtable<Integer, Integer> addressRows; // Key is text address, value is table model row
     private Hashtable<Integer, ModifiedCode> executeMods; // Key is table model row, value is original code, basic, source.
     private TextTableModel tableModel;
@@ -128,7 +128,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         this.breakpointsEnabled = true;
         SortedMap<Integer, BasicStatement> statements = Application.assembler.getAssembledStatements();
         this.data = new Object[statements.size()][COLUMN_NAMES.length];
-        this.intAddresses = new int[this.data.length];
+        this.rowAddresses = new int[this.data.length];
         this.addressRows = new Hashtable<>(this.data.length);
         this.executeMods = new Hashtable<>(this.data.length);
         // Get highest source line number to determine # of leading spaces so line numbers will vertically align.
@@ -149,7 +149,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
             int address = entry.getKey();
             BasicStatement statement = entry.getValue();
 
-            this.intAddresses[row] = address;
+            this.rowAddresses[row] = address;
             this.addressRows.put(address, row);
             this.data[row][BREAKPOINT_COLUMN] = false;
             this.data[row][ADDRESS_COLUMN] = NumberDisplayBaseChooser.formatUnsignedInteger(address, addressBase);
@@ -283,8 +283,8 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
             return;
         }
         int addressBase = this.gui.getMainPane().getExecuteTab().getAddressDisplayBase();
-        for (int row = 0; row < this.intAddresses.length; row++) {
-            String formattedAddress = NumberDisplayBaseChooser.formatUnsignedInteger(this.intAddresses[row], addressBase);
+        for (int row = 0; row < this.rowAddresses.length; row++) {
+            String formattedAddress = NumberDisplayBaseChooser.formatUnsignedInteger(this.rowAddresses[row], addressBase);
             this.table.getModel().setValueAt(formattedAddress, row, ADDRESS_COLUMN);
         }
     }
@@ -446,7 +446,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         int breakpointCount = 0;
         if (this.data != null) {
             for (Object[] rowData : this.data) {
-                if ((Boolean) rowData[BREAKPOINT_COLUMN]) {
+                if (rowData[BREAKPOINT_COLUMN] == Boolean.TRUE) {
                     breakpointCount++;
                 }
             }
@@ -469,8 +469,8 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         int[] breakpoints = new int[breakpointCount];
         breakpointCount = 0;
         for (int row = 0; row < this.data.length; row++) {
-            if ((Boolean) this.data[row][BREAKPOINT_COLUMN]) {
-                breakpoints[breakpointCount++] = this.intAddresses[row];
+            if (this.data[row][BREAKPOINT_COLUMN] == Boolean.TRUE) {
+                breakpoints[breakpointCount++] = this.rowAddresses[row];
             }
         }
         Arrays.sort(breakpoints);
@@ -483,7 +483,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
      */
     public void clearAllBreakpoints() {
         for (int row = 0; row < this.tableModel.getRowCount(); row++) {
-            if ((Boolean) this.data[row][BREAKPOINT_COLUMN]) {
+            if (this.data[row][BREAKPOINT_COLUMN] == Boolean.TRUE) {
                 // Must use this method to assure display updated and listener notified
                 this.tableModel.setValueAt(Boolean.FALSE, row, BREAKPOINT_COLUMN);
             }
@@ -785,7 +785,8 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         @Override
         public boolean isCellEditable(int row, int column) {
             // Note that the data/cell address is constant, no matter where the cell appears onscreen.
-            return column == BREAKPOINT_COLUMN || (column == CODE_COLUMN && TextSegmentWindow.this.gui.getSettings().selfModifyingCodeEnabled.get());
+            return column == BREAKPOINT_COLUMN
+                || (column == CODE_COLUMN && TextSegmentWindow.this.gui.getSettings().selfModifyingCodeEnabled.get());
         }
 
         /**
@@ -798,29 +799,25 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
                 this.setDisplayAndModelValueAt(value, row, column);
                 return;
             }
+
             // Handle changes in the Code column
-            int address = 0;
             if (value.equals(this.getValueAt(row, column))) {
                 return;
             }
+
             int intValue;
             try {
                 intValue = Binary.decodeInteger(value.toString());
             }
             catch (NumberFormatException exception) {
-                this.setDisplayAndModelValueAt("INVALID", row, column);
                 return;
             }
-            // Calculate address from row and column
-            try {
-                address = Binary.decodeInteger(this.getValueAt(row, ADDRESS_COLUMN).toString());
-            }
-            catch (NumberFormatException exception) {
-                // Can't really happen since memory addresses are completely under the control of the software.
-            }
+
+            // Retrieve address based on row
+            int address = TextSegmentWindow.this.rowAddresses[row];
             // Assures that if changed during MIPS program execution, the update will
             // occur only between MIPS instructions.
-            synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
+            Simulator.getInstance().changeState(() -> {
                 try {
                     Memory.getInstance().storeWord(address, intValue, true);
                 }
@@ -828,7 +825,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
                     // Somehow, user was able to display out-of-range address.  Most likely to occur between
                     // stack base and kernel.
                 }
-            }
+            });
         }
 
         /**
@@ -849,7 +846,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
     private class CodeCellRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            boolean isHighlighted = TextSegmentWindow.this.getCodeHighlighting() && TextSegmentWindow.this.intAddresses[row] == highlightAddress;
+            boolean isHighlighted = TextSegmentWindow.this.getCodeHighlighting() && TextSegmentWindow.this.rowAddresses[row] == highlightAddress;
 
             this.setHorizontalAlignment(SwingConstants.LEFT);
             if (isHighlighted) {

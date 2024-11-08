@@ -69,10 +69,6 @@ public class Application {
      */
     public static final String COPYRIGHT_HOLDERS = "Pete Sanderson and Kenneth Vollmar";
     /**
-     * Lock variable used at head of synchronized block to guard MIPS memory and registers.
-     */
-    public static final Object MEMORY_AND_REGISTERS_LOCK = new Object();
-    /**
      * Path to the resources folder that contains images.
      */
     public static final String IMAGES_PATH = "/images/";

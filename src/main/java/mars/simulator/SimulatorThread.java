@@ -174,77 +174,61 @@ public class SimulatorThread extends Thread {
                 RegisterFile.setProgramCounter(this.programCounter + Instruction.BYTES_PER_INSTRUCTION);
             }
 
-            // Perform the MIPS instruction in synchronized block.  If external threads agree
-            // to access MIPS memory and registers only through synchronized blocks on same
-            // lock variable, then full (albeit heavy-handed) protection of MIPS memory and
-            // registers is assured.  Not as critical for reading from those resources.
-            synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
+            try {
+                // Handle external interrupt if necessary
+                Integer externalInterruptDevice = this.simulator.checkExternalInterruptDevice();
+                if (externalInterruptDevice != null) {
+                    throw new SimulatorException(statement, "external interrupt", externalInterruptDevice);
+                }
+
+                // Simulate the statement execution
+                statement.simulate();
+
+                // IF statement added 7/26/06 (explanation above)
+                if (this.simulator.getBackStepper().isEnabled()) {
+                    this.simulator.getBackStepper().addDoNothing(this.programCounter);
+                }
+            }
+            catch (SimulatorException exception) {
+                // If execution were to terminate at this point, we don't want the program counter
+                // to appear as if it was incremented past the instruction that caused the termination,
+                // so we will just undo the incrementation of the program counter
+                RegisterFile.setProgramCounter(this.programCounter);
+
+                if (exception.getExitCode() != null) {
+                    // There are no errors attached, so this was caused by an exit syscall
+                    this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.EXIT_SYSCALL, exception);
+                    return;
+                }
+
+                // Check for an exception handler by attempting to fetch the instruction located at the
+                // exception handler address, as determined by the memory configuration
+                int exceptionHandlerAddress = Memory.getInstance().getAddress(MemoryConfigurations.EXCEPTION_HANDLER);
+                BasicStatement exceptionHandler = null;
                 try {
-                    // Handle external interrupt if necessary
-                    Integer externalInterruptDevice = this.simulator.checkExternalInterruptDevice();
-                    if (externalInterruptDevice != null) {
-                        throw new SimulatorException(statement, "external interrupt", externalInterruptDevice);
-                    }
-
-                    // Simulate the statement execution
-                    statement.simulate();
-
-                    // IF statement added 7/26/06 (explanation above)
-                    if (this.simulator.getBackStepper().isEnabled()) {
-                        this.simulator.getBackStepper().addDoNothing(this.programCounter);
-                    }
+                    exceptionHandler = Memory.getInstance().fetchStatement(exceptionHandlerAddress, true);
                 }
-                catch (SimulatorException exception) {
-                    // If execution were to terminate at this point, we don't want the program counter
-                    // to appear as if it was incremented past the instruction that caused the termination,
-                    // so we will just undo the incrementation of the program counter
-                    RegisterFile.setProgramCounter(this.programCounter);
-
-                    if (exception.getExitCode() != null) {
-                        // There are no errors attached, so this was caused by an exit syscall
-                        this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.EXIT_SYSCALL, exception);
-                        return;
-                    }
-
-                    // Check for an exception handler by attempting to fetch the instruction located at the
-                    // exception handler address, as determined by the memory configuration
-                    int exceptionHandlerAddress = Memory.getInstance().getAddress(MemoryConfigurations.EXCEPTION_HANDLER);
-                    BasicStatement exceptionHandler = null;
-                    try {
-                        exceptionHandler = Memory.getInstance().fetchStatement(exceptionHandlerAddress, true);
-                    }
-                    catch (AddressErrorException ignored) {
-                        // Will only occur if the exception handler address is improperly configured
-                    }
-                    // Whether the fetched instruction was null indicates whether an exception handler exists
-                    if (exceptionHandler != null) {
-                        // Found an exception handler, so jump to the handler address
-                        RegisterFile.setProgramCounter(exceptionHandlerAddress);
-                    }
-                    else {
-                        // Did not find an exception handler, so terminate the program
-                        throw exception;
-                    }
+                catch (AddressErrorException ignored) {
+                    // Will only occur if the exception handler address is improperly configured
                 }
-                catch (InterruptedException exception) {
-                    // The instruction was interrupted in the middle of what it was doing,
-                    // and it should have already reverted all of its own changes, so all we need to do
-                    // to allow a pause interrupt to work is undo the incrementation of the program counter
-                    RegisterFile.setProgramCounter(this.programCounter);
-                    // Proceed with interrupt handling as usual
+                // Whether the fetched instruction was null indicates whether an exception handler exists
+                if (exceptionHandler != null) {
+                    // Found an exception handler, so jump to the handler address
+                    RegisterFile.setProgramCounter(exceptionHandlerAddress);
+                }
+                else {
+                    // Did not find an exception handler, so terminate the program
                     throw exception;
                 }
             }
-
-            // Handle delayed branching if it occurs
-            // DPS 15 June 2007
-//            if (DelayedBranch.isTriggered()) {
-//                RegisterFile.setProgramCounter(DelayedBranch.getBranchTargetAddress());
-//                DelayedBranch.clear();
-//            }
-//            else if (DelayedBranch.isRegistered()) {
-//                DelayedBranch.trigger();
-//            }
+            catch (InterruptedException exception) {
+                // The instruction was interrupted in the middle of what it was doing,
+                // and it should have already reverted all of its own changes, so all we need to do
+                // to allow a pause interrupt to work is undo the incrementation of the program counter
+                RegisterFile.setProgramCounter(this.programCounter);
+                // Proceed with interrupt handling as usual
+                throw exception;
+            }
 
             // Check for a thread interrupt (either a pause or termination)
             if (this.isInterrupted()) {
@@ -263,6 +247,9 @@ public class SimulatorThread extends Thread {
                 this.simulator.dispatchPauseEvent(this.maxSteps, this.programCounter, SimulatorPauseEvent.Reason.BREAKPOINT);
                 return;
             }
+
+            // Carry out any state changes meant to happen between instructions
+            this.simulator.flushStateChanges();
 
             // Update the actual program counter to reflect the value stored in the register
             this.programCounter = RegisterFile.getProgramCounter();

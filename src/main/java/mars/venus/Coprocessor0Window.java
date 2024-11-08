@@ -3,6 +3,7 @@ package mars.venus;
 import mars.Application;
 import mars.mips.hardware.Coprocessor0;
 import mars.mips.hardware.Register;
+import mars.simulator.Simulator;
 import mars.util.Binary;
 
 import javax.swing.*;
@@ -60,25 +61,25 @@ public class Coprocessor0Window extends RegistersDisplayTab {
     };
 
     private final RegistersTable table;
-    private int[] rowGivenRegisterNumber; // Translates register number to table row
+    private int[] registerRows; // Translates register number to table row
 
     /**
      * Constructor which sets up a fresh window with a table that contains the register values.
      */
     public Coprocessor0Window(VenusUI gui) {
         super(gui);
-        table = new RegistersTable(new RegisterTableModel(setupWindow()), HEADER_TIPS, REGISTER_TIPS);
-        table.setupColumn(NAME_COLUMN, 50, SwingConstants.LEFT);
-        table.setupColumn(NUMBER_COLUMN, 25, SwingConstants.LEFT);
-        table.setupColumn(VALUE_COLUMN, 60, SwingConstants.LEFT);
-        table.setPreferredScrollableViewportSize(new Dimension(200, 700));
-        setLayout(new BorderLayout()); // Table display will occupy entire width if widened
-        add(new JScrollPane(table, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED));
+        this.table = new RegistersTable(new RegisterTableModel(this.setupWindow()), HEADER_TIPS, REGISTER_TIPS);
+        this.table.setupColumn(NAME_COLUMN, 50, SwingConstants.LEFT);
+        this.table.setupColumn(NUMBER_COLUMN, 25, SwingConstants.LEFT);
+        this.table.setupColumn(VALUE_COLUMN, 60, SwingConstants.LEFT);
+        this.table.setPreferredScrollableViewportSize(new Dimension(200, 700));
+        this.setLayout(new BorderLayout()); // Table display will occupy entire width if widened
+        this.add(new JScrollPane(this.table, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED));
     }
 
     @Override
     protected RegistersTable getTable() {
-        return table;
+        return this.table;
     }
 
     /**
@@ -89,9 +90,9 @@ public class Coprocessor0Window extends RegistersDisplayTab {
     private Object[][] setupWindow() {
         Register[] registers = Coprocessor0.getRegisters();
         Object[][] tableData = new Object[registers.length][3];
-        rowGivenRegisterNumber = new int[32]; // Maximum number of registers
+        this.registerRows = new int[32]; // Full register space
         for (int row = 0; row < registers.length; row++) {
-            rowGivenRegisterNumber[registers[row].getNumber()] = row;
+            this.registerRows[registers[row].getNumber()] = row;
             tableData[row][0] = registers[row].getName();
             tableData[row][1] = "$" + registers[row].getNumber();
             tableData[row][2] = NumberDisplayBaseChooser.formatNumber(registers[row].getValue(), NumberDisplayBaseChooser.getBase(Application.getSettings().displayValuesInHex.get()));
@@ -103,9 +104,9 @@ public class Coprocessor0Window extends RegistersDisplayTab {
      * Reset and redisplay registers.
      */
     public void clearWindow() {
-        clearHighlighting();
+        this.clearHighlighting();
         Coprocessor0.reset();
-        updateRegisters(gui.getMainPane().getExecuteTab().getValueDisplayBase());
+        this.updateRegisters(this.gui.getMainPane().getExecuteTab().getValueDisplayBase());
     }
 
     /**
@@ -116,7 +117,7 @@ public class Coprocessor0Window extends RegistersDisplayTab {
     @Override
     public void updateRegisters(int base) {
         for (Register register : Coprocessor0.getRegisters()) {
-            updateRegisterValue(register.getNumber(), register.getValue(), base);
+            this.updateRegisterValue(register.getNumber(), register.getValue(), base);
         }
     }
 
@@ -127,7 +128,7 @@ public class Coprocessor0Window extends RegistersDisplayTab {
      * @param value  The new value.
      */
     public void updateRegisterValue(int number, int value, int base) {
-        ((RegisterTableModel) table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(value, base), rowGivenRegisterNumber[number], VALUE_COLUMN);
+        ((RegisterTableModel) this.table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(value, base), this.registerRows[number], VALUE_COLUMN);
     }
 
     /**
@@ -137,7 +138,7 @@ public class Coprocessor0Window extends RegistersDisplayTab {
      */
     @Override
     public void highlightRegister(Register register) {
-        table.highlightRow(Coprocessor0.getRegisterPosition(register));
+        this.table.highlightRow(Coprocessor0.getRegisterPosition(register));
     }
 
     @Override
@@ -170,35 +171,34 @@ public class Coprocessor0Window extends RegistersDisplayTab {
 
         @Override
         public int getRowCount() {
-            return data.length;
+            return this.data.length;
         }
 
         @Override
-        public String getColumnName(int col) {
-            return COLUMN_NAMES[col];
+        public String getColumnName(int column) {
+            return COLUMN_NAMES[column];
         }
 
         @Override
-        public Object getValueAt(int row, int col) {
-            return data[row][col];
+        public Object getValueAt(int row, int column) {
+            return this.data[row][column];
         }
 
         /**
          * JTable uses this method to determine the default renderer/editor for each cell.
          */
         @Override
-        public Class<?> getColumnClass(int col) {
-            return getValueAt(0, col).getClass();
+        public Class<?> getColumnClass(int column) {
+            return this.getValueAt(0, column).getClass();
         }
 
         /**
          * All register values are editable.
          */
         @Override
-        public boolean isCellEditable(int row, int col) {
-            // Note that the data/cell address is constant,
-            // no matter where the cell appears onscreen.
-            return col == VALUE_COLUMN;
+        public boolean isCellEditable(int row, int column) {
+            // Note that the data/cell address is constant, no matter where the cell appears onscreen.
+            return column == VALUE_COLUMN;
         }
 
         /**
@@ -207,30 +207,31 @@ public class Coprocessor0Window extends RegistersDisplayTab {
          * value is valid, MIPS register is updated.
          */
         @Override
-        public void setValueAt(Object value, int row, int col) {
+        public void setValueAt(Object value, int row, int column) {
             int intValue;
             try {
                 intValue = Binary.decodeInteger(value.toString());
             }
             catch (NumberFormatException exception) {
-                setDisplayAndModelValueAt("INVALID", row, col);
+                this.fireTableCellUpdated(row, column);
                 return;
             }
+
+            // Update the cell to the proper number format
+            int valueBase = Coprocessor0Window.this.gui.getMainPane().getExecuteTab().getValueDisplayBase();
+            this.setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(intValue, valueBase), row, column);
+
             // Assures that if changed during MIPS program execution, the update will
             // occur only between MIPS instructions.
-            synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
-                Coprocessor0.updateRegister(Coprocessor0.getRegisters()[row].getNumber(), intValue);
-            }
-            int valueBase = gui.getMainPane().getExecuteTab().getValueDisplayBase();
-            setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(intValue, valueBase), row, col);
+            Simulator.getInstance().changeState(() -> Coprocessor0.updateRegister(Coprocessor0.getRegisters()[row].getNumber(), intValue));
         }
 
         /**
          * Update cell contents in table model.  Does not affect MIPS register.
          */
-        public void setDisplayAndModelValueAt(Object value, int row, int col) {
-            data[row][col] = value;
-            fireTableCellUpdated(row, col);
+        public void setDisplayAndModelValueAt(Object value, int row, int column) {
+            this.data[row][column] = value;
+            this.fireTableCellUpdated(row, column);
         }
     }
 }

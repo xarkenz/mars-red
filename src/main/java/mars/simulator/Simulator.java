@@ -56,6 +56,7 @@ public class Simulator {
      * DPS 23 July 2008
      */
     private volatile Integer externalInterruptDevice;
+    private final List<Runnable> queuedStateChanges;
 
     private SimulatorThread thread;
     private boolean hasQueuedStepEvent;
@@ -79,8 +80,13 @@ public class Simulator {
         this.systemIO = new SystemIO();
         this.delayedJumpAddress = null;
         this.externalInterruptDevice = null;
+        this.queuedStateChanges = new ArrayList<>();
         this.thread = null;
         this.hasQueuedStepEvent = false;
+    }
+
+    public boolean isRunning() {
+        return this.thread != null;
     }
 
     public BackStepper getBackStepper() {
@@ -177,6 +183,27 @@ public class Simulator {
         this.externalInterruptDevice = device;
     }
 
+    public void changeState(Runnable stateChanger) {
+        if (this.isRunning()) {
+            synchronized (this.queuedStateChanges) {
+                this.queuedStateChanges.add(stateChanger);
+            }
+        }
+        else {
+            this.flushStateChanges();
+            stateChanger.run();
+        }
+    }
+
+    public void flushStateChanges() {
+        synchronized (this.queuedStateChanges) {
+            for (Runnable stateChanger : this.queuedStateChanges) {
+                stateChanger.run();
+            }
+            this.queuedStateChanges.clear();
+        }
+    }
+
     /**
      * Add a {@link SimulatorListener} whose callbacks will be executed on the GUI thread.
      *
@@ -267,6 +294,7 @@ public class Simulator {
         if (this.thread != null) {
             this.thread.stopForPause();
             this.thread = null;
+            this.flushStateChanges();
         }
     }
 
@@ -280,6 +308,7 @@ public class Simulator {
         if (this.thread != null) {
             this.thread.stopForTermination();
             this.thread = null;
+            this.flushStateChanges();
         }
         else {
             this.dispatchFinishEvent(RegisterFile.getProgramCounter(), SimulatorFinishEvent.Reason.EXTERNAL, null);

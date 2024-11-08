@@ -549,6 +549,20 @@ public class VenusUI extends JFrame implements SimulatorListener {
         return button;
     }
 
+    public void customizeScrollPane(JScrollPane scrollPane) {
+        // https://stackoverflow.com/a/66296111
+        JLabel tempLabel = new JLabel();
+        FontMetrics metrics = tempLabel.getFontMetrics(tempLabel.getFont());
+        int lineHeight = metrics.getHeight();
+        int charWidth = metrics.getMaxAdvance();
+
+        int verticalIncrement = new JScrollBar(JScrollBar.VERTICAL).getUnitIncrement();
+        int horizontalIncrement = new JScrollBar(JScrollBar.HORIZONTAL).getUnitIncrement();
+
+        scrollPane.getVerticalScrollBar().setUnitIncrement(lineHeight * verticalIncrement);
+        scrollPane.getHorizontalScrollBar().setUnitIncrement(charWidth * horizontalIncrement);
+    }
+
     @Override
     public void simulatorStarted(SimulatorStartEvent event) {
         this.setProgramStatus(ProgramStatus.RUNNING);

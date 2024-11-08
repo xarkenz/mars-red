@@ -110,7 +110,7 @@ public class DigitalLabSimulator extends AbstractMarsTool {
     }
 
     private synchronized void updateMMIOControlAndData(int value) {
-        synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
+        Simulator.getInstance().changeState(() -> {
             try {
                 Memory.getInstance().storeWord(Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW) + OUT_OFFSET_HEXADECIMAL_KEYBOARD, value, true);
             }
@@ -119,10 +119,7 @@ public class DigitalLabSimulator extends AbstractMarsTool {
                 exception.printStackTrace(System.err);
                 System.exit(0);
             }
-        }
-        if (Application.getGUI() != null && Application.getGUI().getMainPane().getExecuteTab().getTextSegmentWindow().getCodeHighlighting()) {
-            Application.getGUI().getMainPane().getExecuteTab().getDataSegmentWindow().updateValues();
-        }
+        });
     }
 
     @Override

@@ -817,8 +817,7 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
          */
         @Override
         public boolean isCellEditable(int row, int column) {
-            // Note that the data/cell address is constant,
-            // no matter where the cell appears onscreen.
+            // Note that the data/cell address is constant, no matter where the cell appears onscreen.
             return column != ADDRESS_COLUMN && !DataSegmentWindow.this.asciiDisplay;
         }
 
@@ -838,45 +837,37 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
         @Override
         public void setValueAt(Object value, int row, int column) {
             int intValue;
-            int address = 0;
             try {
                 intValue = Binary.decodeInteger(value.toString());
             }
             catch (NumberFormatException exception) {
-                this.data[row][column] = "INVALID";
                 this.fireTableCellUpdated(row, column);
                 return;
             }
 
+            // Update the cell to the proper number format
+            int valueBase = DataSegmentWindow.this.gui.getMainPane().getExecuteTab().getValueDisplayBase();
+            this.setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(intValue, valueBase), row, column);
+
             // Calculate address from row and column
-            try {
-                address = Binary.decodeInteger(this.data[row][ADDRESS_COLUMN].toString()) + (column - 1) * BYTES_PER_VALUE; // KENV 1/6/05
-            }
-            catch (NumberFormatException exception) {
-                // Can't really happen since memory addresses are completely under
-                // the control of the software.
-            }
+            int address = DataSegmentWindow.this.firstAddress + row * BYTES_PER_ROW + (column - 1) * BYTES_PER_VALUE;
             // Assures that if changed during MIPS program execution, the update will
             // occur only between MIPS instructions.
-            synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
+            Simulator.getInstance().changeState(() -> {
                 try {
                     Memory.getInstance().storeWord(address, intValue, true);
                 }
-                // Somehow, user was able to display out-of-range address.  Most likely to occur between
-                // stack base and kernel.  Also text segment with self-modifying-code setting off.
                 catch (AddressErrorException exception) {
-                    return;
+                    // Somehow, user was able to display out-of-range address.  Most likely to occur between
+                    // stack base and kernel.  Also text segment with self-modifying-code setting off.
                 }
-            }
-            int valueBase = DataSegmentWindow.this.gui.getMainPane().getExecuteTab().getValueDisplayBase();
-            this.data[row][column] = NumberDisplayBaseChooser.formatNumber(intValue, valueBase);
-            this.fireTableCellUpdated(row, column);
+            });
         }
 
         /**
          * Update cell contents in table model.  Does not affect MIPS memory.
          */
-        private void setDisplayAndModelValueAt(Object value, int row, int column) {
+        public void setDisplayAndModelValueAt(Object value, int row, int column) {
             this.data[row][column] = value;
             this.fireTableCellUpdated(row, column);
         }

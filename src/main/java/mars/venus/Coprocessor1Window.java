@@ -2,6 +2,7 @@ package mars.venus;
 
 import mars.Application;
 import mars.mips.hardware.*;
+import mars.simulator.Simulator;
 import mars.util.Binary;
 
 import javax.swing.*;
@@ -97,23 +98,23 @@ public class Coprocessor1Window extends RegistersDisplayTab {
         super(gui);
         // Display registers in table contained in scroll pane.
         this.setLayout(new BorderLayout()); // table display will occupy entire width if widened
-        table = new RegistersTable(new RegisterTableModel(setupWindow()), HEADER_TIPS, REGISTER_TIPS);
-        table.setupColumn(NAME_COLUMN, 20, SwingConstants.LEFT);
-        table.setupColumn(FLOAT_COLUMN, 70, SwingConstants.LEFT);
-        table.setupColumn(DOUBLE_COLUMN, 130, SwingConstants.LEFT);
-        this.add(new JScrollPane(table, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER));
+        this.table = new RegistersTable(new RegisterTableModel(this.setupWindow()), HEADER_TIPS, REGISTER_TIPS);
+        this.table.setupColumn(NAME_COLUMN, 20, SwingConstants.LEFT);
+        this.table.setupColumn(FLOAT_COLUMN, 70, SwingConstants.LEFT);
+        this.table.setupColumn(DOUBLE_COLUMN, 130, SwingConstants.LEFT);
+        this.add(new JScrollPane(this.table, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER));
         // Display condition flags in panel below the registers
         JPanel flagsPane = new JPanel(new BorderLayout(0, 6));
         flagsPane.setBorder(new EmptyBorder(6, 6, 6, 6));
         flagsPane.setToolTipText("Flags are used by certain floating point instructions, default flag is 0");
         flagsPane.add(new JLabel("Condition Flags", JLabel.CENTER), BorderLayout.NORTH);
         int flagCount = Coprocessor1.getConditionFlagCount();
-        conditionFlagCheckBoxes = new JCheckBox[flagCount];
+        this.conditionFlagCheckBoxes = new JCheckBox[flagCount];
         JPanel checksPane = new JPanel(new GridLayout(2, flagCount / 2));
         for (int flag = 0; flag < flagCount; flag++) {
-            conditionFlagCheckBoxes[flag] = new JCheckBox(Integer.toString(flag));
+            this.conditionFlagCheckBoxes[flag] = new JCheckBox(Integer.toString(flag));
             final int finalFlag = flag;
-            conditionFlagCheckBoxes[flag].addActionListener(event -> {
+            this.conditionFlagCheckBoxes[flag].addActionListener(event -> {
                 JCheckBox checkBox = (JCheckBox) event.getSource();
                 if (checkBox.isSelected()) {
                     checkBox.setSelected(true);
@@ -124,8 +125,8 @@ public class Coprocessor1Window extends RegistersDisplayTab {
                     Coprocessor1.clearConditionFlag(finalFlag);
                 }
             });
-            conditionFlagCheckBoxes[flag].setToolTipText("Flag " + flag);
-            checksPane.add(conditionFlagCheckBoxes[flag]);
+            this.conditionFlagCheckBoxes[flag].setToolTipText("Flag " + flag);
+            checksPane.add(this.conditionFlagCheckBoxes[flag]);
         }
         flagsPane.add(checksPane, BorderLayout.CENTER);
         this.add(flagsPane, BorderLayout.SOUTH);
@@ -133,7 +134,7 @@ public class Coprocessor1Window extends RegistersDisplayTab {
 
     @Override
     protected RegistersTable getTable() {
-        return table;
+        return this.table;
     }
 
     /**
@@ -168,11 +169,11 @@ public class Coprocessor1Window extends RegistersDisplayTab {
      * Reset and redisplay registers.
      */
     public void clearWindow() {
-        clearHighlighting();
+        this.clearHighlighting();
         Coprocessor1.reset();
-        updateRegisters(gui.getMainPane().getExecuteTab().getValueDisplayBase());
+        this.updateRegisters(this.gui.getMainPane().getExecuteTab().getValueDisplayBase());
         Coprocessor1.clearConditionFlags();
-        updateConditionFlagDisplay();
+        this.updateConditionFlagDisplay();
     }
 
     /**
@@ -183,23 +184,23 @@ public class Coprocessor1Window extends RegistersDisplayTab {
     @Override
     public void updateRegisters(int base) {
         for (Register register : Coprocessor1.getRegisters()) {
-            updateFloatRegisterValue(register.getNumber(), register.getValue(), base);
+            this.updateFloatRegisterValue(register.getNumber(), register.getValue(), base);
             if (register.getNumber() % 2 == 0) {
                 try {
                     long value = Coprocessor1.getLongFromRegisterPair(register.getNumber());
-                    updateDoubleRegisterValue(register.getNumber(), value, base);
+                    this.updateDoubleRegisterValue(register.getNumber(), value, base);
                 }
                 catch (InvalidRegisterAccessException exception) {
                     // Should not happen because the register number is always even
                 }
             }
         }
-        updateConditionFlagDisplay();
+        this.updateConditionFlagDisplay();
     }
 
     private void updateConditionFlagDisplay() {
-        for (int flag = 0; flag < conditionFlagCheckBoxes.length; flag++) {
-            conditionFlagCheckBoxes[flag].setSelected(Coprocessor1.getConditionFlag(flag) != 0);
+        for (int flag = 0; flag < this.conditionFlagCheckBoxes.length; flag++) {
+            this.conditionFlagCheckBoxes[flag].setSelected(Coprocessor1.getConditionFlag(flag) != 0);
         }
     }
 
@@ -211,7 +212,7 @@ public class Coprocessor1Window extends RegistersDisplayTab {
      * @param base   The number base for display (e.g. 10, 16)
      */
     public void updateFloatRegisterValue(int number, int value, int base) {
-        ((RegisterTableModel) table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatFloatNumber(value, base), number, FLOAT_COLUMN);
+        ((RegisterTableModel) this.table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatFloatNumber(value, base), number, FLOAT_COLUMN);
     }
 
     /**
@@ -222,7 +223,7 @@ public class Coprocessor1Window extends RegistersDisplayTab {
      * @param base   The number base for display (e.g. 10, 16)
      */
     public void updateDoubleRegisterValue(int number, long value, int base) {
-        ((RegisterTableModel) table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatDoubleNumber(value, base), number, DOUBLE_COLUMN);
+        ((RegisterTableModel) this.table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatDoubleNumber(value, base), number, DOUBLE_COLUMN);
     }
 
     /**
@@ -232,7 +233,7 @@ public class Coprocessor1Window extends RegistersDisplayTab {
      */
     @Override
     public void highlightRegister(Register register) {
-        table.highlightRow(register.getNumber());
+        this.table.highlightRow(register.getNumber());
     }
 
     @Override
@@ -245,7 +246,7 @@ public class Coprocessor1Window extends RegistersDisplayTab {
     @Override
     public void stopObservingRegisters() {
         for (Register register : Coprocessor1.getRegisters()) {
-            register.addListener(this);
+            register.removeListener(this);
         }
     }
 
@@ -265,35 +266,34 @@ public class Coprocessor1Window extends RegistersDisplayTab {
 
         @Override
         public int getRowCount() {
-            return data.length;
+            return this.data.length;
         }
 
         @Override
-        public String getColumnName(int col) {
-            return COLUMN_NAMES[col];
+        public String getColumnName(int column) {
+            return COLUMN_NAMES[column];
         }
 
         @Override
-        public Object getValueAt(int row, int col) {
-            return data[row][col];
+        public Object getValueAt(int row, int column) {
+            return this.data[row][column];
         }
 
         /**
          * JTable uses this method to determine the default renderer/editor for each cell.
          */
         @Override
-        public Class<?> getColumnClass(int col) {
-            return getValueAt(0, col).getClass();
+        public Class<?> getColumnClass(int column) {
+            return this.getValueAt(0, column).getClass();
         }
 
         /**
          * Float column and even-numbered rows of double column are editable.
          */
         @Override
-        public boolean isCellEditable(int row, int col) {
-            // Note that the data/cell address is constant,
-            // no matter where the cell appears onscreen.
-            return col == FLOAT_COLUMN || (col == DOUBLE_COLUMN && row % 2 == 0);
+        public boolean isCellEditable(int row, int column) {
+            // Note that the data/cell address is constant, no matter where the cell appears onscreen.
+            return column == FLOAT_COLUMN || (column == DOUBLE_COLUMN && row % 2 == 0);
         }
 
         /**
@@ -302,76 +302,82 @@ public class Coprocessor1Window extends RegistersDisplayTab {
          * value is valid, MIPS register is updated.
          */
         @Override
-        public void setValueAt(Object value, int row, int col) {
-            int valueBase = gui.getMainPane().getExecuteTab().getValueDisplayBase();
+        public void setValueAt(Object value, int row, int column) {
+            int valueBase = Coprocessor1Window.this.gui.getMainPane().getExecuteTab().getValueDisplayBase();
             String stringValue = value.toString();
             try {
-                if (col == FLOAT_COLUMN) {
+                if (column == FLOAT_COLUMN) {
                     if (Binary.isHex(stringValue)) {
-                        // Avoid using Float.intBitsToFloat() b/c it may not preserve NaN value.
                         int intValue = Binary.decodeInteger(stringValue);
+
+                        // Update the cell to the proper number format
+                        this.setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatFloatNumber(intValue, valueBase), row, column);
+
                         // Assures that if changed during MIPS program execution, the update will
                         // occur only between MIPS instructions.
-                        synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
-                            Coprocessor1.updateRegister(row, intValue);
-                        }
-                        data[row][col] = NumberDisplayBaseChooser.formatFloatNumber(intValue, valueBase);
+                        Simulator.getInstance().changeState(() -> Coprocessor1.updateRegister(row, intValue));
                     }
                     else {
                         // Is not hex, so must be decimal
                         float floatValue = Float.parseFloat(stringValue);
+
+                        // Update the cell to the proper number format
+                        this.setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(floatValue, valueBase), row, column);
+
                         // Assures that if changed during MIPS program execution, the update will
                         // occur only between MIPS instructions.
-                        synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
-                            Coprocessor1.setRegisterToFloat(row, floatValue);
-                        }
-                        data[row][col] = NumberDisplayBaseChooser.formatNumber(floatValue, valueBase);
+                        Simulator.getInstance().changeState(() -> Coprocessor1.setRegisterToFloat(row, floatValue));
                     }
-                    // Update corresponding double display
-                    int register = row - (row % 2);
-                    setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatDoubleNumber(Coprocessor1.getLongFromRegisterPair(register), valueBase), register, DOUBLE_COLUMN);
                 }
-                else if (col == DOUBLE_COLUMN) {
+                else if (column == DOUBLE_COLUMN) {
                     if (Binary.isHex(stringValue)) {
                         long longValue = Binary.decodeLong(stringValue);
+
+                        // Update the cell to the proper number format
+                        this.setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatDoubleNumber(longValue, valueBase), row, column);
+
                         // Assures that if changed during MIPS program execution, the update will
                         // occur only between MIPS instructions.
-                        synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
-                            Coprocessor1.setRegisterPairToLong(row, longValue);
-                        }
-                        setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatDoubleNumber(longValue, valueBase), row, col);
+                        Simulator.getInstance().changeState(() -> {
+                            try {
+                                Coprocessor1.setRegisterPairToLong(row, longValue);
+                            }
+                            catch (InvalidRegisterAccessException exception) {
+                                // Should never happen
+                            }
+                        });
                     }
                     else {
                         // Is not hex, so must be decimal
                         double doubleValue = Double.parseDouble(stringValue);
+
+                        // Update the cell to the proper number format
+                        this.setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(doubleValue, valueBase), row, column);
+
                         // Assures that if changed during MIPS program execution, the update will
                         // occur only between MIPS instructions.
-                        synchronized (Application.MEMORY_AND_REGISTERS_LOCK) {
-                            Coprocessor1.setRegisterPairToDouble(row, doubleValue);
-                        }
-                        setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(doubleValue, valueBase), row, col);
+                        Simulator.getInstance().changeState(() -> {
+                            try {
+                                Coprocessor1.setRegisterPairToDouble(row, doubleValue);
+                            }
+                            catch (InvalidRegisterAccessException exception) {
+                                // Should never happen
+                            }
+                        });
                     }
-                    // Update corresponding float display
-                    setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(Coprocessor1.getValue(row), valueBase), row, FLOAT_COLUMN);
-                    setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(Coprocessor1.getValue(row + 1), valueBase), row + 1, FLOAT_COLUMN);
                 }
             }
             catch (NumberFormatException exception) {
-                data[row][col] = "INVALID";
-                fireTableCellUpdated(row, col);
-            }
-            catch (InvalidRegisterAccessException exception) {
-                // Should not occur; code below will re-display original value
-                fireTableCellUpdated(row, col);
+                this.fireTableCellUpdated(row, column);
             }
         }
 
         /**
          * Update cell contents in table model.  Does not affect MIPS register.
          */
-        public void setDisplayAndModelValueAt(Object value, int row, int col) {
-            data[row][col] = value;
-            fireTableCellUpdated(row, col);
+        public void setDisplayAndModelValueAt(Object value, int row, int column) {
+            this.data[row][column] = value;
+            this.fireTableCellUpdated(row, column);
         }
     }
 }
