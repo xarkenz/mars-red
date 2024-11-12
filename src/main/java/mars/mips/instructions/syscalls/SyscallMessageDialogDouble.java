@@ -59,7 +59,7 @@ public class SyscallMessageDialogDouble extends AbstractSyscall {
 
         try {
             // Read a null-terminated string from memory
-            String message = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
+            String message = Memory.getInstance().fetchNullTerminatedString(Processor.getValue(Processor.ARGUMENT_0));
 
             double doubleValue = Coprocessor1.getDoubleFromRegisterPair(12);
 

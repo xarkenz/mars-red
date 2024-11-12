@@ -2,7 +2,7 @@ package mars.mips.instructions.syscalls;
 
 import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 import mars.simulator.ExceptionCause;
 
 import java.util.Random;
@@ -60,11 +60,11 @@ public class SyscallRandIntRange extends AbstractSyscall {
         // Return: $a0 = the next pseudorandom, uniformly distributed int value from this
         // random number generator's sequence.
 
-        int index = RegisterFile.getValue(4);
+        int index = Processor.getValue(Processor.ARGUMENT_0);
         Random stream = RandomStreams.getStream(index);
 
         try {
-            RegisterFile.updateRegister(4, stream.nextInt(RegisterFile.getValue(5)));
+            Processor.updateRegister(Processor.ARGUMENT_0, stream.nextInt(Processor.getValue(Processor.ARGUMENT_1)));
         }
         catch (IllegalArgumentException exception) {
             throw new SimulatorException(statement, "upper bound of range cannot be negative (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);

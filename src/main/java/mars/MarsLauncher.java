@@ -406,7 +406,7 @@ public class MarsLauncher {
             }
 
             if (args[i].indexOf("$") == 0) {
-                if (RegisterFile.getRegister(args[i]) == null && Coprocessor1.getRegister(args[i]) == null) {
+                if (Processor.getRegister(args[i]) == null && Coprocessor1.getRegister(args[i]) == null) {
                     out.println("Invalid Register Name: " + args[i]);
                 }
                 else {
@@ -415,7 +415,7 @@ public class MarsLauncher {
                 continue;
             }
             // check for register name w/o $.  added 14-July-2008 DPS
-            if (RegisterFile.getRegister("$" + args[i]) != null || Coprocessor1.getRegister("$" + args[i]) != null) {
+            if (Processor.getRegister("$" + args[i]) != null || Coprocessor1.getRegister("$" + args[i]) != null) {
                 registerDisplayList.add("$" + args[i]);
                 continue;
             }
@@ -496,7 +496,7 @@ public class MarsLauncher {
             Assembler assembler = new Assembler();
             assembler.getLog().setOutput(this.out::println);
             assembler.assembleFilenames(filesToAssemble);
-            RegisterFile.initializeProgramCounter(this.startAtMain); // DPS 3/9/09
+            Processor.initializeProgramCounter(this.startAtMain); // DPS 3/9/09
             if (this.simulate) {
                 // store program args (if any) in MIPS memory
                 new ProgramArgumentList(this.programArgumentList).storeProgramArguments();
@@ -505,7 +505,7 @@ public class MarsLauncher {
                 if (Application.debug) {
                     this.out.println("--------  SIMULATION BEGINS  -----------");
                 }
-                Simulator.getInstance().simulate(RegisterFile.getProgramCounter(), this.maxSteps, null);
+                Simulator.getInstance().simulate(Processor.getProgramCounter(), this.maxSteps, null);
                 if (this.maxSteps > 0) {
                     this.out.println("\nProgram terminated after " + this.maxSteps + " steps.");
                 }
@@ -596,7 +596,7 @@ public class MarsLauncher {
         // Display requested register contents
         out.println();
         for (String regName : registerDisplayList) {
-            Register integerRegister = RegisterFile.getRegister(regName);
+            Register integerRegister = Processor.getRegister(regName);
             if (integerRegister != null) {
                 // integer register
                 if (verbose) {

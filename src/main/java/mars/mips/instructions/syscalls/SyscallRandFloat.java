@@ -3,7 +3,7 @@ package mars.mips.instructions.syscalls;
 import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
 import mars.mips.hardware.Coprocessor1;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 
 import java.util.Random;
 
@@ -58,7 +58,7 @@ public class SyscallRandFloat extends AbstractSyscall {
         // Return: $f0 = the next pseudorandom, uniformly distributed float value between 0.0 and 1.0
         // from this random number generator's sequence.
 
-        int index = RegisterFile.getValue(4);
+        int index = Processor.getValue(Processor.ARGUMENT_0);
         Random stream = RandomStreams.getStream(index);
 
         Coprocessor1.setRegisterToFloat(0, stream.nextFloat());

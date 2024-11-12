@@ -54,7 +54,7 @@ public class SyscallReadFloat extends AbstractSyscall {
         try {
             float floatValue = Simulator.getInstance().getSystemIO().readFloat();
 
-            Coprocessor1.updateRegister(0, Float.floatToRawIntBits(floatValue));
+            Coprocessor1.setRegisterToInt(0, Float.floatToRawIntBits(floatValue));
         }
         catch (NumberFormatException exception) {
             throw new SimulatorException(statement, "invalid float input (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);

@@ -4,7 +4,7 @@ import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 
 import javax.swing.*;
 
@@ -61,10 +61,10 @@ public class SyscallConfirmDialog extends AbstractSyscall {
 
         try {
             // Read a null-terminated string from memory
-            String message = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
+            String message = Memory.getInstance().fetchNullTerminatedString(Processor.getValue(Processor.ARGUMENT_0));
 
             // Update register $a0 with the value from showConfirmDialog
-            RegisterFile.updateRegister(4, JOptionPane.showConfirmDialog(null, message));
+            Processor.updateRegister(Processor.ARGUMENT_0, JOptionPane.showConfirmDialog(null, message));
         }
         catch (AddressErrorException exception) {
             throw new SimulatorException(statement, exception);

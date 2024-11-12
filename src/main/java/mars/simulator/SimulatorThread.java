@@ -113,7 +113,7 @@ public class SimulatorThread extends Thread {
 
         this.simulator.dispatchStartEvent(this.maxSteps, this.programCounter);
 
-        RegisterFile.initializeProgramCounter(this.programCounter);
+        Processor.initializeProgramCounter(this.programCounter);
 
         // If there is a step limit, this is used to track the number of steps taken
         int stepCount = 0;
@@ -162,7 +162,7 @@ public class SimulatorThread extends Thread {
 
             if (this.simulator.isInDelaySlot()) {
                 // Handle the delayed jump/branch instead of incrementing the program counter
-                RegisterFile.setProgramCounter(this.simulator.getDelayedJumpAddress());
+                Processor.setProgramCounter(this.simulator.getDelayedJumpAddress());
                 this.simulator.clearDelayedJumpAddress();
             }
             else {
@@ -171,7 +171,7 @@ public class SimulatorThread extends Thread {
                 // the NEXT instruction to execute, whereas this.programCounter holds the address of the CURRENT
                 // instruction being executed. This allows branch/jump instructions to simply write to the register,
                 // and no special logic is needed for whether to increment the program counter.
-                RegisterFile.setProgramCounter(this.programCounter + Instruction.BYTES_PER_INSTRUCTION);
+                Processor.setProgramCounter(this.programCounter + Instruction.BYTES_PER_INSTRUCTION);
             }
 
             try {
@@ -193,7 +193,7 @@ public class SimulatorThread extends Thread {
                 // If execution were to terminate at this point, we don't want the program counter
                 // to appear as if it was incremented past the instruction that caused the termination,
                 // so we will just undo the incrementation of the program counter
-                RegisterFile.setProgramCounter(this.programCounter);
+                Processor.setProgramCounter(this.programCounter);
 
                 if (exception.getExitCode() != null) {
                     // There are no errors attached, so this was caused by an exit syscall
@@ -214,7 +214,7 @@ public class SimulatorThread extends Thread {
                 // Whether the fetched instruction was null indicates whether an exception handler exists
                 if (exceptionHandler != null) {
                     // Found an exception handler, so jump to the handler address
-                    RegisterFile.setProgramCounter(exceptionHandlerAddress);
+                    Processor.setProgramCounter(exceptionHandlerAddress);
                 }
                 else {
                     // Did not find an exception handler, so terminate the program
@@ -225,7 +225,7 @@ public class SimulatorThread extends Thread {
                 // The instruction was interrupted in the middle of what it was doing,
                 // and it should have already reverted all of its own changes, so all we need to do
                 // to allow a pause interrupt to work is undo the incrementation of the program counter
-                RegisterFile.setProgramCounter(this.programCounter);
+                Processor.setProgramCounter(this.programCounter);
                 // Proceed with interrupt handling as usual
                 throw exception;
             }
@@ -252,7 +252,7 @@ public class SimulatorThread extends Thread {
             this.simulator.flushStateChanges();
 
             // Update the actual program counter to reflect the value stored in the register
-            this.programCounter = RegisterFile.getProgramCounter();
+            this.programCounter = Processor.getProgramCounter();
 
             // Update the GUI and delay the next step if the program is not running at unlimited speed
             if (Application.getGUI() != null && RunSpeedPanel.getInstance().getRunSpeed() < RunSpeedPanel.UNLIMITED_SPEED) {
@@ -267,15 +267,15 @@ public class SimulatorThread extends Thread {
 
     private BasicStatement fetchStatement() throws SimulatorException {
         try {
-            return Memory.getInstance().fetchStatement(RegisterFile.getProgramCounter(), true);
+            return Memory.getInstance().fetchStatement(Processor.getProgramCounter(), true);
         }
         catch (AddressErrorException exception) {
             // Next statement is a hack.  Previous statement sets EPC register to (PC - 4)
             // because it assumes the bad address comes from an operand so the program counter has already been
             // incremented.  In this case, bad address is the instruction fetch itself so program counter has
             // not yet been incremented.  We'll set the EPC directly here.  DPS 8-July-2013
-            Coprocessor0.updateRegister(Coprocessor0.EPC, RegisterFile.getProgramCounter());
-            throw new SimulatorException("invalid program counter value: " + Binary.intToHexString(RegisterFile.getProgramCounter()));
+            Coprocessor0.updateRegister(Coprocessor0.EPC, Processor.getProgramCounter());
+            throw new SimulatorException("invalid program counter value: " + Binary.intToHexString(Processor.getProgramCounter()));
         }
     }
 }

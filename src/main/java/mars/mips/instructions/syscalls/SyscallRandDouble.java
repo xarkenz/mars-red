@@ -4,7 +4,7 @@ import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.InvalidRegisterAccessException;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 import mars.simulator.ExceptionCause;
 
 import java.util.Random;
@@ -60,7 +60,7 @@ public class SyscallRandDouble extends AbstractSyscall {
         // Return: $f0 = the next pseudorandom, uniformly distributed double value between 0.0 and 1.0
         // from this random number generator's sequence.
 
-        int index = RegisterFile.getValue(4);
+        int index = Processor.getValue(Processor.ARGUMENT_0);
         Random stream = RandomStreams.getStream(index);
 
         try {

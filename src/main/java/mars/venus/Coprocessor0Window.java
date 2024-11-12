@@ -44,24 +44,51 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @author Sanderson, Bumgarner
  */
 public class Coprocessor0Window extends RegistersDisplayTab {
-    private static final int NAME_COLUMN = 0;
-    private static final int NUMBER_COLUMN = 1;
+    private static final int NUMBER_COLUMN = 0;
+    private static final int NAME_COLUMN = 1;
     private static final int VALUE_COLUMN = 2;
 
     private static final String[] HEADER_TIPS = {
-        "Each register has a tool tip describing its usage convention", // Name
-        "Register number.  In your program, precede it with $", // Number
-        "Current 32 bit value", // Value
+        "5-bit register address", // Address
+        "Register name corresponding to role", // Name
+        "32-bit register value", // Value
     };
     private static final String[] REGISTER_TIPS = {
-        "Memory address at which address exception occurred", // $8 (vaddr)
-        "Interrupt mask and enable bits", // $12 (status)
-        "Exception type and pending interrupt bits", // $13 (cause)
-        "Address of instruction that caused exception", // $14 (epc)
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
+        "Bad Virtual Address (memory address at which address exception occurred)", // $8 (BadVAddr)
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
+        "Status (interrupt mask and enable bits)", // $12 (Status)
+        "Cause (exception type and pending interrupt bits)", // $13 (Cause)
+        "Exception Program Counter (address of instruction that caused exception)", // $14 (EPC)
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
+        "(not implemented)",
     };
 
     private final RegistersTable table;
-    private int[] registerRows; // Translates register number to table row
 
     /**
      * Constructor which sets up a fresh window with a table that contains the register values.
@@ -69,8 +96,8 @@ public class Coprocessor0Window extends RegistersDisplayTab {
     public Coprocessor0Window(VenusUI gui) {
         super(gui);
         this.table = new RegistersTable(new RegisterTableModel(this.setupWindow()), HEADER_TIPS, REGISTER_TIPS);
-        this.table.setupColumn(NAME_COLUMN, 50, SwingConstants.LEFT);
         this.table.setupColumn(NUMBER_COLUMN, 25, SwingConstants.LEFT);
+        this.table.setupColumn(NAME_COLUMN, 50, SwingConstants.LEFT);
         this.table.setupColumn(VALUE_COLUMN, 60, SwingConstants.LEFT);
         this.table.setPreferredScrollableViewportSize(new Dimension(200, 700));
         this.setLayout(new BorderLayout()); // Table display will occupy entire width if widened
@@ -88,15 +115,24 @@ public class Coprocessor0Window extends RegistersDisplayTab {
      * @return The array object with the data for the window.
      */
     private Object[][] setupWindow() {
-        Register[] registers = Coprocessor0.getRegisters();
-        Object[][] tableData = new Object[registers.length][3];
-        this.registerRows = new int[32]; // Full register space
-        for (int row = 0; row < registers.length; row++) {
-            this.registerRows[registers[row].getNumber()] = row;
-            tableData[row][0] = registers[row].getName();
-            tableData[row][1] = "$" + registers[row].getNumber();
-            tableData[row][2] = NumberDisplayBaseChooser.formatNumber(registers[row].getValue(), NumberDisplayBaseChooser.getBase(Application.getSettings().displayValuesInHex.get()));
+        int valueBase = NumberDisplayBaseChooser.getBase(Application.getSettings().displayValuesInHex.get());
+        Object[][] tableData = new Object[32][3];
+
+        int number = 0;
+        for (Register register : Coprocessor0.getRegisters()) {
+            if (register != null) {
+                tableData[register.getNumber()][NUMBER_COLUMN] = "$" + register.getNumber();
+                tableData[register.getNumber()][NAME_COLUMN] = register.getName();
+                tableData[register.getNumber()][VALUE_COLUMN] = NumberDisplayBaseChooser.formatNumber(register.getValue(), valueBase);
+            }
+            else {
+                tableData[number][NUMBER_COLUMN] = "$" + number;
+                tableData[number][NAME_COLUMN] = "-";
+                tableData[number][VALUE_COLUMN] = "";
+            }
+            number++;
         }
+
         return tableData;
     }
 
@@ -117,7 +153,9 @@ public class Coprocessor0Window extends RegistersDisplayTab {
     @Override
     public void updateRegisters(int base) {
         for (Register register : Coprocessor0.getRegisters()) {
-            this.updateRegisterValue(register.getNumber(), register.getValue(), base);
+            if (register != null) {
+                this.updateRegisterValue(register.getNumber(), register.getValue(), base);
+            }
         }
     }
 
@@ -128,7 +166,7 @@ public class Coprocessor0Window extends RegistersDisplayTab {
      * @param value  The new value.
      */
     public void updateRegisterValue(int number, int value, int base) {
-        ((RegisterTableModel) this.table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(value, base), this.registerRows[number], VALUE_COLUMN);
+        ((RegisterTableModel) this.table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(value, base), number, VALUE_COLUMN);
     }
 
     /**
@@ -138,25 +176,31 @@ public class Coprocessor0Window extends RegistersDisplayTab {
      */
     @Override
     public void highlightRegister(Register register) {
-        this.table.highlightRow(Coprocessor0.getRegisterPosition(register));
+        if (register != null) {
+            this.table.highlightRow(register.getNumber());
+        }
     }
 
     @Override
     public void startObservingRegisters() {
         for (Register register : Coprocessor0.getRegisters()) {
-            register.addListener(this);
+            if (register != null) {
+                register.addListener(this);
+            }
         }
     }
 
     @Override
     public void stopObservingRegisters() {
         for (Register register : Coprocessor0.getRegisters()) {
-            register.removeListener(this);
+            if (register != null) {
+                register.removeListener(this);
+            }
         }
     }
 
     private class RegisterTableModel extends AbstractTableModel {
-        private static final String[] COLUMN_NAMES = {"Name", "Number", "Value"};
+        private static final String[] COLUMN_NAMES = {"Number", "Name", "Value"};
 
         private final Object[][] data;
 
@@ -193,12 +237,12 @@ public class Coprocessor0Window extends RegistersDisplayTab {
         }
 
         /**
-         * All register values are editable.
+         * Values of implemented registers are editable.
          */
         @Override
         public boolean isCellEditable(int row, int column) {
             // Note that the data/cell address is constant, no matter where the cell appears onscreen.
-            return column == VALUE_COLUMN;
+            return column == VALUE_COLUMN && Coprocessor0.getRegisters()[row] != null;
         }
 
         /**

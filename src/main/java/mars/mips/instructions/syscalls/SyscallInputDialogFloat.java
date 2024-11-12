@@ -5,7 +5,7 @@ import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 
 import javax.swing.*;
 
@@ -66,7 +66,7 @@ public class SyscallInputDialogFloat extends AbstractSyscall {
         String message;
         try {
             // Read a null-terminated string from memory
-            message = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
+            message = Memory.getInstance().fetchNullTerminatedString(Processor.getValue(Processor.ARGUMENT_0));
         }
         catch (AddressErrorException exception) {
             throw new SimulatorException(statement, exception);
@@ -82,25 +82,25 @@ public class SyscallInputDialogFloat extends AbstractSyscall {
             if (inputValue == null) {
                 // Cancel was chosen
                 Coprocessor1.setRegisterToFloat(0, 0.0f);  // set $f0 to zero
-                RegisterFile.updateRegister(5, -2);  // set $a1 to -2 flag
+                Processor.updateRegister(Processor.ARGUMENT_1, -2);  // set $a1 to -2 flag
             }
             else if (inputValue.isEmpty()) {
                 // OK was chosen but there was no input
                 Coprocessor1.setRegisterToFloat(0, 0.0f);  // set $f0 to zero
-                RegisterFile.updateRegister(5, -3);  // set $a1 to -3 flag
+                Processor.updateRegister(Processor.ARGUMENT_1, -3);  // set $a1 to -3 flag
             }
             else {
                 float floatValue = Float.parseFloat(inputValue);
 
                 // Successful parse of valid input data
                 Coprocessor1.setRegisterToFloat(0, floatValue);  // set $f0 to input data
-                RegisterFile.updateRegister(5, 0);  // set $a1 to valid flag
+                Processor.updateRegister(Processor.ARGUMENT_1, 0);  // set $a1 to valid flag
             }
         }
-        catch (NumberFormatException e) {
+        catch (NumberFormatException exception) {
             // Unsuccessful parse of input data
             Coprocessor1.setRegisterToFloat(0, 0.0f);  // set $f0 to zero
-            RegisterFile.updateRegister(5, -1);  // set $a1 to -1 flag
+            Processor.updateRegister(Processor.ARGUMENT_1, -1);  // set $a1 to -1 flag
         }
     }
 }

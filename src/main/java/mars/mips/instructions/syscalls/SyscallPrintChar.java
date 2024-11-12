@@ -2,7 +2,7 @@ package mars.mips.instructions.syscalls;
 
 import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 import mars.simulator.Simulator;
 
 /*
@@ -52,7 +52,7 @@ public class SyscallPrintChar extends AbstractSyscall {
     public void simulate(BasicStatement statement) throws SimulatorException {
         // Mask off the lower byte of register $a0.
         // Convert to a one-character string and use the string technique.
-        char charValue = (char) (RegisterFile.getValue(4) & 0x000000FF);
+        char charValue = (char) (Processor.getValue(Processor.ARGUMENT_0) & 0x000000FF);
 
         Simulator.getInstance().getSystemIO().printString(Character.toString(charValue));
     }

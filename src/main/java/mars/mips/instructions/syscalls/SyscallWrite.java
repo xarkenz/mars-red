@@ -4,7 +4,7 @@ import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 import mars.simulator.Simulator;
 
 import java.nio.ByteBuffer;
@@ -58,9 +58,9 @@ public class SyscallWrite extends AbstractSyscall {
      */
     @Override
     public void simulate(BasicStatement statement) throws SimulatorException {
-        int descriptor = RegisterFile.getValue(4); // $a0: file descriptor
-        int byteAddress = RegisterFile.getValue(5); // $a1: source of characters to write to file
-        int maxLength = RegisterFile.getValue(6); // $a2: user-requested length
+        int descriptor = Processor.getValue(Processor.ARGUMENT_0); // $a0: file descriptor
+        int byteAddress = Processor.getValue(Processor.ARGUMENT_1); // $a1: source of characters to write to file
+        int maxLength = Processor.getValue(Processor.ARGUMENT_2); // $a2: user-requested length
 
         if (maxLength < 0) {
             throw new SimulatorException(statement, "Length value in $a2 cannot be negative for " + this.getName() + " (syscall " + this.getNumber() + ")");
@@ -84,6 +84,6 @@ public class SyscallWrite extends AbstractSyscall {
         buffer.flip();
 
         int writtenLength = Simulator.getInstance().getSystemIO().writeToFile(descriptor, buffer);
-        RegisterFile.updateRegister(2, writtenLength); // Put return value in $v0
+        Processor.updateRegister(Processor.VALUE_0, writtenLength); // Put return value in $v0
     }
 }

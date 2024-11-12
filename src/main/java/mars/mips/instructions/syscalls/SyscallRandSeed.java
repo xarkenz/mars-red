@@ -2,7 +2,7 @@ package mars.mips.instructions.syscalls;
 
 import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
@@ -54,8 +54,8 @@ public class SyscallRandSeed extends AbstractSyscall {
         //   $a1 = seed for pseudorandom number generator.
         // Result: No values are returned. Sets the seed of the underlying Java pseudorandom number generator.
 
-        int index = RegisterFile.getValue(4);
-        int seed = RegisterFile.getValue(5);
+        int index = Processor.getValue(Processor.ARGUMENT_0);
+        int seed = Processor.getValue(Processor.ARGUMENT_1);
         RandomStreams.setStreamSeed(index, seed);
     }
 }

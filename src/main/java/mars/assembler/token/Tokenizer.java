@@ -6,7 +6,7 @@ import mars.assembler.log.AssemblerLog;
 import mars.assembler.log.SourceLocation;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.Register;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 import mars.mips.instructions.Instruction;
 import mars.util.Binary;
 
@@ -404,7 +404,7 @@ public class Tokenizer {
                         }
 
                         // See if it is a general-purpose register name or number (includes CP0 registers)
-                        Register register = RegisterFile.getRegister(literal);
+                        Register register = Processor.getRegister(literal);
                         if (register != null) {
                             preprocessor.processToken(tokens, new Token(
                                 startLocation,

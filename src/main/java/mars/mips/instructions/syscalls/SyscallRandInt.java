@@ -2,7 +2,7 @@ package mars.mips.instructions.syscalls;
 
 import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 
 import java.util.Random;
 
@@ -55,10 +55,10 @@ public class SyscallRandInt extends AbstractSyscall {
         // Input arguments: $a0 = index of pseudorandom number generator
         // Return: $a0 = the next pseudorandom, uniformly distributed int value from this random number generator's sequence.
 
-        int index = RegisterFile.getValue(4);
+        int index = Processor.getValue(Processor.ARGUMENT_0);
         Random stream = RandomStreams.getStream(index);
 
-        RegisterFile.updateRegister(4, stream.nextInt());
+        Processor.updateRegister(Processor.ARGUMENT_0, stream.nextInt());
     }
 }
 

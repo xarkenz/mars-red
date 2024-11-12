@@ -5,7 +5,7 @@ import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 
 import javax.swing.*;
 
@@ -61,7 +61,7 @@ public class SyscallMessageDialogFloat extends AbstractSyscall {
 
         try {
             // Read a null-terminated string from memory
-            String message = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
+            String message = Memory.getInstance().fetchNullTerminatedString(Processor.getValue(Processor.ARGUMENT_0));
 
             float floatValue = Coprocessor1.getFloatFromRegister(12);
 

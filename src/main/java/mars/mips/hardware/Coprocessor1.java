@@ -34,8 +34,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * Represents Coprocessor 1, the Floating Point Unit (FPU)
  *
- * @author Pete Sanderson
- * @version July 2005
+ * @author Pete Sanderson, July 2005
  */
 /*
  * Adapted from RegisterFile class developed by Bumgarner et al in 2003.
@@ -84,8 +83,40 @@ public class Coprocessor1 {
         new Register("$f31", 31, 0),
     };
 
+    // Plans for Floating-point Control / Status Register (FCSR):
+    // FCSR 1..0: Rounding Mode (RM)
+    //   0 = Round Nearest (RN)
+    //   1 = Round toward Zero (RZ)
+    //   2 = Round toward Positive Infinity (RP)
+    //   3 = Round toward Negative Infinity (RM)
+    // FCSR 2: Flag = Inexact Result (I)
+    // FCSR 3: Flag = Underflow (U)
+    // FCSR 4: Flag = Overflow (O)
+    // FCSR 5: Flag = Divide by Zero (Z)
+    // FCSR 6: Flag = Invalid Operation (V)
+    // FCSR 7: Enable = Inexact Result (I)
+    // FCSR 8: Enable = Underflow (U)
+    // FCSR 9: Enable = Overflow (O)
+    // FCSR 10: Enable = Divide by Zero (Z)
+    // FCSR 11: Enable = Invalid Operation (V)
+    // FCSR 12: Cause = Inexact Result (I)
+    // FCSR 13: Cause = Underflow (U)
+    // FCSR 14: Cause = Overflow (O)
+    // FCSR 15: Cause = Divide by Zero (Z)
+    // FCSR 16: Cause = Invalid Operation (V)
+    // FCSR 17: Cause = Unimplemented (E)
+    // FCSR 23: Condition Code (FCC) 0
+    // FCSR 24: Flush (FS)
+    // FCSR 25: Condition Code (FCC) 1
+    // FCSR 26: Condition Code (FCC) 2
+    // FCSR 27: Condition Code (FCC) 3
+    // FCSR 28: Condition Code (FCC) 4
+    // FCSR 29: Condition Code (FCC) 5
+    // FCSR 30: Condition Code (FCC) 6
+    // FCSR 31: Condition Code (FCC) 7
+
     // The 8 condition flags will be stored in bits 0-7 for flags 0-7.
-    private static final Register CONDITION_FLAGS = new Register("cf", 32, 0);
+    private static final Register CONDITION_FLAGS = new Register("FCC", 32, 0);
     private static final int CONDITION_FLAG_COUNT = 8;
 
     /**
@@ -95,22 +126,7 @@ public class Coprocessor1 {
      * @param val The desired float value for the register.
      */
     public static void setRegisterToFloat(int reg, float val) {
-        if (0 <= reg && reg < REGISTERS.length) {
-            REGISTERS[reg].setValue(Float.floatToRawIntBits(val));
-        }
-    }
-
-    /**
-     * Sets the value of the FPU register given to the 32-bit
-     * pattern given by the int parameter.
-     *
-     * @param reg Register to set the value of.
-     * @param val The desired int bit pattern for the register.
-     */
-    public static void setRegisterToInt(int reg, int val) {
-        if (0 <= reg && reg < REGISTERS.length) {
-            REGISTERS[reg].setValue(val);
-        }
+        REGISTERS[reg].setValue(Float.floatToRawIntBits(val));
     }
 
     /**
@@ -159,27 +175,7 @@ public class Coprocessor1 {
      * @return The float value stored by that register.
      */
     public static float getFloatFromRegister(int reg) {
-        if (0 <= reg && reg < REGISTERS.length) {
-            return Float.intBitsToFloat(REGISTERS[reg].getValue());
-        }
-        else {
-            return 0.0f;
-        }
-    }
-
-    /**
-     * Gets the 32-bit int bit pattern stored in the given FPU register.
-     *
-     * @param reg Register to get the value of.
-     * @return The int bit pattern stored by that register.
-     */
-    public static int getIntFromRegister(int reg) {
-        if (0 <= reg && reg < REGISTERS.length) {
-            return REGISTERS[reg].getValue();
-        }
-        else {
-            return 0;
-        }
+        return Float.intBitsToFloat(REGISTERS[reg].getValue());
     }
 
     /**
@@ -222,18 +218,11 @@ public class Coprocessor1 {
      * @param value The desired int value for the register.
      * @return The previous value of the register.
      */
-    public static int updateRegister(int number, int value) {
-        int previousValue;
-        if (0 <= number && number < REGISTERS.length) {
-            // Originally, this used a linear search to figure out which register to update.
-            // Since all registers 0-31 are present in order, a simple array access should work.
-            // Sean Clarke 03/2024
-            previousValue = REGISTERS[number].setValue(value);
-        }
-        else {
-            // Invalid register, do nothing
-            return 0;
-        }
+    public static int setRegisterToInt(int number, int value) {
+        // Originally, this used a linear search to figure out which register to update.
+        // Since all registers 0-31 are present in order, a simple array access should work.
+        // Sean Clarke 03/2024
+        int previousValue = REGISTERS[number].setValue(value);
 
         if (Simulator.getInstance().getBackStepper().isEnabled()) {
             Simulator.getInstance().getBackStepper().addCoprocessor1Restore(number, previousValue);
@@ -250,15 +239,15 @@ public class Coprocessor1 {
      * @param number The FPU register number.
      * @return The int value of the given register.
      */
-    public static int getValue(int number) {
+    public static int getIntFromRegister(int number) {
         return REGISTERS[number].getValue();
     }
 
     /**
-     * For getting the number representation of the FPU register.
+     * Get the register number corresponding to a given register name.
      *
-     * @param name The string formatted register name to look for.
-     * @return The number of the register represented by the string, or -1 if not found.
+     * @param name The name of the register to search for.
+     * @return The number of the register, or -1 if not found.
      */
     public static int getRegisterNumber(String name) {
         Register register = getRegister(name);
@@ -275,22 +264,26 @@ public class Coprocessor1 {
     }
 
     /**
-     * Get the register object corresponding to a given name.
+     * Get the register corresponding to a given register name.
      *
-     * @param name The FPU register name, must be "$f0" through "$f31".
-     * @return The register object, or null if not found.
+     * @param name The name of the register to search for, e.g. <code>$f0</code>.
+     * @return The register, or <code>null</code> if not found.
      */
     public static Register getRegister(String name) {
-        if (name.length() <= 2 || name.charAt(0) != '$' || name.charAt(1) != 'f') {
-            return null;
+        if (name.length() > 2 && name.charAt(0) == '$' && name.charAt(1) == 'f') {
+            try {
+                // Check for register number 0-31
+                int number = Integer.parseInt(name.substring(2));
+                if (0 <= number && number < REGISTERS.length) {
+                    return REGISTERS[number];
+                }
+            }
+            catch (NumberFormatException exception) {
+                return null;
+            }
         }
-        try {
-            // Check for register number 0-31
-            return REGISTERS[Binary.decodeInteger(name.substring(2))]; // KENV 1/6/05
-        }
-        catch (ArrayIndexOutOfBoundsException | NumberFormatException exception) {
-            return null;
-        }
+
+        return null;
     }
 
     /**
@@ -353,16 +346,9 @@ public class Coprocessor1 {
         if (flag < 0 || flag >= CONDITION_FLAG_COUNT) {
             return 0;
         }
-        return Binary.bitValue(CONDITION_FLAGS.getValue(), flag);
-    }
-
-    /**
-     * Get bitfield of condition flags (0-7).
-     *
-     * @return Bitfield of condition flags.
-     */
-    public static int getConditionFlags() {
-        return CONDITION_FLAGS.getValue();
+        else {
+            return Binary.bitValue(CONDITION_FLAGS.getValue(), flag);
+        }
     }
 
     /**

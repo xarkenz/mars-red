@@ -39,7 +39,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @author Pete Sanderson, August 2005
  */
 public class RegistersPane extends JTabbedPane implements SimulatorListener {
-    private final RegistersWindow registersTab;
+    private final ProcessorWindow registersTab;
     private final Coprocessor1Window coprocessor1Tab;
     private final Coprocessor0Window coprocessor0Tab;
 
@@ -48,7 +48,7 @@ public class RegistersPane extends JTabbedPane implements SimulatorListener {
      */
     public RegistersPane(VenusUI gui) {
         super();
-        this.registersTab = new RegistersWindow(gui);
+        this.registersTab = new ProcessorWindow(gui);
         this.coprocessor1Tab = new Coprocessor1Window(gui);
         this.coprocessor0Tab = new Coprocessor0Window(gui);
         this.registersTab.setVisible(true);
@@ -64,7 +64,7 @@ public class RegistersPane extends JTabbedPane implements SimulatorListener {
      *
      * @return integer register window
      */
-    public RegistersWindow getRegistersWindow() {
+    public ProcessorWindow getRegistersWindow() {
         return this.registersTab;
     }
 

@@ -4,7 +4,7 @@ import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 import mars.simulator.Simulator;
 
 import java.nio.file.Path;
@@ -77,14 +77,14 @@ public class SyscallOpen extends AbstractSyscall {
         String filename;
         try {
             // Read a null-terminated string from memory
-            filename = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
+            filename = Memory.getInstance().fetchNullTerminatedString(Processor.getValue(Processor.ARGUMENT_0));
         }
         catch (AddressErrorException exception) {
             throw new SimulatorException(statement, exception);
         }
 
-        int descriptor = Simulator.getInstance().getSystemIO().openFile(Path.of(filename), RegisterFile.getValue(5));
+        int descriptor = Simulator.getInstance().getSystemIO().openFile(Path.of(filename), Processor.getValue(Processor.ARGUMENT_1));
 
-        RegisterFile.updateRegister(2, descriptor); // Set returned descriptor in register
+        Processor.updateRegister(Processor.VALUE_0, descriptor); // Set returned descriptor in register
     }
 }

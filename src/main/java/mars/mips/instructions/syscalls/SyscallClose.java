@@ -2,7 +2,7 @@ package mars.mips.instructions.syscalls;
 
 import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 import mars.simulator.Simulator;
 
 /*
@@ -50,7 +50,7 @@ public class SyscallClose extends AbstractSyscall {
      */
     @Override
     public void simulate(BasicStatement statement) throws SimulatorException {
-        int descriptor = RegisterFile.getValue(4); // $a0: file descriptor
+        int descriptor = Processor.getValue(Processor.ARGUMENT_0); // $a0: file descriptor
 
         Simulator.getInstance().getSystemIO().closeFile(descriptor);
     }

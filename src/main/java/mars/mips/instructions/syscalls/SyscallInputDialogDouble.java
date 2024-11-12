@@ -64,7 +64,7 @@ public class SyscallInputDialogDouble extends AbstractSyscall {
         String message;
         try {
             // Read a null-terminated string from memory
-            message = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
+            message = Memory.getInstance().fetchNullTerminatedString(Processor.getValue(Processor.ARGUMENT_0));
         }
         catch (AddressErrorException exception) {
             throw new SimulatorException(statement, exception);
@@ -80,27 +80,27 @@ public class SyscallInputDialogDouble extends AbstractSyscall {
             Coprocessor1.setRegisterPairToDouble(0, 0.0);  // set $f0 to zero
             if (inputValue == null) {
                 // Cancel was chosen
-                RegisterFile.updateRegister(5, -2);  // set $a1 to -2 flag
+                Processor.updateRegister(Processor.ARGUMENT_1, -2);  // set $a1 to -2 flag
             }
             else if (inputValue.isEmpty()) {
                 // OK was chosen but there was no input
-                RegisterFile.updateRegister(5, -3);  // set $a1 to -3 flag
+                Processor.updateRegister(Processor.ARGUMENT_1, -3);  // set $a1 to -3 flag
             }
             else {
                 double doubleValue = Double.parseDouble(inputValue);
 
                 // Successful parse of valid input data
                 Coprocessor1.setRegisterPairToDouble(0, doubleValue);  // set $f0 to input data
-                RegisterFile.updateRegister(5, 0);  // set $a1 to valid flag
+                Processor.updateRegister(Processor.ARGUMENT_1, 0);  // set $a1 to valid flag
             }
         }
         catch (InvalidRegisterAccessException exception) {
-            RegisterFile.updateRegister(5, -1);  // set $a1 to -1 flag
+            Processor.updateRegister(Processor.ARGUMENT_1, -1);  // set $a1 to -1 flag
             throw new SimulatorException(statement, "invalid register access during double input (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
         }
         catch (NumberFormatException exception) {
             // Unsuccessful parse of input data
-            RegisterFile.updateRegister(5, -1);  // set $a1 to -1 flag
+            Processor.updateRegister(Processor.ARGUMENT_1, -1);  // set $a1 to -1 flag
         }
     }
 }

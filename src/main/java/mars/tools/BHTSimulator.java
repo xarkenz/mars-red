@@ -263,8 +263,8 @@ public class BHTSimulator extends AbstractMarsTool {
         int rs = statement.getBinaryEncoding() >>> (32 - 6 - 5) & 0x1F;
         int rt = statement.getBinaryEncoding() >>> (32 - 6 - 5 - 5) & 0x1F;
 
-        int valRS = RegisterFile.getRegisters()[rs].getValue();
-        int valRT = RegisterFile.getRegisters()[rt].getValue();
+        int valRS = Processor.getRegisters()[rs].getValue();
+        int valRT = Processor.getRegisters()[rt].getValue();
 
         if (opcode == 0x01) {
             switch (funct) {

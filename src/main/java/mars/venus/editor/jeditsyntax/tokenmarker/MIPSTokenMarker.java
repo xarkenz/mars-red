@@ -14,7 +14,7 @@ import mars.assembler.Directive;
 import mars.assembler.token.Tokenizer;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.Register;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 import mars.mips.instructions.BasicInstruction;
 import mars.mips.instructions.Instruction;
 import mars.venus.editor.jeditsyntax.KeywordMap;
@@ -458,7 +458,7 @@ public class MIPSTokenMarker extends TokenMarker {
                 keywords.add(directive.getName(), Token.DIRECTIVE);
             }
             // Add integer register file
-            for (Register register : RegisterFile.getRegisters()) {
+            for (Register register : Processor.getRegisters()) {
                 keywords.add(register.getName(), Token.REGISTER);
                 // Also recognize $0, $1, $2, etc.
                 keywords.add("$" + register.getNumber(), Token.REGISTER);

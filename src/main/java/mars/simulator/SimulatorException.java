@@ -3,7 +3,7 @@ package mars.simulator;
 import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Coprocessor0;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 import mars.mips.instructions.Instruction;
 import mars.util.Binary;
 
@@ -72,7 +72,7 @@ public class SimulatorException extends Exception {
     public SimulatorException(BasicStatement statement, String message) {
         super(
             "Runtime exception at " + Binary.intToHexString(
-                RegisterFile.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION
+                Processor.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION
             ) + ": " + message
         );
     }

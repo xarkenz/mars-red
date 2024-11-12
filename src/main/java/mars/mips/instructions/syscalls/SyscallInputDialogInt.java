@@ -4,7 +4,7 @@ import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 
 import javax.swing.*;
 
@@ -65,7 +65,7 @@ public class SyscallInputDialogInt extends AbstractSyscall {
         String message;
         try {
             // Read a null-terminated string from memory
-            message = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
+            message = Memory.getInstance().fetchNullTerminatedString(Processor.getValue(Processor.ARGUMENT_0));
         }
         catch (AddressErrorException exception) {
             throw new SimulatorException(statement, exception);
@@ -79,26 +79,26 @@ public class SyscallInputDialogInt extends AbstractSyscall {
 
         if (inputValue == null) {
             // Cancel was chosen
-            RegisterFile.updateRegister(4, 0);  // set $a0 to zero
-            RegisterFile.updateRegister(5, -2);  // set $a1 to -2 flag
+            Processor.updateRegister(Processor.ARGUMENT_0, 0);  // set $a0 to zero
+            Processor.updateRegister(Processor.ARGUMENT_1, -2);  // set $a1 to -2 flag
         }
         else if (inputValue.isEmpty()) {
             // OK was chosen but there was no input
-            RegisterFile.updateRegister(4, 0);  // set $a0 to zero
-            RegisterFile.updateRegister(5, -3);  // set $a1 to -3 flag
+            Processor.updateRegister(Processor.ARGUMENT_0, 0);  // set $a0 to zero
+            Processor.updateRegister(Processor.ARGUMENT_1, -3);  // set $a1 to -3 flag
         }
         else {
             try {
                 int intValue = Integer.parseInt(inputValue);
 
                 // Successful parse of valid input data
-                RegisterFile.updateRegister(4, intValue);  // set $a0 to the data read
-                RegisterFile.updateRegister(5, 0);  // set $a1 to valid flag
+                Processor.updateRegister(Processor.ARGUMENT_0, intValue);  // set $a0 to the data read
+                Processor.updateRegister(Processor.ARGUMENT_1, 0);  // set $a1 to valid flag
             }
-            catch (NumberFormatException e) {
+            catch (NumberFormatException exception) {
                 // Unsuccessful parse of input data
-                RegisterFile.updateRegister(4, 0);  // set $a0 to zero
-                RegisterFile.updateRegister(5, -1);  // set $a1 to -1 flag
+                Processor.updateRegister(Processor.ARGUMENT_0, 0);  // set $a0 to zero
+                Processor.updateRegister(Processor.ARGUMENT_1, -1);  // set $a1 to -1 flag
             }
         }
     }

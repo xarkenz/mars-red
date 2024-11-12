@@ -2,7 +2,7 @@ package mars.mips.instructions.syscalls;
 
 import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 import mars.simulator.ExceptionCause;
 import mars.simulator.Simulator;
 import mars.simulator.SystemIO;
@@ -26,9 +26,9 @@ public class SyscallSeek extends AbstractSyscall {
      */
     @Override
     public void simulate(BasicStatement statement) throws SimulatorException {
-        int descriptor = RegisterFile.getValue(4); // $a0: file descriptor
-        int offset = RegisterFile.getValue(5); // $a1: position offset
-        int whenceOrdinal = RegisterFile.getValue(6); // $a2: position whence
+        int descriptor = Processor.getValue(Processor.ARGUMENT_0); // $a0: file descriptor
+        int offset = Processor.getValue(Processor.ARGUMENT_1); // $a1: position offset
+        int whenceOrdinal = Processor.getValue(Processor.ARGUMENT_2); // $a2: position whence
 
         SystemIO.SeekWhence whence = SystemIO.SeekWhence.valueOf(whenceOrdinal);
         if (whence == null) {
@@ -36,6 +36,6 @@ public class SyscallSeek extends AbstractSyscall {
         }
 
         long newPosition = Simulator.getInstance().getSystemIO().seekFile(descriptor, offset, whence);
-        RegisterFile.updateRegister(2, (int) newPosition); // Put return value in $v0
+        Processor.updateRegister(Processor.VALUE_0, (int) newPosition); // Put return value in $v0
     }
 }

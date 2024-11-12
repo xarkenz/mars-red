@@ -36,11 +36,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * Represents Coprocessor 0.  We will use only its interrupt/exception registers.
  *
- * @author Pete Sanderson
- * @version August 2005
+ * @author Pete Sanderson, August 2005
  */
 public class Coprocessor0 {
-    public static final int VADDR = 8;
+    public static final int BAD_V_ADDR = 8;
     public static final int STATUS = 12;
     public static final int CAUSE = 13;
     public static final int EPC = 14;
@@ -49,30 +48,42 @@ public class Coprocessor0 {
     // bit position in STATUS register
     // bits 8-15 (mask for interrupt levels) all set, bit 4 (user mode) set,
     // bit 1 (exception level) not set, bit 0 (interrupt enable) set.
-    public static final int DEFAULT_STATUS_VALUE = 0x0000FF11;
+    public static final int DEFAULT_STATUS_VALUE = 0b00000000_00000000_11111111_00010001;
 
     private static final Register[] REGISTERS = {
-        new Register("vaddr", 8, 0),
-        new Register("status", 12, DEFAULT_STATUS_VALUE),
-        new Register("cause", 13, 0),
-        new Register("epc", 14, 0),
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        new Register("BadVAddr", BAD_V_ADDR, 0),
+        null,
+        null,
+        null,
+        new Register("Status", STATUS, DEFAULT_STATUS_VALUE),
+        new Register("Cause", CAUSE, 0),
+        new Register("EPC", EPC, 0),
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
     };
-
-    /**
-     * Sets the value of the register given to the value given.
-     *
-     * @param number The name of register to set the value of ($number, where number is register number).
-     * @param value  The desired value for the register.
-     * @return old value in register prior to update
-     */
-    public static int updateRegister(String number, int value) {
-        for (Register register : REGISTERS) {
-            if (("$" + register.getNumber()).equals(number) || register.getName().equals(number)) {
-                return register.setValue(value);
-            }
-        }
-        return 0;
-    }
 
     /**
      * This method updates the register value whose number is given.
@@ -82,18 +93,18 @@ public class Coprocessor0 {
      * @return old value in register prior to update
      */
     public static int updateRegister(int number, int value) {
-        for (Register register : REGISTERS) {
-            if (register.getNumber() == number) {
-                int previousValue = register.setValue(value);
+        if (REGISTERS[number] != null) {
+            int previousValue = REGISTERS[number].setValue(value);
 
-                if (Simulator.getInstance().getBackStepper().isEnabled()) {
-                    Simulator.getInstance().getBackStepper().addCoprocessor0Restore(number, previousValue);
-                }
-
-                return previousValue;
+            if (Simulator.getInstance().getBackStepper().isEnabled()) {
+                Simulator.getInstance().getBackStepper().addCoprocessor0Restore(number, previousValue);
             }
+
+            return previousValue;
         }
-        return 0;
+        else {
+            return 0;
+        }
     }
 
     /**
@@ -103,23 +114,12 @@ public class Coprocessor0 {
      * @return The value of the given register.  0 for non-implemented registers
      */
     public static int getValue(int number) {
-        for (Register register : REGISTERS) {
-            if (register.getNumber() == number) {
-                return register.getValue();
-            }
+        if (REGISTERS[number] != null) {
+            return REGISTERS[number].getValue();
         }
-        return 0;
-    }
-
-    /**
-     * For getting the number representation of the register.
-     *
-     * @param name The string formatted register name to look for.
-     * @return The number of the register represented by the string. -1 if no match.
-     */
-    public static int getRegisterNumber(String name) {
-        Register register = getRegister(name);
-        return (register == null) ? -1 : register.getNumber();
+        else {
+            return 0;
+        }
     }
 
     /**
@@ -132,43 +132,13 @@ public class Coprocessor0 {
     }
 
     /**
-     * Coprocessor0 implements only selected registers, so the register number
-     * (8, 12, 13, 14) does not correspond to its position in the list of registers
-     * (0, 1, 2, 3).
-     *
-     * @param register A Coprocessor0 register
-     * @return the list position of given register, -1 if not found.
-     */
-    public static int getRegisterPosition(Register register) {
-        for (int index = 0; index < REGISTERS.length; index++) {
-            if (REGISTERS[index] == register) {
-                return index;
-            }
-        }
-        return -1;
-    }
-
-    /**
-     * Get register object corresponding to given name.  If no match, return null.
-     *
-     * @param name The register name, in $0 format.
-     * @return The register object, or null if not found.
-     */
-    public static Register getRegister(String name) {
-        for (Register register : REGISTERS) {
-            if (("$" + register.getNumber()).equals(name) || register.getName().equals(name)) {
-                return register;
-            }
-        }
-        return null;
-    }
-
-    /**
      * Method to reinitialize the values of the registers.
      */
     public static void reset() {
         for (Register register : REGISTERS) {
-            register.resetValueToDefault();
+            if (register != null) {
+                register.resetValueToDefault();
+            }
         }
     }
 
@@ -186,7 +156,7 @@ public class Coprocessor0 {
         // identify devices for External Interrupt (8=keyboard, 9=display).
         updateRegister(CAUSE, (getValue(CAUSE) & 0xFFFFFC83) | (cause << 2));
         // When exception occurred, PC had already been incremented so need to subtract 4 here.
-        updateRegister(EPC, RegisterFile.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION);
+        updateRegister(EPC, Processor.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION);
         // Set EXL (Exception Level) bit, bit position 1, in STATUS register to 1.
         updateRegister(STATUS, Binary.setBit(getValue(STATUS), EXCEPTION_LEVEL));
     }
@@ -202,7 +172,7 @@ public class Coprocessor0 {
      * @author Pete Sanderson, August 2005
      */
     public static void updateRegisters(int cause, int address) {
-        updateRegister(VADDR, address);
+        updateRegister(BAD_V_ADDR, address);
         updateRegisters(cause);
     }
 }

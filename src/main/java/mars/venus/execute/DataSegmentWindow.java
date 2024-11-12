@@ -171,10 +171,10 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
 
         this.initializeBaseAddressButtons();
         JPanel navButtons = new JPanel(new GridLayout(1, 4));
-        navButtons.add(prevButton);
-        navButtons.add(nextButton);
+        navButtons.add(this.prevButton);
+        navButtons.add(this.nextButton);
         navigationBar.add(navButtons);
-        navigationBar.add(baseAddressSelector);
+        navigationBar.add(this.baseAddressSelector);
         for (NumberDisplayBaseChooser chooser : choosers) {
             navigationBar.add(chooser);
         }
@@ -290,10 +290,10 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
         int baseAddress = this.baseAddresses[desiredComboBoxIndex];
         if (baseAddress == -1) {
             if (desiredComboBoxIndex == GLOBAL_POINTER_BASE_ADDRESS_INDEX) {
-                baseAddress = Memory.alignToPrevious(RegisterFile.getValue(RegisterFile.GLOBAL_POINTER), BYTES_PER_ROW);
+                baseAddress = Memory.alignToPrevious(Processor.getValue(Processor.GLOBAL_POINTER), BYTES_PER_ROW);
             }
             else if (desiredComboBoxIndex == STACK_POINTER_BASE_ADDRESS_INDEX) {
-                baseAddress = Memory.alignToPrevious(RegisterFile.getValue(RegisterFile.STACK_POINTER), BYTES_PER_ROW);
+                baseAddress = Memory.alignToPrevious(Processor.getValue(Processor.STACK_POINTER), BYTES_PER_ROW);
             }
             else {
                 // Shouldn't happen since these are the only two
@@ -381,13 +381,13 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
             desiredComboBoxIndex = HEAP_BASE_ADDRESS_INDEX;
         }
         // Check distance from global pointer; can be either side of it
-        testDistance = Math.abs(address - RegisterFile.getValue(RegisterFile.GLOBAL_POINTER));
+        testDistance = Math.abs(address - Processor.getValue(Processor.GLOBAL_POINTER));
         if (testDistance < shortestDistance) {
             shortestDistance = testDistance;
             desiredComboBoxIndex = GLOBAL_POINTER_BASE_ADDRESS_INDEX;
         }
         // Check distance from stack pointer; can be on either side of it
-        testDistance = Math.abs(address - RegisterFile.getValue(RegisterFile.STACK_POINTER));
+        testDistance = Math.abs(address - Processor.getValue(Processor.STACK_POINTER));
         if (testDistance < shortestDistance) {
             shortestDistance = testDistance;
             desiredComboBoxIndex = STACK_POINTER_BASE_ADDRESS_INDEX;
@@ -443,9 +443,6 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
         }
 
         this.table = new MemoryTable(new MemoryTableModel(this.tableData, columnNames));
-        // Do not allow user to re-order columns; column order corresponds to MIPS memory order
-        this.table.getTableHeader().setReorderingAllowed(false);
-        this.table.setRowSelectionAllowed(false);
         // Addresses are column 0, render right-justified in mono font
         SimpleCellRenderer simpleCellRenderer = new SimpleCellRenderer(SwingConstants.RIGHT);
         this.table.getColumnModel().getColumn(ADDRESS_COLUMN).setPreferredWidth(60);
@@ -637,7 +634,7 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
         // Currently there is no memory upper bound so next button always enabled.
         this.baseAddressButtons[GLOBAL_POINTER_BASE_ADDRESS_INDEX].addActionListener(event -> {
             this.userOrKernelMode = USER_MODE;
-            this.firstAddress = RegisterFile.getValue(RegisterFile.GLOBAL_POINTER);
+            this.firstAddress = Processor.getValue(Processor.GLOBAL_POINTER);
             // updateModelForMemoryRange requires argument to be multiple of 4,
             // but for cleaner display we'll make it a multiple of 32 (last nibble is 0).
             // This makes it easier to mentally calculate address from row address + column offset.
@@ -648,7 +645,7 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
         });
         this.baseAddressButtons[STACK_POINTER_BASE_ADDRESS_INDEX].addActionListener(event -> {
             this.userOrKernelMode = USER_MODE;
-            this.firstAddress = RegisterFile.getValue(RegisterFile.STACK_POINTER);
+            this.firstAddress = Processor.getValue(Processor.STACK_POINTER);
             // See comment above for baseAddressButtons[GLOBAL_POINTER_BASE_ADDRESS_INDEX]
             this.firstAddress = Memory.alignToPrevious(this.firstAddress, BYTES_PER_ROW);
             this.homeAddress = Memory.getInstance().getAddress(MemoryConfigurations.STACK_POINTER);
@@ -915,6 +912,9 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
     private class MemoryTable extends JTable {
         public MemoryTable(MemoryTableModel model) {
             super(model);
+            // Do not allow user to re-order columns; column order corresponds to MIPS memory order
+            this.tableHeader.setReorderingAllowed(false);
+            this.setRowSelectionAllowed(false);
         }
 
         private static final String[] COLUMN_TOOL_TIPS = {

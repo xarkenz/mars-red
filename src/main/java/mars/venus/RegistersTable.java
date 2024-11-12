@@ -46,19 +46,19 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * <a href="http://java.sun.com/docs/books/tutorial/uiswing/components/table.html">Sun's JTable tutorial</a>.
  */
 public class RegistersTable extends JTable {
-    public static final int NAME_COLUMN = 0;
-
     private final String[] headerTips;
-    private final String[] registerTips;
+    private final String[] rowTips;
     private boolean isUpdating;
     private int highlightedRow;
 
-    public RegistersTable(TableModel model, String[] headerTips, String[] registerTips) {
+    public RegistersTable(TableModel model, String[] headerTips, String[] rowTips) {
         super(model);
         this.headerTips = headerTips;
-        this.registerTips = registerTips;
+        this.rowTips = rowTips;
         this.isUpdating = false;
         this.highlightedRow = -1;
+
+        this.setRowSelectionAllowed(false);
     }
 
     public void setupColumn(int columnIndex, int preferredWidth, int alignment) {
@@ -100,11 +100,9 @@ public class RegistersTable extends JTable {
     // Implement table cell tool tips
     @Override
     public String getToolTipText(MouseEvent event) {
-        int row = rowAtPoint(event.getPoint());
-        int column = columnAtPoint(event.getPoint());
-        int modelColumn = convertColumnIndexToModel(column);
-        if (modelColumn == NAME_COLUMN) {
-            return registerTips[row];
+        int row = this.rowAtPoint(event.getPoint());
+        if (0 <= row && row < this.rowTips.length) {
+            return this.rowTips[row];
         }
         else {
             return super.getToolTipText(event);
@@ -114,12 +112,12 @@ public class RegistersTable extends JTable {
     // Implement table header tool tips
     @Override
     protected JTableHeader createDefaultTableHeader() {
-        return new JTableHeader(columnModel) {
+        return new JTableHeader(this.columnModel) {
             @Override
             public String getToolTipText(MouseEvent event) {
-                int column = columnModel.getColumnIndexAtX(event.getPoint().x);
-                int modelColumn = columnModel.getColumn(column).getModelIndex();
-                return headerTips[modelColumn];
+                int column = RegistersTable.this.columnModel.getColumnIndexAtX(event.getPoint().x);
+                int modelColumn = RegistersTable.this.columnModel.getColumn(column).getModelIndex();
+                return RegistersTable.this.headerTips[modelColumn];
             }
         };
     }
@@ -138,9 +136,9 @@ public class RegistersTable extends JTable {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             Settings settings = Application.getSettings();
-            boolean isHighlighted = settings.registerHighlightingEnabled.get() && isUpdating && row == highlightedRow;
+            boolean isHighlighted = settings.registerHighlightingEnabled.get() && RegistersTable.this.isUpdating && row == RegistersTable.this.highlightedRow;
 
-            this.setHorizontalAlignment(alignment);
+            this.setHorizontalAlignment(this.alignment);
             if (isHighlighted) {
                 this.setBackground(settings.registerHighlightBackground.get());
                 this.setForeground(settings.registerHighlightForeground.get());

@@ -4,7 +4,7 @@ import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 
 import javax.swing.*;
 
@@ -65,10 +65,10 @@ public class SyscallMessageDialog extends AbstractSyscall {
 
         try {
             // Read a null-terminated string from memory
-            String message = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
+            String message = Memory.getInstance().fetchNullTerminatedString(Processor.getValue(Processor.ARGUMENT_0));
 
             // See values in http://java.sun.com/j2se/1.5.0/docs/api/constant-values.html
-            int messageType = RegisterFile.getValue(5);
+            int messageType = Processor.getValue(Processor.ARGUMENT_1);
             if (messageType < JOptionPane.ERROR_MESSAGE || messageType > JOptionPane.QUESTION_MESSAGE) {
                 messageType = JOptionPane.PLAIN_MESSAGE;
             }

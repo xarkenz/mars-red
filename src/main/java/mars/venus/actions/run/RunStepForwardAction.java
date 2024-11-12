@@ -2,7 +2,7 @@ package mars.venus.actions.run;
 
 import mars.Application;
 import mars.simulator.SimulatorException;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 import mars.simulator.ProgramArgumentList;
 import mars.simulator.Simulator;
 import mars.venus.actions.VenusAction;
@@ -68,7 +68,7 @@ public class RunStepForwardAction extends VenusAction {
         this.gui.getMainPane().getExecuteTab().getTextSegmentWindow().setCodeHighlighting(true);
 
         try {
-            Simulator.getInstance().simulate(RegisterFile.getProgramCounter(), 1, null);
+            Simulator.getInstance().simulate(Processor.getProgramCounter(), 1, null);
         }
         catch (SimulatorException exception) {
             // Ignore

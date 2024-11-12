@@ -3,7 +3,7 @@ package mars.simulator;
 import mars.*;
 import mars.mips.hardware.Coprocessor0;
 import mars.mips.hardware.Coprocessor1;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 
 import javax.swing.*;
 import java.util.ArrayList;
@@ -103,7 +103,7 @@ public class Simulator {
     }
 
     public void reset() {
-        RegisterFile.reset();
+        Processor.reset();
         Coprocessor1.reset();
         Coprocessor0.reset();
         this.backStepper.reset();
@@ -123,7 +123,7 @@ public class Simulator {
             this.delayedJumpAddress = targetAddress;
         }
         else {
-            RegisterFile.setProgramCounter(targetAddress);
+            Processor.setProgramCounter(targetAddress);
         }
     }
 
@@ -311,7 +311,7 @@ public class Simulator {
             this.flushStateChanges();
         }
         else {
-            this.dispatchFinishEvent(RegisterFile.getProgramCounter(), SimulatorFinishEvent.Reason.EXTERNAL, null);
+            this.dispatchFinishEvent(Processor.getProgramCounter(), SimulatorFinishEvent.Reason.EXTERNAL, null);
         }
     }
 

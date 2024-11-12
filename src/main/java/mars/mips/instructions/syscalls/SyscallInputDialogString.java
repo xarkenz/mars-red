@@ -4,7 +4,7 @@ import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 
 import javax.swing.*;
 
@@ -67,7 +67,7 @@ public class SyscallInputDialogString extends AbstractSyscall {
         String message;
         try {
             // Read a null-terminated string from memory
-            message = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
+            message = Memory.getInstance().fetchNullTerminatedString(Processor.getValue(Processor.ARGUMENT_0));
         }
         catch (AddressErrorException exception) {
             throw new SimulatorException(statement, exception);
@@ -80,16 +80,16 @@ public class SyscallInputDialogString extends AbstractSyscall {
         String inputString = JOptionPane.showInputDialog(message);
         if (inputString == null) {
             // Cancel was chosen
-            RegisterFile.updateRegister(5, -2);  // set $a1 to -2 flag
+            Processor.updateRegister(Processor.ARGUMENT_1, -2);  // set $a1 to -2 flag
         }
         else if (inputString.isEmpty()) {
             // OK was chosen but there was no input
-            RegisterFile.updateRegister(5, -3);  // set $a1 to -3 flag
+            Processor.updateRegister(Processor.ARGUMENT_1, -3);  // set $a1 to -3 flag
         }
         else {
             try {
-                int byteAddress = RegisterFile.getValue(5); // byteAddress of string is in $a1
-                int maxLength = RegisterFile.getValue(6); // input buffer size for input string is in $a2
+                int byteAddress = Processor.getValue(Processor.ARGUMENT_1); // byteAddress of string is in $a1
+                int maxLength = Processor.getValue(Processor.ARGUMENT_2); // input buffer size for input string is in $a2
 
                 // The buffer will contain characters, a '\n' character, and the null character
                 // Copy the input data to buffer as space permits
@@ -105,10 +105,10 @@ public class SyscallInputDialogString extends AbstractSyscall {
 
                 if (inputString.length() > maxLength - 1) {
                     // Length of the input string exceeded the specified maximum
-                    RegisterFile.updateRegister(5, -4);  // set $a1 to -4 flag
+                    Processor.updateRegister(Processor.ARGUMENT_1, -4);  // set $a1 to -4 flag
                 }
                 else {
-                    RegisterFile.updateRegister(5, 0);  // set $a1 to 0 flag
+                    Processor.updateRegister(Processor.ARGUMENT_1, 0);  // set $a1 to 0 flag
                 }
             }
             catch (AddressErrorException exception) {

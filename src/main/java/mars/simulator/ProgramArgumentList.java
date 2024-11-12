@@ -3,7 +3,7 @@ package mars.simulator;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.MemoryConfigurations;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -178,9 +178,9 @@ public class ProgramArgumentList {
 
             // Set $sp register to stack address, $a0 to argc, $a1 to argv
             // Bypass the backstepping mechanism by using Register.setValue() instead of RegisterFile.updateRegister()
-            RegisterFile.getRegisters()[RegisterFile.STACK_POINTER].setValue(stackAddress + Memory.BYTES_PER_WORD);
-            RegisterFile.getRegisters()[RegisterFile.ARGUMENT_0].setValue(argStartAddresses.size()); // argc
-            RegisterFile.getRegisters()[RegisterFile.ARGUMENT_1].setValue(stackAddress + 2 * Memory.BYTES_PER_WORD); // argv
+            Processor.getRegisters()[Processor.STACK_POINTER].setValue(stackAddress + Memory.BYTES_PER_WORD);
+            Processor.getRegisters()[Processor.ARGUMENT_0].setValue(argStartAddresses.size()); // argc
+            Processor.getRegisters()[Processor.ARGUMENT_1].setValue(stackAddress + 2 * Memory.BYTES_PER_WORD); // argv
         }
         catch (AddressErrorException exception) {
             System.out.println("Internal Error: Memory write error occurred while storing program arguments! " + exception);

@@ -4,7 +4,7 @@ import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 import mars.simulator.ExceptionCause;
 import mars.simulator.Simulator;
 
@@ -59,9 +59,9 @@ public class SyscallRead extends AbstractSyscall {
      */
     @Override
     public void simulate(BasicStatement statement) throws SimulatorException, InterruptedException {
-        int descriptor = RegisterFile.getValue(4); // $a0: file descriptor
-        int byteAddress = RegisterFile.getValue(5); // $a1: destination of characters to read from file
-        int maxLength = RegisterFile.getValue(6); // $a2: user-requested length
+        int descriptor = Processor.getValue(Processor.ARGUMENT_0); // $a0: file descriptor
+        int byteAddress = Processor.getValue(Processor.ARGUMENT_1); // $a1: destination of characters to read from file
+        int maxLength = Processor.getValue(Processor.ARGUMENT_2); // $a2: user-requested length
 
         if (maxLength < 0) {
             throw new SimulatorException(statement, "Length value in $a2 cannot be negative for " + this.getName() + " (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
@@ -69,7 +69,7 @@ public class SyscallRead extends AbstractSyscall {
         ByteBuffer buffer = ByteBuffer.allocateDirect(maxLength);
 
         int readLength = Simulator.getInstance().getSystemIO().readFromFile(descriptor, buffer);
-        RegisterFile.updateRegister(2, readLength); // Put return value in $v0
+        Processor.updateRegister(Processor.VALUE_0, readLength); // Put return value in $v0
 
         // Flip buffer from put-mode to get-mode
         buffer.flip();

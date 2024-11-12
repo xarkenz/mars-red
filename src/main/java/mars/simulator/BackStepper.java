@@ -5,8 +5,6 @@ import mars.assembler.BasicStatement;
 import mars.mips.hardware.*;
 import mars.mips.instructions.Instruction;
 
-import java.util.Arrays;
-
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
 
@@ -126,17 +124,17 @@ public class BackStepper {
             do {
                 BackStep step = backSteps.pop();
                 if (step.programCounter != NOT_PC_VALUE) {
-                    RegisterFile.setProgramCounter(step.programCounter);
+                    Processor.setProgramCounter(step.programCounter);
                 }
                 try {
                     switch (step.action) {
                         case MEMORY_RESTORE_WORD -> Memory.getInstance().storeWord(step.param1, step.param2, true);
                         case MEMORY_RESTORE_HALF -> Memory.getInstance().storeHalfword(step.param1, step.param2, true);
                         case MEMORY_RESTORE_BYTE -> Memory.getInstance().storeByte(step.param1, step.param2, true);
-                        case REGISTER_RESTORE -> RegisterFile.updateRegister(step.param1, step.param2);
-                        case PC_RESTORE -> RegisterFile.setProgramCounter(step.param1);
+                        case REGISTER_RESTORE -> Processor.updateRegister(step.param1, step.param2);
+                        case PC_RESTORE -> Processor.setProgramCounter(step.param1);
                         case COPROC0_REGISTER_RESTORE -> Coprocessor0.updateRegister(step.param1, step.param2);
-                        case COPROC1_REGISTER_RESTORE -> Coprocessor1.updateRegister(step.param1, step.param2);
+                        case COPROC1_REGISTER_RESTORE -> Coprocessor1.setRegisterToInt(step.param1, step.param2);
                         case COPROC1_CONDITION_CLEAR -> Coprocessor1.clearConditionFlag(step.param1);
                         case COPROC1_CONDITION_SET -> Coprocessor1.setConditionFlag(step.param1);
                         case DO_NOTHING -> {}
@@ -159,7 +157,7 @@ public class BackStepper {
      */
     private int pc() {
         // PC incremented prior to instruction simulation, so need to adjust for that.
-        return RegisterFile.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION;
+        return Processor.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION;
     }
 
     /**

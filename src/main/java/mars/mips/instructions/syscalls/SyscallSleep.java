@@ -2,7 +2,7 @@ package mars.mips.instructions.syscalls;
 
 import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
@@ -51,7 +51,7 @@ public class SyscallSleep extends AbstractSyscall {
      */
     @Override
     public void simulate(BasicStatement statement) throws SimulatorException, InterruptedException {
-        int duration = RegisterFile.getValue(4); // $a0: length of time to sleep in milliseconds
+        int duration = Processor.getValue(Processor.ARGUMENT_0); // $a0: length of time to sleep in milliseconds
 
         Thread.sleep(duration);
     }

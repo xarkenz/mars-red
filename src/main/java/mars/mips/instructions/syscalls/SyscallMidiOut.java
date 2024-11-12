@@ -2,7 +2,7 @@ package mars.mips.instructions.syscalls;
 
 import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 
 /*
 Copyright (c) 2003-2009,  Pete Sanderson and Kenneth Vollmar
@@ -66,10 +66,10 @@ public class SyscallMidiOut extends AbstractSyscall {
      */
     @Override
     public void simulate(BasicStatement statement) throws SimulatorException {
-        int pitch = RegisterFile.getValue(4); // $a0
-        int duration = RegisterFile.getValue(5); // $a1
-        int instrument = RegisterFile.getValue(6); // $a2
-        int volume = RegisterFile.getValue(7); // $a3
+        int pitch = Processor.getValue(Processor.ARGUMENT_0); // $a0
+        int duration = Processor.getValue(Processor.ARGUMENT_1); // $a1
+        int instrument = Processor.getValue(Processor.ARGUMENT_2); // $a2
+        int volume = Processor.getValue(Processor.ARGUMENT_3); // $a3
 
         if (pitch < RANGE_MIN || pitch > RANGE_MAX) {
             pitch = MidiNotePlayer.DEFAULT_PITCH;

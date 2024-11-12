@@ -186,7 +186,7 @@ public class Assembler {
 
     public void resetExternalState() {
         Memory.getInstance().reset();
-        RegisterFile.reset();
+        Processor.reset();
         Coprocessor0.reset();
         Coprocessor1.reset();
     }

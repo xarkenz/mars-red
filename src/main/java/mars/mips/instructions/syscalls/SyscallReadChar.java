@@ -2,7 +2,7 @@ package mars.mips.instructions.syscalls;
 
 import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 import mars.simulator.ExceptionCause;
 import mars.simulator.Simulator;
 
@@ -54,7 +54,7 @@ public class SyscallReadChar extends AbstractSyscall {
         try {
             int charValue = Simulator.getInstance().getSystemIO().readChar();
             // DPS 20 June 2008: changed from 4 ($a0) to 2 ($v0)
-            RegisterFile.updateRegister(2, charValue);
+            Processor.updateRegister(Processor.VALUE_0, charValue);
         }
         catch (IndexOutOfBoundsException exception) {
             throw new SimulatorException(statement, "invalid char input (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);

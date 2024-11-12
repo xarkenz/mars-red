@@ -4,7 +4,7 @@ import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 import mars.simulator.Simulator;
 
 /*
@@ -54,7 +54,7 @@ public class SyscallPrintString extends AbstractSyscall {
     public void simulate(BasicStatement statement) throws SimulatorException {
         try {
             // Read a null-terminated string from memory
-            String stringValue = Memory.getInstance().fetchNullTerminatedString(RegisterFile.getValue(4));
+            String stringValue = Memory.getInstance().fetchNullTerminatedString(Processor.getValue(Processor.ARGUMENT_0));
             Simulator.getInstance().getSystemIO().printString(stringValue);
         }
         catch (AddressErrorException exception) {

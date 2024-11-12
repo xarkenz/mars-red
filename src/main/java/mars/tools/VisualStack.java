@@ -91,13 +91,13 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
             Memory.getInstance().getAddress(MemoryConfigurations.DYNAMIC_LOW),
             Memory.getInstance().getAddress(MemoryConfigurations.DYNAMIC_HIGH)
         );
-        RegisterFile.getRegisters()[RegisterFile.STACK_POINTER].addListener(this);
+        Processor.getRegisters()[Processor.STACK_POINTER].addListener(this);
     }
 
     @Override
     protected void stopObserving() {
         Memory.getInstance().removeListener(this);
-        RegisterFile.getRegisters()[RegisterFile.STACK_POINTER].removeListener(this);
+        Processor.getRegisters()[Processor.STACK_POINTER].removeListener(this);
     }
 
     @Override
@@ -108,7 +108,7 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
 
         int registerDataCameFrom;
         try {
-            BasicStatement statement = Memory.getInstance().fetchStatement(RegisterFile.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION, false);
+            BasicStatement statement = Memory.getInstance().fetchStatement(Processor.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION, false);
             registerDataCameFrom = statement.getBinaryEncoding();
             registerDataCameFrom &= 0x1F0000;
             registerDataCameFrom >>= 16;
@@ -125,7 +125,7 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
         else {
             boolean dataIsReturnAddress = this.isReturnAddress(wordValue);
             String description = (dataIsReturnAddress ? "Return address from " : "Contents of ")
-                + RegisterFile.getRegisters()[registerDataCameFrom].getName();
+                                 + Processor.getRegisters()[registerDataCameFrom].getName();
 
             if (position > 0) {
                 this.stackViewer.insertStackElement(position, dataIsReturnAddress, description);

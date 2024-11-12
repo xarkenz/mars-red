@@ -45,47 +45,47 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 public class Coprocessor1Window extends RegistersDisplayTab {
     private static final int NAME_COLUMN = 0;
-    private static final int FLOAT_COLUMN = 1;
+    private static final int SINGLE_COLUMN = 1;
     private static final int DOUBLE_COLUMN = 2;
 
     private static final String[] HEADER_TIPS = {
-        "Each register has a tool tip describing its usage convention", // Name
-        "32-bit single precision IEEE 754 floating point value", // Single
-        "64-bit double precision IEEE 754 floating point value (uses a pair of 32-bit registers)", // Double
+        "Register name based on address (hover to see conventional use)", // Name
+        "32-bit single-precision IEEE 754 floating point value", // Single
+        "64-bit double-precision IEEE 754 floating point value (uses a pair of 32-bit registers)", // Double
     };
     private static final String[] REGISTER_TIPS = {
-        "Floating point subprogram return value", // $f0
-        "Should not be referenced explicitly in your program", // $f1
-        "Floating point subprogram return value", // $f2
-        "Should not be referenced explicitly in your program", // $f3
-        "Temporary (not preserved across call)", // $f4
-        "Should not be referenced explicitly in your program", // $f5
-        "Temporary (not preserved across call)", // $f6
-        "Should not be referenced explicitly in your program", // $f7
-        "Temporary (not preserved across call)", // $f8
-        "Should not be referenced explicitly in your program", // $f9
-        "Temporary (not preserved across call)", // $f10
-        "Should not be referenced explicitly in your program", // $f11
-        "Floating point subprogram argument 1", // $f12
-        "Should not be referenced explicitly in your program", // $f13
-        "Floating point subprogram argument 2", // $f14
-        "Should not be referenced explicitly in your program", // $f15
-        "Temporary (not preserved across call)", // $f16
-        "Should not be referenced explicitly in your program", // $f17
-        "Temporary (not preserved across call)", // $f18
-        "Should not be referenced explicitly in your program", // $f19
-        "Saved temporary (preserved across call)", // $f20
-        "Should not be referenced explicitly in your program", // $f21
-        "Saved temporary (preserved across call)", // $f22
-        "Should not be referenced explicitly in your program", // $f23
-        "Saved temporary (preserved across call)", // $f24
-        "Should not be referenced explicitly in your program", // $f25
-        "Saved temporary (preserved across call)", // $f26
-        "Should not be referenced explicitly in your program", // $f27
-        "Saved temporary (preserved across call)", // $f28
-        "Should not be referenced explicitly in your program", // $f29
-        "Saved temporary (preserved across call)", // $f30
-        "Should not be referenced explicitly in your program", // $f31
+        "Value 0 (return value), single- or double-precision", // $f0
+        "Value 1 (return value), single-precision only", // $f1
+        "Value 2 (return value), single- or double-precision", // $f2
+        "Value 3 (return value), single-precision only", // $f3
+        "Temporary 0 (value not preserved by callee), single- or double-precision", // $f4
+        "Temporary 1 (value not preserved by callee), single-precision only", // $f5
+        "Temporary 2 (value not preserved by callee), single- or double-precision", // $f6
+        "Temporary 3 (value not preserved by callee), single-precision only", // $f7
+        "Temporary 4 (value not preserved by callee), single- or double-precision", // $f8
+        "Temporary 5 (value not preserved by callee), single-precision only", // $f9
+        "Temporary 6 (value not preserved by callee), single- or double-precision", // $f10
+        "Temporary 7 (value not preserved by callee), single-precision only", // $f11
+        "Argument 0 (for calls and syscalls), single- or double-precision", // $f12
+        "Argument 1 (for calls and syscalls), single-precision only", // $f13
+        "Argument 2 (for calls and syscalls), single- or double-precision", // $f14
+        "Argument 3 (for calls and syscalls), single-precision only", // $f15
+        "Temporary 8 (value not preserved by callee), single- or double-precision", // $f16
+        "Temporary 9 (value not preserved by callee), single-precision only", // $f17
+        "Temporary 10 (value not preserved by callee), single- or double-precision", // $f18
+        "Temporary 11 (value not preserved by callee), single-precision only", // $f19
+        "Saved 0 (value preserved by callee), single- or double-precision", // $f20
+        "Saved 1 (value preserved by callee), single-precision only", // $f21
+        "Saved 2 (value preserved by callee), single- or double-precision", // $f22
+        "Saved 3 (value preserved by callee), single-precision only", // $f23
+        "Saved 4 (value preserved by callee), single- or double-precision", // $f24
+        "Saved 5 (value preserved by callee), single-precision only", // $f25
+        "Saved 6 (value preserved by callee), single- or double-precision", // $f26
+        "Saved 7 (value preserved by callee), single-precision only", // $f27
+        "Saved 8 (value preserved by callee), single- or double-precision", // $f28
+        "Saved 9 (value preserved by callee), single-precision only", // $f29
+        "Saved 10 (value preserved by callee), single- or double-precision", // $f30
+        "Saved 11 (value preserved by callee), single-precision only", // $f31
     };
 
     private final RegistersTable table;
@@ -100,7 +100,7 @@ public class Coprocessor1Window extends RegistersDisplayTab {
         this.setLayout(new BorderLayout()); // table display will occupy entire width if widened
         this.table = new RegistersTable(new RegisterTableModel(this.setupWindow()), HEADER_TIPS, REGISTER_TIPS);
         this.table.setupColumn(NAME_COLUMN, 20, SwingConstants.LEFT);
-        this.table.setupColumn(FLOAT_COLUMN, 70, SwingConstants.LEFT);
+        this.table.setupColumn(SINGLE_COLUMN, 70, SwingConstants.LEFT);
         this.table.setupColumn(DOUBLE_COLUMN, 130, SwingConstants.LEFT);
         this.add(new JScrollPane(this.table, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER));
         // Display condition flags in panel below the registers
@@ -143,12 +143,14 @@ public class Coprocessor1Window extends RegistersDisplayTab {
      * @return The array object with the data for the window.
      */
     public Object[][] setupWindow() {
+        int valueBase = NumberDisplayBaseChooser.getBase(Application.getSettings().displayValuesInHex.get());
         Object[][] tableData = new Object[32][3];
+
         for (Register register : Coprocessor1.getRegisters()) {
-            tableData[register.getNumber()][0] = register.getName();
-            tableData[register.getNumber()][1] = NumberDisplayBaseChooser.formatFloatNumber(register.getValue(), NumberDisplayBaseChooser.getBase(Application.getSettings().displayValuesInHex.get()));
+            tableData[register.getNumber()][NAME_COLUMN] = register.getName();
+            tableData[register.getNumber()][SINGLE_COLUMN] = NumberDisplayBaseChooser.formatFloatNumber(register.getValue(), valueBase);
+            // Even numbered double registers
             if (register.getNumber() % 2 == 0) {
-                // Even numbered double registers
                 long longValue = 0;
                 try {
                     longValue = Coprocessor1.getLongFromRegisterPair(register.getNumber());
@@ -156,12 +158,13 @@ public class Coprocessor1Window extends RegistersDisplayTab {
                 catch (InvalidRegisterAccessException exception) {
                     // Cannot happen since row must be even
                 }
-                tableData[register.getNumber()][2] = NumberDisplayBaseChooser.formatDoubleNumber(longValue, NumberDisplayBaseChooser.getBase(Application.getSettings().displayValuesInHex.get()));
+                tableData[register.getNumber()][DOUBLE_COLUMN] = NumberDisplayBaseChooser.formatDoubleNumber(longValue, valueBase);
             }
             else {
-                tableData[register.getNumber()][2] = "";
+                tableData[register.getNumber()][DOUBLE_COLUMN] = "";
             }
         }
+
         return tableData;
     }
 
@@ -212,7 +215,7 @@ public class Coprocessor1Window extends RegistersDisplayTab {
      * @param base   The number base for display (e.g. 10, 16)
      */
     public void updateFloatRegisterValue(int number, int value, int base) {
-        ((RegisterTableModel) this.table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatFloatNumber(value, base), number, FLOAT_COLUMN);
+        ((RegisterTableModel) this.table.getModel()).setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatFloatNumber(value, base), number, SINGLE_COLUMN);
     }
 
     /**
@@ -293,7 +296,7 @@ public class Coprocessor1Window extends RegistersDisplayTab {
         @Override
         public boolean isCellEditable(int row, int column) {
             // Note that the data/cell address is constant, no matter where the cell appears onscreen.
-            return column == FLOAT_COLUMN || (column == DOUBLE_COLUMN && row % 2 == 0);
+            return column == SINGLE_COLUMN || (column == DOUBLE_COLUMN && row % 2 == 0);
         }
 
         /**
@@ -306,7 +309,7 @@ public class Coprocessor1Window extends RegistersDisplayTab {
             int valueBase = Coprocessor1Window.this.gui.getMainPane().getExecuteTab().getValueDisplayBase();
             String stringValue = value.toString();
             try {
-                if (column == FLOAT_COLUMN) {
+                if (column == SINGLE_COLUMN) {
                     if (Binary.isHex(stringValue)) {
                         int intValue = Binary.decodeInteger(stringValue);
 
@@ -315,7 +318,7 @@ public class Coprocessor1Window extends RegistersDisplayTab {
 
                         // Assures that if changed during MIPS program execution, the update will
                         // occur only between MIPS instructions.
-                        Simulator.getInstance().changeState(() -> Coprocessor1.updateRegister(row, intValue));
+                        Simulator.getInstance().changeState(() -> Coprocessor1.setRegisterToInt(row, intValue));
                     }
                     else {
                         // Is not hex, so must be decimal

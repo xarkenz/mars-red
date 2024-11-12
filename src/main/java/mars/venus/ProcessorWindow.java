@@ -2,7 +2,7 @@ package mars.venus;
 
 import mars.Application;
 import mars.mips.hardware.Register;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 import mars.simulator.Simulator;
 import mars.util.Binary;
 
@@ -43,52 +43,52 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Sanderson, Bumgarner
  */
-public class RegistersWindow extends RegistersDisplayTab {
-    private static final int NAME_COLUMN = 0;
-    private static final int NUMBER_COLUMN = 1;
+public class ProcessorWindow extends RegistersDisplayTab {
+    private static final int NUMBER_COLUMN = 0;
+    private static final int NAME_COLUMN = 1;
     private static final int VALUE_COLUMN = 2;
 
     private static final String[] HEADER_TIPS = {
-        "Register name (those starting with $ can be referenced in code)", // Name
-        "Corresponding register number", // Number
-        "Current 32 bit value", // Value
+        "5-bit register address", // Number
+        "Register name corresponding to usage conventions", // Name
+        "32-bit register value", // Value
     };
     private static final String[] REGISTER_TIPS = {
-        "Constant value 0 (cannot be modified)", // $zero
-        "Reserved for assembler use", // $at
-        "Expression evaluation and results of a function", // $v0
-        "Expression evaluation and results of a function", // $v1
-        "Argument 1", // $a0
-        "Argument 2", // $a1
-        "Argument 3", // $a2
-        "Argument 4", // $a3
-        "Temporary (not preserved across call)", // $t0
-        "Temporary (not preserved across call)", // $t1
-        "Temporary (not preserved across call)", // $t2
-        "Temporary (not preserved across call)", // $t3
-        "Temporary (not preserved across call)", // $t4
-        "Temporary (not preserved across call)", // $t5
-        "Temporary (not preserved across call)", // $t6
-        "Temporary (not preserved across call)", // $t7
-        "Saved temporary (preserved across call)", // $s0
-        "Saved temporary (preserved across call)", // $s1
-        "Saved temporary (preserved across call)", // $s2
-        "Saved temporary (preserved across call)", // $s3
-        "Saved temporary (preserved across call)", // $s4
-        "Saved temporary (preserved across call)", // $s5
-        "Saved temporary (preserved across call)", // $s6
-        "Saved temporary (preserved across call)", // $s7
-        "Temporary (not preserved across call)", // $t8
-        "Temporary (not preserved across call)", // $t9
-        "Reserved for OS kernel", // $k0
-        "Reserved for OS kernel", // $k1
-        "Pointer to global area", // $gp
-        "Stack pointer", // $sp
-        "Frame pointer", // $fp
-        "Return address (used by function call)", // $ra
-        "Program counter", // pc
-        "High-order word of multiply product or divide remainder", // hi
-        "Low-order word of multiply product or divide quotient", // lo
+        "Zero constant value (cannot be modified)", // $zero
+        "Assembler Temporary (reserved for pseudo-instruction expansions)", // $at
+        "Value 0 (return value or syscall service number)", // $v0
+        "Value 1 (return value)", // $v1
+        "Argument 0 (for calls and syscalls)", // $a0
+        "Argument 1 (for calls and syscalls)", // $a1
+        "Argument 2 (for calls and syscalls)", // $a2
+        "Argument 3 (for calls and syscalls)", // $a3
+        "Temporary 0 (value not preserved by callee)", // $t0
+        "Temporary 1 (value not preserved by callee)", // $t1
+        "Temporary 2 (value not preserved by callee)", // $t2
+        "Temporary 3 (value not preserved by callee)", // $t3
+        "Temporary 4 (value not preserved by callee)", // $t4
+        "Temporary 5 (value not preserved by callee)", // $t5
+        "Temporary 6 (value not preserved by callee)", // $t6
+        "Temporary 7 (value not preserved by callee)", // $t7
+        "Saved 0 (value preserved by callee)", // $s0
+        "Saved 1 (value preserved by callee)", // $s1
+        "Saved 2 (value preserved by callee)", // $s2
+        "Saved 3 (value preserved by callee)", // $s3
+        "Saved 4 (value preserved by callee)", // $s4
+        "Saved 5 (value preserved by callee)", // $s5
+        "Saved 6 (value preserved by callee)", // $s6
+        "Saved 7 (value preserved by callee)", // $s7
+        "Temporary 8 (value not preserved by callee)", // $t8
+        "Temporary 9 (value not preserved by callee)", // $t9
+        "Kernel 0 (reserved for kernel use)", // $k0
+        "Kernel 1 (reserved for kernel use)", // $k1
+        "Global Pointer (pointer to global area)", // $gp
+        "Stack Pointer (pointer to top of stack)", // $sp
+        "Frame Pointer (pointer to bottom of current stack frame)", // $fp
+        "Return Address (jumped to when returning from function)", // $ra
+        "Low-order word of multiplication product or division quotient, access via \"mflo\"", // lo
+        "High-order word of multiplication product or division remainder, access via \"mfhi\"", // hi
+        "Program Counter (address of instruction being fetched), cannot access directly", // pc
     };
 
     private final RegistersTable table;
@@ -96,11 +96,11 @@ public class RegistersWindow extends RegistersDisplayTab {
     /**
      * Constructor which sets up a fresh window with a table that contains the register values.
      */
-    public RegistersWindow(VenusUI gui) {
+    public ProcessorWindow(VenusUI gui) {
         super(gui);
         this.table = new RegistersTable(new RegisterTableModel(this.setupWindow()), HEADER_TIPS, REGISTER_TIPS);
-        this.table.setupColumn(NAME_COLUMN, 25, SwingConstants.LEFT);
         this.table.setupColumn(NUMBER_COLUMN, 25, SwingConstants.LEFT);
+        this.table.setupColumn(NAME_COLUMN, 25, SwingConstants.LEFT);
         this.table.setupColumn(VALUE_COLUMN, 60, SwingConstants.LEFT);
         this.table.setPreferredScrollableViewportSize(new Dimension(200, 700));
         this.setLayout(new BorderLayout()); // Table display will occupy entire width if widened
@@ -121,23 +121,23 @@ public class RegistersWindow extends RegistersDisplayTab {
         int valueBase = NumberDisplayBaseChooser.getBase(Application.getSettings().displayValuesInHex.get());
         Object[][] tableData = new Object[35][3];
 
-        for (Register register : RegisterFile.getRegisters()) {
-            tableData[register.getNumber()][0] = register.getName();
-            tableData[register.getNumber()][1] = "$" + register.getNumber();
-            tableData[register.getNumber()][2] = NumberDisplayBaseChooser.formatNumber(register.getValue(), valueBase);
+        for (Register register : Processor.getRegisters()) {
+            tableData[register.getNumber()][NUMBER_COLUMN] = "$" + register.getNumber();
+            tableData[register.getNumber()][NAME_COLUMN] = register.getName();
+            tableData[register.getNumber()][VALUE_COLUMN] = NumberDisplayBaseChooser.formatNumber(register.getValue(), valueBase);
         }
 
-        tableData[RegisterFile.PROGRAM_COUNTER][0] = "pc";
-        tableData[RegisterFile.PROGRAM_COUNTER][1] = "";
-        tableData[RegisterFile.PROGRAM_COUNTER][2] = NumberDisplayBaseChooser.formatUnsignedInteger(RegisterFile.getProgramCounter(), valueBase);
+        tableData[Processor.HIGH_ORDER][NUMBER_COLUMN] = "";
+        tableData[Processor.HIGH_ORDER][NAME_COLUMN] = Processor.getHighOrderRegister().getName();
+        tableData[Processor.HIGH_ORDER][VALUE_COLUMN] = NumberDisplayBaseChooser.formatNumber(Processor.getHighOrder(), valueBase);
 
-        tableData[RegisterFile.HIGH_ORDER][0] = "hi";
-        tableData[RegisterFile.HIGH_ORDER][1] = "";
-        tableData[RegisterFile.HIGH_ORDER][2] = NumberDisplayBaseChooser.formatNumber(RegisterFile.getHighOrder(), valueBase);
+        tableData[Processor.LOW_ORDER][NUMBER_COLUMN] = "";
+        tableData[Processor.LOW_ORDER][NAME_COLUMN] = Processor.getLowOrderRegister().getName();
+        tableData[Processor.LOW_ORDER][VALUE_COLUMN] = NumberDisplayBaseChooser.formatNumber(Processor.getLowOrder(), valueBase);
 
-        tableData[RegisterFile.LOW_ORDER][0] = "lo";
-        tableData[RegisterFile.LOW_ORDER][1] = "";
-        tableData[RegisterFile.LOW_ORDER][2] = NumberDisplayBaseChooser.formatNumber(RegisterFile.getLowOrder(), valueBase);
+        tableData[Processor.PROGRAM_COUNTER][NUMBER_COLUMN] = "";
+        tableData[Processor.PROGRAM_COUNTER][NAME_COLUMN] = Processor.getProgramCounterRegister().getName();
+        tableData[Processor.PROGRAM_COUNTER][VALUE_COLUMN] = NumberDisplayBaseChooser.formatUnsignedInteger(Processor.getProgramCounter(), valueBase);
 
         return tableData;
     }
@@ -147,7 +147,7 @@ public class RegistersWindow extends RegistersDisplayTab {
      */
     public void clearWindow() {
         this.clearHighlighting();
-        RegisterFile.reset();
+        Processor.reset();
         this.updateRegisters(this.gui.getMainPane().getExecuteTab().getValueDisplayBase());
     }
 
@@ -158,12 +158,12 @@ public class RegistersWindow extends RegistersDisplayTab {
      */
     @Override
     public void updateRegisters(int base) {
-        for (Register register : RegisterFile.getRegisters()) {
+        for (Register register : Processor.getRegisters()) {
             this.updateRegisterValue(register.getNumber(), register.getValue(), base);
         }
-        this.updateRegisterUnsignedValue(RegisterFile.PROGRAM_COUNTER, RegisterFile.getProgramCounter(), base);
-        this.updateRegisterValue(RegisterFile.HIGH_ORDER, RegisterFile.getHighOrder(), base);
-        this.updateRegisterValue(RegisterFile.LOW_ORDER, RegisterFile.getLowOrder(), base);
+        this.updateRegisterValue(Processor.HIGH_ORDER, Processor.getHighOrder(), base);
+        this.updateRegisterValue(Processor.LOW_ORDER, Processor.getLowOrder(), base);
+        this.updateRegisterUnsignedValue(Processor.PROGRAM_COUNTER, Processor.getProgramCounter(), base);
     }
 
     /**
@@ -198,20 +198,20 @@ public class RegistersWindow extends RegistersDisplayTab {
 
     @Override
     public void startObservingRegisters() {
-        for (Register register : RegisterFile.getRegisters()) {
+        for (Register register : Processor.getRegisters()) {
             register.addListener(this);
         }
     }
 
     @Override
     public void stopObservingRegisters() {
-        for (Register register : RegisterFile.getRegisters()) {
+        for (Register register : Processor.getRegisters()) {
             register.removeListener(this);
         }
     }
 
     private class RegisterTableModel extends AbstractTableModel {
-        private static final String[] COLUMN_NAMES = {"Name", "Number", "Value"};
+        private static final String[] COLUMN_NAMES = {"Number", "Name", "Value"};
 
         private final Object[][] data;
 
@@ -248,13 +248,13 @@ public class RegistersWindow extends RegistersDisplayTab {
         }
 
         /**
-         * All register values are editable except $zero (0), pc (32).
+         * All register values are editable except $zero and Program Counter.
          */
         @Override
         public boolean isCellEditable(int row, int column) {
             // Note that the data/cell address is constant, no matter where the cell appears onscreen.
-            // These registers are not editable: $zero (0), pc (32)
-            return column == VALUE_COLUMN && row != 0 && row != RegisterFile.PROGRAM_COUNTER;
+            // These registers are not editable: $zero, Program Counter
+            return column == VALUE_COLUMN && row != Processor.ZERO_CONSTANT && row != Processor.PROGRAM_COUNTER;
         }
 
         /**
@@ -274,12 +274,12 @@ public class RegistersWindow extends RegistersDisplayTab {
             }
 
             // Update the cell to the proper number format
-            int valueBase = RegistersWindow.this.gui.getMainPane().getExecuteTab().getValueDisplayBase();
+            int valueBase = ProcessorWindow.this.gui.getMainPane().getExecuteTab().getValueDisplayBase();
             this.setDisplayAndModelValueAt(NumberDisplayBaseChooser.formatNumber(intValue, valueBase), row, column);
 
             // Assures that if changed during MIPS program execution, the update will
             // occur only between MIPS instructions.
-            Simulator.getInstance().changeState(() -> RegisterFile.updateRegister(row, intValue));
+            Simulator.getInstance().changeState(() -> Processor.updateRegister(row, intValue));
         }
 
         /**

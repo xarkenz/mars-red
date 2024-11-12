@@ -4,7 +4,7 @@ import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 import mars.simulator.Simulator;
 
 /*
@@ -55,8 +55,8 @@ public class SyscallReadString extends AbstractSyscall {
      */
     @Override
     public void simulate(BasicStatement statement) throws SimulatorException, InterruptedException {
-        int buf = RegisterFile.getValue(4); // buf addr in $a0
-        int maxLength = RegisterFile.getValue(5) - 1; // $a1
+        int buf = Processor.getValue(Processor.ARGUMENT_0); // buf addr in $a0
+        int maxLength = Processor.getValue(Processor.ARGUMENT_1) - 1; // $a1
         boolean addNullByte = true;
         // Guard against negative maxLength.  DPS 13-July-2011
         if (maxLength < 0) {

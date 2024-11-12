@@ -505,7 +505,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
      * execution and when reaching breakpoints.
      */
     public void highlightStepAtPC() {
-        this.highlightStepAtAddress(RegisterFile.getProgramCounter());
+        this.highlightStepAtAddress(Processor.getProgramCounter());
     }
 
     /**
@@ -517,7 +517,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
      *                    instruction at this address is executing in the delay slot, false otherwise.
      */
     public void highlightStepAtPC(boolean inDelaySlot) {
-        this.highlightStepAtAddress(RegisterFile.getProgramCounter(), inDelaySlot);
+        this.highlightStepAtAddress(Processor.getProgramCounter(), inDelaySlot);
     }
 
     /**

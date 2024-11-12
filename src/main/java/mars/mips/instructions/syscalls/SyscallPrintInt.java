@@ -2,7 +2,7 @@ package mars.mips.instructions.syscalls;
 
 import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 import mars.simulator.Simulator;
 
 /*
@@ -50,7 +50,7 @@ public class SyscallPrintInt extends AbstractSyscall {
      */
     @Override
     public void simulate(BasicStatement statement) throws SimulatorException {
-        int intValue = RegisterFile.getValue(4);
+        int intValue = Processor.getValue(Processor.ARGUMENT_0);
 
         Simulator.getInstance().getSystemIO().printString(Integer.toString(intValue));
     }

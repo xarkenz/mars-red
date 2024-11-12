@@ -2,7 +2,7 @@ package mars.mips.instructions.syscalls;
 
 import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
-import mars.mips.hardware.RegisterFile;
+import mars.mips.hardware.Processor;
 import mars.util.Binary;
 
 import java.util.Date;
@@ -54,7 +54,7 @@ public class SyscallTime extends AbstractSyscall {
     @Override
     public void simulate(BasicStatement statement) throws SimulatorException {
         long value = new Date().getTime();
-        RegisterFile.updateRegister(4, Binary.lowOrderLongToInt(value)); // $a0
-        RegisterFile.updateRegister(5, Binary.highOrderLongToInt(value)); // $a1
+        Processor.updateRegister(Processor.ARGUMENT_0, Binary.lowOrderLongToInt(value)); // $a0
+        Processor.updateRegister(Processor.ARGUMENT_1, Binary.highOrderLongToInt(value)); // $a1
     }
 }
