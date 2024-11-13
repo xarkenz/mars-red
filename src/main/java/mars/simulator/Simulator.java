@@ -1,9 +1,7 @@
 package mars.simulator;
 
 import mars.*;
-import mars.mips.hardware.Coprocessor0;
-import mars.mips.hardware.Coprocessor1;
-import mars.mips.hardware.Processor;
+import mars.mips.hardware.*;
 
 import javax.swing.*;
 import java.util.ArrayList;
@@ -290,12 +288,99 @@ public class Simulator {
     }
 
     /**
+     * Place any program arguments into MIPS memory and registers
+     * Arguments are stored starting at highest word of non-kernel
+     * memory and working back toward runtime stack (there is a 4096
+     * byte gap in between).  The argument count (argc) and pointers
+     * to the arguments are stored on the runtime stack.  The stack
+     * pointer register $sp is adjusted accordingly and $a0 is set
+     * to the argument count (argc), and $a1 is set to the stack
+     * address holding the first argument pointer (argv).
+     */
+    public void storeProgramArguments(List<String> arguments) throws SimulatorException {
+        if (arguments == null || arguments.isEmpty()) {
+            return;
+        }
+
+        // Runtime stack initialization from stack top-down (each is 4 bytes) :
+        //    programArgumentList.size()
+        //    address of first character of first program argument
+        //    address of first character of second program argument
+        //    ....repeat for all program arguments
+        //    0x00000000    (null terminator for list of string pointers)
+        // $sp will be set to the address holding the arg list size
+        // $a0 will be set to the arg list size (argc)
+        // $a1 will be set to stack address just "below" arg list size (argv)
+        //
+        // Each of the arguments themselves will be stored starting at
+        // Memory.stackBaseAddress (0x7ffffffc) and working down from there:
+        // 0x7ffffffc will contain null terminator for first arg
+        // 0x7ffffffb will contain last character of first arg
+        // 0x7ffffffa will contain next-to-last character of first arg
+        // Etc down to first character of first arg.
+        // Previous address will contain null terminator for second arg
+        // Previous-to-that contains last character of second arg
+        // Etc down to first character of second arg.
+        // Follow this pattern for all remaining arguments.
+
+        try {
+            // The first step is to store all of the argument strings underneath the stack
+            // Start at highest dynamic data address, sits "under" stack
+            int address = Memory.alignToPrevious(Memory.getInstance().getAddress(MemoryConfigurations.DYNAMIC_HIGH), Memory.BYTES_PER_WORD);
+            List<Integer> argumentAddresses = new ArrayList<>(arguments.size());
+            for (String argument : arguments) {
+                // Store a null terminator byte
+                Memory.getInstance().storeByte(address, 0, true);
+                address--;
+                // Store the string from end to start since stack grows downward
+                for (int index = argument.length() - 1; index >= 0; index--) {
+                    Memory.getInstance().storeByte(address, argument.charAt(index), true);
+                    address--;
+                }
+                argumentAddresses.add(address + 1);
+            }
+
+            // Determine where the bottom of the runtime stack is
+            int stackAddress = Memory.getInstance().getAddress(MemoryConfigurations.STACK_POINTER);
+            if (address < stackAddress + Memory.BYTES_PER_WORD - 1) {
+                // Based on current values for stackBaseAddress and stackPointer, this will
+                // only happen if the combined lengths of program arguments is greater than
+                // 0x7ffffffc - 0x7fffeffc = 0x00001000 = 4096 bytes.  In this case, set
+                // stackAddress to next lower word boundary minus 4 for clearance (since every
+                // byte from address+1 is filled).
+                stackAddress = Memory.alignToPrevious(address, Memory.BYTES_PER_WORD) - Memory.BYTES_PER_WORD;
+            }
+
+            // Store a null word to indicate end of argv (argument values) array
+            Memory.getInstance().storeWord(stackAddress, 0, true);
+            stackAddress -= Memory.BYTES_PER_WORD;
+            // Store the address of each argument string from end to start (this is the argv array)
+            for (int index = argumentAddresses.size() - 1; index >= 0; index--) {
+                Memory.getInstance().storeWord(stackAddress, argumentAddresses.get(index), true);
+                stackAddress -= Memory.BYTES_PER_WORD;
+            }
+            // Store argc (argument count) just before argv array
+            Memory.getInstance().storeWord(stackAddress, arguments.size(), true);
+
+            // Bypass the backstepping mechanism by using Register.setValue() instead of Processor.updateRegister()
+            // Set $sp register to the address of the top of the stack, $a0 to argc, $a1 to argv
+            Processor.getRegisters()[Processor.STACK_POINTER].setValue(stackAddress);
+            Processor.getRegisters()[Processor.ARGUMENT_0].setValue(arguments.size()); // argc
+            Processor.getRegisters()[Processor.ARGUMENT_1].setValue(stackAddress + Memory.BYTES_PER_WORD); // argv
+        }
+        catch (AddressErrorException exception) {
+            throw new SimulatorException("Failed to store program arguments to stack");
+        }
+    }
+
+    /**
      * Simulate execution of given MIPS program.  It must have already been assembled.
      *
      * @param programCounter Address of first instruction to simulate; this is the initial value of the program counter.
      * @param maxSteps       Maximum number of steps to perform before returning false (0 or less means no max).
      * @param breakpoints    Array of breakpoint program counter values. (Can be null.)
-     * @throws SimulatorException Throws exception if run-time exception occurs.
+     * @throws SimulatorException Thrown if an unhandled exception occurs in the program and MARS is running
+     *                            in the command line.
      */
     public void simulate(int programCounter, int maxSteps, int[] breakpoints) throws SimulatorException {
         this.thread = new SimulatorThread(this, programCounter, maxSteps, breakpoints);

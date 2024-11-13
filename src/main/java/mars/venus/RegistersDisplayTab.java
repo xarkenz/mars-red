@@ -2,7 +2,6 @@ package mars.venus;
 
 import mars.mips.hardware.Register;
 import mars.simulator.*;
-import mars.venus.execute.RunSpeedPanel;
 
 import javax.swing.*;
 

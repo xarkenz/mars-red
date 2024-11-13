@@ -5,7 +5,6 @@ import mars.assembler.log.AssemblyError;
 import mars.mips.dump.DumpFormat;
 import mars.mips.dump.DumpFormatManager;
 import mars.mips.hardware.*;
-import mars.simulator.ProgramArgumentList;
 import mars.simulator.Simulator;
 import mars.simulator.SimulatorException;
 import mars.util.Binary;
@@ -70,14 +69,14 @@ public class MarsLauncher {
     private boolean selfModifyingCode; // Whether to allow self-modifying code (e.g. write to text segment)
 
     private int displayFormat;
-    private ArrayList<String> registerDisplayList;
-    private ArrayList<String> memoryDisplayList;
-    private ArrayList<String> filenameList;
+    private List<String> registerDisplayList;
+    private List<String> memoryDisplayList;
+    private List<String> filenameList;
     private int maxSteps;
     private int instructionCount;
     private PrintStream out; // stream for display of command line output
-    private ArrayList<String[]> dumpTriples = null; // each element holds 3 arguments for dump option
-    private ArrayList<String> programArgumentList; // optional program args for MIPS program (becomes argc, argv)
+    private List<String[]> dumpTriples = null; // each element holds 3 arguments for dump option
+    private List<String> programArgumentList; // optional program args for MIPS program (becomes argc, argv)
     private int assembleErrorExitCode; // MARS command exit code to return if assemble error occurs
     private int simulateErrorExitCode; // MARS command exit code to return if simulation error occurs
 
@@ -262,27 +261,27 @@ public class MarsLauncher {
         String displayMessagesToErrSwitch = "me";
         boolean argsOK = true;
         boolean inProgramArgumentList = false;
-        programArgumentList = null;
+        this.programArgumentList = null;
         if (args.length == 0) {
             return true; // should not get here...
         }
         // If the option to display MARS messages to standard error is used,
         // it must be processed before any others (since messages may be
         // generated during option parsing).
-        processDisplayMessagesToErrSwitch(args, displayMessagesToErrSwitch);
-        displayCopyright(args, noCopyrightSwitch);  // ..or not..
+        this.processDisplayMessagesToErrSwitch(args, displayMessagesToErrSwitch);
+        this.displayCopyright(args, noCopyrightSwitch);  // ..or not..
         if (args.length == 1 && args[0].equals("h")) {
-            displayHelp();
+            this.displayHelp();
             return false;
         }
         for (int i = 0; i < args.length; i++) {
             // We have seen "pa" switch, so all remaining args are program args
             // that will become "argc" and "argv" for the MIPS program.
             if (inProgramArgumentList) {
-                if (programArgumentList == null) {
-                    programArgumentList = new ArrayList<>();
+                if (this.programArgumentList == null) {
+                    this.programArgumentList = new ArrayList<>();
                 }
-                programArgumentList.add(args[i]);
+                this.programArgumentList.add(args[i]);
                 continue;
             }
             // Once we hit "pa", all remaining command args are assumed
@@ -300,16 +299,15 @@ public class MarsLauncher {
                 continue;
             }
             if (args[i].equalsIgnoreCase("dump")) {
-                if (args.length <= (i + 3)) {
-                    out.println("Dump command line argument requires a segment, format and file name.");
+                if (i + 3 >= args.length) {
+                    this.out.println("Dump command line argument requires a segment, format and file name.");
                     argsOK = false;
                 }
                 else {
-                    if (dumpTriples == null) {
-                        dumpTriples = new ArrayList<>();
+                    if (this.dumpTriples == null) {
+                        this.dumpTriples = new ArrayList<>();
                     }
-                    dumpTriples.add(new String[]{args[++i], args[++i], args[++i]});
-                    //simulate = false;
+                    this.dumpTriples.add(new String[] { args[++i], args[++i], args[++i] });
                 }
                 continue;
             }
@@ -317,7 +315,7 @@ public class MarsLauncher {
                 String configName = args[++i];
                 MemoryConfiguration config = MemoryConfigurations.getConfiguration(configName);
                 if (config == null) {
-                    out.println("Invalid memory configuration: " + configName);
+                    this.out.println("Invalid memory configuration: " + configName);
                     argsOK = false;
                 }
                 else {
@@ -329,10 +327,10 @@ public class MarsLauncher {
             if (args[i].toLowerCase().indexOf("ae") == 0) {
                 String s = args[i].substring(2);
                 try {
-                    assembleErrorExitCode = Integer.decode(s);
+                    this.assembleErrorExitCode = Binary.decodeInteger(s);
                     continue;
                 }
-                catch (NumberFormatException nfe) {
+                catch (NumberFormatException exception) {
                     // Let it fall thru and get handled by catch-all
                 }
             }
@@ -340,10 +338,10 @@ public class MarsLauncher {
             if (args[i].toLowerCase().indexOf("se") == 0) {
                 String s = args[i].substring(2);
                 try {
-                    simulateErrorExitCode = Integer.decode(s);
+                    this.simulateErrorExitCode = Binary.decodeInteger(s);
                     continue;
                 }
-                catch (NumberFormatException nfe) {
+                catch (NumberFormatException exception) {
                     // Let it fall thru and get handled by catch-all
                 }
             }
@@ -352,80 +350,80 @@ public class MarsLauncher {
                 continue;
             }
             if (args[i].equalsIgnoreCase("a")) {
-                simulate = false;
+                this.simulate = false;
                 continue;
             }
             if (args[i].equalsIgnoreCase("ad") || args[i].equalsIgnoreCase("da")) {
                 Application.debug = true;
-                simulate = false;
+                this.simulate = false;
                 continue;
             }
             if (args[i].equalsIgnoreCase("p")) {
-                assembleFolder = true;
+                this.assembleFolder = true;
                 continue;
             }
             if (args[i].equalsIgnoreCase("dec")) {
-                displayFormat = DECIMAL;
+                this.displayFormat = DECIMAL;
                 continue;
             }
             if (args[i].equalsIgnoreCase("hex")) {
-                displayFormat = HEXADECIMAL;
+                this.displayFormat = HEXADECIMAL;
                 continue;
             }
             if (args[i].equalsIgnoreCase("ascii")) {
-                displayFormat = ASCII;
+                this.displayFormat = ASCII;
                 continue;
             }
             if (args[i].equalsIgnoreCase("b")) {
-                verbose = false;
+                this.verbose = false;
                 continue;
             }
             if (args[i].equalsIgnoreCase("db")) {
-                delayedBranching = true;
+                this.delayedBranching = true;
                 continue;
             }
             if (args[i].equalsIgnoreCase("np") || args[i].equalsIgnoreCase("ne")) {
-                pseudo = false;
+                this.pseudo = false;
                 continue;
             }
             if (args[i].equalsIgnoreCase("we")) { // added 14-July-2008 DPS
-                warningsAreErrors = true;
+                this.warningsAreErrors = true;
                 continue;
             }
             if (args[i].equalsIgnoreCase("sm")) { // added 17-Dec-2009 DPS
-                startAtMain = true;
+                this.startAtMain = true;
                 continue;
             }
             if (args[i].equalsIgnoreCase("smc")) { // added 5-Jul-2013 DPS
-                selfModifyingCode = true;
+                this.selfModifyingCode = true;
                 continue;
             }
             if (args[i].equalsIgnoreCase("ic")) { // added 19-Jul-2012 DPS
-                countInstructions = true;
+                this.countInstructions = true;
                 continue;
             }
 
             if (args[i].indexOf("$") == 0) {
                 if (Processor.getRegister(args[i]) == null && Coprocessor1.getRegister(args[i]) == null) {
-                    out.println("Invalid Register Name: " + args[i]);
+                    this.out.println("Invalid Register Name: " + args[i]);
                 }
                 else {
-                    registerDisplayList.add(args[i]);
+                    this.registerDisplayList.add(args[i]);
                 }
                 continue;
             }
             // check for register name w/o $.  added 14-July-2008 DPS
             if (Processor.getRegister("$" + args[i]) != null || Coprocessor1.getRegister("$" + args[i]) != null) {
-                registerDisplayList.add("$" + args[i]);
+                this.registerDisplayList.add("$" + args[i]);
                 continue;
             }
             if (new File(args[i]).exists()) {  // is it a file name?
-                filenameList.add(args[i]);
+                this.filenameList.add(args[i]);
                 continue;
             }
             // Check for stand-alone integer, which is the max execution steps option
             try {
-                maxSteps = Integer.decode(args[i]);
+                this.maxSteps = Integer.decode(args[i]);
                 continue;
             }
             catch (NumberFormatException ignored) {
@@ -433,22 +431,24 @@ public class MarsLauncher {
             }
             // Check for integer address range (m-n)
             try {
-                String[] memoryRange = checkMemoryAddressRange(args[i]);
-                memoryDisplayList.add(memoryRange[0]); // low end of range
-                memoryDisplayList.add(memoryRange[1]); // high end of range
+                String[] memoryRange = this.checkMemoryAddressRange(args[i]);
+                this.memoryDisplayList.add(memoryRange[0]); // low end of range
+                this.memoryDisplayList.add(memoryRange[1]); // high end of range
                 continue;
             }
             catch (NumberFormatException nfe) {
-                out.println("Invalid/unaligned address or invalid range: " + args[i]);
+                this.out.println("Invalid/unaligned address or invalid range: " + args[i]);
                 argsOK = false;
                 continue;
             }
             catch (NullPointerException ignored) {
                 // Do nothing.  next statement will handle it
             }
-            out.println("Invalid Command Argument: " + args[i]);
+
+            this.out.println("Invalid Command Argument: " + args[i]);
             argsOK = false;
         }
+
         return argsOK;
     }
 
@@ -499,7 +499,7 @@ public class MarsLauncher {
             Processor.initializeProgramCounter(this.startAtMain); // DPS 3/9/09
             if (this.simulate) {
                 // store program args (if any) in MIPS memory
-                new ProgramArgumentList(this.programArgumentList).storeProgramArguments();
+                Simulator.getInstance().storeProgramArguments(this.programArgumentList);
                 // establish observer if specified
                 this.establishObserver();
                 if (Application.debug) {
@@ -724,7 +724,7 @@ public class MarsLauncher {
     private void processDisplayMessagesToErrSwitch(String[] args, String displayMessagesToErrSwitch) {
         for (String arg : args) {
             if (arg.toLowerCase().equals(displayMessagesToErrSwitch)) {
-                out = System.err;
+                this.out = System.err;
                 return;
             }
         }
@@ -735,7 +735,7 @@ public class MarsLauncher {
      */
     private void displayCopyright(String[] args, String noCopyrightSwitch) {
         if (Arrays.stream(args).noneMatch(arg -> arg.equalsIgnoreCase(noCopyrightSwitch))) {
-            out.println(Application.NAME + " " + Application.VERSION + " - Copyright (c) " + Application.COPYRIGHT_YEARS + " " + Application.COPYRIGHT_HOLDERS + "\n");
+            this.out.println(Application.NAME + " " + Application.VERSION + " - Copyright (c) " + Application.COPYRIGHT_YEARS + " " + Application.COPYRIGHT_HOLDERS + "\n");
         }
     }
 

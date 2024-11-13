@@ -1,9 +1,7 @@
 package mars.venus.actions.run;
 
-import mars.Application;
 import mars.simulator.SimulatorException;
 import mars.mips.hardware.Processor;
-import mars.simulator.ProgramArgumentList;
 import mars.simulator.Simulator;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
@@ -11,6 +9,7 @@ import mars.venus.execute.ProgramStatus;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
+import java.util.List;
 
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
@@ -53,21 +52,19 @@ public class RunStepForwardAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        if (this.gui.getProgramStatus() == ProgramStatus.NOT_STARTED) {
-            // DPS 17-July-2008
-            // Store any program arguments into MIPS memory and registers before
-            // execution begins. Arguments go into the gap between $sp and kernel memory.
-            // Argument pointers and count go into runtime stack and $sp is adjusted accordingly.
-            // $a0 gets argument count (argc), $a1 gets stack address of first arg pointer (argv).
-            String programArguments = this.gui.getMainPane().getExecuteTab().getTextSegmentWindow().getProgramArguments();
-            if (programArguments != null && !programArguments.isEmpty() && Application.getSettings().useProgramArguments.get()) {
-                new ProgramArgumentList(programArguments).storeProgramArguments();
-            }
-        }
-
         this.gui.getMainPane().getExecuteTab().getTextSegmentWindow().setCodeHighlighting(true);
 
         try {
+            if (this.gui.getProgramStatus() == ProgramStatus.NOT_STARTED && this.gui.getSettings().useProgramArguments.get()) {
+                // DPS 17-July-2008
+                // Store any program arguments into MIPS memory and registers before
+                // execution begins. Arguments go into the gap between $sp and kernel memory.
+                // Argument pointers and count go into runtime stack and $sp is adjusted accordingly.
+                // $a0 gets argument count (argc), $a1 gets stack address of first arg pointer (argv).
+                List<String> programArguments = this.gui.getMainPane().getExecuteTab().getTextSegmentWindow().getProgramArguments();
+                Simulator.getInstance().storeProgramArguments(programArguments);
+            }
+
             Simulator.getInstance().simulate(Processor.getProgramCounter(), 1, null);
         }
         catch (SimulatorException exception) {

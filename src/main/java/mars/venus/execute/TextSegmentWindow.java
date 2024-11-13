@@ -19,6 +19,7 @@ import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.*;
+import java.util.List;
 
 /*
 Copyright (c) 2003-2007,  Pete Sanderson and Kenneth Vollmar
@@ -221,11 +222,11 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
     /**
      * Get program arguments from text field at the bottom of the text segment window.
      *
-     * @return String containing program arguments.
+     * @return The list of program arguments.
      * @author DPS 17-July-2008
      */
-    public String getProgramArguments() {
-        return this.programArgumentsTextField.getText();
+    public List<String> getProgramArguments() {
+        return List.of(this.programArgumentsTextField.getText().split("\\s+"));
     }
 
     /**
