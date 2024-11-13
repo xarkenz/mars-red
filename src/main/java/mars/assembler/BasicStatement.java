@@ -61,19 +61,24 @@ public class BasicStatement implements Statement {
 
     @Override
     public String toString() {
+        if (this.instruction == null) {
+            return "INVALID";
+        }
+        else if (this.operands.isEmpty()) {
+            return this.instruction.getMnemonic();
+        }
+
         StringBuilder output = new StringBuilder(this.instruction.getMnemonic());
 
-        for (int index = 0; index < this.operands.size(); index++) {
-            Operand operand = this.operands.get(index);
-            if (index == 0) {
-                while (output.length() < 8) {
-                    output.append(' ');
-                }
-            }
-            else if (operand.getType() != OperandType.PAREN_REGISTER) {
+        while (output.length() < 8) {
+            output.append(' ');
+        }
+        output.append(this.operands.get(0));
+
+        for (Operand operand : this.operands.subList(1, this.operands.size())) {
+            if (operand.getType() != OperandType.PAREN_REGISTER) {
                 output.append(", ");
             }
-
             output.append(operand);
         }
 

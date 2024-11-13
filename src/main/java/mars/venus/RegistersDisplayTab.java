@@ -86,7 +86,7 @@ public abstract class RegistersDisplayTab extends JPanel implements SimulatorLis
 
     @Override
     public void registerWritten(Register register) {
-        if (RunSpeedPanel.getInstance().getRunSpeed() != RunSpeedPanel.UNLIMITED_SPEED) {
+        if (Simulator.getInstance().isLimitingRunSpeed()) {
             this.getTable().setUpdating(true);
             this.highlightRegister(register);
             this.gui.getRegistersPane().setSelectedComponent(this);

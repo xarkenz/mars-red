@@ -156,24 +156,6 @@ public class Processor {
     }
 
     /**
-     * Get register number corresponding to given name.
-     *
-     * @param name The string formatted register name to look for, in $zero format.
-     * @return The number of the register represented by the string,
-     *     or -1 if no match was found.
-     */
-    public static int getRegisterNumber(String name) {
-        // check for register mnemonic $zero thru $ra
-        // just do linear search; there aren't that many registers
-        for (Register register : REGISTERS) {
-            if (register.getName().equals(name)) {
-                return register.getNumber();
-            }
-        }
-        return -1;
-    }
-
-    /**
      * Get the set of accessible registers, including pc, hi, and lo.
      *
      * @return The set of registers.
@@ -198,11 +180,10 @@ public class Processor {
                 }
             }
             catch (NumberFormatException exception) {
-                return null;
-                // Handles both NumberFormat and ArrayIndexOutOfBounds
+                // Not a register number, check for register name below
             }
 
-            // Check for register mnemonic $zero thru $ra
+            // Check for register name $zero thru $ra
             // Just do linear search; there aren't that many registers
             for (Register register : REGISTERS) {
                 if (register.getName().equals(name)) {

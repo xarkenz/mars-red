@@ -1,8 +1,10 @@
 package mars.venus.execute;
 
+import mars.simulator.Simulator;
+
 import javax.swing.*;
 import java.awt.*;
-	
+
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
 
@@ -32,103 +34,96 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Class for the Run speed slider control.  One singleton is created and can be obtained using
- * {@link #getInstance()}.
+ * Class for the Run speed slider control.
  *
- * @author Pete Sanderson
- * @version August 2005
+ * @author Pete Sanderson, August 2005
  */
 public class RunSpeedPanel extends JPanel {
-    /**
-     * Constant that represents unlimited run speed.  Compare with return value of
-     * getRunSpeed() to determine if set to unlimited.  At the unlimited setting, the GUI
-     * will not attempt to update register and memory contents as each instruction
-     * is executed.  This is the only possible value for command-line use of Mars.
-     */
-    public static final double UNLIMITED_SPEED = Double.POSITIVE_INFINITY;
-
-    private static final int SPEED_INDEX_MIN = 0;
-    private static final int SPEED_INDEX_MAX = 40;
-    private static final int SPEED_INDEX_INITIAL = 40;
-    private static final int SPEED_INDEX_INTERACTION_LIMIT = 36;
-    private static final double[] RUN_SPEED_TABLE = {
-        .05, .1, .2, .3, .4, .5, 1, 2, 3, 4, 5, // 0-10
-        6, 7, 8, 9, 10, 12.5, 15, 17.5, 20, 22.5, // 11-20
-        25, 27.5, 30, 35, 40, 45, 50, 75, 100, 125, // 21-30
-        150, 175, 200, 300, 400, 500, UNLIMITED_SPEED, // 31-37
-        UNLIMITED_SPEED, UNLIMITED_SPEED, UNLIMITED_SPEED // 38-40
+    private static final double[] RUN_SPEED_VALUES = {
+        .05,
+        .1,
+        .2,
+        .3,
+        .4,
+        .5,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        12.5,
+        15,
+        17.5,
+        20,
+        22.5,
+        25,
+        27.5,
+        30,
+        35,
+        40,
+        45,
+        50,
+        75,
+        100,
+        125,
+        150,
+        175,
+        200,
+        300,
+        400,
+        500,
+        Simulator.UNLIMITED_SPEED,
     };
+    private static final int MIN_SPEED_INDEX = 0;
+    private static final int MAX_SPEED_INDEX = RUN_SPEED_VALUES.length - 1;
+    private static final int INITIAL_SPEED_INDEX = MAX_SPEED_INDEX;
 
-    private volatile int runSpeedIndex = SPEED_INDEX_INITIAL;
-
-    private static RunSpeedPanel instance = null;
-
-    /**
-     * Retrieve the run speed panel object.
-     *
-     * @return The run speed panel.
-     */
-    public static RunSpeedPanel getInstance() {
-        if (RunSpeedPanel.instance == null) {
-            RunSpeedPanel.instance = new RunSpeedPanel();
-        }
-        return RunSpeedPanel.instance;
-    }
-
-    /**
-     * Private constructor (this is a singleton class).
-     */
-    private RunSpeedPanel() {
+    public RunSpeedPanel() {
         super(new BorderLayout());
+        this.setToolTipText("The approximate number of instructions executed by the simulator per second.");
 
-        this.setToolTipText("Simulation speed for program execution. At "
-            + ((int) RUN_SPEED_TABLE[SPEED_INDEX_INTERACTION_LIMIT])
-            + " instructions per second or less, the interface is updated after each instruction.");
+        JLabel label = new JLabel(this.getLabelForIndex(INITIAL_SPEED_INDEX));
+        label.setHorizontalAlignment(JLabel.CENTER);
+        label.setAlignmentX(Component.CENTER_ALIGNMENT);
+        this.add(label, BorderLayout.NORTH);
 
-        final JLabel sliderLabel = new JLabel(getLabelForIndex(this.runSpeedIndex));
-        sliderLabel.setHorizontalAlignment(JLabel.CENTER);
-        sliderLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        this.add(sliderLabel, BorderLayout.NORTH);
-
-        JSlider runSpeedSlider = new JSlider(JSlider.HORIZONTAL, SPEED_INDEX_MIN, SPEED_INDEX_MAX, SPEED_INDEX_INITIAL);
-        runSpeedSlider.addChangeListener(event -> {
-            // Revise label as user slides and update current index when sliding stops
+        JSlider slider = new JSlider(JSlider.HORIZONTAL, MIN_SPEED_INDEX, MAX_SPEED_INDEX, INITIAL_SPEED_INDEX);
+        slider.setSnapToTicks(true);
+        slider.addChangeListener(event -> {
             JSlider source = (JSlider) event.getSource();
+            // Revise label as user slides and update current index when sliding stops
             if (!source.getValueIsAdjusting()) {
-                this.runSpeedIndex = source.getValue();
+                Simulator.getInstance().setRunSpeed(RUN_SPEED_VALUES[source.getValue()]);
             }
-            else {
-                sliderLabel.setText(getLabelForIndex(source.getValue()));
-            }
+            label.setText(this.getLabelForIndex(source.getValue()));
         });
-        this.add(runSpeedSlider, BorderLayout.CENTER);
-    }
-
-    /**
-     * Returns current run speed setting, in instructions/second.  Unlimited speed
-     * setting is equal to {@link #UNLIMITED_SPEED}.
-     *
-     * @return Run speed setting in instructions/second.
-     */
-    public double getRunSpeed() {
-        return RUN_SPEED_TABLE[this.runSpeedIndex];
+        this.add(slider, BorderLayout.CENTER);
     }
 
     /**
      * Set label wording depending on current speed setting.
      */
-    private static String getLabelForIndex(int index) {
+    private String getLabelForIndex(int index) {
         StringBuilder result = new StringBuilder("Run speed: ");
-        if (index <= SPEED_INDEX_INTERACTION_LIMIT) {
-            if (RUN_SPEED_TABLE[index] < 1) {
-                result.append(RUN_SPEED_TABLE[index]).append(" instructions per second");
+        if (MIN_SPEED_INDEX <= index && index <= MAX_SPEED_INDEX) {
+            double runSpeed = RUN_SPEED_VALUES[index];
+            if (runSpeed == Simulator.UNLIMITED_SPEED) {
+                result.append("unlimited");
+            }
+            else if (runSpeed < 1) {
+                result.append(runSpeed).append(" instructions / second");
             }
             else {
-                result.append((int) RUN_SPEED_TABLE[index]).append(" instructions per second");
+                result.append((int) runSpeed).append(" instructions / second");
             }
         }
         else {
-            result.append("maximum (no interactions)");
+            result.append("invalid");
         }
         return result.toString();
     }

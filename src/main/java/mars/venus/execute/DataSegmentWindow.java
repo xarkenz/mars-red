@@ -725,7 +725,7 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
 
     @Override
     public void memoryWritten(int address, int length, int value, int wordAddress, int wordValue) {
-        if (RunSpeedPanel.getInstance().getRunSpeed() != RunSpeedPanel.UNLIMITED_SPEED) {
+        if (Simulator.getInstance().isLimitingRunSpeed()) {
             this.addressHighlighting = true;
             this.highlightCellForAddress(wordAddress);
         }

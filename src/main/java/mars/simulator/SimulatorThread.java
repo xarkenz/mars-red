@@ -5,7 +5,6 @@ import mars.assembler.BasicStatement;
 import mars.mips.hardware.*;
 import mars.mips.instructions.Instruction;
 import mars.util.Binary;
-import mars.venus.execute.RunSpeedPanel;
 
 import java.util.Arrays;
 
@@ -255,12 +254,12 @@ public class SimulatorThread extends Thread {
             this.programCounter = Processor.getProgramCounter();
 
             // Update the GUI and delay the next step if the program is not running at unlimited speed
-            if (Application.getGUI() != null && RunSpeedPanel.getInstance().getRunSpeed() < RunSpeedPanel.UNLIMITED_SPEED) {
+            if (this.simulator.isLimitingRunSpeed()) {
                 // Schedule a GUI update if one is not already scheduled
                 this.simulator.dispatchStepEvent();
 
                 // Wait according to the speed setting (division is fine here since it should never be 0)
-                Thread.sleep((int) (1000.0 / RunSpeedPanel.getInstance().getRunSpeed()));
+                Thread.sleep((long) (1000.0 / this.simulator.getRunSpeed()));
             }
         }
     }

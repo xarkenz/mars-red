@@ -244,7 +244,7 @@ public class VenusUI extends JFrame implements SimulatorListener {
 
         JPanel jp = new JPanel(new FlowLayout(FlowLayout.LEFT));
         jp.add(toolbar);
-        jp.add(RunSpeedPanel.getInstance());
+        jp.add(new RunSpeedPanel());
         JPanel center = new JPanel(new BorderLayout());
         center.add(jp, BorderLayout.NORTH);
         center.add(horizonSplitter);

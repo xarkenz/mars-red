@@ -43,6 +43,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @author Pete Sanderson, August 2005
  */
 public class Simulator {
+    /**
+     * Constant that represents unlimited run speed.  Compare with return value of
+     * getRunSpeed() to determine if set to unlimited.  At the unlimited setting, the GUI
+     * will not attempt to update register and memory contents as each instruction
+     * is executed.  This is the only possible value for command-line use of Mars.
+     */
+    public static final double UNLIMITED_SPEED = Double.POSITIVE_INFINITY;
+
     private static Simulator instance = null;
 
     private final List<SimulatorListener> guiListeners;
@@ -50,6 +58,7 @@ public class Simulator {
     private final BackStepper backStepper;
     private final SystemIO systemIO;
     private Integer delayedJumpAddress;
+    private volatile double runSpeed;
     /**
      * Others can set this to indicate an external interrupt.
      * The device is identified by the address of its MMIO control register.
@@ -79,6 +88,7 @@ public class Simulator {
         this.backStepper = new BackStepper();
         this.systemIO = new SystemIO();
         this.delayedJumpAddress = null;
+        this.runSpeed = UNLIMITED_SPEED;
         this.externalInterruptDevice = null;
         this.queuedStateChanges = new ArrayList<>();
         this.thread = null;
@@ -157,6 +167,41 @@ public class Simulator {
      */
     public void clearDelayedJumpAddress() {
         this.delayedJumpAddress = null;
+    }
+
+    /**
+     * Get the current run speed of the simulator in instructions per second.
+     *
+     * @return The run speed, or {@link #UNLIMITED_SPEED} if the run speed is unlimited.
+     * @see #isLimitingRunSpeed()
+     */
+    public double getRunSpeed() {
+        return this.runSpeed;
+    }
+
+    /**
+     * Determine whether the current run speed of the simulator is limited (that is, any value other than
+     * {@link #UNLIMITED_SPEED}). When the run speed is limited, the simulator intentionally slows down execution
+     * to allow the GUI to track the program counter, memory accesses, register updates, etc.
+     *
+     * @return <code>false</code> if the current run speed is {@link #UNLIMITED_SPEED}, or <code>true</code> otherwise.
+     * @see #getRunSpeed()
+     */
+    public boolean isLimitingRunSpeed() {
+        return this.runSpeed != UNLIMITED_SPEED;
+    }
+
+    /**
+     * Set the current run speed of the simulator in instructions per second.
+     *
+     * @param runSpeed The run speed, or {@link #UNLIMITED_SPEED} to disable run speed limiting.
+     */
+    public void setRunSpeed(double runSpeed) {
+        // The below condition is used instead of "runSpeed <= 0.0" in order to catch NaN values
+        if (!(runSpeed > 0.0)) {
+            throw new IllegalArgumentException("invalid run speed " + runSpeed);
+        }
+        this.runSpeed = runSpeed;
     }
 
     /**

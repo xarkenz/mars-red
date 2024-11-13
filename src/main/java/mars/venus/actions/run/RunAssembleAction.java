@@ -115,10 +115,6 @@ public class RunAssembleAction extends VenusAction {
 
             // Select editor line containing first error, and corresponding error message.
             for (LogMessage message : error.getLog().getMessages()) {
-                // No line or position may mean File Not Found (e.g. exception file). Don't try to open. DPS 3-Oct-2010
-                if (message.getLocation().getLineIndex() < 0) {
-                    continue;
-                }
                 if (message.getLevel() == LogLevel.ERROR || (
                     message.getLevel() == LogLevel.WARNING && this.gui.getSettings().warningsAreErrors.get()
                 )) {

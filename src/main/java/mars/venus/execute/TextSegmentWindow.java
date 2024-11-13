@@ -178,9 +178,6 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         }
         this.table = new TextSegmentTable(this.tableModel);
 
-        // Prevents cells in row from being highlighted when user clicks on breakpoint checkbox
-        this.table.setRowSelectionAllowed(false);
-
         this.table.getColumnModel().getColumn(BREAKPOINT_COLUMN).setMinWidth(40);
         this.table.getColumnModel().getColumn(BREAKPOINT_COLUMN).setMaxWidth(50);
         this.table.getColumnModel().getColumn(BREAKPOINT_COLUMN).setPreferredWidth(40);
@@ -328,9 +325,6 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
 
     @Override
     public void memoryWritten(int address, int length, int value, int wordAddress, int wordValue) {
-        String strValue = Binary.intToHexString(wordValue);
-        String strBasic;
-        String strSource;
         // Translate the address into table model row and modify the values in that row accordingly.
         int row;
         try {
@@ -341,6 +335,9 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
             return;
         }
 
+        String strValue = Binary.intToHexString(wordValue);
+        String strBasic;
+        String strSource;
         ModifiedCode modification = this.executeMods.get(row);
         if (modification == null) {
             // Not already modified and new code is same as original, so do nothing
@@ -383,11 +380,9 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         // called.  (2) it updates the memory cell which in turn notifies us which invokes
         // the update() method - the method we're in right now.  All we need to do here is
         // update the table model then notify the controller/view to update its display.
-        this.data[row][CODE_COLUMN] = strValue;
-        this.tableModel.fireTableCellUpdated(row, CODE_COLUMN);
-        // The other columns do not present a problem since they are not editable by user.
-        this.tableModel.setValueAt(strBasic, row, BASIC_COLUMN);
-        this.tableModel.setValueAt(strSource, row, SOURCE_COLUMN);
+        this.tableModel.setDisplayAndModelValueAt(strValue, row, CODE_COLUMN);
+        this.tableModel.setDisplayAndModelValueAt(strBasic, row, BASIC_COLUMN);
+        this.tableModel.setDisplayAndModelValueAt(strSource, row, SOURCE_COLUMN);
 
         // Let's update the value displayed in the DataSegmentWindow too.  But it only observes memory while
         // the MIPS program is running, and even then only in timed or step mode.  There are good reasons
@@ -892,10 +887,10 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
 
         public CheckBoxTableCellRenderer() {
             super();
-            setContentAreaFilled(true);
-            setBorderPainted(true);
-            setHorizontalAlignment(SwingConstants.CENTER);
-            setVerticalAlignment(SwingConstants.CENTER);
+            this.setContentAreaFilled(true);
+            this.setBorderPainted(true);
+            this.setHorizontalAlignment(SwingConstants.CENTER);
+            this.setVerticalAlignment(SwingConstants.CENTER);
 
             /*
              * Use this if you want to add "instant" recognition of breakpoint changes
@@ -971,6 +966,8 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
 
         public TextSegmentTable(TextTableModel model) {
             super(model);
+            // Prevents cells in row from being highlighted when user clicks on breakpoint checkbox
+            this.setRowSelectionAllowed(false);
         }
 
         private static final String[] COLUMN_TOOL_TIPS = {
