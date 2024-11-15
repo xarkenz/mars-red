@@ -78,13 +78,13 @@ public class RunResetAction extends VenusAction {
         Simulator.getInstance().reset();
 
         RegistersPane registersPane = this.gui.getRegistersPane();
-        registersPane.getRegistersWindow().clearHighlighting();
-        registersPane.getRegistersWindow().updateRegisters();
-        registersPane.getCoprocessor1Window().clearHighlighting();
-        registersPane.getCoprocessor1Window().updateRegisters();
-        registersPane.getCoprocessor0Window().clearHighlighting();
-        registersPane.getCoprocessor0Window().updateRegisters();
-        registersPane.setSelectedComponent(registersPane.getRegistersWindow());
+        registersPane.getProcessorTab().clearHighlighting();
+        registersPane.getProcessorTab().updateRegisters();
+        registersPane.getCoprocessor1Tab().clearHighlighting();
+        registersPane.getCoprocessor1Tab().updateRegisters();
+        registersPane.getCoprocessor0Tab().clearHighlighting();
+        registersPane.getCoprocessor0Tab().updateRegisters();
+        registersPane.setSelectedComponent(registersPane.getProcessorTab());
 
         ExecuteTab executeTab = this.gui.getMainPane().getExecuteTab();
         executeTab.getDataSegmentWindow().highlightCellForAddress(Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW));

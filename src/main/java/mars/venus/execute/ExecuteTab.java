@@ -140,9 +140,9 @@ public class ExecuteTab extends JDesktopPane {
         this.getTextSegmentWindow().clearWindow();
         this.getDataSegmentWindow().clearWindow();
         this.getLabelsWindow().clearWindow();
-        this.gui.getRegistersPane().getRegistersWindow().clearWindow();
-        this.gui.getRegistersPane().getCoprocessor1Window().clearWindow();
-        this.gui.getRegistersPane().getCoprocessor0Window().clearWindow();
+        this.gui.getRegistersPane().getProcessorTab().clearWindow();
+        this.gui.getRegistersPane().getCoprocessor1Tab().clearWindow();
+        this.gui.getRegistersPane().getCoprocessor0Tab().clearWindow();
         // Seems to be required in order to display cleared Execute tab contents...
         if (this.gui.getMainPane().getSelectedComponent() == this) {
             this.gui.getMainPane().setSelectedComponent(this.gui.getMainPane().getEditTab());
@@ -212,9 +212,9 @@ public class ExecuteTab extends JDesktopPane {
     public void numberDisplayBaseChanged(NumberDisplayBaseChooser chooser) {
         if (chooser == this.valueDisplayBase) {
             // Have all internal windows update their value columns
-            this.gui.getRegistersPane().getRegistersWindow().updateRegisters();
-            this.gui.getRegistersPane().getCoprocessor0Window().updateRegisters();
-            this.gui.getRegistersPane().getCoprocessor1Window().updateRegisters();
+            this.gui.getRegistersPane().getProcessorTab().updateRegisters();
+            this.gui.getRegistersPane().getCoprocessor0Tab().updateRegisters();
+            this.gui.getRegistersPane().getCoprocessor1Tab().updateRegisters();
             this.dataSegment.updateValues();
             this.textSegment.updateBasicStatements();
         }

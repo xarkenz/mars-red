@@ -44,7 +44,7 @@ public class Coprocessor0 {
     public static final int CAUSE = 13;
     public static final int EPC = 14;
 
-    public static final int EXCEPTION_LEVEL = 1;
+    public static final int EXL_BIT = 1;
     // bit position in STATUS register
     // bits 8-15 (mask for interrupt levels) all set, bit 4 (user mode) set,
     // bit 1 (exception level) not set, bit 0 (interrupt enable) set.
@@ -158,7 +158,7 @@ public class Coprocessor0 {
         // When exception occurred, PC had already been incremented so need to subtract 4 here.
         updateRegister(EPC, Processor.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION);
         // Set EXL (Exception Level) bit, bit position 1, in STATUS register to 1.
-        updateRegister(STATUS, Binary.setBit(getValue(STATUS), EXCEPTION_LEVEL));
+        updateRegister(STATUS, Binary.setBit(getValue(STATUS), EXL_BIT));
     }
 
     /**
@@ -167,7 +167,7 @@ public class Coprocessor0 {
      * "current" program counter, and set Exception Level bit in STATUS register ($12).
      *
      * @param cause   The cause code (see {@link Coprocessor0} for a list). In this case, should probably be
-     *                {@link ExceptionCause#ADDRESS_EXCEPTION_FETCH} or {@link ExceptionCause#ADDRESS_EXCEPTION_STORE}.
+     *                {@link ExceptionCause#ADDRESS_FETCH} or {@link ExceptionCause#ADDRESS_STORE}.
      * @param address The address that caused the exception.
      * @author Pete Sanderson, August 2005
      */

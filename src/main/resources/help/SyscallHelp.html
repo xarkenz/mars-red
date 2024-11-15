@@ -166,37 +166,40 @@
 
     <h2>File I/O Example</h2>
 
-    The sample MIPS program below will open a new file for writing, write text to it from a memory buffer, then close it.
-    The file will be created in the working directory in which MARS was run.
+    <p>The sample MIPS program below will open a new file for writing, write text to it from a memory buffer,
+        then close it. The file will be created in the same directory as the assembly file.</p>
 
     <pre>
-    # Sample MIPS program that writes to a new file.
-    # Kenneth Vollmar, Pete Sanderson
+        <b>.data</b>
+    fout: # Filename for output
+        <b>.asciiz</b> "testout.txt"
+    buffer:
+        <b>.asciiz</b> "The quick brown fox jumps over the lazy dog."
 
-            <b>.data</b>
-    fout:   <b>.asciiz</b> "testout.txt"      # filename for output
-    buffer: <b>.asciiz</b> "The quick brown fox jumps over the lazy dog."
-            <b>.text</b>
+        <b>.text</b>
+    main:
+        # Create and open a file for writing
+        <b>li</b>      $v0, 13      # "Open File" system call
+        <b>la</b>      $a0, fout    # Filename to open
+        <b>li</b>      $a1, 1       # Opening flags (1 = write-only)
+        <b>syscall</b>              # Open the file (file descriptor returned in $v0)
+        <b>move</b>    $s6, $v0     # Save the file descriptor so $v0 can be reused
 
-    # Open (for writing) a file that does not exist
-        <b>li</b>      $v0, 13       # "Open File" system call
-        <b>la</b>      $a0, fout     # output file name
-        <b>li</b>      $a1, 1        # Open for writing (flags are 0: read, 1: write, 2: read-write, 8: append, 16: create-new)
-        <b>li</b>      $a2, 0        # mode is currently ignored
-        <b>syscall</b>               # open a file (file descriptor returned in $v0)
-        <b>move</b>    $s6, $v0      # save the file descriptor
+        # Write to the file
+        <b>li</b>      $v0, 15      # "Write File" system call
+        <b>move</b>    $a0, $s6     # File descriptor
+        <b>la</b>      $a1, buffer  # Address of buffer whose content to write
+        <b>li</b>      $a2, 44      # Buffer size
+        <b>syscall</b>              # Write the buffer content to the file
 
-    # Write to file just opened
-        <b>li</b>      $v0, 15       # "Write File" system call
-        <b>move</b>    $a0, $s6      # file descriptor
-        <b>la</b>      $a1, buffer   # address of buffer from which to write
-        <b>li</b>      $a2, 44       # hardcoded buffer length
-        <b>syscall</b>               # write to file
+        # Close the file
+        <b>li</b>      $v0, 16      # "Close File" system call
+        <b>move</b>    $a0, $s6     # File descriptor
+        <b>syscall</b>              # Close the file
 
-    # Close the file
-        <b>li</b>      $v0, 16       # "Close File" system call
-        <b>move</b>    $a0, $s6      # file descriptor to close
-        <b>syscall</b>               # close file
+        # Exit the program
+        <b>li</b>      $v0, 10      # "Exit" system call
+        <b>syscall</b>              # Exit the program
     </pre>
 
     <hr>

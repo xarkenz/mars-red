@@ -47,10 +47,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * method, <code>assemble()</code>, which implements a two-pass assembler. It
  * translates MIPS source code into binary machine code.
  *
- * @author Pete Sanderson
- * @version August 2003
+ * @author Pete Sanderson, August 2003
  */
-// FIXME: basic assembler setting, exception handler
+// FIXME: basic assembler setting, instruction example formats
 public class Assembler {
     private final AssemblerLog log;
     private final List<String> sourceFilenames;
@@ -231,7 +230,7 @@ public class Assembler {
 
             this.sourceFilenames.add(filename);
         }
-        this.log.logInfo(null, startMessage.append('\n').toString());
+        this.log.logInfo(null, startMessage.toString());
 
         // Tokenize all files and add them to the list
         for (String filename : sourceFilenames) {
@@ -252,7 +251,7 @@ public class Assembler {
      * Parse and generate machine code for the given MIPS program. All source
      * files must have already been tokenized.
      *
-     * @param sourceFiles
+     * @param sourceFiles The list of source files which have already been tokenized.
      */
     public void assembleFiles(List<SourceFile> sourceFiles) throws AssemblyError {
         this.reset();
@@ -263,7 +262,7 @@ public class Assembler {
             startMessage.append("\n- ").append(sourceFile.getFilename());
             this.sourceFilenames.add(sourceFile.getFilename());
         }
-        this.log.logInfo(null, startMessage.append('\n').toString());
+        this.log.logInfo(null, startMessage.toString());
 
         this.tokenizedFiles.addAll(sourceFiles);
 

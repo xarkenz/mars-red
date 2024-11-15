@@ -180,7 +180,7 @@ public class InstructionSet {
                 int sum = add1 + add2;
                 // overflow on A+B detected when A and B have same sign and A+B has other sign.
                 if ((add1 >= 0 && add2 >= 0 && sum < 0) || (add1 < 0 && add2 < 0 && sum >= 0)) {
-                    throw new SimulatorException(statement, "arithmetic overflow", ExceptionCause.ARITHMETIC_OVERFLOW_EXCEPTION);
+                    throw new SimulatorException(statement, "arithmetic overflow", ExceptionCause.ARITHMETIC_OVERFLOW);
                 }
                 Processor.updateRegister(statement.getOperand(0), sum);
             }
@@ -198,7 +198,7 @@ public class InstructionSet {
                 int diff = sub1 - sub2;
                 // overflow on A-B detected when A and B have opposite signs and A-B has B's sign
                 if ((sub1 >= 0 && sub2 < 0 && diff < 0) || (sub1 < 0 && sub2 >= 0 && diff >= 0)) {
-                    throw new SimulatorException(statement, "arithmetic overflow", ExceptionCause.ARITHMETIC_OVERFLOW_EXCEPTION);
+                    throw new SimulatorException(statement, "arithmetic overflow", ExceptionCause.ARITHMETIC_OVERFLOW);
                 }
                 Processor.updateRegister(statement.getOperand(0), diff);
             }
@@ -216,7 +216,7 @@ public class InstructionSet {
                 int sum = add1 + add2;
                 // overflow on A+B detected when A and B have same sign and A+B has other sign.
                 if ((add1 >= 0 && add2 >= 0 && sum < 0) || (add1 < 0 && add2 < 0 && sum >= 0)) {
-                    throw new SimulatorException(statement, "arithmetic overflow", ExceptionCause.ARITHMETIC_OVERFLOW_EXCEPTION);
+                    throw new SimulatorException(statement, "arithmetic overflow", ExceptionCause.ARITHMETIC_OVERFLOW);
                 }
                 Processor.updateRegister(statement.getOperand(0), sum);
             }
@@ -365,9 +365,9 @@ public class InstructionSet {
             "000000 fffff sssss 00000 00000 011010",
             statement -> {
                 if (Processor.getValue(statement.getOperand(1)) == 0) {
-                    // Note: no exceptions and undefined results for division by zero
-                    // COD3 Appendix A says "with overflow" but MIPS 32 instruction set
-                    // specification says "no arithmetic exception under any circumstances".
+                    // Note: no exception, undefined results for division by zero.
+                    // COD3 Appendix A says "with overflow," but the MIPS32 instruction set
+                    // specification states "No arithmetic exception occurs under any circumstances."
                     return;
                 }
                 // Register 33 is HIGH and 34 is LOW
@@ -384,7 +384,9 @@ public class InstructionSet {
             "000000 fffff sssss 00000 00000 011011",
             statement -> {
                 if (Processor.getValue(statement.getOperand(1)) == 0) {
-                    // Note: no exceptions and undefined results for division by zero
+                    // Note: no exception, undefined results for division by zero.
+                    // COD3 Appendix A says "with overflow," but the MIPS32 instruction set
+                    // specification states "No arithmetic exception occurs under any circumstances."
                     return;
                 }
                 long oper1 = (long) Processor.getValue(statement.getOperand(0)) << 32 >>> 32;
@@ -1000,7 +1002,7 @@ public class InstructionSet {
             "terminate program execution with the specified exception code",
             "000000 ffffffffffffffffffff 001101",
             statement -> {
-                throw new SimulatorException(statement, "break instruction executed; code = " + statement.getOperand(0) + ".", ExceptionCause.BREAKPOINT_EXCEPTION);
+                throw new SimulatorException(statement, "break instruction executed; code = " + statement.getOperand(0) + ".", ExceptionCause.BREAKPOINT);
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -1011,7 +1013,7 @@ public class InstructionSet {
             "terminate program execution with an exception",
             "000000 00000 00000 00000 00000 001101",
             statement -> {
-                throw new SimulatorException(statement, "break instruction executed; no code given.", ExceptionCause.BREAKPOINT_EXCEPTION);
+                throw new SimulatorException(statement, "break instruction executed; no code given.", ExceptionCause.BREAKPOINT);
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -2364,7 +2366,7 @@ public class InstructionSet {
             "000000 fffff sssss 00000 00000 110100",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) == Processor.getValue(statement.getOperand(1))) {
-                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP);
                 }
             }
         ));
@@ -2377,7 +2379,7 @@ public class InstructionSet {
             "000001 fffff 01100 ssssssssssssssss",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) == (statement.getOperand(1) << 16 >> 16)) {
-                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP);
                 }
             }
         ));
@@ -2390,7 +2392,7 @@ public class InstructionSet {
             "000000 fffff sssss 00000 00000 110110",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) != Processor.getValue(statement.getOperand(1))) {
-                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP);
                 }
             }
         ));
@@ -2403,7 +2405,7 @@ public class InstructionSet {
             "000001 fffff 01110 ssssssssssssssss",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) != (statement.getOperand(1) << 16 >> 16)) {
-                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP);
                 }
             }
         ));
@@ -2416,7 +2418,7 @@ public class InstructionSet {
             "000000 fffff sssss 00000 00000 110000",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) >= Processor.getValue(statement.getOperand(1))) {
-                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP);
                 }
             }
         ));
@@ -2429,7 +2431,7 @@ public class InstructionSet {
             "000000 fffff sssss 00000 00000 110001",
             statement -> {
                 if (Integer.compareUnsigned(Processor.getValue(statement.getOperand(0)), Processor.getValue(statement.getOperand(1))) >= 0) {
-                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP);
                 }
             }
         ));
@@ -2442,7 +2444,7 @@ public class InstructionSet {
             "000001 fffff 01000 ssssssssssssssss",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) >= (statement.getOperand(1) << 16 >> 16)) {
-                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP);
                 }
             }
         ));
@@ -2455,7 +2457,7 @@ public class InstructionSet {
             "000001 fffff 01001 ssssssssssssssss",
             statement -> {
                 if (Integer.compareUnsigned(Processor.getValue(statement.getOperand(0)), statement.getOperand(1) << 16 >> 16) >= 0) {
-                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP);
                 }
             }
         ));
@@ -2468,7 +2470,7 @@ public class InstructionSet {
             "000000 fffff sssss 00000 00000 110010",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) < Processor.getValue(statement.getOperand(1))) {
-                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP);
                 }
             }
         ));
@@ -2481,7 +2483,7 @@ public class InstructionSet {
             "000000 fffff sssss 00000 00000 110011",
             statement -> {
                 if (Integer.compareUnsigned(Processor.getValue(statement.getOperand(0)), Processor.getValue(statement.getOperand(1))) < 0) {
-                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP);
                 }
             }
         ));
@@ -2494,7 +2496,7 @@ public class InstructionSet {
             "000001 fffff 01010 ssssssssssssssss",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) < (statement.getOperand(1) << 16 >> 16)) {
-                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP);
                 }
             }
         ));
@@ -2507,7 +2509,7 @@ public class InstructionSet {
             "000001 fffff 01011 ssssssssssssssss",
             statement -> {
                 if (Integer.compareUnsigned(Processor.getValue(statement.getOperand(0)), statement.getOperand(1) << 16 >> 16) < 0) {
-                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP_EXCEPTION);
+                    throw new SimulatorException(statement, "trap", ExceptionCause.TRAP);
                 }
             }
         ));
@@ -2520,7 +2522,7 @@ public class InstructionSet {
             "010000 1 0000000000000000000 011000",
             statement -> {
                 // Set EXL bit (bit 1) in Status register to 0 and set PC to EPC
-                Coprocessor0.updateRegister(Coprocessor0.STATUS, Binary.clearBit(Coprocessor0.getValue(Coprocessor0.STATUS), Coprocessor0.EXCEPTION_LEVEL));
+                Coprocessor0.updateRegister(Coprocessor0.STATUS, Binary.clearBit(Coprocessor0.getValue(Coprocessor0.STATUS), Coprocessor0.EXL_BIT));
                 Processor.setProgramCounter(Coprocessor0.getValue(Coprocessor0.EPC));
             }
         ));
@@ -2773,7 +2775,7 @@ public class InstructionSet {
             service.simulate(null);
             return;
         }
-        throw new SimulatorException(statement, "invalid or unimplemented syscall service: " + number, ExceptionCause.SYSCALL_EXCEPTION);
+        throw new SimulatorException(statement, "invalid or unimplemented syscall service: " + number, ExceptionCause.SYSCALL);
     }
 
     /**

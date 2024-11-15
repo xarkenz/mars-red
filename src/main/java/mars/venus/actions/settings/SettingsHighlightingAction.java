@@ -301,9 +301,9 @@ public class SettingsHighlightingAction extends VenusAction {
         settings.registerHighlightingEnabled.set(currentRegisterHighlightSetting);
         RegistersPane registersPane = Application.getGUI().getRegistersPane();
         ExecuteTab executeTab = Application.getGUI().getMainPane().getExecuteTab();
-        registersPane.getRegistersWindow().refresh();
-        registersPane.getCoprocessor0Window().refresh();
-        registersPane.getCoprocessor1Window().refresh();
+        registersPane.getProcessorTab().refresh();
+        registersPane.getCoprocessor0Tab().refresh();
+        registersPane.getCoprocessor1Tab().refresh();
         // If a successful assembly has occurred, the various panes will be populated with tables
         // and we want to apply the new settings.  If it has NOT occurred, there are no tables
         // in the Data and Text segment windows so we don't want to disturb them.

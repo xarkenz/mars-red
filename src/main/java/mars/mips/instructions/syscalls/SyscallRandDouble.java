@@ -68,7 +68,7 @@ public class SyscallRandDouble extends AbstractSyscall {
         }
         catch (InvalidRegisterAccessException exception) {
             // This should not occur because $f0 is always a valid double target
-            throw new SimulatorException(statement, "internal error writing double to register (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            throw new SimulatorException(statement, "internal error writing double to register (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL);
         }
     }
 }

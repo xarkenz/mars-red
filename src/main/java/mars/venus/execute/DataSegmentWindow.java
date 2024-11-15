@@ -270,7 +270,7 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
      * currently in the (display) table, including a different MIPS data segment (e.g. in
      * kernel instead of user data segment).
      */
-    private Point displayCellForAddress(int address) {
+    public Point displayCellForAddress(int address) {
         // This requires a 5-step process.  Each step is described
         // just above the statements that implement it.
 

@@ -29,10 +29,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * Represents the cause of an error/interrupt that occurs during execution (simulation).
+ * Represents the cause of an exception or interrupt that occurs during execution.
  *
- * @author Pete Sanderson
- * @version August 2005
+ * @author Pete Sanderson, August 2005
  */
 public class ExceptionCause {
     /*
@@ -50,15 +49,13 @@ public class ExceptionCause {
      */
     public static final int EXTERNAL_INTERRUPT_KEYBOARD = 0x00000040; // see comment above.
     public static final int EXTERNAL_INTERRUPT_DISPLAY = 0x00000080; // see comment above.
-    public static final int ADDRESS_EXCEPTION_FETCH = 4;
-    public static final int ADDRESS_EXCEPTION_STORE = 5;
-    public static final int SYSCALL_EXCEPTION = 8;
-    public static final int BREAKPOINT_EXCEPTION = 9;
-    public static final int RESERVED_INSTRUCTION_EXCEPTION = 10;
-    public static final int ARITHMETIC_OVERFLOW_EXCEPTION = 12;
-    public static final int TRAP_EXCEPTION = 13;
-    // The following are from SPIM.
-    public static final int DIVIDE_BY_ZERO_EXCEPTION = 15;
+    public static final int ADDRESS_FETCH = 4;
+    public static final int ADDRESS_STORE = 5;
+    public static final int SYSCALL = 8;
+    public static final int BREAKPOINT = 9;
+    public static final int RESERVED_INSTRUCTION = 10;
+    public static final int ARITHMETIC_OVERFLOW = 12;
+    public static final int TRAP = 13;
     public static final int FLOATING_POINT_OVERFLOW = 16;
     public static final int FLOATING_POINT_UNDERFLOW = 17;
 }

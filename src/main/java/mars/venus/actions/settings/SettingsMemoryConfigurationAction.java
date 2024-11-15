@@ -3,11 +3,9 @@ package mars.venus.actions.settings;
 import mars.Application;
 import mars.mips.hardware.MemoryConfiguration;
 import mars.mips.hardware.MemoryConfigurations;
-import mars.simulator.Simulator;
 import mars.util.Binary;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
-import mars.venus.execute.ProgramStatus;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -202,8 +200,8 @@ public class SettingsMemoryConfigurationAction extends VenusAction {
         private void performApply() {
             if (MemoryConfigurations.setCurrentConfiguration(this.selectedConfigurationButton.getConfiguration())) {
                 Application.getSettings().memoryConfiguration.set(this.selectedConfigurationButton.getConfiguration().identifier());
-                gui.getRegistersPane().getRegistersWindow().clearHighlighting();
-                gui.getRegistersPane().getRegistersWindow().updateRegisters();
+                gui.getRegistersPane().getProcessorTab().clearHighlighting();
+                gui.getRegistersPane().getProcessorTab().updateRegisters();
                 gui.getMainPane().getExecuteTab().getDataSegmentWindow().updateBaseAddressComboBox();
             }
         }

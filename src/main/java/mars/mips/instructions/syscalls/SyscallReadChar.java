@@ -57,7 +57,7 @@ public class SyscallReadChar extends AbstractSyscall {
             Processor.updateRegister(Processor.VALUE_0, charValue);
         }
         catch (IndexOutOfBoundsException exception) {
-            throw new SimulatorException(statement, "invalid char input (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            throw new SimulatorException(statement, "invalid char input (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL);
         }
     }
 }

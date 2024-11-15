@@ -262,14 +262,12 @@ public class Processor {
      *                    will set program counter to default reset value.
      */
     public static void initializeProgramCounter(boolean startAtMain) {
+        PROGRAM_COUNTER_REGISTER.resetValueToDefault();
         if (startAtMain) {
             Symbol symbol = Application.assembler.getGlobalSymbolTable().getSymbol(SymbolTable.getStartLabel());
             if (symbol != null && symbol.isText()) {
                 initializeProgramCounter(symbol.getAddress());
             }
-        }
-        else {
-            initializeProgramCounter(PROGRAM_COUNTER_REGISTER.getDefaultValue());
         }
     }
 
@@ -305,15 +303,6 @@ public class Processor {
         return PROGRAM_COUNTER_REGISTER;
     }
 
-    /**
-     * Get the program counter's initial (reset) value.
-     *
-     * @return The program counter's initial value.
-     */
-    public static int getInitialProgramCounter() {
-        return PROGRAM_COUNTER_REGISTER.getDefaultValue();
-    }
-
     public static int getHighOrder() {
         return HIGH_ORDER_REGISTER.getValue();
     }
@@ -339,11 +328,7 @@ public class Processor {
     }
 
     /**
-     * Reinitialize the values of the registers.
-     * <p>
-     * <b>NOTE:</b> Should <i>not</i> be called from command-mode MARS because this
-     * this method uses global settings from the registry.  Command-mode must operate
-     * using only the command switches, not registry settings.
+     * Reset the values of all registers to their default values.
      */
     public static void reset() {
         for (Register register : REGISTERS) {
@@ -351,7 +336,6 @@ public class Processor {
         }
         HIGH_ORDER_REGISTER.resetValueToDefault();
         LOW_ORDER_REGISTER.resetValueToDefault();
-        // Replaces "programCounter.resetValue()", DPS 3/3/09
-        initializeProgramCounter(Application.getSettings().startAtMain.get());
+        PROGRAM_COUNTER_REGISTER.resetValueToDefault();
     }
 }

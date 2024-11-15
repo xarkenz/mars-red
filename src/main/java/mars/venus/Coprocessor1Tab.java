@@ -43,7 +43,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Pete Sanderson 2005
  */
-public class Coprocessor1Window extends RegistersDisplayTab {
+public class Coprocessor1Tab extends RegistersDisplayTab {
     private static final int NAME_COLUMN = 0;
     private static final int SINGLE_COLUMN = 1;
     private static final int DOUBLE_COLUMN = 2;
@@ -94,7 +94,7 @@ public class Coprocessor1Window extends RegistersDisplayTab {
     /**
      * Constructor which sets up a fresh window with a table that contains the register values.
      */
-    public Coprocessor1Window(VenusUI gui) {
+    public Coprocessor1Tab(VenusUI gui) {
         super(gui);
         // Display registers in table contained in scroll pane.
         this.setLayout(new BorderLayout()); // table display will occupy entire width if widened
@@ -306,7 +306,7 @@ public class Coprocessor1Window extends RegistersDisplayTab {
          */
         @Override
         public void setValueAt(Object value, int row, int column) {
-            int valueBase = Coprocessor1Window.this.gui.getMainPane().getExecuteTab().getValueDisplayBase();
+            int valueBase = Coprocessor1Tab.this.gui.getMainPane().getExecuteTab().getValueDisplayBase();
             String stringValue = value.toString();
             try {
                 if (column == SINGLE_COLUMN) {

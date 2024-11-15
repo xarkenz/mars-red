@@ -1,5 +1,6 @@
 package mars.venus;
 
+import mars.simulator.Simulator;
 import mars.simulator.SimulatorFinishEvent;
 import mars.simulator.SimulatorListener;
 
@@ -39,24 +40,26 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @author Pete Sanderson, August 2005
  */
 public class RegistersPane extends JTabbedPane implements SimulatorListener {
-    private final ProcessorWindow registersTab;
-    private final Coprocessor1Window coprocessor1Tab;
-    private final Coprocessor0Window coprocessor0Tab;
+    private final ProcessorTab processorTab;
+    private final Coprocessor1Tab coprocessor1Tab;
+    private final Coprocessor0Tab coprocessor0Tab;
 
     /**
      * Constructor for the RegistersPane class.
      */
     public RegistersPane(VenusUI gui) {
         super();
-        this.registersTab = new ProcessorWindow(gui);
-        this.coprocessor1Tab = new Coprocessor1Window(gui);
-        this.coprocessor0Tab = new Coprocessor0Window(gui);
-        this.registersTab.setVisible(true);
+        this.processorTab = new ProcessorTab(gui);
+        this.coprocessor1Tab = new Coprocessor1Tab(gui);
+        this.coprocessor0Tab = new Coprocessor0Tab(gui);
+        this.processorTab.setVisible(true);
         this.coprocessor1Tab.setVisible(true);
         this.coprocessor0Tab.setVisible(true);
-        this.addTab("Registers", null, this.registersTab, "Built-in CPU registers");
+        this.addTab("Processor", null, this.processorTab, "Built-in CPU registers");
         this.addTab("Coprocessor 1", null, this.coprocessor1Tab, "CP1: floating-point unit (FPU)");
         this.addTab("Coprocessor 0", null, this.coprocessor0Tab, "CP0: System Control Coprocessor (used for exceptions and interrupts)");
+
+        Simulator.getInstance().addGUIListener(this);
     }
 
     /**
@@ -64,8 +67,8 @@ public class RegistersPane extends JTabbedPane implements SimulatorListener {
      *
      * @return integer register window
      */
-    public ProcessorWindow getRegistersWindow() {
-        return this.registersTab;
+    public ProcessorTab getProcessorTab() {
+        return this.processorTab;
     }
 
     /**
@@ -73,7 +76,7 @@ public class RegistersPane extends JTabbedPane implements SimulatorListener {
      *
      * @return floating point register window
      */
-    public Coprocessor1Window getCoprocessor1Window() {
+    public Coprocessor1Tab getCoprocessor1Tab() {
         return this.coprocessor1Tab;
     }
 
@@ -82,7 +85,7 @@ public class RegistersPane extends JTabbedPane implements SimulatorListener {
      *
      * @return exceptions register window
      */
-    public Coprocessor0Window getCoprocessor0Window() {
+    public Coprocessor0Tab getCoprocessor0Tab() {
         return this.coprocessor0Tab;
     }
 

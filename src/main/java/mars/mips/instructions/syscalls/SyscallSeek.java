@@ -32,7 +32,7 @@ public class SyscallSeek extends AbstractSyscall {
 
         SystemIO.SeekWhence whence = SystemIO.SeekWhence.valueOf(whenceOrdinal);
         if (whence == null) {
-            throw new SimulatorException(statement, "Invalid whence value in $a2 for " + this.getName() + " (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            throw new SimulatorException(statement, "Invalid whence value in $a2 for " + this.getName() + " (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL);
         }
 
         long newPosition = Simulator.getInstance().getSystemIO().seekFile(descriptor, offset, whence);

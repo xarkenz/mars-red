@@ -96,7 +96,7 @@ public class SyscallInputDialogDouble extends AbstractSyscall {
         }
         catch (InvalidRegisterAccessException exception) {
             Processor.updateRegister(Processor.ARGUMENT_1, -1);  // set $a1 to -1 flag
-            throw new SimulatorException(statement, "invalid register access during double input (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            throw new SimulatorException(statement, "invalid register access during double input (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL);
         }
         catch (NumberFormatException exception) {
             // Unsuccessful parse of input data

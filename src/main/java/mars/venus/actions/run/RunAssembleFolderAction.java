@@ -67,13 +67,14 @@ public class RunAssembleFolderAction extends VenusAction {
             return;
         }
 
+        this.gui.getMessagesPane().selectMessagesTab();
+
         // Generate the list of files to assemble
         List<String> sourceFilenames = FilenameFinder.findFilenames(editTab.getCurrentEditorTab().getFile().getParent(), Application.FILE_EXTENSIONS);
 
         // Get the path of the exception handler, if enabled
-        String exceptionHandler = null;
         if (this.gui.getSettings().exceptionHandlerEnabled.get()) {
-            exceptionHandler = this.gui.getSettings().exceptionHandlerPath.get();
+            sourceFilenames.add(this.gui.getSettings().exceptionHandlerPath.get());
         }
 
         try {
@@ -85,14 +86,10 @@ public class RunAssembleFolderAction extends VenusAction {
             Application.assembler.getLog().setOutput(this.gui.getMessagesPane().getMessages()::writeMessage);
             Application.assembler.assembleFilenames(sourceFilenames);
 
-            if (Application.assembler.getLog().hasMessages(LogLevel.WARNING)) {
-                this.gui.getMessagesPane().selectMessagesTab();
-            }
-            else {
-                this.gui.getMessagesPane().getMessages().writeOutput(this.getName() + ": operation completed successfully.\n");
-            }
+            this.gui.getMessagesPane().getMessages().writeOutput(this.getName() + ": operation completed successfully.\n");
+
             if (this.gui.getProgramStatus() == ProgramStatus.PAUSED) {
-                this.gui.getMessagesPane().getMessages().writeOutput("\n--- program terminated by user ---\n\n");
+                this.gui.getMessagesPane().getConsole().writeOutput("\n--- program terminated by user ---\n\n");
             }
 
             this.gui.setProgramStatus(ProgramStatus.NOT_STARTED);
@@ -106,9 +103,9 @@ public class RunAssembleFolderAction extends VenusAction {
             executeTab.getTextSegmentWindow().highlightStepAtPC();
             this.gui.getMainPane().setSelectedComponent(executeTab);
 
-            registersPane.getRegistersWindow().clearWindow();
-            registersPane.getCoprocessor1Window().clearWindow();
-            registersPane.getCoprocessor0Window().clearWindow();
+            registersPane.getProcessorTab().clearWindow();
+            registersPane.getCoprocessor1Tab().clearWindow();
+            registersPane.getCoprocessor0Tab().clearWindow();
         }
         catch (AssemblyError error) {
             this.gui.getMessagesPane().getMessages().writeOutput(this.getName() + ": operation completed with errors.\n");

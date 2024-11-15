@@ -1,5 +1,6 @@
 package mars.assembler;
 
+import mars.simulator.ExceptionCause;
 import mars.simulator.SimulatorException;
 import mars.assembler.syntax.StatementSyntax;
 import mars.mips.instructions.BasicInstruction;
@@ -56,6 +57,10 @@ public class BasicStatement implements Statement {
      * @throws InterruptedException Thrown if the simulator was stopped during execution.
      */
     public void simulate() throws SimulatorException, InterruptedException {
+        if (this.instruction == null) {
+            throw new SimulatorException(this, "reserved instruction", ExceptionCause.RESERVED_INSTRUCTION);
+        }
+
         this.instruction.getFunction().simulate(this);
     }
 

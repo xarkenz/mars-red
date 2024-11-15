@@ -59,19 +59,19 @@ public class RunStepBackwardAction extends VenusAction {
         boolean inDelaySlot = Simulator.getInstance().getBackStepper().isInDelaySlot(); // Added 25 June 2007
 
         executeTab.getDataSegmentWindow().startObservingMemory();
-        registersPane.getRegistersWindow().startObservingRegisters();
-        registersPane.getCoprocessor0Window().startObservingRegisters();
-        registersPane.getCoprocessor1Window().startObservingRegisters();
+        registersPane.getProcessorTab().startObservingRegisters();
+        registersPane.getCoprocessor0Tab().startObservingRegisters();
+        registersPane.getCoprocessor1Tab().startObservingRegisters();
 
         Simulator.getInstance().getBackStepper().backStep();
 
         executeTab.getDataSegmentWindow().stopObservingMemory();
-        registersPane.getRegistersWindow().stopObservingRegisters();
-        registersPane.getCoprocessor0Window().stopObservingRegisters();
-        registersPane.getCoprocessor1Window().stopObservingRegisters();
-        registersPane.getRegistersWindow().updateRegisters();
-        registersPane.getCoprocessor1Window().updateRegisters();
-        registersPane.getCoprocessor0Window().updateRegisters();
+        registersPane.getProcessorTab().stopObservingRegisters();
+        registersPane.getCoprocessor0Tab().stopObservingRegisters();
+        registersPane.getCoprocessor1Tab().stopObservingRegisters();
+        registersPane.getProcessorTab().updateRegisters();
+        registersPane.getCoprocessor1Tab().updateRegisters();
+        registersPane.getCoprocessor0Tab().updateRegisters();
         executeTab.getDataSegmentWindow().updateValues();
         executeTab.getTextSegmentWindow().highlightStepAtPC(inDelaySlot); // Argument added 25 June 2007
 

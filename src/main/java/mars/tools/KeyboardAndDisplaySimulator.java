@@ -71,8 +71,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Pete Sanderson
  */
-public class MMIOSimulator extends AbstractMarsTool {
-    private static final String NAME = "Memory-Mapped I/O Simulator";
+public class KeyboardAndDisplaySimulator extends AbstractMarsTool {
+    private static final String NAME = "Keyboard and Display Simulator";
     private static final String VERSION = "Version 1.4";
 
     private static String displayPanelTitle;
@@ -127,7 +127,7 @@ public class MMIOSimulator extends AbstractMarsTool {
      * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
      */
     @SuppressWarnings("unused")
-    public MMIOSimulator() {
+    public KeyboardAndDisplaySimulator() {
         super(NAME + ", " + VERSION);
     }
 

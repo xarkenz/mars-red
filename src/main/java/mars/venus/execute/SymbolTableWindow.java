@@ -468,6 +468,7 @@ public class SymbolTableWindow extends JInternalFrame {
     private class LabelTable extends JTable {
         public LabelTable(LabelTableModel model) {
             super(model);
+            this.setRowSelectionAllowed(false);
         }
 
         // Implement table header tool tips.

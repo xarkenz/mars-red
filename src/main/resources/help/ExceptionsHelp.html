@@ -1,149 +1,159 @@
-<html>
-<title>Writing and Using MIPS exception handlers in MARS
-</title>
+<html lang="en-US">
+<head>
+
+    <title>Exception Handlers</title>
+
+    <style>
+        code {
+            margin: 0 3px 0 3px;
+            font-size: inherit;
+        }
+        ul, ol {
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+        /* This is the best I can do, unfortunately-- "border-collapse: collapse;" isn't supported */
+        table {
+            border-spacing: 0;
+            border: none;
+            border-right: 1px solid;
+            border-bottom: 1px solid;
+            padding: 0;
+            margin-top: 6px;
+            margin-bottom: 6px;
+        }
+        th, td {
+            border: none;
+            border-left: 1px solid;
+            border-top: 1px solid;
+            padding: 6px;
+            margin: 0;
+        }
+    </style>
+
+</head>
 <body>
-<center>
-<h3>Writing and Using MIPS exception handlers in MARS</h3>
-</center>
 
-<h3>Introduction</h3>
-<i>Exception handlers</i>, also known as <i>trap handlers</i> or 
-<i>interrupt handlers</i>, can easily be incorporated into a MIPS program.
-This guide is not intended to be comprehensive but provides the essential
-information for writing and using exception handlers.
+    <h1 style="text-align: center;">Exception Handlers</h1>
 
-<p>Although the same mechanism services all three, <i>exceptions</i>, <i>traps</i>
-and <i>interrupts</i> are all distinct from each other.
-Exceptions are caused by exceptional conditions that occur at runtime
-such as invalid memory address references.  Traps are caused by instructions
-constructed especially for this purpose, listed below.  Interrupts are
-caused by external devices.
+    <p>An <i>exception handler</i>, also known as a <i>trap handler</i> or <i>interrupt handler</i>, can easily
+        be incorporated into a MIPS program. This guide is not intended to be comprehensive but provides
+        the essential information for writing and using exception handlers.</p>
+    <p>Exceptions, traps, and interrupts are all distinct from each other, though they use the same
+        underlying mechanism. Exceptions are caused by exceptional conditions that occur at runtime
+        such as invalid memory address references. Traps are caused explicitly by certain instructions,
+        most of which have a mnemonic starting with "<code>t</code>". Interrupts are caused by external devices
+        in memory-mapped I/O (MMIO).</p>
+    <p>MARS simulates basic elements of the MIPS32 exception mechanism, but many features are not supported.</p>
+    <p>When an exception, trap, or interrupt occurs, the following steps are taken by the simulator:</p>
+    <ol>
+        <li>Bit 1 of Coprocessor 0 Status (<code>$12</code>) is set.</li>
+        <li>Bits 2-6 of Coprocessor 0 Cause (<code>$13</code>) are set to the exception type (see below for the
+            list of supported exception types).</li>
+        <li>Coprocessor 0 EPC (<code>$14</code>) is set to the address of the instruction that triggered the
+            exception or trap, or in the case of an interrupt, the address of the instruction being executed
+            when the interrupt occurred.</li>
+        <li>If the exception was caused by an invalid memory address, Coprocessor 0 BadVAddr (<code>$8</code>)
+            is set to the invalid address.</li>
+        <li>Program execution flow jumps to the MIPS instruction at memory location <code>0x80000180</code>.
+            Or, if there is no instruction at location <code>0x80000180</code>, MARS will terminate the MIPS program
+            with an appropriate error message by default. This address in the kernel text segment is the standard
+            MIPS32 exception handler location. The only way to change it in MARS is to change the MIPS memory
+            configuration through the <b>Settings &rarr; Memory Configuration</b> dialog.</li>
+    </ol>
+    <p>The following exception causes are used by MARS:</p>
+    <ul>
+        <li><code>ADDRESS_FETCH</code> (4) &mdash; Attempted to read memory at an invalid or misaligned address.</li>
+        <li><code>ADDRESS_STORE</code> (5) &mdash; Attempted to write memory at an invalid or misaligned address.</li>
+        <li><code>SYSCALL</code> (8) &mdash; An exception occurred while executing a <code>syscall</code>
+            instruction.</li>
+        <li><code>BREAKPOINT</code> (9) &mdash; Encountered a <code>break</code> instruction.</li>
+        <li><code>RESERVED_INSTRUCTION</code> (10) &mdash; Encountered an instruction whose opcode is not recognized by
+            the instruction set.</li>
+        <li><code>ARITHMETIC_OVERFLOW</code> (12) &mdash; Arithmetic overflow occurred during addition or subtraction.
+            Division by zero does not cause an exception!</li>
+        <li><code>TRAP</code> (13) &mdash; Trapped due to a trap instruction.</li>
+    </ul>
+    <p>Bits 8-15 of Coprocessor 0 Cause (<code>$13</code>) are used to indicate pending interrupts.
+        This is used by the <i>Keyboard and Display Simulator</i> tool, for example, where bit 8 represents
+        a keyboard interrupt and bit 9 represents a display interrupt. For more details, see the help menu for
+        that tool.</p>
 
-<p>MARS partially but not completely implements the exception and interrupt
-mechanism of SPIM.
+    <h2>Writing an Exception Handler</h2>
 
-<h3>Essential Facts</h3>
-Some essential facts about writing and using exception handlers include:
-<ul>
-<li>MARS simulates basic elements of the MIPS32 exception mechanism.</li>
-<li>The MIPS instruction set includes a number of instructions that
-conditionally trigger a trap exception based on the relative values of two
-registers or of a constant and a register:
-<code>teq</code>, <code>teqi</code> (trap if equal),
-<code>tne</code>, <code>tnei</code> (trap if not equal),
-<code>tge</code>, <code>tgeu</code>,
-<code>tgei</code>, <code>tgeiu</code> (trap if greater than or equal),
-<code>tlt</code>, <code>tltu</code>,
-<code>tlti</code>, <code>tltiu</code> (trap if less than)
-</li>
-<li>When an exception occurs, 
-  <ol>
-  <li>Coprocessor 0 register $12 (status) bit 1 is set</li>
-  <li>Coprocessor 0 register $13 (cause) bits 2-6 are set to the exception type (codes below)</li>
-  <li>Coprocessor 0 register $14 (epc) is set to the
-  address of the instruction that triggered the exception</li>
-  <li>If the exception was caused by an invalid memory address, 
-  Coprocessor 0 register $8 (vaddr) is set to the invalid address.</li>
-  <li>Execution flow jumps to the MIPS
-   instruction at memory location <code>0x800000180</code>.  This address
-   in the kernel text segment (<code>.ktext</code> directive) is the
-   standard MIPS32 exception handler location.  The only way to change
-   it in MARS is to change the MIPS memory configuration through
-   the Settings menu item Memory Configuration.
-   </li>
-  </ol>
-</li>
-<li>There are three ways to include an exception handler in a MIPS program
-  <ol>
-  <li>Write the exception handler in the same file as the regular
-      program.  An example of this is presented below.
-  </li>
-  <li>Write the exception handler in a separate file, store that file
-      in the same directory as the regular program, and select
-	  the Settings menu item "Assemble all files in directory"
-  </li>
-  <li>Write the exception handler in a separate file, store that file
-      in any directory, then open the "Exception Handler..." dialog
-	  in the Settings menu, check the check box and browse to 
-	  that file.
-  </li>
-  </ol>
-</li>
-<li>If there is no instruction at location <code>0x800000180</code>,
-MARS will terminate the MIPS program with an appropriate error message.
-</li>
-<li>The exception handler can return control to the program using 
-the <code>eret</code> instruction.  This will place the EPC register $14 value into the
-Program Counter, so be sure to increment $14 by 4 before returning
-to skip over the instruction that caused the exception.  The <code>mfc0</code>
-and <code>mtc0</code> instructions are used to read from and write to Coprocessor 0
-registers.</li>
-   <li>Bits 8-15 of the Cause register $13 can also be used to indicate
-   pending interrupts.  Currently this is used only by the Keyboard and
-   Display Simulator Tool, where bit 8 represents a keyboard interrupt
-   and bit 9 represents a display interrupt.  For more details, see the
-   Help panel for that Tool.
-   </li>
-<li>Exception types declared in <code>mars.simulator.ExceptionCause</code>, but
-not necessarily implemented, are ADDRESS_EXCEPTION_LOAD (4), ADDRESS_EXCEPTION_STORE (5),
-	SYSCALL_EXCEPTION (8),
-	BREAKPOINT_EXCEPTION (9),
-	RESERVED_INSTRUCTION_EXCEPTION (10),
-	ARITHMETIC_OVERFLOW_EXCEPTION (12),
-	TRAP_EXCEPTION(13),
-	DIVIDE_BY_ZERO_EXCEPTION (15),
-	FLOATING_POINT_OVERFLOW (16), and 
-	FLOATING_POINT_UNDERFLOW (17).
-</li>
-<li>When writing a non-trivial exception handler, your handler must first save
-general purpose register contents, then restore them before returning.</li>
-</ul>
+    <p>There are multiple ways to include an exception handler in a MIPS program:</p>
+    <ul>
+        <li>Write the exception handler in the same file as the rest of the program. An example of this is
+            presented below.</li>
+        <li>Write the exception handler in a separate file, store that file in the same directory as the other
+            program files, and assemble using the <b>Run &rarr; Assemble Folder</b> action.</li>
+        <li>Write the exception handler in a separate file, store that file in any directory, then open the
+            <b>Settings &rarr; Exception Handler</b> dialog, check the checkbox and browse to that file.</li>
+    </ul>
+    <p>The exception handler itself should start at kernel text address <code>0x80000180</code> in the standard
+        memory configuration (open the <b>Settings &rarr; Memory Configuration</b> dialog to find the address
+        if you are using a different layout). Use the directive <code>.ktext 0x80000180</code> to achieve this.</p>
+    <p>If you use any general-purpose registers in your exception handler besides <code>$k0</code> and <code>$k1</code>
+        (which are reserved for this exact purpose), you should save their original values and restore them after use
+        to prevent the "clobbered" register values from interfering with the regular program. Note that this
+        includes <code>$at</code>, which is used by many extended instructions! You can save the values either by
+        <code>move</code>ing them into <code>$k0</code> / <code>$k1</code>, or by using the stack.</p>
+    <p>The exception handler can return control to the program using the <code>eret</code> instruction.
+        This will set the Program Counter to the value of Coprocessor 0 EPC (<code>$14</code>), so be sure to
+        increment <code>$14</code> by 4 before returning if you want to skip over the instruction that caused
+        the exception.</p>
+    <p>Use the <code>mfc0</code> and <code>mtc0</code> instructions to read from and write to Coprocessor 0
+        registers.</p>
 
+    <h2>Exception Handler Example</h2>
 
-<h3>Example of Trap Handler</h3>
-The sample MIPS program below will immediately generate a trap exception because
-the trap condition evaluates true, control jumps to the exception handler,
- the exception handler returns control to the instruction following
-the one that triggered the exception, then the program terminates normally.
-<p>
-<pre>
-   .text
-main:
-   teqi $t0,0     # immediately trap because $t0 contains 0
-   li   $v0, 10   # After return from exception handler, specify exit service
-   syscall        # terminate normally
+    <p>The sample MIPS program below generates a trap exception, triggering the exception handler.
+        After printing a message, the exception handler returns control to the instruction following
+        the one that triggered the exception, then the program terminates normally.</p>
+    <pre>
+    # Regular program code
+        <b>.text</b>
+    main:
+        # Generate a trap exception
+        <b>teqi</b>    $zero, 0      # Trap unconditionally
 
-# Trap handler in the standard MIPS32 kernel text segment
+        # Exit the program now that the exception handler has returned
+        <b>li</b>      $v0, 10       # "Exit" system call
+        <b>syscall</b>               # Exit the program
 
-   .ktext 0x80000180
-   move $k0,$v0   # Save $v0 value
-   move $k1,$a0   # Save $a0 value
-   la   $a0, msg  # address of string to print
-   li   $v0, 4    # Print String service
-   syscall
-   move $v0,$k0   # Restore $v0
-   move $a0,$k1   # Restore $a0
-   mfc0 $k0,$14   # Coprocessor 0 register $14 has address of trapping instruction
-   addi $k0,$k0,4 # Add 4 to point to next instruction
-   mtc0 $k0,$14   # Store new address back into $14
-   eret           # Error return; set PC to value in $14
-   .kdata	
-msg:   
-   .asciiz "Trap generated"
-</pre>
-<p></p>
+    # Relevant data for the exception handler
+        <b>.kdata</b>
+    msg:
+        <b>.asciiz</b> "Trap generated"
 
-<h3>Widely Used Exception Handler</h3>
-The exception handler <code>exceptions.s</code> provided with
-the SPIM simulator will assemble and run under MARS.  The MARS
-assembler will generate warnings because this program
-contains directives that it does not
-recognize, but as long as the setting "Assembler warnings are 
-considered errors" is <i>not</i> set this will not cause any
-problems.
+    # Exception handler code
+        <b>.ktext</b>  0x80000180
+        # Save the value of $at (typically good practice) using the stack
+        <b>addi</b>    $sp, $sp, -4  # Grow the stack by one word
+        <b>sw</b>      $at, ($sp)    # Push the value of $at to the stack
+        # Save the values of $v0 and $a0 using $k0 and $k1, respectively
+        <b>move</b>    $k0, $v0
+        <b>move</b>    $k1, $a0
 
+        # Print a message to console
+        <b>li</b>      $v0, 4        # "Print String" system call
+        <b>la</b>      $a0, msg      # Address of the string to print
+        <b>syscall</b>               # Print the string to console
 
+        # Restore the original values of $v0 and $a0
+        <b>move</b>    $v0, $k0
+        <b>move</b>    $a0, $k1
+        # Restore the original value of $at
+        <b>lw</b>      $at, ($sp)    # Pop the value of $at from the stack
+        <b>addi</b>    $sp, $sp, 4   # Shrink the stack by one word
 
+        # Increment EPC (Exception Program Counter) in order to skip the trap instruction
+        <b>mfc0</b>    $k0, $14      # Coprocessor 0 register $14 has address of trapping instruction
+        <b>addi</b>    $k0, $k0, 4   # Add 4 to point to next instruction
+        <b>mtc0</b>    $k0, $14      # Store new address back into $14
+        # Return to the regular program code
+        <b>eret</b>                  # Exception return; jump to EPC
+    </pre>
 
 </body>
 </html>

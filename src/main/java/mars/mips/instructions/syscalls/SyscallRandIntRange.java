@@ -67,7 +67,7 @@ public class SyscallRandIntRange extends AbstractSyscall {
             Processor.updateRegister(Processor.ARGUMENT_0, stream.nextInt(Processor.getValue(Processor.ARGUMENT_1)));
         }
         catch (IllegalArgumentException exception) {
-            throw new SimulatorException(statement, "upper bound of range cannot be negative (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            throw new SimulatorException(statement, "upper bound of range cannot be negative (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL);
         }
     }
 }

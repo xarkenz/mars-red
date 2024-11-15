@@ -58,7 +58,7 @@ public class SyscallSbrk extends AbstractSyscall {
             Processor.updateRegister(2, address); // Put address into $v0
         }
         catch (IllegalArgumentException exception) {
-            throw new SimulatorException(statement, exception.getMessage() + " (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            throw new SimulatorException(statement, exception.getMessage() + " (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL);
         }
     }
 }

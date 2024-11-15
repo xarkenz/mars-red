@@ -117,8 +117,8 @@ public class Memory {
      *
      * @param address        The address to check.
      * @param exceptionCause The cause given if an exception is thrown
-     *                       (usually either {@link ExceptionCause#ADDRESS_EXCEPTION_STORE}
-     *                       or {@link ExceptionCause#ADDRESS_EXCEPTION_FETCH}).
+     *                       (usually either {@link ExceptionCause#ADDRESS_STORE}
+     *                       or {@link ExceptionCause#ADDRESS_FETCH}).
      * @throws AddressErrorException Thrown if the address is not word-aligned.
      */
     public static void enforceWordAlignment(int address, int exceptionCause) throws AddressErrorException {
@@ -142,8 +142,8 @@ public class Memory {
      *
      * @param address        The address to check.
      * @param exceptionCause The cause given if an exception is thrown
-     *                       (usually either {@link ExceptionCause#ADDRESS_EXCEPTION_STORE}
-     *                       or {@link ExceptionCause#ADDRESS_EXCEPTION_FETCH}).
+     *                       (usually either {@link ExceptionCause#ADDRESS_STORE}
+     *                       or {@link ExceptionCause#ADDRESS_FETCH}).
      * @throws AddressErrorException Thrown if the address is not halfword-aligned.
      */
     public static void enforceHalfwordAlignment(int address, int exceptionCause) throws AddressErrorException {
@@ -167,8 +167,8 @@ public class Memory {
      *
      * @param address        The address to check.
      * @param exceptionCause The cause given if an exception is thrown
-     *                       (usually either {@link ExceptionCause#ADDRESS_EXCEPTION_STORE}
-     *                       or {@link ExceptionCause#ADDRESS_EXCEPTION_FETCH}).
+     *                       (usually either {@link ExceptionCause#ADDRESS_STORE}
+     *                       or {@link ExceptionCause#ADDRESS_FETCH}).
      * @throws AddressErrorException Thrown if the address is not doubleword-aligned.
      */
     public static void enforceDoublewordAlignment(int address, int exceptionCause) throws AddressErrorException {
@@ -506,7 +506,7 @@ public class Memory {
      *         or does not allow this operation.
      */
     public void storeWord(int address, int value, boolean notify) throws AddressErrorException {
-        enforceWordAlignment(address, ExceptionCause.ADDRESS_EXCEPTION_STORE);
+        enforceWordAlignment(address, ExceptionCause.ADDRESS_STORE);
 
         DataRegion dataRegion;
         TextRegion textRegion;
@@ -523,7 +523,7 @@ public class Memory {
             // Burch Mod (Jan 2013): replace throw with call to storeStatement
             // DPS adaptation 5-Jul-2013: either throw or call, depending on setting
             if (!Application.getSettings().selfModifyingCodeEnabled.get()) {
-                throw new AddressErrorException("cannot write to text segment unless self-modifying code is enabled", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
+                throw new AddressErrorException("cannot write to text segment unless self-modifying code is enabled", ExceptionCause.ADDRESS_STORE, address);
             }
             BasicStatement statement = Application.instructionSet.getDecoder().decodeStatement(value);
             BasicStatement oldStatement = textRegion.storeStatement(address, statement);
@@ -535,7 +535,7 @@ public class Memory {
         }
         else {
             // Falls outside mapped addressing range
-            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_EXCEPTION_STORE, address);
+            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_STORE, address);
         }
 
         if (notify) {
@@ -556,7 +556,7 @@ public class Memory {
      *         or does not allow this operation.
      */
     public void storeHalfword(int address, int value, boolean notify) throws AddressErrorException {
-        enforceHalfwordAlignment(address, ExceptionCause.ADDRESS_EXCEPTION_STORE);
+        enforceHalfwordAlignment(address, ExceptionCause.ADDRESS_STORE);
         // Discard all but the lowest 16 bits
         value &= 0xFFFF;
 
@@ -629,7 +629,7 @@ public class Memory {
     public void storeDoubleword(int address, long value, boolean notify) throws AddressErrorException {
         // For some reason, both SPIM and previous versions of MARS enforce only word alignment here,
         // so I'll keep it that way for backwards compatibility.  Sean Clarke 05/2024
-        enforceWordAlignment(address, ExceptionCause.ADDRESS_EXCEPTION_STORE);
+        enforceWordAlignment(address, ExceptionCause.ADDRESS_STORE);
 
         // Order the words in memory according to the endianness setting
         switch (this.endianness) {
@@ -656,7 +656,7 @@ public class Memory {
      *         or does not allow this operation.
      */
     public void storeStatement(int address, BasicStatement statement, boolean notify) throws AddressErrorException {
-        enforceWordAlignment(address, ExceptionCause.ADDRESS_EXCEPTION_STORE);
+        enforceWordAlignment(address, ExceptionCause.ADDRESS_STORE);
 
         // Obtain the binary representation of the statement
         int binaryStatement = (statement == null) ? 0 : statement.getBinaryEncoding();
@@ -671,13 +671,13 @@ public class Memory {
         else if ((dataRegion = this.getDataRegionForAddress(address)) != null) {
             // Falls within a region containing data
             if (!Application.getSettings().selfModifyingCodeEnabled.get()) {
-                throw new AddressErrorException("cannot store code beyond text segment unless self-modifying code is enabled", ExceptionCause.ADDRESS_EXCEPTION_FETCH, address);
+                throw new AddressErrorException("cannot store code beyond text segment unless self-modifying code is enabled", ExceptionCause.ADDRESS_FETCH, address);
             }
             dataRegion.storeWord(address, binaryStatement);
         }
         else {
             // Falls outside mapped addressing range
-            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_EXCEPTION_FETCH, address);
+            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_FETCH, address);
         }
 
         if (notify) {
@@ -720,7 +720,7 @@ public class Memory {
      * @throws AddressErrorException Thrown if the given address is not word-aligned or is out of range.
      */
     public int fetchWord(int address, boolean notify) throws AddressErrorException {
-        enforceWordAlignment(address, ExceptionCause.ADDRESS_EXCEPTION_FETCH);
+        enforceWordAlignment(address, ExceptionCause.ADDRESS_FETCH);
 
         int value;
         DataRegion dataRegion;
@@ -739,7 +739,7 @@ public class Memory {
         }
         else {
             // Falls outside mapped addressing range
-            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_EXCEPTION_FETCH, address);
+            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_FETCH, address);
         }
 
         if (notify) {
@@ -771,7 +771,7 @@ public class Memory {
      * @throws AddressErrorException Thrown if the given address is not word-aligned.
      */
     public Integer fetchWordOrNull(int address) throws AddressErrorException {
-        enforceWordAlignment(address, ExceptionCause.ADDRESS_EXCEPTION_FETCH);
+        enforceWordAlignment(address, ExceptionCause.ADDRESS_FETCH);
 
         DataRegion dataRegion;
         TextRegion textRegion;
@@ -804,7 +804,7 @@ public class Memory {
      * @throws AddressErrorException Thrown if the given address is not halfword-aligned or is out of range.
      */
     public int fetchHalfword(int address, boolean notify) throws AddressErrorException {
-        enforceHalfwordAlignment(address, ExceptionCause.ADDRESS_EXCEPTION_FETCH);
+        enforceHalfwordAlignment(address, ExceptionCause.ADDRESS_FETCH);
 
         // Fetch the surrounding word from memory
         int wordAddress = alignToPrevious(address, BYTES_PER_WORD);
@@ -868,7 +868,7 @@ public class Memory {
     public long fetchDoubleword(int address, boolean notify) throws AddressErrorException {
         // For some reason, both SPIM and previous versions of MARS enforce only word alignment here,
         // so I'll keep it that way for backwards compatibility.  Sean Clarke 05/2024
-        enforceWordAlignment(address, ExceptionCause.ADDRESS_EXCEPTION_FETCH);
+        enforceWordAlignment(address, ExceptionCause.ADDRESS_FETCH);
 
         // Fetch the two relevant words from memory
         int firstWord = this.fetchWord(address, notify);
@@ -893,7 +893,7 @@ public class Memory {
      *         or does not allow this operation.
      */
     public BasicStatement fetchStatement(int address, boolean notify) throws AddressErrorException {
-        enforceWordAlignment(address, ExceptionCause.ADDRESS_EXCEPTION_FETCH);
+        enforceWordAlignment(address, ExceptionCause.ADDRESS_FETCH);
 
         BasicStatement statement;
         TextRegion textRegion;
@@ -905,14 +905,14 @@ public class Memory {
         else if ((dataRegion = this.getDataRegionForAddress(address)) != null) {
             // Falls within a region containing data
             if (!Application.getSettings().selfModifyingCodeEnabled.get()) {
-                throw new AddressErrorException("cannot execute beyond text segment unless self-modifying code is enabled", ExceptionCause.ADDRESS_EXCEPTION_FETCH, address);
+                throw new AddressErrorException("cannot execute beyond text segment unless self-modifying code is enabled", ExceptionCause.ADDRESS_FETCH, address);
             }
             Integer binaryStatement = dataRegion.fetchWordOrNull(address);
             statement = (binaryStatement == null) ? null : Application.instructionSet.getDecoder().decodeStatement(binaryStatement);
         }
         else {
             // Falls outside mapped addressing range
-            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_EXCEPTION_FETCH, address);
+            throw new AddressErrorException("segmentation fault (address out of range)", ExceptionCause.ADDRESS_FETCH, address);
         }
 
         if (notify) {

@@ -57,7 +57,7 @@ public class SyscallReadInt extends AbstractSyscall {
             Processor.updateRegister(Processor.VALUE_0, intValue);
         }
         catch (NumberFormatException exception) {
-            throw new SimulatorException(statement, "invalid integer input (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            throw new SimulatorException(statement, "invalid integer input (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL);
         }
     }
 }

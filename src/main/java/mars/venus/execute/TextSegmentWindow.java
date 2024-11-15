@@ -226,7 +226,8 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
      * @author DPS 17-July-2008
      */
     public List<String> getProgramArguments() {
-        return List.of(this.programArgumentsTextField.getText().split("\\s+"));
+        String text = this.programArgumentsTextField.getText();
+        return (text.isBlank()) ? List.of() : List.of(text.split("\\s+"));
     }
 
     /**

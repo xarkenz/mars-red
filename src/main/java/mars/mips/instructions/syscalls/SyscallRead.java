@@ -64,7 +64,7 @@ public class SyscallRead extends AbstractSyscall {
         int maxLength = Processor.getValue(Processor.ARGUMENT_2); // $a2: user-requested length
 
         if (maxLength < 0) {
-            throw new SimulatorException(statement, "Length value in $a2 cannot be negative for " + this.getName() + " (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL_EXCEPTION);
+            throw new SimulatorException(statement, "Length value in $a2 cannot be negative for " + this.getName() + " (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL);
         }
         ByteBuffer buffer = ByteBuffer.allocateDirect(maxLength);
 
