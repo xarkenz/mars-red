@@ -18,6 +18,8 @@ import mars.venus.execute.ProgramStatus;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 /*
@@ -71,6 +73,25 @@ public class RunAssembleFolderAction extends VenusAction {
 
         // Generate the list of files to assemble
         List<String> sourceFilenames = FilenameFinder.findFilenames(editTab.getCurrentEditorTab().getFile().getParent(), Application.FILE_EXTENSIONS);
+
+        // Place the current file first in the list
+        try {
+            String currentPath = editTab.getCurrentEditorTab().getFile().getCanonicalPath();
+            for (int index = 0; index < sourceFilenames.size(); index++) {
+                String sourceFilename = sourceFilenames.get(index);
+                String sourcePath = new File(sourceFilename).getCanonicalPath();
+                if (sourcePath.equals(currentPath)) {
+                    // Swap with the beginning of the list
+                    sourceFilenames.set(index, sourceFilenames.get(0));
+                    sourceFilenames.set(0, sourceFilename);
+                    // No need to check further
+                    break;
+                }
+            }
+        }
+        catch (IOException exception) {
+            // Something went wrong but it will be handled later
+        }
 
         // Get the path of the exception handler, if enabled
         if (this.gui.getSettings().exceptionHandlerEnabled.get()) {
