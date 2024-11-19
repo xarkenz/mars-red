@@ -1,6 +1,5 @@
 package mars.simulator;
 
-import mars.*;
 import mars.assembler.BasicStatement;
 import mars.mips.hardware.*;
 import mars.mips.instructions.Instruction;
@@ -11,6 +10,8 @@ import java.util.Arrays;
 /**
  * {@link Thread} subclass to perform MIPS simulation in the background. The thread can be interrupted using either
  * {@link Simulator#pause()} or {@link Simulator#terminate()}.
+ *
+ * @author Pete Sanderson, August 2005; Sean Clarke, April 2024
  */
 public class SimulatorThread extends Thread {
     private final Simulator simulator;
@@ -259,7 +260,7 @@ public class SimulatorThread extends Thread {
                 this.simulator.dispatchStepEvent();
 
                 // Wait according to the speed setting (division is fine here since it should never be 0)
-                Thread.sleep((long) (1000.0 / this.simulator.getRunSpeed()));
+                Thread.sleep(Math.round(1000.0 / this.simulator.getRunSpeed()));
             }
         }
     }

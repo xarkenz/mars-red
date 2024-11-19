@@ -94,7 +94,7 @@ public class Simulator {
     }
 
     public boolean isRunning() {
-        return this.thread != null;
+        return this.thread != null && this.thread.isAlive();
     }
 
     public BackStepper getBackStepper() {
@@ -193,6 +193,7 @@ public class Simulator {
      * Set the current run speed of the simulator in instructions per second.
      *
      * @param runSpeed The run speed, or {@link #UNLIMITED_SPEED} to disable run speed limiting.
+     * @throws IllegalArgumentException Thrown if <code>runSpeed</code> is NaN or &le; 0.
      */
     public void setRunSpeed(double runSpeed) {
         // The below condition is used instead of "runSpeed <= 0.0" in order to catch NaN values
@@ -226,18 +227,35 @@ public class Simulator {
         this.externalInterruptDevice = device;
     }
 
+    /**
+     * Modify program state used by the simulator (e.g. memory and registers) whenever is allowed by the simulator.
+     * If the simulator is not currently running, this change will occur immediately. On the other hand,
+     * if the simulator is running, this change will be queued and execute between instructions.
+     * <p>
+     * <b>If any thread other than the simulator needs to modify memory, registers, or some other program state,
+     * this method must be used for synchronization purposes!</b>
+     *
+     * @param stateChanger The modification on program state, which will be performed asynchronously if needed.
+     */
     public void changeState(Runnable stateChanger) {
         if (this.isRunning()) {
+            // This change will be performed asynchronously
             synchronized (this.queuedStateChanges) {
                 this.queuedStateChanges.add(stateChanger);
             }
         }
         else {
+            // Perform this change synchronously, as well as any others that haven't occurred yet
             this.flushStateChanges();
             stateChanger.run();
         }
     }
 
+    /**
+     * Perform any changes to program state from calls to {@link #changeState(Runnable)} which are waiting to execute.
+     * <p>
+     * <b>Note: This method must be called from the simulator thread.</b>
+     */
     public void flushStateChanges() {
         synchronized (this.queuedStateChanges) {
             for (Runnable stateChanger : this.queuedStateChanges) {
@@ -251,6 +269,7 @@ public class Simulator {
      * Add a {@link SimulatorListener} whose callbacks will be executed on the GUI thread.
      *
      * @param listener The listener to add.
+     * @see #removeGUIListener(SimulatorListener)
      */
     public void addGUIListener(SimulatorListener listener) {
         if (!this.guiListeners.contains(listener)) {
@@ -271,6 +290,7 @@ public class Simulator {
      * Add a {@link SimulatorListener} whose callbacks will be executed on the simulator thread.
      *
      * @param listener The listener to add.
+     * @see #removeThreadListener(SimulatorListener)
      */
     public void addThreadListener(SimulatorListener listener) {
         if (!this.threadListeners.contains(listener)) {
@@ -288,7 +308,7 @@ public class Simulator {
     }
 
     /**
-     * Place any program arguments into MIPS memory and registers
+     * Place any program arguments into MIPS memory and registers.
      * Arguments are stored starting at highest word of non-kernel
      * memory and working back toward runtime stack (there is a 4096
      * byte gap in between).  The argument count (argc) and pointers
@@ -296,6 +316,9 @@ public class Simulator {
      * pointer register $sp is adjusted accordingly and $a0 is set
      * to the argument count (argc), and $a1 is set to the stack
      * address holding the first argument pointer (argv).
+     *
+     * @param arguments The list of program argument strings.
+     * @throws SimulatorException Thrown if a memory exception occurs while writing program arguments.
      */
     public void storeProgramArguments(List<String> arguments) throws SimulatorException {
         if (arguments == null || arguments.isEmpty()) {
@@ -417,32 +440,30 @@ public class Simulator {
     }
 
     /**
-     * Flag the simulator to stop due to pausing. Once it has done so,
+     * Flag the simulator to stop due to pausing, unless it is already paused. Once it has stopped,
      * {@link SimulatorListener#simulatorPaused(SimulatorPauseEvent)} will be called for all registered listeners.
      */
     public void pause() {
-        if (this.thread != null) {
+        if (this.isRunning()) {
             this.thread.stopForPause();
-            this.thread = null;
             this.flushStateChanges();
         }
+        this.thread = null;
     }
 
     /**
-     * Flag the simulator to stop due to termination. Once it has done so,
+     * Flag the simulator to stop due to termination, even if it is currently paused. Once it has stopped,
      * {@link SimulatorListener#simulatorFinished(SimulatorFinishEvent)} will be called for all registered listeners.
-     * <p>
-     * Note: Unlike {@link #pause()}, this may be called while the simulator is paused.
      */
     public void terminate() {
-        if (this.thread != null) {
+        if (this.isRunning()) {
             this.thread.stopForTermination();
-            this.thread = null;
             this.flushStateChanges();
         }
         else {
             this.dispatchFinishEvent(Processor.getProgramCounter(), SimulatorFinishEvent.Reason.EXTERNAL, null);
         }
+        this.thread = null;
     }
 
     /**
