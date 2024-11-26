@@ -96,9 +96,7 @@ public class Coprocessor0 {
         if (REGISTERS[number] != null) {
             int previousValue = REGISTERS[number].setValue(value);
 
-            if (Simulator.getInstance().getBackStepper().isEnabled()) {
-                Simulator.getInstance().getBackStepper().addCoprocessor0Restore(number, previousValue);
-            }
+            Simulator.getInstance().getBackStepper().registerChanged(REGISTERS[number], previousValue);
 
             return previousValue;
         }

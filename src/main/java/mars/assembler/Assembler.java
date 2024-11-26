@@ -10,6 +10,7 @@ import mars.assembler.syntax.Syntax;
 import mars.assembler.syntax.SyntaxParser;
 import mars.assembler.token.*;
 import mars.mips.hardware.*;
+import mars.simulator.Simulator;
 import mars.util.Binary;
 
 import java.util.*;
@@ -270,6 +271,9 @@ public class Assembler {
     }
 
     private void assembleFiles() throws AssemblyError {
+        // TODO: We shouldn't have to do this here...
+        Simulator.getInstance().getBackStepper().setEnabled(false);
+
         // FIRST PASS: Parse each file into its syntax components, processing directives and populating the symbol
         // tables as label definitions are encountered
 
@@ -303,6 +307,7 @@ public class Assembler {
             this.currentFilePatches.clear();
 
             if (this.log.hasExceededMaxErrorCount()) {
+                Simulator.getInstance().getBackStepper().setEnabled(true);
                 throw new AssemblyError(this.log);
             }
         }
@@ -318,12 +323,14 @@ public class Assembler {
             );
 
             if (this.log.hasExceededMaxErrorCount()) {
+                Simulator.getInstance().getBackStepper().setEnabled(true);
                 throw new AssemblyError(this.log);
             }
         }
 
         // If the first pass produced any errors, throw them instead of progressing to the second pass
         if (this.log.hasMessages(LogLevel.ERROR)) {
+            Simulator.getInstance().getBackStepper().setEnabled(true);
             throw new AssemblyError(this.log);
         }
 
@@ -354,12 +361,14 @@ public class Assembler {
             this.resolvedStatements.put(address, syntax.resolve(this, address));
 
             if (this.log.hasExceededMaxErrorCount()) {
+                Simulator.getInstance().getBackStepper().setEnabled(true);
                 throw new AssemblyError(this.log);
             }
         }
 
         // If the second pass produced any errors, throw them instead of progressing to the third pass
         if (this.log.hasMessages(LogLevel.ERROR)) {
+            Simulator.getInstance().getBackStepper().setEnabled(true);
             throw new AssemblyError(this.log);
         }
 
@@ -376,6 +385,7 @@ public class Assembler {
             statement.handlePlacement(this, address);
 
             if (this.log.hasExceededMaxErrorCount()) {
+                Simulator.getInstance().getBackStepper().setEnabled(true);
                 throw new AssemblyError(this.log);
             }
         }
@@ -384,10 +394,13 @@ public class Assembler {
         if (this.log.hasMessages(LogLevel.ERROR) || (
             Application.getSettings().warningsAreErrors.get() && this.log.hasMessages(LogLevel.WARNING)
         )) {
+            Simulator.getInstance().getBackStepper().setEnabled(true);
             throw new AssemblyError(this.log);
         }
 
         this.log.logInfo(null, "Assembling finished.");
+
+        Simulator.getInstance().getBackStepper().setEnabled(true);
     }
 
     public void addParsedStatement(StatementSyntax statement) {

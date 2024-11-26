@@ -77,7 +77,7 @@ public class SyscallInputDialogDouble extends AbstractSyscall {
         String inputValue = JOptionPane.showInputDialog(message);
 
         try {
-            Coprocessor1.setRegisterPairToDouble(0, 0.0);  // set $f0 to zero
+            Coprocessor1.setDoubleFloat(0, 0.0);  // set $f0 to zero
             if (inputValue == null) {
                 // Cancel was chosen
                 Processor.updateRegister(Processor.ARGUMENT_1, -2);  // set $a1 to -2 flag
@@ -90,7 +90,7 @@ public class SyscallInputDialogDouble extends AbstractSyscall {
                 double doubleValue = Double.parseDouble(inputValue);
 
                 // Successful parse of valid input data
-                Coprocessor1.setRegisterPairToDouble(0, doubleValue);  // set $f0 to input data
+                Coprocessor1.setDoubleFloat(0, doubleValue);  // set $f0 to input data
                 Processor.updateRegister(Processor.ARGUMENT_1, 0);  // set $a1 to valid flag
             }
         }

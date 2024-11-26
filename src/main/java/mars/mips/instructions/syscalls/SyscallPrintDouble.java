@@ -54,7 +54,7 @@ public class SyscallPrintDouble extends AbstractSyscall {
     @Override
     public void simulate(BasicStatement statement) throws SimulatorException {
         try {
-            double doubleValue = Coprocessor1.getDoubleFromRegisterPair(12);
+            double doubleValue = Coprocessor1.getDoubleFloat(12);
 
             Simulator.getInstance().getSystemIO().printString(Double.toString(doubleValue));
         }

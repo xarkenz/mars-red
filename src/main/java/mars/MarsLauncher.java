@@ -606,13 +606,13 @@ public class MarsLauncher {
             }
             else {
                 // floating point register
-                int intValue = Coprocessor1.getIntFromRegister(Coprocessor1.getRegisterNumber(regName));
+                int intValue = Coprocessor1.getValue(Coprocessor1.getRegisterNumber(regName));
                 float floatValue = Float.intBitsToFloat(intValue);
                 long longValue;
                 double doubleValue;
                 boolean hasDouble;
                 try {
-                    longValue = Coprocessor1.getLongFromRegisterPair(Coprocessor1.getRegisterNumber(regName));
+                    longValue = Coprocessor1.getPairValue(Coprocessor1.getRegisterNumber(regName));
                     doubleValue = Double.longBitsToDouble(longValue);
                     hasDouble = true;
                 }

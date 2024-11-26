@@ -61,6 +61,6 @@ public class SyscallRandFloat extends AbstractSyscall {
         int index = Processor.getValue(Processor.ARGUMENT_0);
         Random stream = RandomStreams.getStream(index);
 
-        Coprocessor1.setRegisterToFloat(0, stream.nextFloat());
+        Coprocessor1.setSingleFloat(0, stream.nextFloat());
     }
 }

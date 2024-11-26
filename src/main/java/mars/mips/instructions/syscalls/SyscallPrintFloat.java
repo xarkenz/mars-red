@@ -50,7 +50,7 @@ public class SyscallPrintFloat extends AbstractSyscall {
      */
     @Override
     public void simulate(BasicStatement statement) throws SimulatorException {
-        float floatValue = Coprocessor1.getFloatFromRegister(12);
+        float floatValue = Coprocessor1.getSingleFloat(12);
 
         Simulator.getInstance().getSystemIO().printString(Float.toString(floatValue));
     }

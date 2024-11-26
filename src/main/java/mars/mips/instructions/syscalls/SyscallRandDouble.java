@@ -64,7 +64,7 @@ public class SyscallRandDouble extends AbstractSyscall {
         Random stream = RandomStreams.getStream(index);
 
         try {
-            Coprocessor1.setRegisterPairToDouble(0, stream.nextDouble());
+            Coprocessor1.setDoubleFloat(0, stream.nextDouble());
         }
         catch (InvalidRegisterAccessException exception) {
             // This should not occur because $f0 is always a valid double target

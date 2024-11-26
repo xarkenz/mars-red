@@ -153,7 +153,7 @@ public class Coprocessor1Tab extends RegistersDisplayTab {
             if (register.getNumber() % 2 == 0) {
                 long longValue = 0;
                 try {
-                    longValue = Coprocessor1.getLongFromRegisterPair(register.getNumber());
+                    longValue = Coprocessor1.getPairValue(register.getNumber());
                 }
                 catch (InvalidRegisterAccessException exception) {
                     // Cannot happen since row must be even
@@ -175,7 +175,6 @@ public class Coprocessor1Tab extends RegistersDisplayTab {
         this.clearHighlighting();
         Coprocessor1.reset();
         this.updateRegisters(this.gui.getMainPane().getExecuteTab().getValueDisplayBase());
-        Coprocessor1.clearConditionFlags();
         this.updateConditionFlagDisplay();
     }
 
@@ -190,7 +189,7 @@ public class Coprocessor1Tab extends RegistersDisplayTab {
             this.updateFloatRegisterValue(register.getNumber(), register.getValue(), base);
             if (register.getNumber() % 2 == 0) {
                 try {
-                    long value = Coprocessor1.getLongFromRegisterPair(register.getNumber());
+                    long value = Coprocessor1.getPairValue(register.getNumber());
                     this.updateDoubleRegisterValue(register.getNumber(), value, base);
                 }
                 catch (InvalidRegisterAccessException exception) {
@@ -318,7 +317,7 @@ public class Coprocessor1Tab extends RegistersDisplayTab {
 
                         // Assures that if changed during MIPS program execution, the update will
                         // occur only between MIPS instructions.
-                        Simulator.getInstance().changeState(() -> Coprocessor1.setRegisterToInt(row, intValue));
+                        Simulator.getInstance().changeState(() -> Coprocessor1.setValue(row, intValue));
                     }
                     else {
                         // Is not hex, so must be decimal
@@ -329,7 +328,7 @@ public class Coprocessor1Tab extends RegistersDisplayTab {
 
                         // Assures that if changed during MIPS program execution, the update will
                         // occur only between MIPS instructions.
-                        Simulator.getInstance().changeState(() -> Coprocessor1.setRegisterToFloat(row, floatValue));
+                        Simulator.getInstance().changeState(() -> Coprocessor1.setSingleFloat(row, floatValue));
                     }
                 }
                 else if (column == DOUBLE_COLUMN) {
@@ -343,7 +342,7 @@ public class Coprocessor1Tab extends RegistersDisplayTab {
                         // occur only between MIPS instructions.
                         Simulator.getInstance().changeState(() -> {
                             try {
-                                Coprocessor1.setRegisterPairToLong(row, longValue);
+                                Coprocessor1.setPairValue(row, longValue);
                             }
                             catch (InvalidRegisterAccessException exception) {
                                 // Should never happen
@@ -361,7 +360,7 @@ public class Coprocessor1Tab extends RegistersDisplayTab {
                         // occur only between MIPS instructions.
                         Simulator.getInstance().changeState(() -> {
                             try {
-                                Coprocessor1.setRegisterPairToDouble(row, doubleValue);
+                                Coprocessor1.setDoubleFloat(row, doubleValue);
                             }
                             catch (InvalidRegisterAccessException exception) {
                                 // Should never happen

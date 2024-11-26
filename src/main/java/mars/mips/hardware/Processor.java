@@ -3,6 +3,7 @@ package mars.mips.hardware;
 import mars.Application;
 import mars.assembler.Symbol;
 import mars.assembler.SymbolTable;
+import mars.mips.instructions.Instruction;
 import mars.simulator.Simulator;
 import mars.util.Binary;
 
@@ -126,21 +127,16 @@ public class Processor {
      * @return The previous value of the register.
      */
     public static int updateRegister(int number, int value) {
-        int previousValue;
-        if (number == 0) {
+        if (number == ZERO_CONSTANT) {
             // $zero cannot be modified
             return 0;
         }
-        else {
-            // Originally, this used a linear search to figure out which register to update.
-            // Since all registers 0-31 are present in order, a simple array access should work.
-            // - Sean Clarke 03/2024
-            previousValue = REGISTERS[number].setValue(value);
-        }
+        // Originally, this used a linear search to figure out which register to update.
+        // Since all registers 0-31 are present in order, a simple array access should work.
+        // - Sean Clarke 03/2024
+        int previousValue = REGISTERS[number].setValue(value);
 
-        if (Simulator.getInstance().getBackStepper().isEnabled()) {
-            Simulator.getInstance().getBackStepper().addRegisterFileRestore(number, previousValue);
-        }
+        Simulator.getInstance().getBackStepper().registerChanged(REGISTERS[number], previousValue);
 
         return previousValue;
     }
@@ -287,10 +283,11 @@ public class Processor {
      * @return The previous program counter value.
      */
     public static int setProgramCounter(int value) {
-        int previousValue = PROGRAM_COUNTER_REGISTER.setValue(value);
-        if (Simulator.getInstance().getBackStepper().isEnabled()) {
-            Simulator.getInstance().getBackStepper().addPCRestore(previousValue);
-        }
+        int previousValue = PROGRAM_COUNTER_REGISTER.setValue(value) - Instruction.BYTES_PER_INSTRUCTION;
+
+        // Decrement by one instruction to account for PC being incremented at the start of the step
+        Simulator.getInstance().getBackStepper().programCounterChanged(previousValue);
+
         return previousValue;
     }
 

@@ -125,7 +125,7 @@ public class Coprocessor1 {
      * @param reg Register to set the value of.
      * @param val The desired float value for the register.
      */
-    public static void setRegisterToFloat(int reg, float val) {
+    public static void setSingleFloat(int reg, float val) {
         REGISTERS[reg].setValue(Float.floatToRawIntBits(val));
     }
 
@@ -134,12 +134,12 @@ public class Coprocessor1 {
      * must be even-numbered, and the low order 32 bits are placed in it.  The high order
      * 32 bits are placed in the (odd numbered) register that follows it.
      *
-     * @param reg Register to set the value of.
-     * @param val The desired double value for the register.
+     * @param number Register to set the value of.
+     * @param value The desired double value for the register.
      * @throws InvalidRegisterAccessException if register ID is invalid or odd-numbered.
      */
-    public static void setRegisterPairToDouble(int reg, double val) throws InvalidRegisterAccessException {
-        setRegisterPairToLong(reg, Double.doubleToRawLongBits(val));
+    public static void setDoubleFloat(int number, double value) throws InvalidRegisterAccessException {
+        setPairValue(number, Double.doubleToRawLongBits(value));
     }
 
     /**
@@ -148,22 +148,22 @@ public class Coprocessor1 {
      * must be even-numbered, and the low order 32 bits from the long are placed in it.  The high order
      * 32 bits from the long are placed in the (odd numbered) register that follows it.
      *
-     * @param reg Register to set the value of.  Must be even register of even/odd pair.
-     * @param val The desired long value for the register.
+     * @param number Register to set the value of.  Must be even register of even/odd pair.
+     * @param value The desired long value for the register.
      * @throws InvalidRegisterAccessException if register ID is invalid or odd-numbered.
      */
-    public static void setRegisterPairToLong(int reg, long val) throws InvalidRegisterAccessException {
-        if (reg % 2 != 0) {
+    public static void setPairValue(int number, long value) throws InvalidRegisterAccessException {
+        if (number % 2 != 0) {
             throw new InvalidRegisterAccessException();
         }
         switch (Memory.getInstance().getEndianness()) {
             case BIG_ENDIAN -> {
-                REGISTERS[reg].setValue(Binary.highOrderLongToInt(val));
-                REGISTERS[reg + 1].setValue(Binary.lowOrderLongToInt(val));
+                REGISTERS[number].setValue(Binary.highOrderLongToInt(value));
+                REGISTERS[number + 1].setValue(Binary.lowOrderLongToInt(value));
             }
             case LITTLE_ENDIAN -> {
-                REGISTERS[reg].setValue(Binary.lowOrderLongToInt(val));
-                REGISTERS[reg + 1].setValue(Binary.highOrderLongToInt(val));
+                REGISTERS[number].setValue(Binary.lowOrderLongToInt(value));
+                REGISTERS[number + 1].setValue(Binary.highOrderLongToInt(value));
             }
         }
     }
@@ -171,22 +171,22 @@ public class Coprocessor1 {
     /**
      * Gets the float value stored in the given FPU register.
      *
-     * @param reg Register to get the value of.
+     * @param number Register to get the value of.
      * @return The float value stored by that register.
      */
-    public static float getFloatFromRegister(int reg) {
-        return Float.intBitsToFloat(REGISTERS[reg].getValue());
+    public static float getSingleFloat(int number) {
+        return Float.intBitsToFloat(REGISTERS[number].getValue());
     }
 
     /**
      * Gets the double value stored in the given FPU register.  The register
      * must be even-numbered.
      *
-     * @param reg Register to get the value of. Must be even number of even/odd pair.
+     * @param number Register to get the value of. Must be even number of even/odd pair.
      * @throws InvalidRegisterAccessException if register ID is invalid or odd-numbered.
      */
-    public static double getDoubleFromRegisterPair(int reg) throws InvalidRegisterAccessException {
-        return Double.longBitsToDouble(getLongFromRegisterPair(reg));
+    public static double getDoubleFloat(int number) throws InvalidRegisterAccessException {
+        return Double.longBitsToDouble(getPairValue(number));
     }
 
     /**
@@ -194,15 +194,15 @@ public class Coprocessor1 {
      * precision FPU register.
      * The register must be even-numbered.
      *
-     * @param reg Register to get the value of. Must be even number of even/odd pair.
+     * @param number Register to get the value of. Must be even number of even/odd pair.
      * @throws InvalidRegisterAccessException if register ID is invalid or odd-numbered.
      */
-    public static long getLongFromRegisterPair(int reg) throws InvalidRegisterAccessException {
-        if (reg % 2 != 0) {
+    public static long getPairValue(int number) throws InvalidRegisterAccessException {
+        if (number % 2 != 0) {
             throw new InvalidRegisterAccessException();
         }
-        int firstValue = REGISTERS[reg].getValue();
-        int secondValue = REGISTERS[reg + 1].getValue();
+        int firstValue = REGISTERS[number].getValue();
+        int secondValue = REGISTERS[number + 1].getValue();
         return switch (Memory.getInstance().getEndianness()) {
             case BIG_ENDIAN -> Binary.twoIntsToLong(firstValue, secondValue);
             case LITTLE_ENDIAN -> Binary.twoIntsToLong(secondValue, firstValue);
@@ -218,15 +218,13 @@ public class Coprocessor1 {
      * @param value The desired int value for the register.
      * @return The previous value of the register.
      */
-    public static int setRegisterToInt(int number, int value) {
+    public static int setValue(int number, int value) {
         // Originally, this used a linear search to figure out which register to update.
         // Since all registers 0-31 are present in order, a simple array access should work.
         // Sean Clarke 03/2024
         int previousValue = REGISTERS[number].setValue(value);
 
-        if (Simulator.getInstance().getBackStepper().isEnabled()) {
-            Simulator.getInstance().getBackStepper().addCoprocessor1Restore(number, previousValue);
-        }
+        Simulator.getInstance().getBackStepper().registerChanged(REGISTERS[number], previousValue);
 
         return previousValue;
     }
@@ -239,7 +237,7 @@ public class Coprocessor1 {
      * @param number The FPU register number.
      * @return The int value of the given register.
      */
-    public static int getIntFromRegister(int number) {
+    public static int getValue(int number) {
         return REGISTERS[number].getValue();
     }
 
@@ -293,7 +291,7 @@ public class Coprocessor1 {
         for (Register register : REGISTERS) {
             register.resetValueToDefault();
         }
-        clearConditionFlags();
+        CONDITION_FLAGS.resetValueToDefault();
     }
 
     /**
@@ -303,16 +301,9 @@ public class Coprocessor1 {
      */
     public static void setConditionFlag(int flag) {
         if (flag >= 0 && flag < CONDITION_FLAG_COUNT) {
-            int oldFlagValue = Binary.bitValue(CONDITION_FLAGS.getValueNoNotify(), flag);
-            CONDITION_FLAGS.setValue(Binary.setBit(CONDITION_FLAGS.getValueNoNotify(), flag));
-            if (Simulator.getInstance().getBackStepper().isEnabled()) {
-                if (oldFlagValue == 0) {
-                    Simulator.getInstance().getBackStepper().addConditionFlagClear(flag);
-                }
-                else {
-                    Simulator.getInstance().getBackStepper().addConditionFlagSet(flag);
-                }
-            }
+            int previousValue = CONDITION_FLAGS.setValue(Binary.setBit(CONDITION_FLAGS.getValueNoNotify(), flag));
+
+            Simulator.getInstance().getBackStepper().registerChanged(CONDITION_FLAGS, previousValue);
         }
     }
 
@@ -323,16 +314,9 @@ public class Coprocessor1 {
      */
     public static void clearConditionFlag(int flag) {
         if (flag >= 0 && flag < CONDITION_FLAG_COUNT) {
-            int oldFlagValue = Binary.bitValue(CONDITION_FLAGS.getValueNoNotify(), flag);
-            CONDITION_FLAGS.setValue(Binary.clearBit(CONDITION_FLAGS.getValueNoNotify(), flag));
-            if (Simulator.getInstance().getBackStepper().isEnabled()) {
-                if (oldFlagValue == 0) {
-                    Simulator.getInstance().getBackStepper().addConditionFlagClear(flag);
-                }
-                else {
-                    Simulator.getInstance().getBackStepper().addConditionFlagSet(flag);
-                }
-            }
+            int previousValue = CONDITION_FLAGS.setValue(Binary.clearBit(CONDITION_FLAGS.getValueNoNotify(), flag));
+
+            Simulator.getInstance().getBackStepper().registerChanged(CONDITION_FLAGS, previousValue);
         }
     }
 
@@ -349,22 +333,6 @@ public class Coprocessor1 {
         else {
             return Binary.bitValue(CONDITION_FLAGS.getValue(), flag);
         }
-    }
-
-    /**
-     * Clear all condition flags (0-7).
-     */
-    public static void clearConditionFlags() {
-        // Set lowest 8 bits to 0
-        CONDITION_FLAGS.setValue(CONDITION_FLAGS.getValueNoNotify() & 0xFFFFFF00);
-    }
-
-    /**
-     * Set all condition flags (0-7).
-     */
-    public static void setConditionFlags() {
-        // Set lowest 8 bits to 1
-        CONDITION_FLAGS.setValue(CONDITION_FLAGS.getValueNoNotify() | 0x000000FF);
     }
 
     /**

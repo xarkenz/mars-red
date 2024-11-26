@@ -56,7 +56,7 @@ public class SyscallReadDouble extends AbstractSyscall {
         try {
             double doubleValue = Simulator.getInstance().getSystemIO().readDouble();
 
-            Coprocessor1.setRegisterPairToDouble(0, doubleValue);
+            Coprocessor1.setDoubleFloat(0, doubleValue);
         }
         catch (NumberFormatException exception) {
             throw new SimulatorException(statement, "invalid double input (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL);

@@ -81,25 +81,25 @@ public class SyscallInputDialogFloat extends AbstractSyscall {
         try {
             if (inputValue == null) {
                 // Cancel was chosen
-                Coprocessor1.setRegisterToFloat(0, 0.0f);  // set $f0 to zero
+                Coprocessor1.setSingleFloat(0, 0.0f);  // set $f0 to zero
                 Processor.updateRegister(Processor.ARGUMENT_1, -2);  // set $a1 to -2 flag
             }
             else if (inputValue.isEmpty()) {
                 // OK was chosen but there was no input
-                Coprocessor1.setRegisterToFloat(0, 0.0f);  // set $f0 to zero
+                Coprocessor1.setSingleFloat(0, 0.0f);  // set $f0 to zero
                 Processor.updateRegister(Processor.ARGUMENT_1, -3);  // set $a1 to -3 flag
             }
             else {
                 float floatValue = Float.parseFloat(inputValue);
 
                 // Successful parse of valid input data
-                Coprocessor1.setRegisterToFloat(0, floatValue);  // set $f0 to input data
+                Coprocessor1.setSingleFloat(0, floatValue);  // set $f0 to input data
                 Processor.updateRegister(Processor.ARGUMENT_1, 0);  // set $a1 to valid flag
             }
         }
         catch (NumberFormatException exception) {
             // Unsuccessful parse of input data
-            Coprocessor1.setRegisterToFloat(0, 0.0f);  // set $f0 to zero
+            Coprocessor1.setSingleFloat(0, 0.0f);  // set $f0 to zero
             Processor.updateRegister(Processor.ARGUMENT_1, -1);  // set $a1 to -1 flag
         }
     }

@@ -514,9 +514,7 @@ public class Memory {
             // Falls within a region containing data
             int oldValue = dataRegion.storeWord(address, value);
             // Add a corresponding backstep for the write
-            if (Simulator.getInstance().getBackStepper().isEnabled()) {
-                Simulator.getInstance().getBackStepper().addMemoryRestoreWord(address, oldValue);
-            }
+            Simulator.getInstance().getBackStepper().wordWritten(address, oldValue);
         }
         else if ((textRegion = this.getTextRegionForAddress(address)) != null) {
             // Falls within a region containing text
@@ -528,10 +526,7 @@ public class Memory {
             BasicStatement statement = Application.instructionSet.getDecoder().decodeStatement(value);
             BasicStatement oldStatement = textRegion.storeStatement(address, statement);
             // Add a corresponding backstep for the write
-            // TODO: make a separate restore type for program statements in the backstepper
-            if (oldStatement != null && Simulator.getInstance().getBackStepper().isEnabled()) {
-                Simulator.getInstance().getBackStepper().addMemoryRestoreWord(address, oldStatement.getBinaryEncoding());
-            }
+            Simulator.getInstance().getBackStepper().statementWritten(address, oldStatement);
         }
         else {
             // Falls outside mapped addressing range
@@ -665,8 +660,9 @@ public class Memory {
         DataRegion dataRegion;
         if ((textRegion = this.getTextRegionForAddress(address)) != null) {
             // Falls within a region containing text
-            textRegion.storeStatement(address, statement);
-            // TODO: add backstep? is that necessary?
+            BasicStatement oldStatement = textRegion.storeStatement(address, statement);
+            // Add a corresponding backstep for the write
+            Simulator.getInstance().getBackStepper().statementWritten(address, oldStatement);
         }
         else if ((dataRegion = this.getDataRegionForAddress(address)) != null) {
             // Falls within a region containing data

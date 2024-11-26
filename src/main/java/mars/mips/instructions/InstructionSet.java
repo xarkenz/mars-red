@@ -1254,7 +1254,7 @@ public class InstructionSet {
             "set $f0 to single-precision floating point value of $f1 plus $f2",
             "010001 10000 ttttt sssss fffff 000000",
             statement -> {
-                Coprocessor1.setRegisterToFloat(statement.getOperand(0), Coprocessor1.getFloatFromRegister(statement.getOperand(1)) + Coprocessor1.getFloatFromRegister(statement.getOperand(2)));
+                Coprocessor1.setSingleFloat(statement.getOperand(0), Coprocessor1.getSingleFloat(statement.getOperand(1)) + Coprocessor1.getSingleFloat(statement.getOperand(2)));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -1266,7 +1266,7 @@ public class InstructionSet {
             "010001 10001 ttttt sssss fffff 000000",
             statement -> {
                 try {
-                    Coprocessor1.setRegisterPairToDouble(statement.getOperand(0), Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1)) + Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(2)));
+                    Coprocessor1.setDoubleFloat(statement.getOperand(0), Coprocessor1.getDoubleFloat(statement.getOperand(1)) + Coprocessor1.getDoubleFloat(statement.getOperand(2)));
                 }
                 catch (InvalidRegisterAccessException exception) {
                     throw new SimulatorException(statement, "all registers must be even-numbered");
@@ -1281,7 +1281,7 @@ public class InstructionSet {
             "set $f0 to single-precision floating point value of $f1 minus $f2",
             "010001 10000 ttttt sssss fffff 000001",
             statement -> {
-                Coprocessor1.setRegisterToFloat(statement.getOperand(0), Coprocessor1.getFloatFromRegister(statement.getOperand(1)) - Coprocessor1.getFloatFromRegister(statement.getOperand(2)));
+                Coprocessor1.setSingleFloat(statement.getOperand(0), Coprocessor1.getSingleFloat(statement.getOperand(1)) - Coprocessor1.getSingleFloat(statement.getOperand(2)));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -1293,7 +1293,7 @@ public class InstructionSet {
             "010001 10001 ttttt sssss fffff 000001",
             statement -> {
                 try {
-                    Coprocessor1.setRegisterPairToDouble(statement.getOperand(0), Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1)) - Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(2)));
+                    Coprocessor1.setDoubleFloat(statement.getOperand(0), Coprocessor1.getDoubleFloat(statement.getOperand(1)) - Coprocessor1.getDoubleFloat(statement.getOperand(2)));
                 }
                 catch (InvalidRegisterAccessException exception) {
                     throw new SimulatorException(statement, "all registers must be even-numbered");
@@ -1308,7 +1308,7 @@ public class InstructionSet {
             "set $f0 to single-precision floating point value of $f1 multiplied by $f2",
             "010001 10000 ttttt sssss fffff 000010",
             statement -> {
-                Coprocessor1.setRegisterToFloat(statement.getOperand(0), Coprocessor1.getFloatFromRegister(statement.getOperand(1)) * Coprocessor1.getFloatFromRegister(statement.getOperand(2)));
+                Coprocessor1.setSingleFloat(statement.getOperand(0), Coprocessor1.getSingleFloat(statement.getOperand(1)) * Coprocessor1.getSingleFloat(statement.getOperand(2)));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -1320,7 +1320,7 @@ public class InstructionSet {
             "010001 10001 ttttt sssss fffff 000010",
             statement -> {
                 try {
-                    Coprocessor1.setRegisterPairToDouble(statement.getOperand(0), Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1)) * Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(2)));
+                    Coprocessor1.setDoubleFloat(statement.getOperand(0), Coprocessor1.getDoubleFloat(statement.getOperand(1)) * Coprocessor1.getDoubleFloat(statement.getOperand(2)));
                 }
                 catch (InvalidRegisterAccessException exception) {
                     throw new SimulatorException(statement, "all registers must be even-numbered");
@@ -1335,7 +1335,7 @@ public class InstructionSet {
             "set $f0 to single-precision floating point value of $f1 divided by $f2",
             "010001 10000 ttttt sssss fffff 000011",
             statement -> {
-                Coprocessor1.setRegisterToFloat(statement.getOperand(0), Coprocessor1.getFloatFromRegister(statement.getOperand(1)) / Coprocessor1.getFloatFromRegister(statement.getOperand(2)));
+                Coprocessor1.setSingleFloat(statement.getOperand(0), Coprocessor1.getSingleFloat(statement.getOperand(1)) / Coprocessor1.getSingleFloat(statement.getOperand(2)));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -1347,7 +1347,7 @@ public class InstructionSet {
             "010001 10001 ttttt sssss fffff 000011",
             statement -> {
                 try {
-                    Coprocessor1.setRegisterPairToDouble(statement.getOperand(0), Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1)) / Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(2)));
+                    Coprocessor1.setDoubleFloat(statement.getOperand(0), Coprocessor1.getDoubleFloat(statement.getOperand(1)) / Coprocessor1.getDoubleFloat(statement.getOperand(2)));
                 }
                 catch (InvalidRegisterAccessException exception) {
                     throw new SimulatorException(statement, "all registers must be even-numbered");
@@ -1363,7 +1363,7 @@ public class InstructionSet {
             "010001 10000 00000 sssss fffff 000111",
             statement -> {
                 // Flip the sign bit
-                Coprocessor1.setRegisterToInt(statement.getOperand(0), Coprocessor1.getIntFromRegister(statement.getOperand(1)) ^ Integer.MIN_VALUE);
+                Coprocessor1.setValue(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)) ^ Integer.MIN_VALUE);
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -1376,7 +1376,7 @@ public class InstructionSet {
             statement -> {
                 try {
                     // Flip the sign bit
-                    Coprocessor1.setRegisterPairToLong(statement.getOperand(0), Coprocessor1.getLongFromRegisterPair(statement.getOperand(1)) ^ Long.MIN_VALUE);
+                    Coprocessor1.setPairValue(statement.getOperand(0), Coprocessor1.getPairValue(statement.getOperand(1)) ^ Long.MIN_VALUE);
                 }
                 catch (InvalidRegisterAccessException exception) {
                     throw new SimulatorException(statement, "both registers must be even-numbered");
@@ -1392,7 +1392,7 @@ public class InstructionSet {
             "010001 10000 00000 sssss fffff 000101",
             statement -> {
                 // Clear the sign bit
-                Coprocessor1.setRegisterToInt(statement.getOperand(0), Coprocessor1.getIntFromRegister(statement.getOperand(1)) & Integer.MAX_VALUE);
+                Coprocessor1.setValue(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)) & Integer.MAX_VALUE);
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -1405,7 +1405,7 @@ public class InstructionSet {
             statement -> {
                 try {
                     // Clear the sign bit
-                    Coprocessor1.setRegisterPairToLong(statement.getOperand(0), Coprocessor1.getLongFromRegisterPair(statement.getOperand(1)) & Long.MAX_VALUE);
+                    Coprocessor1.setPairValue(statement.getOperand(0), Coprocessor1.getPairValue(statement.getOperand(1)) & Long.MAX_VALUE);
                 }
                 catch (InvalidRegisterAccessException exception) {
                     throw new SimulatorException(statement, "both registers must be even-numbered");
@@ -1425,7 +1425,7 @@ public class InstructionSet {
                 // same.  An intermediate step would be to define a setting for FCSR Invalid Operation
                 // flag, but the best solution is to simulate the FCSR register itself.
                 // FCSR = Floating point unit Control and Status Register.  DPS 10-Aug-2010
-                Coprocessor1.setRegisterToFloat(statement.getOperand(0), (float) Math.sqrt(Coprocessor1.getFloatFromRegister(statement.getOperand(1))));
+                Coprocessor1.setSingleFloat(statement.getOperand(0), (float) Math.sqrt(Coprocessor1.getSingleFloat(statement.getOperand(1))));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -1442,7 +1442,7 @@ public class InstructionSet {
                 // flag, but the best solution is to simulate the FCSR register itself.
                 // FCSR = Floating point unit Control and Status Register.  DPS 10-Aug-2010
                 try {
-                    Coprocessor1.setRegisterPairToDouble(statement.getOperand(0), Math.sqrt(Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1))));
+                    Coprocessor1.setDoubleFloat(statement.getOperand(0), Math.sqrt(Coprocessor1.getDoubleFloat(statement.getOperand(1))));
                 }
                 catch (InvalidRegisterAccessException exception) {
                     throw new SimulatorException(statement, "both registers must be even-numbered");
@@ -1457,7 +1457,7 @@ public class InstructionSet {
             "set $f0 to 32-bit integer floor of single-precision float in $f1",
             "010001 10000 00000 sssss fffff 001111",
             statement -> {
-                float value = Coprocessor1.getFloatFromRegister(statement.getOperand(1));
+                float value = Coprocessor1.getSingleFloat(statement.getOperand(1));
                 int result;
                 if (value >= (double) Integer.MIN_VALUE && value < (double) Integer.MAX_VALUE + 1.0) {
                     result = (int) Math.floor(value);
@@ -1467,7 +1467,7 @@ public class InstructionSet {
                     // action of setting the result to 2^31-1, if the value is outside the 32 bit range.
                     result = Integer.MAX_VALUE;
                 }
-                Coprocessor1.setRegisterToInt(statement.getOperand(0), result);
+                Coprocessor1.setValue(statement.getOperand(0), result);
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -1479,7 +1479,7 @@ public class InstructionSet {
             "010001 10001 00000 sssss fffff 001111",
             statement -> {
                 try {
-                    double value = Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1));
+                    double value = Coprocessor1.getDoubleFloat(statement.getOperand(1));
                     int result;
                     if (value >= (double) Integer.MIN_VALUE && value < (double) Integer.MAX_VALUE + 1.0) {
                         result = (int) Math.floor(value);
@@ -1489,7 +1489,7 @@ public class InstructionSet {
                         // action of setting the result to 2^31-1, if the value is outside the 32 bit range.
                         result = Integer.MAX_VALUE;
                     }
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0), result);
+                    Coprocessor1.setValue(statement.getOperand(0), result);
                 }
                 catch (InvalidRegisterAccessException exception) {
                     throw new SimulatorException(statement, "second register must be even-numbered");
@@ -1504,7 +1504,7 @@ public class InstructionSet {
             "set $f0 to 32-bit integer ceiling of single-precision float in $f1",
             "010001 10000 00000 sssss fffff 001110",
             statement -> {
-                float value = Coprocessor1.getFloatFromRegister(statement.getOperand(1));
+                float value = Coprocessor1.getSingleFloat(statement.getOperand(1));
                 int result;
                 if (value > (double) Integer.MIN_VALUE - 1.0 && value <= (double) Integer.MAX_VALUE) {
                     result = (int) Math.ceil(value);
@@ -1514,7 +1514,7 @@ public class InstructionSet {
                     // action of setting the result to 2^31-1, if the value is outside the 32 bit range.
                     result = Integer.MAX_VALUE;
                 }
-                Coprocessor1.setRegisterToInt(statement.getOperand(0), result);
+                Coprocessor1.setValue(statement.getOperand(0), result);
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -1526,7 +1526,7 @@ public class InstructionSet {
             "010001 10001 00000 sssss fffff 001110",
             statement -> {
                 try {
-                    double value = Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1));
+                    double value = Coprocessor1.getDoubleFloat(statement.getOperand(1));
                     int result;
                     if (value > (double) Integer.MIN_VALUE - 1.0 && value <= (double) Integer.MAX_VALUE) {
                         result = (int) Math.ceil(value);
@@ -1536,7 +1536,7 @@ public class InstructionSet {
                         // action of setting the result to 2^31-1, if the value is outside the 32 bit range.
                         result = Integer.MAX_VALUE;
                     }
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0), result);
+                    Coprocessor1.setValue(statement.getOperand(0), result);
                 }
                 catch (InvalidRegisterAccessException exception) {
                     throw new SimulatorException(statement, "second register must be even-numbered");
@@ -1557,7 +1557,7 @@ public class InstructionSet {
                 // Until MARS 3.5, I used Math.round, which rounds to nearest but when both are
                 // equal it rounds toward positive infinity.  With Release 3.5, I painstakingly
                 // carry out the MIPS and IEEE 754 standard.
-                float value = Coprocessor1.getFloatFromRegister(statement.getOperand(1));
+                float value = Coprocessor1.getSingleFloat(statement.getOperand(1));
                 // According to MIPS32 spec, if any of these conditions is true, set
                 // Invalid Operation in the FCSR (Floating point Control/Status Register) and
                 // set result to be 2^31-1.  MARS does not implement this register (as of release 3.4.1).
@@ -1590,7 +1590,7 @@ public class InstructionSet {
                     // action of setting the result to 2^31-1, if the value is outside the 32 bit range.
                     result = Integer.MAX_VALUE;
                 }
-                Coprocessor1.setRegisterToInt(statement.getOperand(0), result);
+                Coprocessor1.setValue(statement.getOperand(0), result);
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -1606,7 +1606,7 @@ public class InstructionSet {
                 // equal it rounds toward positive infinity.  With Release 3.5, I painstakingly
                 // carry out the MIPS and IEEE 754 standard (round to nearest/even).
                 try {
-                    double value = Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1));
+                    double value = Coprocessor1.getDoubleFloat(statement.getOperand(1));
                     int result;
                     if (value >= (double) Integer.MIN_VALUE - 0.5 && value < (double) Integer.MAX_VALUE + 0.5) {
                         // If we are EXACTLY in the middle, then round to even!  To determine this,
@@ -1634,7 +1634,7 @@ public class InstructionSet {
                         // action of setting the result to 2^31-1, if the value is outside the 32 bit range.
                         result = Integer.MAX_VALUE;
                     }
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0), result);
+                    Coprocessor1.setValue(statement.getOperand(0), result);
                 }
                 catch (InvalidRegisterAccessException exception) {
                     throw new SimulatorException(statement, "second register must be even-numbered");
@@ -1649,7 +1649,7 @@ public class InstructionSet {
             "set $f0 to 32-bit integer truncation of single-precision float in $f1",
             "010001 10000 00000 sssss fffff 001101",
             statement -> {
-                float value = Coprocessor1.getFloatFromRegister(statement.getOperand(1));
+                float value = Coprocessor1.getSingleFloat(statement.getOperand(1));
                 int result;
                 if (value > (double) Integer.MIN_VALUE - 1.0 && value < (double) Integer.MAX_VALUE + 1.0) {
                     result = (int) value; // Typecasting will round toward zero, the correct action
@@ -1659,7 +1659,7 @@ public class InstructionSet {
                     // action of setting the result to 2^31-1, if the value is outside the 32 bit range.
                     result = Integer.MAX_VALUE;
                 }
-                Coprocessor1.setRegisterToInt(statement.getOperand(0), result);
+                Coprocessor1.setValue(statement.getOperand(0), result);
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -1670,7 +1670,7 @@ public class InstructionSet {
             "set $f1 to 32-bit integer truncation of double-precision float in $f2",
             "010001 10001 00000 sssss fffff 001101", statement -> {
                 try {
-                    double value = Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1));
+                    double value = Coprocessor1.getDoubleFloat(statement.getOperand(1));
                     int result;
                     if (value > (double) Integer.MIN_VALUE - 1.0 && value < (double) Integer.MAX_VALUE + 1.0) {
                         result = (int) value; // Typecasting will round toward zero, the correct action
@@ -1680,7 +1680,7 @@ public class InstructionSet {
                         // action of setting the result to 2^31-1, if the value is outside the 32 bit range.
                         result = Integer.MAX_VALUE;
                     }
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0), result);
+                    Coprocessor1.setValue(statement.getOperand(0), result);
                 }
                 catch (InvalidRegisterAccessException exception) {
                     throw new SimulatorException(statement, "second register must be even-numbered");
@@ -1695,7 +1695,7 @@ public class InstructionSet {
             "if $f0 is equal to $f1, set Coprocessor 1 condition flag 0 to true, otherwise set it to false",
             "010001 10000 sssss fffff 000 00 110010",
             statement -> {
-                if (Coprocessor1.getFloatFromRegister(statement.getOperand(0)) == Coprocessor1.getFloatFromRegister(statement.getOperand(1))) {
+                if (Coprocessor1.getSingleFloat(statement.getOperand(0)) == Coprocessor1.getSingleFloat(statement.getOperand(1))) {
                     Coprocessor1.setConditionFlag(0);
                 }
                 else {
@@ -1711,7 +1711,7 @@ public class InstructionSet {
             "if $f0 is equal to $f1, set Coprocessor 1 condition flag specified by the first operand to true, otherwise set it to false",
             "010001 10000 ttttt sssss fff 00 110010",
             statement -> {
-                if (Coprocessor1.getFloatFromRegister(statement.getOperand(1)) == Coprocessor1.getFloatFromRegister(statement.getOperand(2))) {
+                if (Coprocessor1.getSingleFloat(statement.getOperand(1)) == Coprocessor1.getSingleFloat(statement.getOperand(2))) {
                     Coprocessor1.setConditionFlag(statement.getOperand(0));
                 }
                 else {
@@ -1728,7 +1728,7 @@ public class InstructionSet {
             "010001 10001 sssss fffff 000 00 110010",
             statement -> {
                 try {
-                    if (Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(0)) == Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1))) {
+                    if (Coprocessor1.getDoubleFloat(statement.getOperand(0)) == Coprocessor1.getDoubleFloat(statement.getOperand(1))) {
                         Coprocessor1.setConditionFlag(0);
                     }
                     else {
@@ -1749,7 +1749,7 @@ public class InstructionSet {
             "010001 10001 ttttt sssss fff 00 110010",
             statement -> {
                 try {
-                    if (Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1)) == Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(2))) {
+                    if (Coprocessor1.getDoubleFloat(statement.getOperand(1)) == Coprocessor1.getDoubleFloat(statement.getOperand(2))) {
                         Coprocessor1.setConditionFlag(statement.getOperand(0));
                     }
                     else {
@@ -1769,7 +1769,7 @@ public class InstructionSet {
             "if $f0 is less than or equal to $f1, set Coprocessor 1 condition flag 0 to true, otherwise set it to false",
             "010001 10000 sssss fffff 000 00 111110",
             statement -> {
-                if (Coprocessor1.getFloatFromRegister(statement.getOperand(0)) <= Coprocessor1.getFloatFromRegister(statement.getOperand(1))) {
+                if (Coprocessor1.getSingleFloat(statement.getOperand(0)) <= Coprocessor1.getSingleFloat(statement.getOperand(1))) {
                     Coprocessor1.setConditionFlag(0);
                 }
                 else {
@@ -1785,7 +1785,7 @@ public class InstructionSet {
             "if $f0 is less than or equal to $f1, set Coprocessor 1 condition flag specified by the first operand to true, otherwise set it to false",
             "010001 10000 ttttt sssss fff 00 111110",
             statement -> {
-                if (Coprocessor1.getFloatFromRegister(statement.getOperand(1)) <= Coprocessor1.getFloatFromRegister(statement.getOperand(2))) {
+                if (Coprocessor1.getSingleFloat(statement.getOperand(1)) <= Coprocessor1.getSingleFloat(statement.getOperand(2))) {
                     Coprocessor1.setConditionFlag(statement.getOperand(0));
                 }
                 else {
@@ -1802,7 +1802,7 @@ public class InstructionSet {
             "010001 10001 sssss fffff 000 00 111110",
             statement -> {
                 try {
-                    if (Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(0)) <= Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1))) {
+                    if (Coprocessor1.getDoubleFloat(statement.getOperand(0)) <= Coprocessor1.getDoubleFloat(statement.getOperand(1))) {
                         Coprocessor1.setConditionFlag(0);
                     }
                     else {
@@ -1823,7 +1823,7 @@ public class InstructionSet {
             "010001 10001 ttttt sssss fff 00 111110",
             statement -> {
                 try {
-                    if (Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1)) <= Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(2))) {
+                    if (Coprocessor1.getDoubleFloat(statement.getOperand(1)) <= Coprocessor1.getDoubleFloat(statement.getOperand(2))) {
                         Coprocessor1.setConditionFlag(statement.getOperand(0));
                     }
                     else {
@@ -1843,7 +1843,7 @@ public class InstructionSet {
             "if $f0 is less than $f1, set Coprocessor 1 condition flag 0 to true, otherwise set it to false",
             "010001 10000 sssss fffff 000 00 111100",
             statement -> {
-                if (Coprocessor1.getFloatFromRegister(statement.getOperand(0)) < Coprocessor1.getFloatFromRegister(statement.getOperand(1))) {
+                if (Coprocessor1.getSingleFloat(statement.getOperand(0)) < Coprocessor1.getSingleFloat(statement.getOperand(1))) {
                     Coprocessor1.setConditionFlag(0);
                 }
                 else {
@@ -1859,7 +1859,7 @@ public class InstructionSet {
             "if $f0 is less than $f1, set Coprocessor 1 condition flag specified by the first operand to true, otherwise set it to false",
             "010001 10000 ttttt sssss fff 00 111100",
             statement -> {
-                if (Coprocessor1.getFloatFromRegister(statement.getOperand(1)) < Coprocessor1.getFloatFromRegister(statement.getOperand(2))) {
+                if (Coprocessor1.getSingleFloat(statement.getOperand(1)) < Coprocessor1.getSingleFloat(statement.getOperand(2))) {
                     Coprocessor1.setConditionFlag(statement.getOperand(0));
                 }
                 else {
@@ -1876,7 +1876,7 @@ public class InstructionSet {
             "010001 10001 sssss fffff 000 00 111100",
             statement -> {
                 try {
-                    if (Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(0)) < Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1))) {
+                    if (Coprocessor1.getDoubleFloat(statement.getOperand(0)) < Coprocessor1.getDoubleFloat(statement.getOperand(1))) {
                         Coprocessor1.setConditionFlag(0);
                     }
                     else {
@@ -1897,7 +1897,7 @@ public class InstructionSet {
             "010001 10001 ttttt sssss fff 00 111100",
             statement -> {
                 try {
-                    if (Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1)) < Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(2))) {
+                    if (Coprocessor1.getDoubleFloat(statement.getOperand(1)) < Coprocessor1.getDoubleFloat(statement.getOperand(2))) {
                         Coprocessor1.setConditionFlag(statement.getOperand(0));
                     }
                     else {
@@ -1971,7 +1971,7 @@ public class InstructionSet {
             statement -> {
                 try {
                     // Convert double-precision in $f2 to single-precision stored in $f1
-                    Coprocessor1.setRegisterToFloat(statement.getOperand(0), (float) Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1)));
+                    Coprocessor1.setSingleFloat(statement.getOperand(0), (float) Coprocessor1.getDoubleFloat(statement.getOperand(1)));
                 }
                 catch (InvalidRegisterAccessException exception) {
                     throw new SimulatorException(statement, "second register must be even-numbered");
@@ -1988,7 +1988,7 @@ public class InstructionSet {
             statement -> {
                 try {
                     // Convert single-precision in $f1 to double-precision stored in $f2
-                    Coprocessor1.setRegisterPairToDouble(statement.getOperand(0), Coprocessor1.getFloatFromRegister(statement.getOperand(1)));
+                    Coprocessor1.setDoubleFloat(statement.getOperand(0), Coprocessor1.getSingleFloat(statement.getOperand(1)));
                 }
                 catch (InvalidRegisterAccessException exception) {
                     throw new SimulatorException(statement, "first register must be even-numbered");
@@ -2004,7 +2004,7 @@ public class InstructionSet {
             "010001 10000 00000 sssss fffff 100100",
             statement -> {
                 // Convert single-precision in $f1 to integer stored in $f0
-                Coprocessor1.setRegisterToInt(statement.getOperand(0), (int) Coprocessor1.getFloatFromRegister(statement.getOperand(1)));
+                Coprocessor1.setValue(statement.getOperand(0), (int) Coprocessor1.getSingleFloat(statement.getOperand(1)));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -2017,7 +2017,7 @@ public class InstructionSet {
             statement -> {
                 try {
                     // Convert double-precision in $f2 to integer stored in $f1
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0), (int) Coprocessor1.getDoubleFromRegisterPair(statement.getOperand(1)));
+                    Coprocessor1.setValue(statement.getOperand(0), (int) Coprocessor1.getDoubleFloat(statement.getOperand(1)));
                 }
                 catch (InvalidRegisterAccessException exception) {
                     throw new SimulatorException(statement, "second register must be even-numbered");
@@ -2033,7 +2033,7 @@ public class InstructionSet {
             "010001 10100 00000 sssss fffff 100000",
             statement -> {
                 // Convert integer to single (interpret $f1 value as int?)
-                Coprocessor1.setRegisterToFloat(statement.getOperand(0), (float) Coprocessor1.getIntFromRegister(statement.getOperand(1)));
+                Coprocessor1.setSingleFloat(statement.getOperand(0), (float) Coprocessor1.getValue(statement.getOperand(1)));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -2046,7 +2046,7 @@ public class InstructionSet {
             statement -> {
                 try {
                     // Convert integer to double (interpret $f1 value as int?)
-                    Coprocessor1.setRegisterPairToDouble(statement.getOperand(0), Coprocessor1.getIntFromRegister(statement.getOperand(1)));
+                    Coprocessor1.setDoubleFloat(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
                 }
                 catch (InvalidRegisterAccessException exception) {
                     throw new SimulatorException(statement, "first register must be even-numbered");
@@ -2061,7 +2061,7 @@ public class InstructionSet {
             "Set single-precision $f0 to single-precision value in $f1",
             "010001 10000 00000 sssss fffff 000110",
             statement -> {
-                Coprocessor1.setRegisterToInt(statement.getOperand(0), Coprocessor1.getIntFromRegister(statement.getOperand(1)));
+                Coprocessor1.setValue(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -2075,8 +2075,8 @@ public class InstructionSet {
                 if (statement.getOperand(0) % 2 == 1 || statement.getOperand(1) % 2 == 1) {
                     throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
-                Coprocessor1.setRegisterToInt(statement.getOperand(0), Coprocessor1.getIntFromRegister(statement.getOperand(1)));
-                Coprocessor1.setRegisterToInt(statement.getOperand(0) + 1, Coprocessor1.getIntFromRegister(statement.getOperand(1) + 1));
+                Coprocessor1.setValue(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
+                Coprocessor1.setValue(statement.getOperand(0) + 1, Coprocessor1.getValue(statement.getOperand(1) + 1));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -2088,7 +2088,7 @@ public class InstructionSet {
             "010001 10000 000 00 sssss fffff 010001",
             statement -> {
                 if (Coprocessor1.getConditionFlag(0) == 0) {
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0), Coprocessor1.getIntFromRegister(statement.getOperand(1)));
+                    Coprocessor1.setValue(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
                 }
             }
         ));
@@ -2101,7 +2101,7 @@ public class InstructionSet {
             "010001 10000 ttt 00 sssss fffff 010001",
             statement -> {
                 if (Coprocessor1.getConditionFlag(statement.getOperand(2)) == 0) {
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0), Coprocessor1.getIntFromRegister(statement.getOperand(1)));
+                    Coprocessor1.setValue(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
                 }
             }
         ));
@@ -2117,8 +2117,8 @@ public class InstructionSet {
                     throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
                 if (Coprocessor1.getConditionFlag(0) == 0) {
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0), Coprocessor1.getIntFromRegister(statement.getOperand(1)));
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0) + 1, Coprocessor1.getIntFromRegister(statement.getOperand(1) + 1));
+                    Coprocessor1.setValue(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
+                    Coprocessor1.setValue(statement.getOperand(0) + 1, Coprocessor1.getValue(statement.getOperand(1) + 1));
                 }
             }
         ));
@@ -2134,8 +2134,8 @@ public class InstructionSet {
                     throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
                 if (Coprocessor1.getConditionFlag(statement.getOperand(2)) == 0) {
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0), Coprocessor1.getIntFromRegister(statement.getOperand(1)));
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0) + 1, Coprocessor1.getIntFromRegister(statement.getOperand(1) + 1));
+                    Coprocessor1.setValue(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
+                    Coprocessor1.setValue(statement.getOperand(0) + 1, Coprocessor1.getValue(statement.getOperand(1) + 1));
                 }
             }
         ));
@@ -2148,7 +2148,7 @@ public class InstructionSet {
             "010001 10000 000 01 sssss fffff 010001",
             statement -> {
                 if (Coprocessor1.getConditionFlag(0) == 1) {
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0), Coprocessor1.getIntFromRegister(statement.getOperand(1)));
+                    Coprocessor1.setValue(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
                 }
             }
         ));
@@ -2161,7 +2161,7 @@ public class InstructionSet {
             "010001 10000 ttt 01 sssss fffff 010001",
             statement -> {
                 if (Coprocessor1.getConditionFlag(statement.getOperand(2)) == 1) {
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0), Coprocessor1.getIntFromRegister(statement.getOperand(1)));
+                    Coprocessor1.setValue(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
                 }
             }
         ));
@@ -2177,8 +2177,8 @@ public class InstructionSet {
                     throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
                 if (Coprocessor1.getConditionFlag(0) == 1) {
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0), Coprocessor1.getIntFromRegister(statement.getOperand(1)));
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0) + 1, Coprocessor1.getIntFromRegister(statement.getOperand(1) + 1));
+                    Coprocessor1.setValue(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
+                    Coprocessor1.setValue(statement.getOperand(0) + 1, Coprocessor1.getValue(statement.getOperand(1) + 1));
                 }
             }
         ));
@@ -2194,8 +2194,8 @@ public class InstructionSet {
                     throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
                 if (Coprocessor1.getConditionFlag(statement.getOperand(2)) == 1) {
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0), Coprocessor1.getIntFromRegister(statement.getOperand(1)));
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0) + 1, Coprocessor1.getIntFromRegister(statement.getOperand(1) + 1));
+                    Coprocessor1.setValue(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
+                    Coprocessor1.setValue(statement.getOperand(0) + 1, Coprocessor1.getValue(statement.getOperand(1) + 1));
                 }
             }
         ));
@@ -2208,7 +2208,7 @@ public class InstructionSet {
             "010001 10000 ttttt sssss fffff 010011",
             statement -> {
                 if (Processor.getValue(statement.getOperand(2)) != 0) {
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0), Coprocessor1.getIntFromRegister(statement.getOperand(1)));
+                    Coprocessor1.setValue(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
                 }
             }
         ));
@@ -2224,8 +2224,8 @@ public class InstructionSet {
                     throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
                 if (Processor.getValue(statement.getOperand(2)) != 0) {
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0), Coprocessor1.getIntFromRegister(statement.getOperand(1)));
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0) + 1, Coprocessor1.getIntFromRegister(statement.getOperand(1) + 1));
+                    Coprocessor1.setValue(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
+                    Coprocessor1.setValue(statement.getOperand(0) + 1, Coprocessor1.getValue(statement.getOperand(1) + 1));
                 }
             }
         ));
@@ -2238,7 +2238,7 @@ public class InstructionSet {
             "010001 10000 ttttt sssss fffff 010010",
             statement -> {
                 if (Processor.getValue(statement.getOperand(2)) == 0) {
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0), Coprocessor1.getIntFromRegister(statement.getOperand(1)));
+                    Coprocessor1.setValue(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
                 }
             }
         ));
@@ -2254,8 +2254,8 @@ public class InstructionSet {
                     throw new SimulatorException(statement, "both registers must be even-numbered");
                 }
                 if (Processor.getValue(statement.getOperand(2)) == 0) {
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0), Coprocessor1.getIntFromRegister(statement.getOperand(1)));
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0) + 1, Coprocessor1.getIntFromRegister(statement.getOperand(1) + 1));
+                    Coprocessor1.setValue(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
+                    Coprocessor1.setValue(statement.getOperand(0) + 1, Coprocessor1.getValue(statement.getOperand(1) + 1));
                 }
             }
         ));
@@ -2267,7 +2267,7 @@ public class InstructionSet {
             "set $t1 to value in Coprocessor 1 register $f1",
             "010001 00000 fffff sssss 00000 000000",
             statement -> {
-                Processor.updateRegister(statement.getOperand(0), Coprocessor1.getIntFromRegister(statement.getOperand(1)));
+                Processor.updateRegister(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -2278,7 +2278,7 @@ public class InstructionSet {
             "set Coprocessor 1 register $f1 to value in $t1",
             "010001 00100 fffff sssss 00000 000000",
             statement -> {
-                Coprocessor1.setRegisterToInt(statement.getOperand(1), Processor.getValue(statement.getOperand(0)));
+                Coprocessor1.setValue(statement.getOperand(1), Processor.getValue(statement.getOperand(0)));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -2290,7 +2290,7 @@ public class InstructionSet {
             "110001 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
-                    Coprocessor1.setRegisterToInt(statement.getOperand(0), Memory.getInstance().fetchWord(Processor.getValue(statement.getOperand(2)) + statement.getOperand(1), true));
+                    Coprocessor1.setValue(statement.getOperand(0), Memory.getInstance().fetchWord(Processor.getValue(statement.getOperand(2)) + statement.getOperand(1), true));
                 }
                 catch (AddressErrorException exception) {
                     throw new SimulatorException(statement, exception);
@@ -2307,7 +2307,7 @@ public class InstructionSet {
             "110101 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
-                    Coprocessor1.setRegisterPairToLong(statement.getOperand(0), Memory.getInstance().fetchDoubleword(
+                    Coprocessor1.setPairValue(statement.getOperand(0), Memory.getInstance().fetchDoubleword(
                         Processor.getValue(statement.getOperand(2)) + statement.getOperand(1), true));
                 }
                 catch (AddressErrorException exception) {
@@ -2327,7 +2327,7 @@ public class InstructionSet {
             "111001 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
-                    Memory.getInstance().storeWord(Processor.getValue(statement.getOperand(2)) + statement.getOperand(1), Coprocessor1.getIntFromRegister(statement.getOperand(0)), true);
+                    Memory.getInstance().storeWord(Processor.getValue(statement.getOperand(2)) + statement.getOperand(1), Coprocessor1.getValue(statement.getOperand(0)), true);
                 }
                 catch (AddressErrorException exception) {
                     throw new SimulatorException(statement, exception);
@@ -2344,7 +2344,7 @@ public class InstructionSet {
             "111101 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
-                    Memory.getInstance().storeDoubleword(Processor.getValue(statement.getOperand(2)) + statement.getOperand(1), Coprocessor1.getLongFromRegisterPair(statement.getOperand(0)), true);
+                    Memory.getInstance().storeDoubleword(Processor.getValue(statement.getOperand(2)) + statement.getOperand(1), Coprocessor1.getPairValue(statement.getOperand(0)), true);
                 }
                 catch (AddressErrorException exception) {
                     throw new SimulatorException(statement, exception);

@@ -184,10 +184,8 @@ public class SimulatorThread extends Thread {
                 // Simulate the statement execution
                 statement.simulate();
 
-                // IF statement added 7/26/06 (explanation above)
-                if (this.simulator.getBackStepper().isEnabled()) {
-                    this.simulator.getBackStepper().addDoNothing(this.programCounter);
-                }
+                // Statement added 7/26/06 (explanation above)
+                this.simulator.getBackStepper().instructionFinished(this.programCounter);
             }
             catch (SimulatorException exception) {
                 // If execution were to terminate at this point, we don't want the program counter

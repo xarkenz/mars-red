@@ -543,6 +543,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
             row = this.findRowForAddress(address);
         }
         catch (IndexOutOfBoundsException exception) {
+            this.unhighlightAllSteps();
             return;
         }
         this.table.scrollRectToVisible(this.table.getCellRect(row, 0, true));
