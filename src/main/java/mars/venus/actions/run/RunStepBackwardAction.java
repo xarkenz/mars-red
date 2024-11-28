@@ -55,7 +55,6 @@ public class RunStepBackwardAction extends VenusAction {
 
         RegistersPane registersPane = this.gui.getRegistersPane();
         ExecuteTab executeTab = this.gui.getMainPane().getExecuteTab();
-        executeTab.getTextSegmentWindow().setCodeHighlighting(true);
 
         executeTab.getDataSegmentWindow().startObservingMemory();
         registersPane.getProcessorTab().startObservingRegisters();
@@ -72,7 +71,7 @@ public class RunStepBackwardAction extends VenusAction {
         registersPane.getCoprocessor1Tab().updateRegisters();
         registersPane.getCoprocessor0Tab().updateRegisters();
         executeTab.getDataSegmentWindow().updateValues();
-        executeTab.getTextSegmentWindow().highlightStepAtPC();
+        executeTab.getTextSegmentWindow().updateHighlighting();
 
         this.gui.setProgramStatus(ProgramStatus.PAUSED);
     }

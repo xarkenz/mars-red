@@ -51,8 +51,6 @@ public class RunStepForwardAction extends VenusAction {
      */
     @Override
     public void actionPerformed(ActionEvent event) {
-        this.gui.getMainPane().getExecuteTab().getTextSegmentWindow().setCodeHighlighting(true);
-
         try {
             if (this.gui.getProgramStatus() == ProgramStatus.NOT_STARTED && this.gui.getSettings().useProgramArguments.get()) {
                 // DPS 17-July-2008

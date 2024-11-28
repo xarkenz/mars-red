@@ -47,14 +47,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 public class SettingsHighlightingAction extends VenusAction {
     // NOTE: These must follow same sequence and buttons must follow this sequence too!
     private final ColorSetting[] backgroundSettings = {
-        Application.getSettings().textSegmentHighlightBackground,
-        Application.getSettings().textSegmentDelaySlotHighlightBackground,
+        Application.getSettings().textSegmentExecuteHighlightBackground,
+        Application.getSettings().textSegmentFetchHighlightBackground,
         Application.getSettings().dataSegmentHighlightBackground,
         Application.getSettings().registerHighlightBackground,
     };
     private final ColorSetting[] foregroundSettings = {
-        Application.getSettings().textSegmentHighlightForeground,
-        Application.getSettings().textSegmentDelaySlotHighlightForeground,
+        Application.getSettings().textSegmentExecuteHighlightForeground,
+        Application.getSettings().textSegmentFetchHighlightForeground,
         Application.getSettings().dataSegmentHighlightForeground,
         Application.getSettings().registerHighlightForeground,
     };
@@ -311,7 +311,7 @@ public class SettingsHighlightingAction extends VenusAction {
         // for Data segment window).
         if (executeTab.getTextSegmentWindow().getContentPane().getComponentCount() > 0) {
             executeTab.getDataSegmentWindow().updateValues();
-            executeTab.getTextSegmentWindow().highlightStepAtPC();
+            executeTab.getTextSegmentWindow().updateHighlighting();
         }
     }
 

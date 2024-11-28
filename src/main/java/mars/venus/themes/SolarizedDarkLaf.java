@@ -1,8 +1,8 @@
 package mars.venus.themes;
 
-import com.formdev.flatlaf.FlatLightLaf;
+import com.formdev.flatlaf.FlatDarkLaf;
 
-public class SolarizedDarkLaf extends FlatLightLaf {
+public class SolarizedDarkLaf extends FlatDarkLaf {
     public static boolean setup() {
         return setup(new SolarizedDarkLaf());
     }

@@ -93,9 +93,9 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
     private Hashtable<Integer, Integer> addressRows; // Key is text address, value is table model row
     private Hashtable<Integer, ModifiedCode> executeMods; // Key is table model row, value is original code, basic, source.
     private TextTableModel tableModel;
-    private boolean codeHighlighting;
     private boolean breakpointsEnabled; // Added 31 Dec 2009
-    private int highlightAddress;
+    private int fetchAddress;
+    private int executeAddress;
     private TableModelListener tableModelListener;
 
     /**
@@ -106,7 +106,6 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         this.setFrameIcon(null);
 
         this.gui = gui;
-        this.codeHighlighting = true;
         this.breakpointsEnabled = true;
         this.programArgumentsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         this.programArgumentsPanel.add(new JLabel("Program Arguments: "));
@@ -124,7 +123,6 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
      */
     public void setupTable() {
         int addressBase = this.gui.getMainPane().getExecuteTab().getAddressDisplayBase();
-        this.codeHighlighting = true;
         this.breakpointsEnabled = true;
         SortedMap<Integer, BasicStatement> statements = Application.assembler.getAssembledStatements();
         this.data = new Object[statements.size()][COLUMN_NAMES.length];
@@ -216,6 +214,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
 
         this.updateListeningStatus();
         this.getContentPane().revalidate();
+        this.updateHighlighting();
     }
 
     /**
@@ -299,7 +298,6 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         SortedMap<Integer, BasicStatement> statements = Application.assembler.getAssembledStatements();
         int row = 0;
         for (var entry : statements.entrySet()) {
-            int address = entry.getKey();
             BasicStatement statement = entry.getValue();
             // Loop has been extended to cover self-modifying code.  If code at this memory location has been
             // modified at runtime, construct a BasicStatement from the current address and binary code
@@ -399,23 +397,18 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
     @Override
     public void simulatorPaused(SimulatorPauseEvent event) {
         this.stopObservingMemory();
-        this.setCodeHighlighting(true);
-        this.unhighlightAllSteps();
-        this.highlightStepAtPC();
+        this.updateHighlighting();
     }
 
     @Override
     public void simulatorFinished(SimulatorFinishEvent event) {
         this.stopObservingMemory();
-        this.setCodeHighlighting(true);
-        this.unhighlightAllSteps();
-        this.highlightStepAtPC();
+        this.updateHighlighting();
     }
 
     @Override
     public void simulatorStepped() {
-        this.setCodeHighlighting(true);
-        this.highlightStepAtPC();
+        this.updateHighlighting();
     }
 
     /**
@@ -500,67 +493,21 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
      * program counter value.  This is used for stepping through code
      * execution and when reaching breakpoints.
      */
-    public void highlightStepAtPC() {
-        this.highlightStepAtAddress(Processor.getExecuteProgramCounter());
-    }
+    public void updateHighlighting() {
+        this.fetchAddress = Processor.getProgramCounter();
+        this.executeAddress = Processor.getExecuteProgramCounter();
 
-    /**
-     * Highlights the source code line whose address matches the given
-     * text segment address.
-     *
-     * @param address text segment address of instruction to be highlighted.
-     */
-    public void highlightStepAtAddress(int address) {
-        this.highlightAddress = address;
-        // Scroll if necessary to assure highlighted row is visible.
-        int row;
+        // Scroll if necessary to assure highlighted row is visible
         try {
-            row = this.findRowForAddress(address);
+            int row = this.findRowForAddress(this.executeAddress);
+            this.table.scrollRectToVisible(this.table.getCellRect(row, 0, true));
         }
         catch (IndexOutOfBoundsException exception) {
-            this.unhighlightAllSteps();
-            return;
+            // Out of bounds PC, no scrolling will occur
         }
-        this.table.scrollRectToVisible(this.table.getCellRect(row, 0, true));
-        // Trigger highlighting, which is done by the column's cell renderer.
-        // IMPLEMENTATION NOTE: Pretty crude implementation; mark all rows
-        // as changed so assure that the previously highlighted row is
-        // unhighlighted.  Would be better to keep track of previous row
-        // then fire two events: one for it and one for the new row.
-        this.table.tableChanged(new TableModelEvent(this.tableModel));
-    }
 
-    /**
-     * Used to enable or disable source code highlighting.  If true (normally while
-     * stepping through execution) then MIPS statement at current program counter
-     * is highlighted.  The code column's cell renderer tests this variable.
-     *
-     * @param highlightSetting true to enable highlighting, false to disable.
-     */
-    public void setCodeHighlighting(boolean highlightSetting) {
-        this.codeHighlighting = highlightSetting;
-    }
-
-    /**
-     * Get code highlighting status.
-     *
-     * @return true if code highlighting currently enabled, false otherwise.
-     */
-    public boolean getCodeHighlighting() {
-        return this.codeHighlighting;
-    }
-
-    /**
-     * If any steps are highlighted, this erases the highlighting.
-     */
-    public void unhighlightAllSteps() {
-        boolean saved = this.getCodeHighlighting();
-        this.setCodeHighlighting(false);
-        this.table.tableChanged(new TableModelEvent(this.tableModel, 0, this.data.length - 1, ADDRESS_COLUMN));
-        this.table.tableChanged(new TableModelEvent(this.tableModel, 0, this.data.length - 1, CODE_COLUMN));
-        this.table.tableChanged(new TableModelEvent(this.tableModel, 0, this.data.length - 1, BASIC_COLUMN));
-        this.table.tableChanged(new TableModelEvent(this.tableModel, 0, this.data.length - 1, SOURCE_COLUMN));
-        this.setCodeHighlighting(saved);
+        // Repaint with the updated highlighting
+        this.table.repaint();
     }
 
     /**
@@ -818,26 +765,29 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
     private class CodeCellRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            boolean isHighlighted = TextSegmentWindow.this.getCodeHighlighting() && TextSegmentWindow.this.rowAddresses[row] == highlightAddress;
+            int address = TextSegmentWindow.this.rowAddresses[row];
+            Font font;
 
             this.setHorizontalAlignment(SwingConstants.LEFT);
-            if (isHighlighted) {
-                this.setBackground(TextSegmentWindow.this.gui.getSettings().textSegmentHighlightBackground.get());
-                this.setForeground(TextSegmentWindow.this.gui.getSettings().textSegmentHighlightForeground.get());
+            if (address == TextSegmentWindow.this.executeAddress) {
+                this.setBackground(TextSegmentWindow.this.gui.getSettings().textSegmentExecuteHighlightBackground.getOrDefault());
+                this.setForeground(TextSegmentWindow.this.gui.getSettings().textSegmentExecuteHighlightForeground.getOrDefault());
+                font = TextSegmentWindow.this.gui.getSettings().tableHighlightFont.get();
+            }
+            else if (address == TextSegmentWindow.this.fetchAddress) {
+                this.setBackground(TextSegmentWindow.this.gui.getSettings().textSegmentFetchHighlightBackground.getOrDefault());
+                this.setForeground(TextSegmentWindow.this.gui.getSettings().textSegmentFetchHighlightForeground.getOrDefault());
+                font = TextSegmentWindow.this.gui.getSettings().tableHighlightFont.get();
             }
             else {
                 this.setBackground(null);
                 this.setForeground(null);
+                font = TextSegmentWindow.this.gui.getSettings().tableFont.get();
             }
 
             super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
-            if (isHighlighted) {
-                this.setFont(TextSegmentWindow.this.gui.getSettings().tableHighlightFont.get());
-            }
-            else {
-                this.setFont(TextSegmentWindow.this.gui.getSettings().tableFont.get());
-            }
+            this.setFont(font);
 
             return this;
         }

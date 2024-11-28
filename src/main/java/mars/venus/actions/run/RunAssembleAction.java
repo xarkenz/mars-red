@@ -100,8 +100,7 @@ public class RunAssembleAction extends VenusAction {
             executeTab.getDataSegmentWindow().highlightCellForAddress(Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW));
             executeTab.getDataSegmentWindow().clearHighlighting();
             executeTab.getLabelsWindow().setupTable();
-            executeTab.getTextSegmentWindow().setCodeHighlighting(true);
-            executeTab.getTextSegmentWindow().highlightStepAtPC();
+            executeTab.getTextSegmentWindow().updateHighlighting();
             this.gui.getMainPane().setSelectedComponent(executeTab);
 
             registersPane.getProcessorTab().clearWindow();

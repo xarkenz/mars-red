@@ -90,8 +90,7 @@ public class RunResetAction extends VenusAction {
         executeTab.getDataSegmentWindow().highlightCellForAddress(Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW));
         executeTab.getDataSegmentWindow().clearHighlighting();
         executeTab.getTextSegmentWindow().resetModifiedSourceCode();
-        executeTab.getTextSegmentWindow().setCodeHighlighting(true);
-        executeTab.getTextSegmentWindow().highlightStepAtPC();
+        executeTab.getTextSegmentWindow().updateHighlighting();
 
         this.gui.getMessagesPane().getMessages().writeOutput(this.getName() + ": reset completed.\n");
         if (this.gui.getProgramStatus() == ProgramStatus.PAUSED) {

@@ -175,7 +175,7 @@ public class Application {
     public static void setupLookAndFeel() {
         // Set the UI scale
         System.setProperty("flatlaf.uiScale", settings.uiScale.get() + "%");
-        // Designate the "themes" folder for theme style overrides
+        // Designate the "resources/themes" folder for theme style overrides
         FlatLaf.registerCustomDefaultsSource("themes");
         // Set up the look and feel
         FlatLaf.setup(switch (settings.lookAndFeelName.get()) {
@@ -188,6 +188,8 @@ public class Application {
             case "FlatDarculaLaf" -> new FlatDarculaLaf();
             default -> new FlatLightLaf();
         });
+
+        settings.updateThemeDefaults();
 
         // Refresh the GUI as best as possible if is already open
         if (gui != null) {

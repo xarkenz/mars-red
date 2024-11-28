@@ -508,57 +508,12 @@ public class Settings {
     // COLOR SETTINGS
 
     /**
-     * RGB color for text segment highlighted background
+     * RGB color for register highlighted foreground
      */
-    public final ColorSetting textSegmentHighlightBackground = new ColorSetting(
+    public final ColorSetting registerHighlightForeground = new ColorSetting(
         this,
-        "TextSegmentHighlightBackground",
-        new Color(0xE9AA4B),
-        false
-    );
-    /**
-     * RGB color for text segment highlighted foreground
-     */
-    public final ColorSetting textSegmentHighlightForeground = new ColorSetting(
-        this,
-        "TextSegmentHighlightForeground",
-        new Color(0x000000),
-        false
-    );
-    /**
-     * RGB color for text segment delay slot highlighted background
-     */
-    public final ColorSetting textSegmentDelaySlotHighlightBackground = new ColorSetting(
-        this,
-        "TextSegmentDelaySlotHighlightBackground",
-        new Color(0x99CC55),
-        false
-    );
-    /**
-     * RGB color for text segment delay slot highlighted foreground
-     */
-    public final ColorSetting textSegmentDelaySlotHighlightForeground = new ColorSetting(
-        this,
-        "TextSegmentDelaySlotHighlightForeground",
-        new Color(0x000000),
-        false
-    );
-    /**
-     * RGB color for text segment highlighted background
-     */
-    public final ColorSetting dataSegmentHighlightBackground = new ColorSetting(
-        this,
-        "DataSegmentHighlightBackground",
-        new Color(0x5A81FD),
-        false
-    );
-    /**
-     * RGB color for text segment highlighted foreground
-     */
-    public final ColorSetting dataSegmentHighlightForeground = new ColorSetting(
-        this,
-        "DataSegmentHighlightForeground",
-        new Color(0x000000),
+        "RegisterHighlightForeground",
+        "Venus.RegistersPane.registerHighlight.foreground",
         false
     );
     /**
@@ -567,28 +522,73 @@ public class Settings {
     public final ColorSetting registerHighlightBackground = new ColorSetting(
         this,
         "RegisterHighlightBackground",
-        new Color(0x3C9862),
+        "Venus.RegistersPane.registerHighlight.background",
         false
     );
     /**
-     * RGB color for register highlighted foreground
+     * RGB color for text segment highlighted foreground
      */
-    public final ColorSetting registerHighlightForeground = new ColorSetting(
+    public final ColorSetting textSegmentExecuteHighlightForeground = new ColorSetting(
         this,
-        "RegisterHighlightForeground",
-        new Color(0x000000),
+        "TextSegmentHighlightForeground",
+        "Venus.TextSegmentWindow.executeHighlight.foreground",
+        false
+    );
+    /**
+     * RGB color for text segment highlighted background
+     */
+    public final ColorSetting textSegmentExecuteHighlightBackground = new ColorSetting(
+        this,
+        "TextSegmentHighlightBackground",
+        "Venus.TextSegmentWindow.executeHighlight.background",
+        false
+    );
+    /**
+     * RGB color for text segment fetch highlighted foreground
+     */
+    public final ColorSetting textSegmentFetchHighlightForeground = new ColorSetting(
+        this,
+        "TextSegmentFetchHighlightForeground",
+        "Venus.TextSegmentWindow.fetchHighlight.foreground",
+        false
+    );
+    /**
+     * RGB color for text segment fetch highlighted background
+     */
+    public final ColorSetting textSegmentFetchHighlightBackground = new ColorSetting(
+        this,
+        "TextSegmentFetchHighlightBackground",
+        "Venus.TextSegmentWindow.fetchHighlight.background",
+        false
+    );
+    /**
+     * RGB color for data segment highlighted foreground
+     */
+    public final ColorSetting dataSegmentHighlightForeground = new ColorSetting(
+        this,
+        "DataSegmentHighlightForeground",
+        "Venus.MemoryViewWindow.wordHighlight.foreground",
+        false
+    );
+    /**
+     * RGB color for data segment highlighted background
+     */
+    public final ColorSetting dataSegmentHighlightBackground = new ColorSetting(
+        this,
+        "DataSegmentHighlightBackground",
+        "Venus.MemoryViewWindow.wordHighlight.background",
         false
     );
 
     public final ColorSetting[] colorSettings = {
-        this.textSegmentHighlightBackground,
-        this.textSegmentHighlightForeground,
-        this.textSegmentDelaySlotHighlightBackground,
-        this.textSegmentDelaySlotHighlightForeground,
-        this.dataSegmentHighlightBackground,
-        this.dataSegmentHighlightForeground,
-        this.registerHighlightBackground,
         this.registerHighlightForeground,
+        this.registerHighlightBackground,
+        this.textSegmentExecuteHighlightForeground,
+        this.textSegmentExecuteHighlightBackground,
+        this.textSegmentFetchHighlightForeground,
+        this.textSegmentFetchHighlightBackground,
+        this.dataSegmentHighlightForeground,
+        this.dataSegmentHighlightBackground,
     };
 
     // FONT SETTINGS
@@ -949,14 +949,7 @@ public class Settings {
         }
         // Load color settings
         for (ColorSetting setting : this.colorSettings) {
-            String property = defaults.getProperty(setting.getKey());
-            if (property != null) {
-                Color color = ColorSetting.decode(property);
-                if (color != null) {
-                    setting.setDefault(color);
-                    setting.setNonPersistent(color);
-                }
-            }
+            // Default value comes from theme-specific UI values, so don't bother checking for a default here
             Color color = ColorSetting.decode(this.preferences.get(setting.getKey(), null));
             if (color != null) {
                 setting.setNonPersistent(color);
@@ -979,11 +972,22 @@ public class Settings {
         for (SyntaxStyleSetting setting : this.syntaxStyleSettings) {
             if (setting != null) {
                 // Default value comes from theme-specific UI values, so don't bother checking for a default here
-                String styleString = this.preferences.get(setting.getKey(), null);
-                if (styleString != null) {
-                    setting.setNonPersistent(SyntaxStyleSetting.decode(styleString));
+                SyntaxStyle style = SyntaxStyleSetting.decode(this.preferences.get(setting.getKey(), null));
+                if (style != null) {
+                    setting.setNonPersistent(style);
                 }
             }
+        }
+    }
+
+    /**
+     * Update any default values that are derived from the UI theme. This should be called anytime the theme changes,
+     * and exists to reduce the overhead it would induce to constantly request the same theme default when it
+     * hasn't changed.
+     */
+    public void updateThemeDefaults() {
+        for (ColorSetting setting : this.colorSettings) {
+            setting.updateDefault();
         }
     }
 }

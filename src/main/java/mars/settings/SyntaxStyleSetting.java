@@ -130,28 +130,30 @@ public class SyntaxStyleSetting {
      * </ul>
      *
      * @param string The string to decode as a syntax style.
-     * @return The syntax style decoded from the given string.
+     * @return The syntax style decoded from the given string, or null if <code>string</code> is null.
      * @see ColorSetting#decode(String)
      * @see SyntaxStyleSetting#encode(SyntaxStyle)
      */
     public static SyntaxStyle decode(String string) {
+        if (string == null) {
+            return null;
+        }
+
         Color color = null;
         boolean bold = false;
         boolean italic = false;
 
-        if (string != null) {
-            for (String attribute : string.split(",")) {
-                attribute = attribute.strip().toLowerCase();
+        for (String attribute : string.split(",")) {
+            attribute = attribute.strip().toLowerCase();
 
-                if (attribute.startsWith("color=")) {
-                    color = ColorSetting.decode(attribute.substring(6).strip());
-                }
-                else if (attribute.equals("bold")) {
-                    bold = true;
-                }
-                else if (attribute.equals("italic")) {
-                    italic = true;
-                }
+            if (attribute.startsWith("color=")) {
+                color = ColorSetting.decode(attribute.substring(6).strip());
+            }
+            else if (attribute.equals("bold")) {
+                bold = true;
+            }
+            else if (attribute.equals("italic")) {
+                italic = true;
             }
         }
 
