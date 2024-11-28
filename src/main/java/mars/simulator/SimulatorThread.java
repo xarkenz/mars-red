@@ -2,8 +2,6 @@ package mars.simulator;
 
 import mars.assembler.BasicStatement;
 import mars.mips.hardware.*;
-import mars.mips.instructions.Instruction;
-import mars.util.Binary;
 
 import java.util.Arrays;
 
@@ -17,22 +15,19 @@ public class SimulatorThread extends Thread {
     private final Simulator simulator;
     private final int maxSteps;
     private final int[] breakPoints;
-    private int programCounter;
     private volatile Runnable stopEventDispatcher;
 
     /**
      * Create a new <code>SimulatorThread</code> without starting it.
      *
-     * @param programCounter Address in text segment of first instruction to simulate.
      * @param maxSteps       Maximum number of instruction steps to simulate.  Default of -1 means no maximum.
      * @param breakPoints    Array of breakpoints (instruction addresses) specified by user.
      */
-    public SimulatorThread(Simulator simulator, int programCounter, int maxSteps, int[] breakPoints) {
+    public SimulatorThread(Simulator simulator, int maxSteps, int[] breakPoints) {
         super("MIPS");
         this.simulator = simulator;
         this.maxSteps = maxSteps;
         this.breakPoints = breakPoints;
-        this.programCounter = programCounter;
         this.stopEventDispatcher = this::dispatchExternalFinishEvent;
     }
 
@@ -60,12 +55,12 @@ public class SimulatorThread extends Thread {
 
     private void dispatchExternalPauseEvent() {
         // Dispatch a pause event once the simulator stops
-        this.simulator.dispatchPauseEvent(this.maxSteps, this.programCounter, SimulatorPauseEvent.Reason.EXTERNAL);
+        this.simulator.dispatchPauseEvent(this.maxSteps, SimulatorPauseEvent.Reason.EXTERNAL);
     }
 
     private void dispatchExternalFinishEvent() {
         // Dispatch a finish event once the simulator stops
-        this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.EXTERNAL, null);
+        this.simulator.dispatchFinishEvent(SimulatorFinishEvent.Reason.EXTERNAL, null);
     }
 
     /**
@@ -88,7 +83,7 @@ public class SimulatorThread extends Thread {
         }
         catch (SimulatorException exception) {
             // An unhandled exception occurred during simulation
-            this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.EXCEPTION, exception);
+            this.simulator.dispatchFinishEvent(SimulatorFinishEvent.Reason.EXCEPTION, exception);
         }
         catch (InterruptedException exception) {
             // The event dispatcher runnable will be set by the method that caused the interrupt
@@ -98,7 +93,7 @@ public class SimulatorThread extends Thread {
             // Should only happen if there is a bug somewhere
             System.err.println("Error: internal exception during simulation (this is a bug!):");
             exception.printStackTrace(System.err);
-            this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.INTERNAL_ERROR, null);
+            this.simulator.dispatchFinishEvent(SimulatorFinishEvent.Reason.INTERNAL_ERROR, null);
         }
     }
 
@@ -111,9 +106,7 @@ public class SimulatorThread extends Thread {
             Arrays.sort(this.breakPoints);
         }
 
-        this.simulator.dispatchStartEvent(this.maxSteps, this.programCounter);
-
-        Processor.initializeProgramCounter(this.programCounter);
+        this.simulator.dispatchStartEvent(this.maxSteps);
 
         // If there is a step limit, this is used to track the number of steps taken
         int stepCount = 0;
@@ -156,22 +149,8 @@ public class SimulatorThread extends Thread {
                 // A null statement indicates that execution "ran off the bottom" of the program.
                 // While a real MIPS device would keep chugging along and executing garbage data as instructions,
                 // it's probably safe to say the user did not intend that to happen, so we'll just stop instead.
-                this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.RAN_OFF_BOTTOM, null);
+                this.simulator.dispatchFinishEvent(SimulatorFinishEvent.Reason.RAN_OFF_BOTTOM, null);
                 return;
-            }
-
-            if (this.simulator.isInDelaySlot()) {
-                // Handle the delayed jump/branch instead of incrementing the program counter
-                Processor.setProgramCounter(this.simulator.getDelayedJumpAddress());
-                this.simulator.clearDelayedJumpAddress();
-            }
-            else {
-                // Increment the program counter register before doing anything else.
-                // The reason for this is that the program counter register will always hold the address of
-                // the NEXT instruction to execute, whereas this.programCounter holds the address of the CURRENT
-                // instruction being executed. This allows branch/jump instructions to simply write to the register,
-                // and no special logic is needed for whether to increment the program counter.
-                Processor.setProgramCounter(this.programCounter + Instruction.BYTES_PER_INSTRUCTION);
             }
 
             try {
@@ -183,19 +162,11 @@ public class SimulatorThread extends Thread {
 
                 // Simulate the statement execution
                 statement.simulate();
-
-                // Statement added 7/26/06 (explanation above)
-                this.simulator.getBackStepper().instructionFinished(this.programCounter);
             }
             catch (SimulatorException exception) {
-                // If execution were to terminate at this point, we don't want the program counter
-                // to appear as if it was incremented past the instruction that caused the termination,
-                // so we will just undo the incrementation of the program counter
-                Processor.setProgramCounter(this.programCounter);
-
                 if (exception.getExitCode() != null) {
                     // There are no errors attached, so this was caused by an exit syscall
-                    this.simulator.dispatchFinishEvent(this.programCounter, SimulatorFinishEvent.Reason.EXIT_SYSCALL, exception);
+                    this.simulator.dispatchFinishEvent(SimulatorFinishEvent.Reason.EXIT_SYSCALL, exception);
                     return;
                 }
 
@@ -219,14 +190,17 @@ public class SimulatorThread extends Thread {
                     throw exception;
                 }
             }
-            catch (InterruptedException exception) {
-                // The instruction was interrupted in the middle of what it was doing,
-                // and it should have already reverted all of its own changes, so all we need to do
-                // to allow a pause interrupt to work is undo the incrementation of the program counter
-                Processor.setProgramCounter(this.programCounter);
-                // Proceed with interrupt handling as usual
-                throw exception;
-            }
+
+            // Update both the fetch program counter and execute program counter to simulate a pipeline
+            Processor.incrementProgramCounter();
+
+            // Carry out any state changes meant to happen between instructions
+            this.simulator.flushStateChanges();
+
+            // Mark the end of a step in the backstepper so all actions from this iteration are considered one step
+            this.simulator.getBackStepper().finishStep();
+
+            // END OF SIMULATOR STEP
 
             // Check for a thread interrupt (either a pause or termination)
             if (this.isInterrupted()) {
@@ -236,21 +210,15 @@ public class SimulatorThread extends Thread {
             if (this.maxSteps > 0) {
                 stepCount++;
                 if (stepCount >= this.maxSteps) {
-                    this.simulator.dispatchPauseEvent(this.maxSteps, this.programCounter, SimulatorPauseEvent.Reason.STEP_LIMIT_REACHED);
+                    this.simulator.dispatchPauseEvent(this.maxSteps, SimulatorPauseEvent.Reason.STEP_LIMIT_REACHED);
                     return;
                 }
             }
             // Check for a breakpoint
-            if (this.breakPoints != null && Arrays.binarySearch(this.breakPoints, this.programCounter) >= 0) {
-                this.simulator.dispatchPauseEvent(this.maxSteps, this.programCounter, SimulatorPauseEvent.Reason.BREAKPOINT);
+            if (this.breakPoints != null && Arrays.binarySearch(this.breakPoints, Processor.getExecuteProgramCounter()) >= 0) {
+                this.simulator.dispatchPauseEvent(this.maxSteps, SimulatorPauseEvent.Reason.BREAKPOINT);
                 return;
             }
-
-            // Carry out any state changes meant to happen between instructions
-            this.simulator.flushStateChanges();
-
-            // Update the actual program counter to reflect the value stored in the register
-            this.programCounter = Processor.getProgramCounter();
 
             // Update the GUI and delay the next step if the program is not running at unlimited speed
             if (this.simulator.isLimitingRunSpeed()) {
@@ -265,15 +233,11 @@ public class SimulatorThread extends Thread {
 
     private BasicStatement fetchStatement() throws SimulatorException {
         try {
-            return Memory.getInstance().fetchStatement(Processor.getProgramCounter(), true);
+            return Memory.getInstance().fetchStatement(Processor.getExecuteProgramCounter(), true);
         }
         catch (AddressErrorException exception) {
-            // Next statement is a hack.  Previous statement sets EPC register to (PC - 4)
-            // because it assumes the bad address comes from an operand so the program counter has already been
-            // incremented.  In this case, bad address is the instruction fetch itself so program counter has
-            // not yet been incremented.  We'll set the EPC directly here.  DPS 8-July-2013
-            Coprocessor0.updateRegister(Coprocessor0.EPC, Processor.getProgramCounter());
-            throw new SimulatorException("invalid program counter value: " + Binary.intToHexString(Processor.getProgramCounter()));
+            Coprocessor0.updateRegister(Coprocessor0.EPC, Processor.getExecuteProgramCounter());
+            throw new SimulatorException(exception);
         }
     }
 }

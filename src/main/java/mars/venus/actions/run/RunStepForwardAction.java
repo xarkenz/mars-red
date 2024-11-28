@@ -1,7 +1,6 @@
 package mars.venus.actions.run;
 
 import mars.simulator.SimulatorException;
-import mars.mips.hardware.Processor;
 import mars.simulator.Simulator;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
@@ -65,7 +64,7 @@ public class RunStepForwardAction extends VenusAction {
                 Simulator.getInstance().storeProgramArguments(programArguments);
             }
 
-            Simulator.getInstance().simulate(Processor.getProgramCounter(), 1, null);
+            Simulator.getInstance().simulate(1, null);
         }
         catch (SimulatorException exception) {
             // Ignore

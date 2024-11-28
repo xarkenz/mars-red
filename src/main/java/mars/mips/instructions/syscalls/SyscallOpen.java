@@ -85,6 +85,6 @@ public class SyscallOpen extends AbstractSyscall {
 
         int descriptor = Simulator.getInstance().getSystemIO().openFile(Path.of(filename), Processor.getValue(Processor.ARGUMENT_1));
 
-        Processor.updateRegister(Processor.VALUE_0, descriptor); // Set returned descriptor in register
+        Processor.setValue(Processor.VALUE_0, descriptor); // Set returned descriptor in register
     }
 }

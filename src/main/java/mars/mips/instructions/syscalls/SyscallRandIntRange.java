@@ -64,7 +64,7 @@ public class SyscallRandIntRange extends AbstractSyscall {
         Random stream = RandomStreams.getStream(index);
 
         try {
-            Processor.updateRegister(Processor.ARGUMENT_0, stream.nextInt(Processor.getValue(Processor.ARGUMENT_1)));
+            Processor.setValue(Processor.ARGUMENT_0, stream.nextInt(Processor.getValue(Processor.ARGUMENT_1)));
         }
         catch (IllegalArgumentException exception) {
             throw new SimulatorException(statement, "upper bound of range cannot be negative (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL);

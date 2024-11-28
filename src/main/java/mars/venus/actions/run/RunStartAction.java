@@ -1,7 +1,6 @@
 package mars.venus.actions.run;
 
 import mars.simulator.SimulatorException;
-import mars.mips.hardware.Processor;
 import mars.simulator.Simulator;
 import mars.venus.actions.VenusAction;
 import mars.venus.VenusUI;
@@ -65,7 +64,7 @@ public class RunStartAction extends VenusAction {
 
             int[] breakPoints = this.gui.getMainPane().getExecuteTab().getTextSegmentWindow().getSortedBreakPointsArray();
 
-            Simulator.getInstance().simulate(Processor.getProgramCounter(), -1, breakPoints);
+            Simulator.getInstance().simulate(-1, breakPoints);
         }
         catch (SimulatorException exception) {
             // Ignore

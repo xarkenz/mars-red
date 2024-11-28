@@ -8,19 +8,16 @@ import java.util.EventObject;
  */
 public class SimulatorStartEvent extends EventObject {
     private final int stepCount;
-    private final int programCounter;
 
     /**
      * Construct a new event with the given parameters.
      *
-     * @param simulator      The source of this event.
-     * @param stepCount      The maximum number of steps the simulator will take (-1 if not applicable).
-     * @param programCounter The initial value of the program counter.
+     * @param simulator The source of this event.
+     * @param stepCount The maximum number of steps the simulator will take (-1 if not applicable).
      */
-    public SimulatorStartEvent(Simulator simulator, int stepCount, int programCounter) {
+    public SimulatorStartEvent(Simulator simulator, int stepCount) {
         super(simulator);
         this.stepCount = stepCount;
-        this.programCounter = programCounter;
     }
 
     /**
@@ -28,12 +25,5 @@ public class SimulatorStartEvent extends EventObject {
      */
     public int getStepCount() {
         return this.stepCount;
-    }
-
-    /**
-     * The initial value of the program counter.
-     */
-    public int getProgramCounter() {
-        return this.programCounter;
     }
 }

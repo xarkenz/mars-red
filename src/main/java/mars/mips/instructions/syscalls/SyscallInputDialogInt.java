@@ -79,26 +79,26 @@ public class SyscallInputDialogInt extends AbstractSyscall {
 
         if (inputValue == null) {
             // Cancel was chosen
-            Processor.updateRegister(Processor.ARGUMENT_0, 0);  // set $a0 to zero
-            Processor.updateRegister(Processor.ARGUMENT_1, -2);  // set $a1 to -2 flag
+            Processor.setValue(Processor.ARGUMENT_0, 0);  // set $a0 to zero
+            Processor.setValue(Processor.ARGUMENT_1, -2);  // set $a1 to -2 flag
         }
         else if (inputValue.isEmpty()) {
             // OK was chosen but there was no input
-            Processor.updateRegister(Processor.ARGUMENT_0, 0);  // set $a0 to zero
-            Processor.updateRegister(Processor.ARGUMENT_1, -3);  // set $a1 to -3 flag
+            Processor.setValue(Processor.ARGUMENT_0, 0);  // set $a0 to zero
+            Processor.setValue(Processor.ARGUMENT_1, -3);  // set $a1 to -3 flag
         }
         else {
             try {
                 int intValue = Integer.parseInt(inputValue);
 
                 // Successful parse of valid input data
-                Processor.updateRegister(Processor.ARGUMENT_0, intValue);  // set $a0 to the data read
-                Processor.updateRegister(Processor.ARGUMENT_1, 0);  // set $a1 to valid flag
+                Processor.setValue(Processor.ARGUMENT_0, intValue);  // set $a0 to the data read
+                Processor.setValue(Processor.ARGUMENT_1, 0);  // set $a1 to valid flag
             }
             catch (NumberFormatException exception) {
                 // Unsuccessful parse of input data
-                Processor.updateRegister(Processor.ARGUMENT_0, 0);  // set $a0 to zero
-                Processor.updateRegister(Processor.ARGUMENT_1, -1);  // set $a1 to -1 flag
+                Processor.setValue(Processor.ARGUMENT_0, 0);  // set $a0 to zero
+                Processor.setValue(Processor.ARGUMENT_1, -1);  // set $a1 to -1 flag
             }
         }
     }

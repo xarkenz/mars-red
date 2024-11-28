@@ -64,7 +64,7 @@ public class SyscallConfirmDialog extends AbstractSyscall {
             String message = Memory.getInstance().fetchNullTerminatedString(Processor.getValue(Processor.ARGUMENT_0));
 
             // Update register $a0 with the value from showConfirmDialog
-            Processor.updateRegister(Processor.ARGUMENT_0, JOptionPane.showConfirmDialog(null, message));
+            Processor.setValue(Processor.ARGUMENT_0, JOptionPane.showConfirmDialog(null, message));
         }
         catch (AddressErrorException exception) {
             throw new SimulatorException(statement, exception);

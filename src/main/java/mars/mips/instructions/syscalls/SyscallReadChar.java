@@ -54,7 +54,7 @@ public class SyscallReadChar extends AbstractSyscall {
         try {
             int charValue = Simulator.getInstance().getSystemIO().readChar();
             // DPS 20 June 2008: changed from 4 ($a0) to 2 ($v0)
-            Processor.updateRegister(Processor.VALUE_0, charValue);
+            Processor.setValue(Processor.VALUE_0, charValue);
         }
         catch (IndexOutOfBoundsException exception) {
             throw new SimulatorException(statement, "invalid char input (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL);

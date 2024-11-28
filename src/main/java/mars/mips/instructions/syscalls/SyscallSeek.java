@@ -36,6 +36,6 @@ public class SyscallSeek extends AbstractSyscall {
         }
 
         long newPosition = Simulator.getInstance().getSystemIO().seekFile(descriptor, offset, whence);
-        Processor.updateRegister(Processor.VALUE_0, (int) newPosition); // Put return value in $v0
+        Processor.setValue(Processor.VALUE_0, (int) newPosition); // Put return value in $v0
     }
 }

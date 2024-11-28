@@ -52,11 +52,10 @@ public class RunStepBackwardAction extends VenusAction {
     @Override
     public void actionPerformed(ActionEvent event) {
         this.gui.getMessagesPane().selectConsoleTab();
+
         RegistersPane registersPane = this.gui.getRegistersPane();
         ExecuteTab executeTab = this.gui.getMainPane().getExecuteTab();
         executeTab.getTextSegmentWindow().setCodeHighlighting(true);
-
-        boolean inDelaySlot = Simulator.getInstance().getBackStepper().isInDelaySlot(); // Added 25 June 2007
 
         executeTab.getDataSegmentWindow().startObservingMemory();
         registersPane.getProcessorTab().startObservingRegisters();
@@ -73,7 +72,7 @@ public class RunStepBackwardAction extends VenusAction {
         registersPane.getCoprocessor1Tab().updateRegisters();
         registersPane.getCoprocessor0Tab().updateRegisters();
         executeTab.getDataSegmentWindow().updateValues();
-        executeTab.getTextSegmentWindow().highlightStepAtPC(inDelaySlot); // Argument added 25 June 2007
+        executeTab.getTextSegmentWindow().highlightStepAtPC();
 
         this.gui.setProgramStatus(ProgramStatus.PAUSED);
     }

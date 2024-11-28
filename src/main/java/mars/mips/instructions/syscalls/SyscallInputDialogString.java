@@ -80,11 +80,11 @@ public class SyscallInputDialogString extends AbstractSyscall {
         String inputString = JOptionPane.showInputDialog(message);
         if (inputString == null) {
             // Cancel was chosen
-            Processor.updateRegister(Processor.ARGUMENT_1, -2);  // set $a1 to -2 flag
+            Processor.setValue(Processor.ARGUMENT_1, -2);  // set $a1 to -2 flag
         }
         else if (inputString.isEmpty()) {
             // OK was chosen but there was no input
-            Processor.updateRegister(Processor.ARGUMENT_1, -3);  // set $a1 to -3 flag
+            Processor.setValue(Processor.ARGUMENT_1, -3);  // set $a1 to -3 flag
         }
         else {
             try {
@@ -105,10 +105,10 @@ public class SyscallInputDialogString extends AbstractSyscall {
 
                 if (inputString.length() > maxLength - 1) {
                     // Length of the input string exceeded the specified maximum
-                    Processor.updateRegister(Processor.ARGUMENT_1, -4);  // set $a1 to -4 flag
+                    Processor.setValue(Processor.ARGUMENT_1, -4);  // set $a1 to -4 flag
                 }
                 else {
-                    Processor.updateRegister(Processor.ARGUMENT_1, 0);  // set $a1 to 0 flag
+                    Processor.setValue(Processor.ARGUMENT_1, 0);  // set $a1 to 0 flag
                 }
             }
             catch (AddressErrorException exception) {

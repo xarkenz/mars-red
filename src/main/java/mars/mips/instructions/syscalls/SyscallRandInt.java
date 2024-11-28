@@ -58,7 +58,7 @@ public class SyscallRandInt extends AbstractSyscall {
         int index = Processor.getValue(Processor.ARGUMENT_0);
         Random stream = RandomStreams.getStream(index);
 
-        Processor.updateRegister(Processor.ARGUMENT_0, stream.nextInt());
+        Processor.setValue(Processor.ARGUMENT_0, stream.nextInt());
     }
 }
 

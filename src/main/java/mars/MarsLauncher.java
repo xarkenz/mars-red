@@ -505,7 +505,7 @@ public class MarsLauncher {
                 if (Application.debug) {
                     this.out.println("--------  SIMULATION BEGINS  -----------");
                 }
-                Simulator.getInstance().simulate(Processor.getProgramCounter(), this.maxSteps, null);
+                Simulator.getInstance().simulate(this.maxSteps, null);
                 if (this.maxSteps > 0) {
                     this.out.println("\nProgram terminated after " + this.maxSteps + " steps.");
                 }

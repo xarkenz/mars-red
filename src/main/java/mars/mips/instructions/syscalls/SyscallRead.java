@@ -69,7 +69,7 @@ public class SyscallRead extends AbstractSyscall {
         ByteBuffer buffer = ByteBuffer.allocateDirect(maxLength);
 
         int readLength = Simulator.getInstance().getSystemIO().readFromFile(descriptor, buffer);
-        Processor.updateRegister(Processor.VALUE_0, readLength); // Put return value in $v0
+        Processor.setValue(Processor.VALUE_0, readLength); // Put return value in $v0
 
         // Flip buffer from put-mode to get-mode
         buffer.flip();

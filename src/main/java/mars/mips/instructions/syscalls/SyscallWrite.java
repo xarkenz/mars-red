@@ -84,6 +84,6 @@ public class SyscallWrite extends AbstractSyscall {
         buffer.flip();
 
         int writtenLength = Simulator.getInstance().getSystemIO().writeToFile(descriptor, buffer);
-        Processor.updateRegister(Processor.VALUE_0, writtenLength); // Put return value in $v0
+        Processor.setValue(Processor.VALUE_0, writtenLength); // Put return value in $v0
     }
 }

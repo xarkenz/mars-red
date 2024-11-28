@@ -13,7 +13,6 @@ import mars.assembler.token.Tokenizer;
 import mars.mips.hardware.*;
 import mars.mips.instructions.syscalls.Syscall;
 import mars.simulator.ExceptionCause;
-import mars.simulator.Simulator;
 import mars.simulator.SimulatorException;
 import mars.util.Binary;
 import mars.util.StringTrie;
@@ -182,7 +181,7 @@ public class InstructionSet {
                 if ((add1 >= 0 && add2 >= 0 && sum < 0) || (add1 < 0 && add2 < 0 && sum >= 0)) {
                     throw new SimulatorException(statement, "arithmetic overflow", ExceptionCause.ARITHMETIC_OVERFLOW);
                 }
-                Processor.updateRegister(statement.getOperand(0), sum);
+                Processor.setValue(statement.getOperand(0), sum);
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -200,7 +199,7 @@ public class InstructionSet {
                 if ((sub1 >= 0 && sub2 < 0 && diff < 0) || (sub1 < 0 && sub2 >= 0 && diff >= 0)) {
                     throw new SimulatorException(statement, "arithmetic overflow", ExceptionCause.ARITHMETIC_OVERFLOW);
                 }
-                Processor.updateRegister(statement.getOperand(0), diff);
+                Processor.setValue(statement.getOperand(0), diff);
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -218,7 +217,7 @@ public class InstructionSet {
                 if ((add1 >= 0 && add2 >= 0 && sum < 0) || (add1 < 0 && add2 < 0 && sum >= 0)) {
                     throw new SimulatorException(statement, "arithmetic overflow", ExceptionCause.ARITHMETIC_OVERFLOW);
                 }
-                Processor.updateRegister(statement.getOperand(0), sum);
+                Processor.setValue(statement.getOperand(0), sum);
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -229,7 +228,7 @@ public class InstructionSet {
             "set $t1 to ($t2 plus $t3), no exception on overflow",
             "000000 sssss ttttt fffff 00000 100001",
             statement -> {
-                Processor.updateRegister(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) + Processor.getValue(statement.getOperand(2)));
+                Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) + Processor.getValue(statement.getOperand(2)));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -240,7 +239,7 @@ public class InstructionSet {
             "set $t1 to ($t2 minus $t3), no exception on overflow",
             "000000 sssss ttttt fffff 00000 100011",
             statement -> {
-                Processor.updateRegister(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) - Processor.getValue(statement.getOperand(2)));
+                Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) - Processor.getValue(statement.getOperand(2)));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -251,7 +250,7 @@ public class InstructionSet {
             "set $t1 to ($t2 plus sign-extended 16-bit immediate), no exception on overflow",
             "001001 sssss fffff tttttttttttttttt",
             statement -> {
-                Processor.updateRegister(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) + (statement.getOperand(2) << 16 >> 16));
+                Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) + (statement.getOperand(2) << 16 >> 16));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -289,7 +288,7 @@ public class InstructionSet {
             "011100 sssss ttttt fffff 00000 000010",
             statement -> {
                 long product = (long) Processor.getValue(statement.getOperand(1)) * (long) Processor.getValue(statement.getOperand(2));
-                Processor.updateRegister(statement.getOperand(0), (int) (product << 32 >> 32));
+                Processor.setValue(statement.getOperand(0), (int) (product << 32 >> 32));
                 Processor.setHighOrder((int) (product >> 32));
                 Processor.setLowOrder((int) (product << 32 >> 32));
             }
@@ -404,7 +403,7 @@ public class InstructionSet {
             "set $t1 to contents of HI register",
             "000000 00000 00000 fffff 00000 010000",
             statement -> {
-                Processor.updateRegister(statement.getOperand(0), Processor.getHighOrder());
+                Processor.setValue(statement.getOperand(0), Processor.getHighOrder());
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -415,7 +414,7 @@ public class InstructionSet {
             "set $t1 to contents of LO register",
             "000000 00000 00000 fffff 00000 010010",
             statement -> {
-                Processor.updateRegister(statement.getOperand(0), Processor.getLowOrder());
+                Processor.setValue(statement.getOperand(0), Processor.getLowOrder());
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -448,7 +447,7 @@ public class InstructionSet {
             "set $t1 to ($t2 bitwise-AND $t3)",
             "000000 sssss ttttt fffff 00000 100100",
             statement -> {
-                Processor.updateRegister(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) & Processor.getValue(statement.getOperand(2)));
+                Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) & Processor.getValue(statement.getOperand(2)));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -459,7 +458,7 @@ public class InstructionSet {
             "set $t1 to ($t2 bitwise-OR $t3)",
             "000000 sssss ttttt fffff 00000 100101",
             statement -> {
-                Processor.updateRegister(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) | Processor.getValue(statement.getOperand(2)));
+                Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) | Processor.getValue(statement.getOperand(2)));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -471,7 +470,7 @@ public class InstructionSet {
             "001100 sssss fffff tttttttttttttttt",
             statement -> {
                 // ANDing with 0x0000FFFF zero-extends the immediate (high 16 bits always 0).
-                Processor.updateRegister(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) & (statement.getOperand(2) & 0x0000FFFF));
+                Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) & (statement.getOperand(2) & 0x0000FFFF));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -483,7 +482,7 @@ public class InstructionSet {
             "001101 sssss fffff tttttttttttttttt",
             statement -> {
                 // ANDing with 0x0000FFFF zero-extends the immediate (high 16 bits always 0).
-                Processor.updateRegister(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) | (statement.getOperand(2) & 0x0000FFFF));
+                Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) | (statement.getOperand(2) & 0x0000FFFF));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -494,7 +493,7 @@ public class InstructionSet {
             "set $t1 to inverse of ($t2 bitwise-OR $t3)",
             "000000 sssss ttttt fffff 00000 100111",
             statement -> {
-                Processor.updateRegister(statement.getOperand(0), ~(Processor.getValue(statement.getOperand(1)) | Processor.getValue(statement.getOperand(2))));
+                Processor.setValue(statement.getOperand(0), ~(Processor.getValue(statement.getOperand(1)) | Processor.getValue(statement.getOperand(2))));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -505,7 +504,7 @@ public class InstructionSet {
             "set $t1 to ($t2 bitwise-exclusive-OR $t3)",
             "000000 sssss ttttt fffff 00000 100110",
             statement -> {
-                Processor.updateRegister(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) ^ Processor.getValue(statement.getOperand(2)));
+                Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) ^ Processor.getValue(statement.getOperand(2)));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -517,7 +516,7 @@ public class InstructionSet {
             "001110 sssss fffff tttttttttttttttt",
             statement -> {
                 // ANDing with 0x0000FFFF zero-extends the immediate (high 16 bits always 0).
-                Processor.updateRegister(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) ^ (statement.getOperand(2) & 0x0000FFFF));
+                Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) ^ (statement.getOperand(2) & 0x0000FFFF));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -528,7 +527,7 @@ public class InstructionSet {
             "set $t1 to result of shifting $t2 left by number of bits specified by immediate",
             "000000 00000 sssss fffff ttttt 000000",
             statement -> {
-                Processor.updateRegister(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) << statement.getOperand(2));
+                Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) << statement.getOperand(2));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -540,7 +539,7 @@ public class InstructionSet {
             "000000 ttttt sssss fffff 00000 000100",
             statement -> {
                 // Mask all but low 5 bits of register containing shamt.
-                Processor.updateRegister(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) << (
+                Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) << (
                     Processor.getValue(statement.getOperand(2)) & 0x0000001F));
             }
         ));
@@ -553,7 +552,7 @@ public class InstructionSet {
             "000000 00000 sssss fffff ttttt 000010",
             statement -> {
                 // must zero-fill, so use ">>>" instead of ">>".
-                Processor.updateRegister(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) >>> statement.getOperand(2));
+                Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) >>> statement.getOperand(2));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -565,7 +564,7 @@ public class InstructionSet {
             "000000 00000 sssss fffff ttttt 000011",
             statement -> {
                 // must sign-fill, so use ">>".
-                Processor.updateRegister(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) >> statement.getOperand(2));
+                Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) >> statement.getOperand(2));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -577,7 +576,7 @@ public class InstructionSet {
             "000000 ttttt sssss fffff 00000 000110",
             statement -> {
                 // Mask all but low 5 bits of register containing shamt. Use ">>>" to zero-fill.
-                Processor.updateRegister(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) >>> (
+                Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) >>> (
                     Processor.getValue(statement.getOperand(2)) & 0x0000001F));
             }
         ));
@@ -590,7 +589,7 @@ public class InstructionSet {
             "000000 ttttt sssss fffff 00000 000111",
             statement -> {
                 // Mask all but low 5 bits of register containing shamt. Use ">>" to sign-fill.
-                Processor.updateRegister(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) >> (
+                Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) >> (
                     Processor.getValue(statement.getOperand(2)) & 0x0000001F));
             }
         ));
@@ -603,7 +602,7 @@ public class InstructionSet {
             "100011 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
-                    Processor.updateRegister(statement.getOperand(0), Memory.getInstance().fetchWord(Processor.getValue(statement.getOperand(2)) + statement.getOperand(1), true));
+                    Processor.setValue(statement.getOperand(0), Memory.getInstance().fetchWord(Processor.getValue(statement.getOperand(2)) + statement.getOperand(1), true));
                 }
                 catch (AddressErrorException exception) {
                     throw new SimulatorException(statement, exception);
@@ -627,7 +626,7 @@ public class InstructionSet {
             // thing as sw except in addition it writes 1 into the source register.
             statement -> {
                 try {
-                    Processor.updateRegister(statement.getOperand(0), Memory.getInstance().fetchWord(Processor.getValue(statement.getOperand(2)) + statement.getOperand(1), true));
+                    Processor.setValue(statement.getOperand(0), Memory.getInstance().fetchWord(Processor.getValue(statement.getOperand(2)) + statement.getOperand(1), true));
                 }
                 catch (AddressErrorException exception) {
                     throw new SimulatorException(statement, exception);
@@ -648,7 +647,7 @@ public class InstructionSet {
                     for (int i = 0; i <= address % Memory.BYTES_PER_WORD; i++) {
                         result = Binary.setByte(result, 3 - i, Memory.getInstance().fetchByte(address - i, true));
                     }
-                    Processor.updateRegister(statement.getOperand(0), result);
+                    Processor.setValue(statement.getOperand(0), result);
                 }
                 catch (AddressErrorException exception) {
                     throw new SimulatorException(statement, exception);
@@ -669,7 +668,7 @@ public class InstructionSet {
                     for (int i = 0; i <= 3 - (address % Memory.BYTES_PER_WORD); i++) {
                         result = Binary.setByte(result, i, Memory.getInstance().fetchByte(address + i, true));
                     }
-                    Processor.updateRegister(statement.getOperand(0), result);
+                    Processor.setValue(statement.getOperand(0), result);
                 }
                 catch (AddressErrorException exception) {
                     throw new SimulatorException(statement, exception);
@@ -708,7 +707,7 @@ public class InstructionSet {
                 catch (AddressErrorException exception) {
                     throw new SimulatorException(statement, exception);
                 }
-                Processor.updateRegister(statement.getOperand(0), 1); // always succeeds
+                Processor.setValue(statement.getOperand(0), 1); // always succeeds
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -759,7 +758,7 @@ public class InstructionSet {
             "set high-order 16 bits of $t1 to 16-bit immediate and low-order 16 bits to 0",
             "001111 00000 fffff ssssssssssssssss",
             statement -> {
-                Processor.updateRegister(statement.getOperand(0), statement.getOperand(1) << 16);
+                Processor.setValue(statement.getOperand(0), statement.getOperand(1) << 16);
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -878,7 +877,7 @@ public class InstructionSet {
             "if $t2 is less than $t3, set $t1 to 1, otherwise set $t1 to 0",
             "000000 sssss ttttt fffff 00000 101010",
             statement -> {
-                Processor.updateRegister(statement.getOperand(0), (Processor.getValue(statement.getOperand(1)) < Processor.getValue(statement.getOperand(2))) ? 1 : 0);
+                Processor.setValue(statement.getOperand(0), (Processor.getValue(statement.getOperand(1)) < Processor.getValue(statement.getOperand(2))) ? 1 : 0);
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -889,7 +888,7 @@ public class InstructionSet {
             "if $t2 is less than $t3 using unsigned comparision, set $t1 to 1, otherwise set $t1 to 0",
             "000000 sssss ttttt fffff 00000 101011",
             statement -> {
-                Processor.updateRegister(statement.getOperand(0), (Integer.compareUnsigned(Processor.getValue(statement.getOperand(1)), Processor.getValue(statement.getOperand(2))) < 0) ? 1 : 0);
+                Processor.setValue(statement.getOperand(0), (Integer.compareUnsigned(Processor.getValue(statement.getOperand(1)), Processor.getValue(statement.getOperand(2))) < 0) ? 1 : 0);
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -901,7 +900,7 @@ public class InstructionSet {
             "001010 sssss fffff tttttttttttttttt",
             statement -> {
                 // 16 bit immediate value in statement.getOperand(2) is sign-extended
-                Processor.updateRegister(statement.getOperand(0), (Processor.getValue(statement.getOperand(1)) < (statement.getOperand(2) << 16 >> 16)) ? 1 : 0);
+                Processor.setValue(statement.getOperand(0), (Processor.getValue(statement.getOperand(1)) < (statement.getOperand(2) << 16 >> 16)) ? 1 : 0);
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -913,7 +912,7 @@ public class InstructionSet {
             "001011 sssss fffff tttttttttttttttt",
             statement -> {
                 // 16 bit immediate value in statement.getOperand(2) is sign-extended
-                Processor.updateRegister(statement.getOperand(0), (Integer.compareUnsigned(Processor.getValue(statement.getOperand(1)), statement.getOperand(2) << 16 >> 16) < 0) ? 1 : 0);
+                Processor.setValue(statement.getOperand(0), (Integer.compareUnsigned(Processor.getValue(statement.getOperand(1)), statement.getOperand(2) << 16 >> 16) < 0) ? 1 : 0);
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -925,7 +924,7 @@ public class InstructionSet {
             "000000 sssss ttttt fffff 00000 001011",
             statement -> {
                 if (Processor.getValue(statement.getOperand(2)) != 0) {
-                    Processor.updateRegister(statement.getOperand(0), Processor.getValue(statement.getOperand(1)));
+                    Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)));
                 }
             }
         ));
@@ -938,7 +937,7 @@ public class InstructionSet {
             "000000 sssss ttttt fffff 00000 001010",
             statement -> {
                 if (Processor.getValue(statement.getOperand(2)) == 0) {
-                    Processor.updateRegister(statement.getOperand(0), Processor.getValue(statement.getOperand(1)));
+                    Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)));
                 }
             }
         ));
@@ -951,7 +950,7 @@ public class InstructionSet {
             "000000 sssss 000 00 fffff 00000 000001",
             statement -> {
                 if (Coprocessor1.getConditionFlag(0) == 0) {
-                    Processor.updateRegister(statement.getOperand(0), Processor.getValue(statement.getOperand(1)));
+                    Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)));
                 }
             }
         ));
@@ -964,7 +963,7 @@ public class InstructionSet {
             "000000 sssss ttt 00 fffff 00000 000001",
             statement -> {
                 if (Coprocessor1.getConditionFlag(statement.getOperand(2)) == 0) {
-                    Processor.updateRegister(statement.getOperand(0), Processor.getValue(statement.getOperand(1)));
+                    Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)));
                 }
             }
         ));
@@ -977,7 +976,7 @@ public class InstructionSet {
             "000000 sssss 000 01 fffff 00000 000001",
             statement -> {
                 if (Coprocessor1.getConditionFlag(0) == 1) {
-                    Processor.updateRegister(statement.getOperand(0), Processor.getValue(statement.getOperand(1)));
+                    Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)));
                 }
             }
         ));
@@ -990,7 +989,7 @@ public class InstructionSet {
             "000000 sssss ttt 01 fffff 00000 000001",
             statement -> {
                 if (Coprocessor1.getConditionFlag(statement.getOperand(2)) == 1) {
-                    Processor.updateRegister(statement.getOperand(0), Processor.getValue(statement.getOperand(1)));
+                    Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)));
                 }
             }
         ));
@@ -1094,7 +1093,7 @@ public class InstructionSet {
             "100000 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
-                    Processor.updateRegister(statement.getOperand(0), Memory.getInstance().fetchByte(Processor.getValue(statement.getOperand(2)) + (statement.getOperand(1) << 16 >> 16), true) << 24 >> 24);
+                    Processor.setValue(statement.getOperand(0), Memory.getInstance().fetchByte(Processor.getValue(statement.getOperand(2)) + (statement.getOperand(1) << 16 >> 16), true) << 24 >> 24);
                 }
                 catch (AddressErrorException exception) {
                     throw new SimulatorException(statement, exception);
@@ -1111,7 +1110,7 @@ public class InstructionSet {
             statement -> {
                 try {
                     // offset is sign-extended and loaded byte value is zero-extended
-                    Processor.updateRegister(statement.getOperand(0), Memory.getInstance().fetchByte(Processor.getValue(statement.getOperand(2)) + (statement.getOperand(1) << 16 >> 16), true));
+                    Processor.setValue(statement.getOperand(0), Memory.getInstance().fetchByte(Processor.getValue(statement.getOperand(2)) + (statement.getOperand(1) << 16 >> 16), true));
                 }
                 catch (AddressErrorException exception) {
                     throw new SimulatorException(statement, exception);
@@ -1127,7 +1126,7 @@ public class InstructionSet {
             "100001 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
-                    Processor.updateRegister(statement.getOperand(0), Memory.getInstance().fetchHalfword(Processor.getValue(statement.getOperand(2)) + (statement.getOperand(1) << 16 >> 16), true) << 16 >> 16);
+                    Processor.setValue(statement.getOperand(0), Memory.getInstance().fetchHalfword(Processor.getValue(statement.getOperand(2)) + (statement.getOperand(1) << 16 >> 16), true) << 16 >> 16);
                 }
                 catch (AddressErrorException exception) {
                     throw new SimulatorException(statement, exception);
@@ -1144,7 +1143,7 @@ public class InstructionSet {
             statement -> {
                 try {
                     // offset is sign-extended and loaded halfword value is zero-extended
-                    Processor.updateRegister(statement.getOperand(0), Memory.getInstance().fetchHalfword(Processor.getValue(statement.getOperand(2)) + (statement.getOperand(1) << 16 >> 16), true));
+                    Processor.setValue(statement.getOperand(0), Memory.getInstance().fetchHalfword(Processor.getValue(statement.getOperand(2)) + (statement.getOperand(1) << 16 >> 16), true));
                 }
                 catch (AddressErrorException exception) {
                     throw new SimulatorException(statement, exception);
@@ -1206,7 +1205,7 @@ public class InstructionSet {
             "011100 sssss 00000 fffff 00000 100001",
             statement -> {
                 // Invert and count leading zeroes
-                Processor.updateRegister(statement.getOperand(0), Integer.numberOfLeadingZeros(~Processor.getValue(statement.getOperand(1))));
+                Processor.setValue(statement.getOperand(0), Integer.numberOfLeadingZeros(~Processor.getValue(statement.getOperand(1))));
             }
         ));
         // See comments for "clo" instruction above.  They apply here too.
@@ -1218,7 +1217,7 @@ public class InstructionSet {
             "set $t1 to the count of leading zero bits in $t2 starting at most significant bit position",
             "011100 sssss 00000 fffff 00000 100000",
             statement -> {
-                Processor.updateRegister(statement.getOperand(0), Integer.numberOfLeadingZeros(Processor.getValue(statement.getOperand(1))));
+                Processor.setValue(statement.getOperand(0), Integer.numberOfLeadingZeros(Processor.getValue(statement.getOperand(1))));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -1229,7 +1228,7 @@ public class InstructionSet {
             "set $t1 to the value stored in Coprocessor 0 register $8",
             "010000 00000 fffff sssss 00000 000000",
             statement -> {
-                Processor.updateRegister(statement.getOperand(0), Coprocessor0.getValue(statement.getOperand(1)));
+                Processor.setValue(statement.getOperand(0), Coprocessor0.getValue(statement.getOperand(1)));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -2267,7 +2266,7 @@ public class InstructionSet {
             "set $t1 to value in Coprocessor 1 register $f1",
             "010001 00000 fffff sssss 00000 000000",
             statement -> {
-                Processor.updateRegister(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
+                Processor.setValue(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
@@ -2793,7 +2792,7 @@ public class InstructionSet {
     // BasicStatement.java, buildBasicStatementFromBasicInstruction() method near
     // the bottom (currently line 194, heavily commented).
     private void processBranch(int displacement) {
-        Simulator.getInstance().processJump(Processor.getProgramCounter() + (displacement << 2));
+        Processor.setProgramCounter(Processor.getProgramCounter() + (displacement << 2));
     }
 
     /**
@@ -2805,7 +2804,7 @@ public class InstructionSet {
      * @param targetAddress Jump target absolute byte address.
      */
     private void processJump(int targetAddress) {
-        Simulator.getInstance().processJump(targetAddress);
+        Processor.setProgramCounter(targetAddress);
     }
 
     /**
@@ -2821,7 +2820,7 @@ public class InstructionSet {
      */
     private void processLink(int register) {
         int offset = Application.getSettings().delayedBranchingEnabled.get() ? Instruction.BYTES_PER_INSTRUCTION : 0;
-        Processor.updateRegister(register, Processor.getProgramCounter() + offset);
+        Processor.setValue(register, Processor.getProgramCounter() + offset);
     }
 }
 

@@ -80,27 +80,27 @@ public class SyscallInputDialogDouble extends AbstractSyscall {
             Coprocessor1.setDoubleFloat(0, 0.0);  // set $f0 to zero
             if (inputValue == null) {
                 // Cancel was chosen
-                Processor.updateRegister(Processor.ARGUMENT_1, -2);  // set $a1 to -2 flag
+                Processor.setValue(Processor.ARGUMENT_1, -2);  // set $a1 to -2 flag
             }
             else if (inputValue.isEmpty()) {
                 // OK was chosen but there was no input
-                Processor.updateRegister(Processor.ARGUMENT_1, -3);  // set $a1 to -3 flag
+                Processor.setValue(Processor.ARGUMENT_1, -3);  // set $a1 to -3 flag
             }
             else {
                 double doubleValue = Double.parseDouble(inputValue);
 
                 // Successful parse of valid input data
                 Coprocessor1.setDoubleFloat(0, doubleValue);  // set $f0 to input data
-                Processor.updateRegister(Processor.ARGUMENT_1, 0);  // set $a1 to valid flag
+                Processor.setValue(Processor.ARGUMENT_1, 0);  // set $a1 to valid flag
             }
         }
         catch (InvalidRegisterAccessException exception) {
-            Processor.updateRegister(Processor.ARGUMENT_1, -1);  // set $a1 to -1 flag
+            Processor.setValue(Processor.ARGUMENT_1, -1);  // set $a1 to -1 flag
             throw new SimulatorException(statement, "invalid register access during double input (syscall " + this.getNumber() + ")", ExceptionCause.SYSCALL);
         }
         catch (NumberFormatException exception) {
             // Unsuccessful parse of input data
-            Processor.updateRegister(Processor.ARGUMENT_1, -1);  // set $a1 to -1 flag
+            Processor.setValue(Processor.ARGUMENT_1, -1);  // set $a1 to -1 flag
         }
     }
 }

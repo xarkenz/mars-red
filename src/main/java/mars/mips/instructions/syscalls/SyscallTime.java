@@ -54,7 +54,7 @@ public class SyscallTime extends AbstractSyscall {
     @Override
     public void simulate(BasicStatement statement) throws SimulatorException {
         long value = new Date().getTime();
-        Processor.updateRegister(Processor.ARGUMENT_0, Binary.lowOrderLongToInt(value)); // $a0
-        Processor.updateRegister(Processor.ARGUMENT_1, Binary.highOrderLongToInt(value)); // $a1
+        Processor.setValue(Processor.ARGUMENT_0, Binary.lowOrderLongToInt(value)); // $a0
+        Processor.setValue(Processor.ARGUMENT_1, Binary.highOrderLongToInt(value)); // $a1
     }
 }

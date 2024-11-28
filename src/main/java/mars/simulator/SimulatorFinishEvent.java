@@ -36,7 +36,6 @@ public class SimulatorFinishEvent extends EventObject {
         EXTERNAL,
     }
 
-    private final int programCounter;
     private final Reason reason;
     private final SimulatorException exception;
 
@@ -44,22 +43,13 @@ public class SimulatorFinishEvent extends EventObject {
      * Construct a new event with the given parameters.
      *
      * @param simulator      The source of this event.
-     * @param programCounter The value of the program counter when the program finished or terminated.
      * @param reason         The reason why the program finished or terminated.
      * @param exception      The exception causing the program to terminate (only applies to {@link Reason#EXCEPTION}).
      */
-    public SimulatorFinishEvent(Simulator simulator, int programCounter, Reason reason, SimulatorException exception) {
+    public SimulatorFinishEvent(Simulator simulator, Reason reason, SimulatorException exception) {
         super(simulator);
-        this.programCounter = programCounter;
         this.reason = reason;
         this.exception = exception;
-    }
-
-    /**
-     * The value of the program counter when the program finished or terminated.
-     */
-    public int getProgramCounter() {
-        return this.programCounter;
     }
 
     /**

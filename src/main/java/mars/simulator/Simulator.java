@@ -55,7 +55,6 @@ public class Simulator {
     private final List<SimulatorListener> threadListeners;
     private final BackStepper backStepper;
     private final SystemIO systemIO;
-    private Integer delayedJumpAddress;
     private volatile double runSpeed;
     /**
      * Others can set this to indicate an external interrupt.
@@ -85,7 +84,6 @@ public class Simulator {
         this.threadListeners = new ArrayList<>();
         this.backStepper = new BackStepper();
         this.systemIO = new SystemIO();
-        this.delayedJumpAddress = null;
         this.runSpeed = UNLIMITED_SPEED;
         this.externalInterruptDevice = null;
         this.queuedStateChanges = new ArrayList<>();
@@ -116,55 +114,7 @@ public class Simulator {
         Coprocessor0.reset();
         this.backStepper.reset();
         this.systemIO.resetFiles();
-        this.delayedJumpAddress = null;
         this.externalInterruptDevice = null;
-    }
-
-    /**
-     * Schedule a jump in execution to another point in the program.
-     * If delayed branching is enabled, the actual jump will occur after the next instruction is executed.
-     *
-     * @param targetAddress The address of the instruction to jump to.
-     */
-    public void processJump(int targetAddress) {
-        if (Application.getSettings().delayedBranchingEnabled.get()) {
-            this.delayedJumpAddress = targetAddress;
-        }
-        else {
-            Processor.setProgramCounter(targetAddress);
-        }
-    }
-
-    /**
-     * Determine whether or not the next instruction to be executed is in a
-     * "delay slot."  This means delayed branching is enabled, the branch
-     * condition has evaluated true, and the next instruction executed will
-     * be the one following the branch.  It is said to occupy the "delay slot."
-     * Normally programmers put a nop instruction here but it can be anything.
-     *
-     * @return <code>true</code> if the next instruction is in a delay slot, or <code>false</code> otherwise.
-     */
-    public boolean isInDelaySlot() {
-        return this.delayedJumpAddress != null;
-    }
-
-    /**
-     * Get the address scheduled to replace the program counter during the next clock cycle
-     * for the purposes of delayed branching. If delayed branching is not enabled, this will always
-     * be null. If no jump/branch has been scheduled, this will return null.
-     *
-     * @return The address execution is scheduled to jump to after the next cycle, or null if not applicable.
-     */
-    public Integer getDelayedJumpAddress() {
-        return this.delayedJumpAddress;
-    }
-
-    /**
-     * Clear the delayed jump address, if applicable. This is mainly used to reset the state of the delayed jump
-     * after it has been processed by the simulator thread.
-     */
-    public void clearDelayedJumpAddress() {
-        this.delayedJumpAddress = null;
     }
 
     /**
@@ -399,14 +349,13 @@ public class Simulator {
     /**
      * Simulate execution of given MIPS program.  It must have already been assembled.
      *
-     * @param programCounter Address of first instruction to simulate; this is the initial value of the program counter.
      * @param maxSteps       Maximum number of steps to perform before returning false (0 or less means no max).
      * @param breakpoints    Array of breakpoint program counter values. (Can be null.)
      * @throws SimulatorException Thrown if an unhandled exception occurs in the program and MARS is running
      *                            in the command line.
      */
-    public void simulate(int programCounter, int maxSteps, int[] breakpoints) throws SimulatorException {
-        this.thread = new SimulatorThread(this, programCounter, maxSteps, breakpoints);
+    public void simulate(int maxSteps, int[] breakpoints) throws SimulatorException {
+        this.thread = new SimulatorThread(this, maxSteps, breakpoints);
         this.thread.start();
 
         if (Application.getGUI() == null) {
@@ -461,7 +410,7 @@ public class Simulator {
             this.flushStateChanges();
         }
         else {
-            this.dispatchFinishEvent(Processor.getProgramCounter(), SimulatorFinishEvent.Reason.EXTERNAL, null);
+            this.dispatchFinishEvent(SimulatorFinishEvent.Reason.EXTERNAL, null);
         }
         this.thread = null;
     }
@@ -470,8 +419,8 @@ public class Simulator {
      * Called when the simulator has started execution of the current program.
      * Invokes {@link SimulatorListener#simulatorStarted(SimulatorStartEvent)} for all listeners.
      */
-    public void dispatchStartEvent(int stepCount, int programCounter) {
-        final SimulatorStartEvent event = new SimulatorStartEvent(this, stepCount, programCounter);
+    public void dispatchStartEvent(int stepCount) {
+        final SimulatorStartEvent event = new SimulatorStartEvent(this, stepCount);
         for (SimulatorListener listener : this.threadListeners) {
             listener.simulatorStarted(event);
         }
@@ -488,8 +437,8 @@ public class Simulator {
      * Called when the simulator has paused execution of the current program.
      * Invokes {@link SimulatorListener#simulatorPaused(SimulatorPauseEvent)} for all listeners.
      */
-    public void dispatchPauseEvent(int stepCount, int programCounter, SimulatorPauseEvent.Reason reason) {
-        final SimulatorPauseEvent event = new SimulatorPauseEvent(this, stepCount, programCounter, reason);
+    public void dispatchPauseEvent(int stepCount, SimulatorPauseEvent.Reason reason) {
+        final SimulatorPauseEvent event = new SimulatorPauseEvent(this, stepCount, reason);
         for (SimulatorListener listener : this.threadListeners) {
             listener.simulatorPaused(event);
         }
@@ -506,8 +455,8 @@ public class Simulator {
      * Called when the simulator has finished execution of the current program.
      * Invokes {@link SimulatorListener#simulatorFinished(SimulatorFinishEvent)} for all listeners.
      */
-    public void dispatchFinishEvent(int programCounter, SimulatorFinishEvent.Reason reason, SimulatorException exception) {
-        final SimulatorFinishEvent event = new SimulatorFinishEvent(this, programCounter, reason, exception);
+    public void dispatchFinishEvent(SimulatorFinishEvent.Reason reason, SimulatorException exception) {
+        final SimulatorFinishEvent event = new SimulatorFinishEvent(this, reason, exception);
         for (SimulatorListener listener : this.threadListeners) {
             listener.simulatorFinished(event);
         }

@@ -300,7 +300,7 @@ public class MemoryConfigurations {
             Memory.getInstance().reset();
             Processor.getRegisters()[Processor.GLOBAL_POINTER].setDefaultValue(configuration.getAddress(GLOBAL_POINTER));
             Processor.getRegisters()[Processor.STACK_POINTER].setDefaultValue(configuration.getAddress(STACK_POINTER));
-            Processor.getProgramCounterRegister().setDefaultValue(configuration.getAddress(TEXT_LOW));
+            Processor.setDefaultProgramCounter(configuration.getAddress(TEXT_LOW));
             Processor.reset();
             Coprocessor1.reset();
             Coprocessor0.reset();

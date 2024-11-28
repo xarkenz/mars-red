@@ -28,7 +28,6 @@ public class SimulatorPauseEvent extends EventObject {
     }
 
     private final int stepCount;
-    private final int programCounter;
     private final Reason reason;
 
     /**
@@ -36,13 +35,11 @@ public class SimulatorPauseEvent extends EventObject {
      *
      * @param simulator      The source of this event.
      * @param stepCount      The number of steps the simulator took (-1 if not applicable).
-     * @param programCounter The value of the program counter when the pause occurred.
      * @param reason         The reason why execution paused.
      */
-    public SimulatorPauseEvent(Simulator simulator, int stepCount, int programCounter, Reason reason) {
+    public SimulatorPauseEvent(Simulator simulator, int stepCount, Reason reason) {
         super(simulator);
         this.stepCount = stepCount;
-        this.programCounter = programCounter;
         this.reason = reason;
     }
 
@@ -51,13 +48,6 @@ public class SimulatorPauseEvent extends EventObject {
      */
     public int getStepCount() {
         return this.stepCount;
-    }
-
-    /**
-     * The value of the program counter when the pause occurred.
-     */
-    public int getProgramCounter() {
-        return this.programCounter;
     }
 
     /**

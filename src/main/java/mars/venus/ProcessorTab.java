@@ -136,7 +136,7 @@ public class ProcessorTab extends RegistersDisplayTab {
         tableData[Processor.LOW_ORDER][VALUE_COLUMN] = NumberDisplayBaseChooser.formatNumber(Processor.getLowOrder(), valueBase);
 
         tableData[Processor.PROGRAM_COUNTER][NUMBER_COLUMN] = "";
-        tableData[Processor.PROGRAM_COUNTER][NAME_COLUMN] = Processor.getProgramCounterRegister().getName();
+        tableData[Processor.PROGRAM_COUNTER][NAME_COLUMN] = Processor.getFetchPCRegister().getName();
         tableData[Processor.PROGRAM_COUNTER][VALUE_COLUMN] = NumberDisplayBaseChooser.formatUnsignedInteger(Processor.getProgramCounter(), valueBase);
 
         return tableData;
@@ -280,7 +280,7 @@ public class ProcessorTab extends RegistersDisplayTab {
 
             // Assures that if changed during MIPS program execution, the update will
             // occur only between MIPS instructions.
-            Simulator.getInstance().changeState(() -> Processor.updateRegister(row, intValue));
+            Simulator.getInstance().changeState(() -> Processor.setValue(row, intValue));
         }
 
         /**

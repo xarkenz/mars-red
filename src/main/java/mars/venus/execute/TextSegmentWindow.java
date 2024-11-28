@@ -97,7 +97,6 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
     private boolean breakpointsEnabled; // Added 31 Dec 2009
     private int highlightAddress;
     private TableModelListener tableModelListener;
-    private boolean inDelaySlot; // Added 25 June 2007
 
     /**
      * Constructor, sets up a new JInternalFrame.
@@ -502,19 +501,7 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
      * execution and when reaching breakpoints.
      */
     public void highlightStepAtPC() {
-        this.highlightStepAtAddress(Processor.getProgramCounter());
-    }
-
-    /**
-     * Highlights the source code line whose address matches the current
-     * program counter value.  This is used for stepping through code
-     * execution and when reaching breakpoints.
-     *
-     * @param inDelaySlot Set true if delayed branching is enabled and the
-     *                    instruction at this address is executing in the delay slot, false otherwise.
-     */
-    public void highlightStepAtPC(boolean inDelaySlot) {
-        this.highlightStepAtAddress(Processor.getProgramCounter(), inDelaySlot);
+        this.highlightStepAtAddress(Processor.getExecuteProgramCounter());
     }
 
     /**
@@ -524,18 +511,6 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
      * @param address text segment address of instruction to be highlighted.
      */
     public void highlightStepAtAddress(int address) {
-        this.highlightStepAtAddress(address, false);
-    }
-
-    /**
-     * Highlights the source code line whose address matches the given
-     * text segment address.
-     *
-     * @param address     Text segment address of instruction to be highlighted.
-     * @param inDelaySlot Set true if delayed branching is enabled and the
-     *                    instruction at this address is executing in the delay slot, false otherwise.
-     */
-    public void highlightStepAtAddress(int address, boolean inDelaySlot) {
         this.highlightAddress = address;
         // Scroll if necessary to assure highlighted row is visible.
         int row;
@@ -547,7 +522,6 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
             return;
         }
         this.table.scrollRectToVisible(this.table.getCellRect(row, 0, true));
-        this.inDelaySlot = inDelaySlot; // Added 25 June 2007
         // Trigger highlighting, which is done by the column's cell renderer.
         // IMPLEMENTATION NOTE: Pretty crude implementation; mark all rows
         // as changed so assure that the previously highlighted row is
@@ -848,14 +822,8 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
 
             this.setHorizontalAlignment(SwingConstants.LEFT);
             if (isHighlighted) {
-                if (Simulator.getInstance().isInDelaySlot() || TextSegmentWindow.this.inDelaySlot) {
-                    this.setBackground(TextSegmentWindow.this.gui.getSettings().textSegmentDelaySlotHighlightBackground.get());
-                    this.setForeground(TextSegmentWindow.this.gui.getSettings().textSegmentDelaySlotHighlightForeground.get());
-                }
-                else {
-                    this.setBackground(TextSegmentWindow.this.gui.getSettings().textSegmentHighlightBackground.get());
-                    this.setForeground(TextSegmentWindow.this.gui.getSettings().textSegmentHighlightForeground.get());
-                }
+                this.setBackground(TextSegmentWindow.this.gui.getSettings().textSegmentHighlightBackground.get());
+                this.setForeground(TextSegmentWindow.this.gui.getSettings().textSegmentHighlightForeground.get());
             }
             else {
                 this.setBackground(null);
