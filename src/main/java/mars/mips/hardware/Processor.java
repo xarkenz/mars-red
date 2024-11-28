@@ -329,17 +329,22 @@ public class Processor {
         return EXECUTE_PC_REGISTER.getValue();
     }
 
+    public static int setExecuteProgramCounter(int value) {
+        int previousValue = EXECUTE_PC_REGISTER.setValue(value);
+
+        Simulator.getInstance().getBackStepper().registerChanged(EXECUTE_PC_REGISTER, previousValue);
+
+        return previousValue;
+    }
+
     public static void setDefaultProgramCounter(int value) {
         FETCH_PC_REGISTER.setDefaultValue(value + Instruction.BYTES_PER_INSTRUCTION);
         EXECUTE_PC_REGISTER.setDefaultValue(value);
     }
 
-    public static void incrementProgramCounter() {
-        int fetchPC = FETCH_PC_REGISTER.getValueNoNotify() + Instruction.BYTES_PER_INSTRUCTION;
-        int executePC = setProgramCounter(fetchPC);
-        int previousExecutePC = EXECUTE_PC_REGISTER.setValue(executePC);
-
-        Simulator.getInstance().getBackStepper().registerChanged(EXECUTE_PC_REGISTER, previousExecutePC);
+    public static void incrementProgramCounter(int fetchPC) {
+        int previousFetchPC = setProgramCounter(fetchPC);
+        setExecuteProgramCounter(previousFetchPC);
     }
 
     /**

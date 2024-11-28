@@ -1,6 +1,5 @@
 package mars.mips.instructions;
 
-import mars.Application;
 import mars.assembler.BasicStatement;
 import mars.assembler.OperandType;
 import mars.assembler.log.AssemblerLog;
@@ -13,6 +12,7 @@ import mars.assembler.token.Tokenizer;
 import mars.mips.hardware.*;
 import mars.mips.instructions.syscalls.Syscall;
 import mars.simulator.ExceptionCause;
+import mars.simulator.Simulator;
 import mars.simulator.SimulatorException;
 import mars.util.Binary;
 import mars.util.StringTrie;
@@ -2520,9 +2520,9 @@ public class InstructionSet {
             "set Program Counter to Coprocessor 0 EPC ($14) register value, set Coprocessor 0 Status ($12) register bit 1 (exception level) to zero",
             "010000 1 0000000000000000000 011000",
             statement -> {
-                // Set EXL bit (bit 1) in Status register to 0 and set PC to EPC
+                // Set EXL bit (bit 1) in Status register to 0 and jump to EPC
                 Coprocessor0.updateRegister(Coprocessor0.STATUS, Binary.clearBit(Coprocessor0.getValue(Coprocessor0.STATUS), Coprocessor0.EXL_BIT));
-                Processor.setProgramCounter(Coprocessor0.getValue(Coprocessor0.EPC));
+                this.processJump(Coprocessor0.getValue(Coprocessor0.EPC));
             }
         ));
     }
@@ -2792,7 +2792,7 @@ public class InstructionSet {
     // BasicStatement.java, buildBasicStatementFromBasicInstruction() method near
     // the bottom (currently line 194, heavily commented).
     private void processBranch(int displacement) {
-        Processor.setProgramCounter(Processor.getProgramCounter() + (displacement << 2));
+        this.processJump(Processor.getProgramCounter() + (displacement << 2));
     }
 
     /**
@@ -2804,7 +2804,7 @@ public class InstructionSet {
      * @param targetAddress Jump target absolute byte address.
      */
     private void processJump(int targetAddress) {
-        Processor.setProgramCounter(targetAddress);
+        Simulator.getInstance().processJump(targetAddress);
     }
 
     /**
@@ -2819,8 +2819,7 @@ public class InstructionSet {
      * @param register Register number to receive the return address.
      */
     private void processLink(int register) {
-        int offset = Application.getSettings().delayedBranchingEnabled.get() ? Instruction.BYTES_PER_INSTRUCTION : 0;
-        Processor.setValue(register, Processor.getProgramCounter() + offset);
+        Processor.setValue(register, Processor.getProgramCounter() + Instruction.BYTES_PER_INSTRUCTION);
     }
 }
 

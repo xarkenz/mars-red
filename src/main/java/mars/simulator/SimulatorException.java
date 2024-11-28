@@ -70,11 +70,7 @@ public class SimulatorException extends Exception {
      * @param message   String containing specialized error message
      */
     public SimulatorException(BasicStatement statement, String message) {
-        super(
-            "Runtime exception at " + Binary.intToHexString(
-                Processor.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION
-            ) + ": " + message
-        );
+        super("Runtime exception at " + Binary.intToHexString(Processor.getExecuteProgramCounter()) + ": " + message);
     }
 
     /**

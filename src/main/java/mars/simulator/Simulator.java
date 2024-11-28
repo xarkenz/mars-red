@@ -154,6 +154,21 @@ public class Simulator {
     }
 
     /**
+     * Schedule a jump in execution to another point in the program.
+     * If delayed branching is enabled, the actual jump will occur after the next instruction is executed.
+     *
+     * @param targetAddress The address of the instruction to jump to.
+     */
+    public void processJump(int targetAddress) {
+        if (this.isRunning()) {
+            this.thread.processJump(targetAddress);
+        }
+        else {
+            Processor.setProgramCounter(targetAddress);
+        }
+    }
+
+    /**
      * Get the identifier of the memory-mapped I/O device which flagged an external interrupt, if any.
      * Once this method is called, the external interrupt flag is reset.
      *

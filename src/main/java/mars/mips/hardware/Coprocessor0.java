@@ -1,6 +1,5 @@
 package mars.mips.hardware;
 
-import mars.mips.instructions.Instruction;
 import mars.simulator.ExceptionCause;
 import mars.simulator.Simulator;
 import mars.util.Binary;
@@ -153,8 +152,8 @@ public class Coprocessor0 {
         // keeping all the others.  Left-shift by 2 to put cause value into position then OR it in.  Bits 8-9 used to
         // identify devices for External Interrupt (8=keyboard, 9=display).
         updateRegister(CAUSE, (getValue(CAUSE) & 0xFFFFFC83) | (cause << 2));
-        // When exception occurred, PC had already been incremented so need to subtract 4 here.
-        updateRegister(EPC, Processor.getProgramCounter() - Instruction.BYTES_PER_INSTRUCTION);
+        // Set EPC (Exception Program Counter) to the address of the instruction that caused the error
+        updateRegister(EPC, Processor.getExecuteProgramCounter());
         // Set EXL (Exception Level) bit, bit position 1, in STATUS register to 1.
         updateRegister(STATUS, Binary.setBit(getValue(STATUS), EXL_BIT));
     }

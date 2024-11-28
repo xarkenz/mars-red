@@ -2,6 +2,7 @@ package mars.simulator;
 
 import mars.assembler.BasicStatement;
 import mars.mips.hardware.*;
+import mars.mips.instructions.Instruction;
 
 import java.util.Arrays;
 
@@ -16,6 +17,7 @@ public class SimulatorThread extends Thread {
     private final int maxSteps;
     private final int[] breakPoints;
     private volatile Runnable stopEventDispatcher;
+    private volatile int nextFetchPC;
 
     /**
      * Create a new <code>SimulatorThread</code> without starting it.
@@ -51,6 +53,10 @@ public class SimulatorThread extends Thread {
     public void stopForTermination() {
         this.stopEventDispatcher = this::dispatchExternalFinishEvent;
         this.interrupt();
+    }
+
+    public void processJump(int nextFetchPC) {
+        this.nextFetchPC = nextFetchPC;
     }
 
     private void dispatchExternalPauseEvent() {
@@ -143,6 +149,10 @@ public class SimulatorThread extends Thread {
 
         // Main simulation loop, repeat until the thread is interrupted or some end condition is reached
         while (true) {
+            // Prepare the next value for the program counter. If overridden by the instruction being executed,
+            // that value will be used instead. This is set up to act like a multiplexer in hardware.
+            this.nextFetchPC = Processor.getProgramCounter() + Instruction.BYTES_PER_INSTRUCTION;
+
             // Fetch the statement to execute from memory
             BasicStatement statement = this.fetchStatement();
             if (statement == null) {
@@ -182,7 +192,10 @@ public class SimulatorThread extends Thread {
                 }
                 // Whether the fetched instruction was null indicates whether an exception handler exists
                 if (exceptionHandler != null) {
-                    // Found an exception handler, so jump to the handler address
+                    // Found an exception handler, so invalidate the pipeline and jump to the handler address.
+                    // To simulate invalidating the pipeline, skip past the step that would have happened
+                    // in a typical jump where an extra instruction would be executed in the delay slot.
+                    this.nextFetchPC = exceptionHandlerAddress + Instruction.BYTES_PER_INSTRUCTION;
                     Processor.setProgramCounter(exceptionHandlerAddress);
                 }
                 else {
@@ -192,7 +205,7 @@ public class SimulatorThread extends Thread {
             }
 
             // Update both the fetch program counter and execute program counter to simulate a pipeline
-            Processor.incrementProgramCounter();
+            Processor.incrementProgramCounter(this.nextFetchPC);
 
             // Carry out any state changes meant to happen between instructions
             this.simulator.flushStateChanges();

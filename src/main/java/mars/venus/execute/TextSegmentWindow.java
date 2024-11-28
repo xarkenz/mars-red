@@ -488,6 +488,10 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         ((JCheckBox) ((DefaultCellEditor) this.table.getCellEditor(0, BREAKPOINT_COLUMN)).getComponent()).setSelected(false);
     }
 
+    public void scrollToRow(int row) {
+        this.table.scrollRectToVisible(this.table.getCellRect(row, 0, true));
+    }
+
     /**
      * Highlights the source code line whose address matches the current
      * program counter value.  This is used for stepping through code
@@ -497,13 +501,14 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         this.fetchAddress = Processor.getProgramCounter();
         this.executeAddress = Processor.getExecuteProgramCounter();
 
-        // Scroll if necessary to assure highlighted row is visible
+        // Make sure executing instruction is visible on screen, as well as the instruction below it if possible
         try {
             int row = this.findRowForAddress(this.executeAddress);
-            this.table.scrollRectToVisible(this.table.getCellRect(row, 0, true));
+            this.scrollToRow(row + 1);
+            this.scrollToRow(row);
         }
         catch (IndexOutOfBoundsException exception) {
-            // Out of bounds PC, no scrolling will occur
+            // Out of bounds address, no scrolling will occur
         }
 
         // Repaint with the updated highlighting
