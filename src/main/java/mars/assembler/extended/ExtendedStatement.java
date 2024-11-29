@@ -1,11 +1,10 @@
 package mars.assembler.extended;
 
-import mars.assembler.Assembler;
-import mars.assembler.BasicStatement;
-import mars.assembler.Operand;
-import mars.assembler.Statement;
+import mars.Application;
+import mars.assembler.*;
 import mars.assembler.syntax.StatementSyntax;
 import mars.mips.instructions.ExtendedInstruction;
+import mars.mips.instructions.BasicInstruction;
 
 import java.util.List;
 
@@ -41,9 +40,19 @@ public class ExtendedStatement implements Statement {
 
     @Override
     public void handlePlacement(Assembler assembler, int address) {
+        BasicInstruction lastInstruction = null;
         for (BasicStatement basicStatement : this.expansion) {
-            basicStatement.handlePlacement(assembler, address);
-            address += basicStatement.getInstruction().getSizeBytes();
+            assembler.placeStatement(basicStatement, address);
+            address += BasicInstruction.BYTES_PER_INSTRUCTION;
+            lastInstruction = basicStatement.getInstruction();
+        }
+
+        if (lastInstruction != null
+            && lastInstruction.isControlTransferInstruction() && !AssemblerFlag.DELAYED_BRANCHING.isEnabled()
+        ) {
+            // Insert an extra NOP after this statement to avoid pipelining conflicts
+            BasicStatement nop = Application.instructionSet.getDecoder().decodeStatement(0);
+            assembler.placeStatement(nop, address);
         }
     }
 }

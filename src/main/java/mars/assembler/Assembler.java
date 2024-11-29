@@ -425,9 +425,8 @@ public class Assembler {
             this.log.logError(
                 statement.getSyntax().getFirstToken().getLocation(),
                 "Attempted to place the statement at address "
-                + Binary.intToHexString(this.segment.getAddress())
-                + ", but a statement was already placed there from "
-                + replacedStatement.getSyntax().getSourceLine().getLocation()
+                    + Binary.intToHexString(this.segment.getAddress())
+                    + ", but a statement was already placed there (" + replacedStatement + ")"
             );
         }
 

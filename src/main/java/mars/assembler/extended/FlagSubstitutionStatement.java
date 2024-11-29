@@ -5,6 +5,7 @@ import mars.assembler.AssemblerFlag;
 import mars.assembler.BasicStatement;
 import mars.assembler.Operand;
 import mars.assembler.syntax.StatementSyntax;
+import mars.mips.instructions.BasicInstruction;
 
 import java.util.List;
 
@@ -36,13 +37,14 @@ public class FlagSubstitutionStatement implements ExpansionTemplate.Statement {
     }
 
     @Override
-    public BasicStatement resolve(List<Operand> originalOperands, StatementSyntax syntax, Assembler assembler, int address) {
+    public BasicInstruction getInstruction() {
         ExpansionTemplate.Statement statement = this.getValue();
-        return (statement == null) ? null : statement.resolve(originalOperands, syntax, assembler, address);
+        return (statement == null) ? null : statement.getInstruction();
     }
 
     @Override
-    public boolean isActive() {
-        return this.getValue() != null;
+    public BasicStatement resolve(List<Operand> originalOperands, StatementSyntax syntax, Assembler assembler, int address) {
+        ExpansionTemplate.Statement statement = this.getValue();
+        return (statement == null) ? null : statement.resolve(originalOperands, syntax, assembler, address);
     }
 }

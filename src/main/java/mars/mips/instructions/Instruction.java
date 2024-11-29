@@ -90,9 +90,7 @@ public abstract class Instruction {
      *
      * @return int length in bytes of corresponding binary instruction(s).
      */
-    public int getSizeBytes() {
-        return BYTES_PER_INSTRUCTION;
-    }
+    public abstract int getSizeBytes();
 
     public boolean acceptsOperands(List<OperandType> givenTypes) {
         if (givenTypes.size() != this.operandTypes.size()) {

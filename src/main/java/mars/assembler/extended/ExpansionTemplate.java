@@ -1,6 +1,7 @@
 package mars.assembler.extended;
 
 import mars.assembler.Assembler;
+import mars.assembler.AssemblerFlag;
 import mars.assembler.BasicStatement;
 import mars.assembler.Operand;
 import mars.assembler.syntax.StatementSyntax;
@@ -12,11 +13,9 @@ import java.util.List;
 
 public class ExpansionTemplate {
     public interface Statement {
-        BasicStatement resolve(List<Operand> originalOperands, StatementSyntax syntax, Assembler assembler, int address);
+        BasicInstruction getInstruction();
 
-        default boolean isActive() {
-            return true;
-        }
+        BasicStatement resolve(List<Operand> originalOperands, StatementSyntax syntax, Assembler assembler, int address);
     }
 
     private final ExtendedInstruction instruction;
@@ -27,6 +26,36 @@ public class ExpansionTemplate {
         this.statements = statements;
     }
 
+    public ExtendedInstruction getInstruction() {
+        return this.instruction;
+    }
+
+    public List<Statement> getStatements() {
+        return this.statements;
+    }
+
+    public int getSizeBytes() {
+        int sizeBytes = 0;
+
+        BasicInstruction lastInstruction = null;
+        for (Statement statement : this.statements) {
+            BasicInstruction instruction = statement.getInstruction();
+            if (instruction != null) {
+                sizeBytes += BasicInstruction.BYTES_PER_INSTRUCTION;
+                lastInstruction = instruction;
+            }
+        }
+
+        if (lastInstruction != null
+            && lastInstruction.isControlTransferInstruction() && !AssemblerFlag.DELAYED_BRANCHING.isEnabled()
+        ) {
+            // Extra NOP instruction will be inserted after this instruction
+            sizeBytes += BasicInstruction.BYTES_PER_INSTRUCTION;
+        }
+
+        return sizeBytes;
+    }
+
     public ExtendedStatement resolve(List<Operand> operands, StatementSyntax syntax, Assembler assembler, int address) {
         List<BasicStatement> expansion = new ArrayList<>(this.statements.size());
 
@@ -34,30 +63,10 @@ public class ExpansionTemplate {
             BasicStatement resolvedStatement = statement.resolve(operands, syntax, assembler, address);
             if (resolvedStatement != null) {
                 expansion.add(resolvedStatement);
-                address += resolvedStatement.getInstruction().getSizeBytes();
+                address += BasicInstruction.BYTES_PER_INSTRUCTION;
             }
         }
 
         return new ExtendedStatement(syntax, this.instruction, operands, expansion);
-    }
-
-    public int getSizeBytes() {
-        int sizeBytes = 0;
-
-        for (Statement statement : this.statements) {
-            if (statement.isActive()) {
-                sizeBytes += BasicInstruction.BYTES_PER_INSTRUCTION;
-            }
-        }
-
-        return sizeBytes;
-    }
-
-    public ExtendedInstruction getInstruction() {
-        return this.instruction;
-    }
-
-    public List<Statement> getStatements() {
-        return this.statements;
     }
 }

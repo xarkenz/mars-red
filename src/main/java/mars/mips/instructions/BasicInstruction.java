@@ -28,6 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 (MIT license, http://www.opensource.org/licenses/mit-license.html)
 */
 
+import mars.assembler.AssemblerFlag;
 import mars.assembler.Operand;
 import mars.assembler.OperandType;
 
@@ -45,6 +46,7 @@ import java.util.List;
 public class BasicInstruction extends Instruction {
     private final InstructionFormat format;
     private final SimulationFunction function;
+    private final boolean controlTransferInstruction;
     private final String encodingDescriptor;
     private final int operationMask; // integer with 1's where constants required (0/1 become 1, f/s/t become 0)
     private final int operationKey; // integer matching constants required (0/1 unchanged, f/s/t become 0)
@@ -52,16 +54,24 @@ public class BasicInstruction extends Instruction {
     private final int[] operandShifts;
 
     /**
-     * BasicInstruction constructor.
+     * Create a new <code>BasicInstruction</code>.
      *
-     * @param mnemonic
-     * @param operandTypes
-     * @param format
-     * @param title
-     * @param description
-     * @param encoding The opcode mask is a 32 character string that contains the opcode in binary in the appropriate bit positions and codes for operand positions ('f', 's', 't') in the remainding positions.
-     * @param function The inline definition of an object and class which anonymously implements the SimulationCode interface.
-     * @throws IllegalArgumentException
+     * @param mnemonic     The instruction mnemonic used in assembly code (case-insensitive).
+     * @param operandTypes The list of operand types for this instruction, which is used to select a specific
+     *                     instruction from the group of instructions sharing a mnemonic.
+     * @param format       The general organization of this instruction's binary encoding, as interpreted by hardware.
+     * @param isCTI        <code>true</code> if this is a Control Transfer Instruction (CTI), that is, a branch,
+     *                     jump, or similar instruction that alters the Program Counter; <code>false</code> otherwise.
+     * @param title        The "long name" of this instruction, which should relate to the mnemonic.
+     * @param description  A short human-readable description of what this instruction does when executed.
+     * @param encoding     A string describing the binary encoding for this instruction, with each character
+     *                     representing one bit (although spaces may be used as visual separators). The characters
+     *                     <code>0</code> and <code>1</code> indicate bit values that are part of the opcode, funct,
+     *                     etc. used to identify the instruction; the characters <code>f</code> (first),
+     *                     <code>s</code> (second), and <code>t</code> (third) are used to indicate bits derived from
+     *                     the respective operands.
+     * @param function The implementation of the instruction logic for simulation purposes.
+     * @throws IllegalArgumentException Thrown if <code>encoding</code> is not a valid encoding descriptor string.
      */
     /* codes for operand positions are:
      * f == First operand
@@ -77,9 +87,19 @@ public class BasicInstruction extends Instruction {
      * It can also be used at runtime to match a binary machine instruction to the correct
      * instruction simulator -- it needs to match all and only the 0's and 1's.
      */
-    public BasicInstruction(String mnemonic, List<OperandType> operandTypes, InstructionFormat format, String title, String description, String encoding, SimulationFunction function) {
+    public BasicInstruction(
+        String mnemonic,
+        List<OperandType> operandTypes,
+        InstructionFormat format,
+        boolean isCTI,
+        String title,
+        String description,
+        String encoding,
+        SimulationFunction function
+    ) {
         super(mnemonic, operandTypes, title, description);
         this.format = format;
+        this.controlTransferInstruction = isCTI;
         this.function = function;
 
         StringBuilder encodingDescriptor = new StringBuilder();
@@ -165,6 +185,10 @@ public class BasicInstruction extends Instruction {
         return this.format;
     }
 
+    public boolean isControlTransferInstruction() {
+        return this.controlTransferInstruction;
+    }
+
     /**
      * @return
      */
@@ -197,6 +221,23 @@ public class BasicInstruction extends Instruction {
      */
     public int getOperationKey() {
         return this.operationKey;
+    }
+
+    /**
+     * Get length in bytes that this instruction requires in its binary form.
+     *
+     * @return int length in bytes of corresponding binary instruction(s).
+     */
+    @Override
+    public int getSizeBytes() {
+        int sizeBytes = BYTES_PER_INSTRUCTION;
+
+        if (this.isControlTransferInstruction() && !AssemblerFlag.DELAYED_BRANCHING.isEnabled()) {
+            // Extra NOP instruction will be inserted after this instruction
+            sizeBytes += BYTES_PER_INSTRUCTION;
+        }
+
+        return sizeBytes;
     }
 
     /**

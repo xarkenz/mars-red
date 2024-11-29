@@ -18,6 +18,7 @@ public class TemplateStatement implements ExpansionTemplate.Statement {
         this.operands = operands;
     }
 
+    @Override
     public BasicInstruction getInstruction() {
         return this.instruction;
     }

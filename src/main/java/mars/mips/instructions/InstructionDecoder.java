@@ -33,15 +33,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 public class InstructionDecoder {
-    private final SortedMap<Integer, OperationMatcher> operationMatchers;
+    private final SortedMap<OperationMask, OperationMatcher> operationMatchers;
 
     public InstructionDecoder() {
         this.operationMatchers = new TreeMap<>();
     }
 
     public void addInstruction(BasicInstruction instruction) {
-        this.operationMatchers.computeIfAbsent(instruction.getOperationMask(), OperationMatcher::new)
-            .add(instruction);
+        OperationMask mask = new OperationMask(instruction.getOperationMask());
+        this.operationMatchers.computeIfAbsent(mask, OperationMatcher::new).add(instruction);
     }
 
     public BasicInstruction decodeInstruction(int binary) {
@@ -64,15 +64,37 @@ public class InstructionDecoder {
         }
     }
 
+    private static class OperationMask implements Comparable<OperationMask> {
+        private final int value;
+        private final int bitCount;
+
+        public OperationMask(int value) {
+            this.value = value;
+            this.bitCount = Integer.bitCount(value);
+        }
+
+        @Override
+        public int compareTo(OperationMask that) {
+            int difference = that.bitCount - this.bitCount;
+            if (difference == 0) {
+                difference = this.value - that.value;
+            }
+            return difference;
+        }
+
+        @Override
+        public boolean equals(Object object) {
+            return object instanceof OperationMask mask && mask.value == this.value;
+        }
+    }
+
     // Based on InstructionSet.MatchMap
-    private static class OperationMatcher implements Comparable<OperationMatcher> {
+    private static class OperationMatcher {
         private final int operationMask;
-        private final int maskBitCount;
         private final Map<Integer, BasicInstruction> instructions;
 
-        public OperationMatcher(int operationMask) {
-            this.operationMask = operationMask;
-            this.maskBitCount = Integer.bitCount(operationMask);
+        public OperationMatcher(OperationMask operationMask) {
+            this.operationMask = operationMask.value;
             this.instructions = new HashMap<>();
         }
 
@@ -83,20 +105,6 @@ public class InstructionDecoder {
         public BasicInstruction match(int binary) {
             int operationKey = binary & this.operationMask;
             return this.instructions.get(operationKey);
-        }
-
-        @Override
-        public boolean equals(Object object) {
-            return object instanceof OperationMatcher matcher && matcher.operationMask == this.operationMask;
-        }
-
-        @Override
-        public int compareTo(OperationMatcher matcher) {
-            int difference = matcher.maskBitCount - this.maskBitCount;
-            if (difference == 0) {
-                difference = this.operationMask - matcher.operationMask;
-            }
-            return difference;
         }
     }
 }

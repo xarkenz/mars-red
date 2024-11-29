@@ -134,9 +134,11 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         // source lines from all files.  DPS 03-Oct-2010
         int maxSourceLineNumber = 0;
         for (BasicStatement statement : statements.values()) {
-            int lineNumber = statement.getSyntax().getSourceLine().getLocation().getLineIndex() + 1;
-            if (lineNumber > maxSourceLineNumber) {
-                maxSourceLineNumber = lineNumber;
+            if (statement.getSyntax() != null) {
+                int lineNumber = statement.getSyntax().getSourceLine().getLocation().getLineIndex() + 1;
+                if (lineNumber > maxSourceLineNumber) {
+                    maxSourceLineNumber = lineNumber;
+                }
             }
         }
         int maxSourceLineDigits = Integer.toUnsignedString(maxSourceLineNumber).length();
@@ -489,7 +491,10 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
     }
 
     public void scrollToRow(int row) {
-        this.table.scrollRectToVisible(this.table.getCellRect(row, 0, true));
+        Rectangle rect = this.table.getCellRect(row, 0, true);
+        // Make the next row visible as well
+        rect.height *= 2;
+        this.table.scrollRectToVisible(rect);
     }
 
     /**
@@ -501,10 +506,9 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
         this.fetchAddress = Processor.getProgramCounter();
         this.executeAddress = Processor.getExecuteProgramCounter();
 
-        // Make sure executing instruction is visible on screen, as well as the instruction below it if possible
+        // Make sure executing instruction is visible on screen
         try {
             int row = this.findRowForAddress(this.executeAddress);
-            this.scrollToRow(row + 1);
             this.scrollToRow(row);
         }
         catch (IndexOutOfBoundsException exception) {

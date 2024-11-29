@@ -1,5 +1,6 @@
 package mars.assembler;
 
+import mars.Application;
 import mars.simulator.ExceptionCause;
 import mars.simulator.SimulatorException;
 import mars.assembler.syntax.StatementSyntax;
@@ -48,12 +49,18 @@ public class BasicStatement implements Statement {
     @Override
     public void handlePlacement(Assembler assembler, int address) {
         assembler.placeStatement(this, address);
+
+        if (this.instruction.isControlTransferInstruction() && !AssemblerFlag.DELAYED_BRANCHING.isEnabled()) {
+            // Insert an extra NOP after this statement to avoid pipelining conflicts
+            BasicStatement nop = Application.instructionSet.getDecoder().decodeStatement(0);
+            assembler.placeStatement(nop, address + BasicInstruction.BYTES_PER_INSTRUCTION);
+        }
     }
 
     /**
      * Simulate the execution of a specific MIPS basic instruction.
      *
-     * @throws SimulatorException  Thrown if a runtime exception was generated during execution.
+     * @throws SimulatorException   Thrown if a runtime exception was generated during execution.
      * @throws InterruptedException Thrown if the simulator was stopped during execution.
      */
     public void simulate() throws SimulatorException, InterruptedException {
