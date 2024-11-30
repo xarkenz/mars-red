@@ -290,7 +290,7 @@ public class HelpHelpAction extends VenusAction {
         Vector<String> exampleList = new Vector<>(instructionList.size());
         for (Instruction instruction : instructionList) {
             if (instructionClass.isInstance(instruction)) {
-                String example = instruction.generateExample();
+                String example = instruction.getExampleSyntax();
                 exampleList.add(example + " ".repeat(Math.max(0, 24 - example.length())) + instruction.getDescription());
             }
         }

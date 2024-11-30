@@ -129,31 +129,6 @@ public class InstructionSet {
     }
     
     public void loadBasicInstructions() {
-        // TODO: ideally there would be a better way of doing this
-        List<OperandType> formatR = List.of(OperandType.REGISTER);
-        List<OperandType> formatI = List.of(OperandType.INTEGER_16);
-        List<OperandType> formatJ = List.of(OperandType.JUMP_LABEL);
-        List<OperandType> formatB = List.of(OperandType.BRANCH_OFFSET);
-        List<OperandType> formatRR = List.of(OperandType.REGISTER, OperandType.REGISTER);
-        List<OperandType> formatRF = List.of(OperandType.REGISTER, OperandType.FP_REGISTER);
-        List<OperandType> formatRS = List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED);
-        List<OperandType> formatRI = List.of(OperandType.REGISTER, OperandType.INTEGER_16);
-        List<OperandType> formatRB = List.of(OperandType.REGISTER, OperandType.BRANCH_OFFSET);
-        List<OperandType> formatFF = List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER);
-        List<OperandType> format3B = List.of(OperandType.INTEGER_3_UNSIGNED, OperandType.BRANCH_OFFSET);
-        List<OperandType> formatRRR = List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.REGISTER);
-        List<OperandType> formatRR3 = List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.INTEGER_3_UNSIGNED);
-        List<OperandType> formatRR5 = List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.INTEGER_5_UNSIGNED);
-        List<OperandType> formatRRS = List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.INTEGER_16_SIGNED);
-        List<OperandType> formatRRU = List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.INTEGER_16_UNSIGNED);
-        List<OperandType> formatRRB = List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.BRANCH_OFFSET);
-        List<OperandType> formatRSP = List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER);
-        List<OperandType> formatFFF = List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.FP_REGISTER);
-        List<OperandType> formatFFR = List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.REGISTER);
-        List<OperandType> formatFF3 = List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.INTEGER_3_UNSIGNED);
-        List<OperandType> formatFSP = List.of(OperandType.FP_REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER);
-        List<OperandType> format3FF = List.of(OperandType.INTEGER_3_UNSIGNED, OperandType.FP_REGISTER, OperandType.FP_REGISTER);
-
         //////////////////////////////// BASIC INSTRUCTIONS START HERE ////////////////////////////////
 
         this.addBasicInstruction(new BasicInstruction(
@@ -162,17 +137,17 @@ public class InstructionSet {
             InstructionFormat.R_TYPE,
             false,
             "Null OPeration",
-            "does nothing; machine code is all zeroes",
+            "No action",
             "000000 00000 00000 00000 00000 000000",
             statement -> {} // Hey I like this so far!
         ));
         this.addBasicInstruction(new BasicInstruction(
             "add",
-            formatRRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "ADDition",
-            "set $t1 to ($t2 plus $t3)",
+            "Set {0} to ({1} plus {2}), exception on overflow",
             "000000 sssss ttttt fffff 00000 100000",
             statement -> {
                 int add1 = Processor.getValue(statement.getOperand(1));
@@ -187,11 +162,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "sub",
-            formatRRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "SUBtraction",
-            "set $t1 to ($t2 minus $t3)",
+            "Set {0} to ({1} minus {2}), exception on overflow",
             "000000 sssss ttttt fffff 00000 100010",
             statement -> {
                 int sub1 = Processor.getValue(statement.getOperand(1));
@@ -206,11 +181,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "addi",
-            formatRRS,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.INTEGER_16_SIGNED),
             InstructionFormat.I_TYPE,
             false,
             "ADDition Immediate",
-            "set $t1 to ($t2 plus sign-extended 16-bit immediate)",
+            "Set {0} to ({1} plus sign-extended 16-bit immediate), exception on overflow",
             "001000 sssss fffff tttttttttttttttt",
             statement -> {
                 int add1 = Processor.getValue(statement.getOperand(1));
@@ -225,11 +200,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "addu",
-            formatRRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "ADDition Unsigned",
-            "set $t1 to ($t2 plus $t3), no exception on overflow",
+            "Set {0} to ({1} plus {2}), no exception on overflow",
             "000000 sssss ttttt fffff 00000 100001",
             statement -> {
                 Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) + Processor.getValue(statement.getOperand(2)));
@@ -237,11 +212,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "subu",
-            formatRRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "SUBtraction Unsigned",
-            "set $t1 to ($t2 minus $t3), no exception on overflow",
+            "Set {0} to ({1} minus {2}), no exception on overflow",
             "000000 sssss ttttt fffff 00000 100011",
             statement -> {
                 Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) - Processor.getValue(statement.getOperand(2)));
@@ -249,11 +224,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "addiu",
-            formatRRS,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.INTEGER_16_SIGNED),
             InstructionFormat.I_TYPE,
             false,
             "ADDition Immediate Unsigned",
-            "set $t1 to ($t2 plus sign-extended 16-bit immediate), no exception on overflow",
+            "Set {0} to ({1} plus sign-extended 16-bit immediate), no exception on overflow",
             "001001 sssss fffff tttttttttttttttt",
             statement -> {
                 Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) + (statement.getOperand(2) << 16 >> 16));
@@ -261,11 +236,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "mult",
-            formatRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "MULtiplication Temporary",
-            "set HI to high-order 32 bits, LO to low-order 32 bits of the product of $t1 and $t2 (use mfhi to access HI, mflo to access LO)",
+            "Set HI to high-order 32 bits, LO to low-order 32 bits of the product of {0} and {1} (use mfhi to access HI, mflo to access LO)",
             "000000 fffff sssss 00000 00000 011000",
             statement -> {
                 long product = (long) Processor.getValue(statement.getOperand(0)) * (long) Processor.getValue(statement.getOperand(1));
@@ -275,11 +250,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "multu",
-            formatRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "MULtiplication Temporary Unsigned",
-            "set HI to high-order 32 bits, LO to low-order 32 bits of the product of unsigned $t1 and $t2 (use mfhi to access HI, mflo to access LO)",
+            "Set HI to high-order 32 bits, LO to low-order 32 bits of the product of unsigned {0} and {1} (use mfhi to access HI, mflo to access LO)",
             "000000 fffff sssss 00000 00000 011001",
             statement -> {
                 long product = ((long) Processor.getValue(statement.getOperand(0)) << 32 >>> 32) * ((long) Processor.getValue(statement.getOperand(1)) << 32 >>> 32);
@@ -289,11 +264,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "mul",
-            formatRRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "MULtiplication",
-            "set HI to high-order 32 bits, LO and $t1 to low-order 32 bits of the product of $t2 and $t3 (use mfhi to access HI, mflo to access LO)",
+            "Set HI to high-order 32 bits, LO and {0} to low-order 32 bits of the product of {1} and {2} (use mfhi to access HI, mflo to access LO)",
             "011100 sssss ttttt fffff 00000 000010",
             statement -> {
                 long product = (long) Processor.getValue(statement.getOperand(1)) * (long) Processor.getValue(statement.getOperand(2));
@@ -304,11 +279,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "madd",
-            formatRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "Multiplication then ADDition",
-            "multiply $t1 by $t2 then increment HI by high-order 32 bits of product, increment LO by low-order 32 bits of product (use mfhi to access HI, mflo to access LO)",
+            "Multiply {0} by {1} then increment HI by high-order 32 bits of product, increment LO by low-order 32 bits of product (use mfhi to access HI, mflo to access LO)",
             "011100 fffff sssss 00000 00000 000000",
             statement -> {
                 long product = (long) Processor.getValue(statement.getOperand(0)) * (long) Processor.getValue(statement.getOperand(1));
@@ -320,11 +295,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "maddu",
-            formatRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "Multiplication then ADDition Unsigned",
-            "multiply $t1 by $t2 then increment HI by high-order 32 bits of product, increment LO by low-order 32 bits of product, unsigned (use mfhi to access HI, mflo to access LO)",
+            "Multiply {0} by {1} then increment HI by high-order 32 bits of product, increment LO by low-order 32 bits of product, unsigned (use mfhi to access HI, mflo to access LO)",
             "011100 fffff sssss 00000 00000 000001",
             statement -> {
                 long product = (((long) Processor.getValue(statement.getOperand(0))) << 32 >>> 32) * (((long) Processor.getValue(statement.getOperand(1))) << 32 >>> 32);
@@ -336,11 +311,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "msub",
-            formatRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "Multiplication then SUBtraction",
-            "multiply $t1 by $t2 then decrement HI by high-order 32 bits of product, decrement LO by low-order 32 bits of product (use mfhi to access HI, mflo to access LO)",
+            "Multiply {0} by {1} then decrement HI by high-order 32 bits of product, decrement LO by low-order 32 bits of product (use mfhi to access HI, mflo to access LO)",
             "011100 fffff sssss 00000 00000 000100",
             statement -> {
                 long product = (long) Processor.getValue(statement.getOperand(0)) * (long) Processor.getValue(statement.getOperand(1));
@@ -353,11 +328,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "msubu",
-            formatRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "Multiplication then SUBtraction Unsigned",
-            "multiply $t1 by $t2 then decrement HI by high-order 32 bits of product, decement LO by low-order 32 bits of product, unsigned (use mfhi to access HI, mflo to access LO)",
+            "Multiply {0} by {1} then decrement HI by high-order 32 bits of product, decement LO by low-order 32 bits of product, unsigned (use mfhi to access HI, mflo to access LO)",
             "011100 fffff sssss 00000 00000 000101",
             statement -> {
                 long product = ((long) Processor.getValue(statement.getOperand(0)) << 32 >>> 32) * ((long) Processor.getValue(statement.getOperand(1)) << 32 >>> 32);
@@ -370,11 +345,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "div",
-            formatRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "DIVision",
-            "divide $t1 by $t2 then set LO to quotient and HI to remainder (use mfhi to access HI, mflo to access LO)",
+            "Divide {0} by {1} then set LO to quotient and HI to remainder (use mfhi to access HI, mflo to access LO)",
             "000000 fffff sssss 00000 00000 011010",
             statement -> {
                 if (Processor.getValue(statement.getOperand(1)) == 0) {
@@ -390,11 +365,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "divu",
-            formatRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "DIVision Unsigned",
-            "divide unsigned $t1 by $t2 then set LO to quotient and HI to remainder (use mfhi to access HI, mflo to access LO)",
+            "Divide unsigned {0} by {1} then set LO to quotient and HI to remainder (use mfhi to access HI, mflo to access LO)",
             "000000 fffff sssss 00000 00000 011011",
             statement -> {
                 if (Processor.getValue(statement.getOperand(1)) == 0) {
@@ -412,11 +387,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "mfhi",
-            formatR,
+            List.of(OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "Move From HI register",
-            "set $t1 to contents of HI register",
+            "Set {0} to contents of HI register",
             "000000 00000 00000 fffff 00000 010000",
             statement -> {
                 Processor.setValue(statement.getOperand(0), Processor.getHighOrder());
@@ -424,11 +399,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "mflo",
-            formatR,
+            List.of(OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "Move From LO register",
-            "set $t1 to contents of LO register",
+            "Set {0} to contents of LO register",
             "000000 00000 00000 fffff 00000 010010",
             statement -> {
                 Processor.setValue(statement.getOperand(0), Processor.getLowOrder());
@@ -436,11 +411,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "mthi",
-            formatR,
+            List.of(OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "Move to HI register",
-            "Set HI register to contents of $t1",
+            "Set HI register to contents of {0}",
             "000000 fffff 00000 00000 00000 010001",
             statement -> {
                 Processor.setHighOrder(Processor.getValue(statement.getOperand(0)));
@@ -448,11 +423,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "mtlo",
-            formatR,
+            List.of(OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "Move to LO register",
-            "Set LO register to contents of $t1",
+            "Set LO register to contents of {0}",
             "000000 fffff 00000 00000 00000 010011",
             statement -> {
                 Processor.setLowOrder(Processor.getValue(statement.getOperand(0)));
@@ -460,11 +435,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "and",
-            formatRRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "AND",
-            "set $t1 to ($t2 bitwise-AND $t3)",
+            "Set {0} to ({1} bitwise-AND {2})",
             "000000 sssss ttttt fffff 00000 100100",
             statement -> {
                 Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) & Processor.getValue(statement.getOperand(2)));
@@ -472,11 +447,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "or",
-            formatRRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "OR",
-            "set $t1 to ($t2 bitwise-OR $t3)",
+            "Set {0} to ({1} bitwise-OR {2})",
             "000000 sssss ttttt fffff 00000 100101",
             statement -> {
                 Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) | Processor.getValue(statement.getOperand(2)));
@@ -484,11 +459,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "andi",
-            formatRRU,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.INTEGER_16_UNSIGNED),
             InstructionFormat.I_TYPE,
             false,
             "AND Immediate",
-            "set $t1 to ($t2 bitwise-AND unsigned 16-bit immediate)",
+            "Set {0} to ({1} bitwise-AND unsigned 16-bit immediate)",
             "001100 sssss fffff tttttttttttttttt",
             statement -> {
                 // ANDing with 0x0000FFFF zero-extends the immediate (high 16 bits always 0).
@@ -497,11 +472,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "ori",
-            formatRRU,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.INTEGER_16_UNSIGNED),
             InstructionFormat.I_TYPE,
             false,
             "OR Immediate",
-            "set $t1 to ($t2 bitwise-OR unsigned 16-bit immediate)",
+            "Set {0} to ({1} bitwise-OR unsigned 16-bit immediate)",
             "001101 sssss fffff tttttttttttttttt",
             statement -> {
                 // ANDing with 0x0000FFFF zero-extends the immediate (high 16 bits always 0).
@@ -510,11 +485,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "nor",
-            formatRRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "NOR",
-            "set $t1 to inverse of ($t2 bitwise-OR $t3)",
+            "Set {0} to inverse of ({1} bitwise-OR {2})",
             "000000 sssss ttttt fffff 00000 100111",
             statement -> {
                 Processor.setValue(statement.getOperand(0), ~(Processor.getValue(statement.getOperand(1)) | Processor.getValue(statement.getOperand(2))));
@@ -522,11 +497,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "xor",
-            formatRRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "XOR",
-            "set $t1 to ($t2 bitwise-exclusive-OR $t3)",
+            "Set {0} to ({1} bitwise-exclusive-OR {2})",
             "000000 sssss ttttt fffff 00000 100110",
             statement -> {
                 Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) ^ Processor.getValue(statement.getOperand(2)));
@@ -534,11 +509,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "xori",
-            formatRRU,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.INTEGER_16_UNSIGNED),
             InstructionFormat.I_TYPE,
             false,
             "XOR Immediate",
-            "set $t1 to ($t2 bitwise-exclusive-OR unsigned 16-bit immediate)",
+            "Set {0} to ({1} bitwise-exclusive-OR unsigned 16-bit immediate)",
             "001110 sssss fffff tttttttttttttttt",
             statement -> {
                 // ANDing with 0x0000FFFF zero-extends the immediate (high 16 bits always 0).
@@ -547,11 +522,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "sll",
-            formatRR5,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.INTEGER_5_UNSIGNED),
             InstructionFormat.R_TYPE,
             false,
             "Shift Left Logical",
-            "set $t1 to result of shifting $t2 left by number of bits specified by immediate",
+            "Set {0} to result of shifting {1} left by number of bits specified by immediate",
             "000000 00000 sssss fffff ttttt 000000",
             statement -> {
                 Processor.setValue(statement.getOperand(0), Processor.getValue(statement.getOperand(1)) << statement.getOperand(2));
@@ -559,11 +534,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "sllv",
-            formatRRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "Shift Left Logical Variable",
-            "set $t1 to result of shifting $t2 left by number of bits specified by value in low-order 5 bits of $t3",
+            "Set {0} to result of shifting {1} left by number of bits specified by value in low-order 5 bits of {2}",
             "000000 ttttt sssss fffff 00000 000100",
             statement -> {
                 // Mask all but low 5 bits of register containing shamt.
@@ -573,11 +548,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "srl",
-            formatRR5,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.INTEGER_5_UNSIGNED),
             InstructionFormat.R_TYPE,
             false,
             "Shift Right Logical",
-            "set $t1 to result of shifting $t2 right by number of bits specified by immediate",
+            "Set {0} to result of shifting {1} right by number of bits specified by immediate",
             "000000 00000 sssss fffff ttttt 000010",
             statement -> {
                 // must zero-fill, so use ">>>" instead of ">>".
@@ -586,11 +561,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "sra",
-            formatRR5,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.INTEGER_5_UNSIGNED),
             InstructionFormat.R_TYPE,
             false,
             "Shift Right Arithmetic",
-            "set $t1 to result of sign-extended shifting $t2 right by number of bits specified by immediate",
+            "Set {0} to result of sign-extended shifting {1} right by number of bits specified by immediate",
             "000000 00000 sssss fffff ttttt 000011",
             statement -> {
                 // must sign-fill, so use ">>".
@@ -599,11 +574,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "srlv",
-            formatRRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "Shift Right Logical Variable",
-            "set $t1 to result of shifting $t2 right by number of bits specified by value in low-order 5 bits of $t3",
+            "Set {0} to result of shifting {1} right by number of bits specified by value in low-order 5 bits of {2}",
             "000000 ttttt sssss fffff 00000 000110",
             statement -> {
                 // Mask all but low 5 bits of register containing shamt. Use ">>>" to zero-fill.
@@ -613,11 +588,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "srav",
-            formatRRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "Shift Right Arithmetic Variable",
-            "set $t1 to result of sign-extended shifting $t2 right by number of bits specified by value in low-order 5 bits of $t3",
+            "Set {0} to result of sign-extended shifting {1} right by number of bits specified by value in low-order 5 bits of {2}",
             "000000 ttttt sssss fffff 00000 000111",
             statement -> {
                 // Mask all but low 5 bits of register containing shamt. Use ">>" to sign-fill.
@@ -627,11 +602,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "lw",
-            formatRSP,
+            List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER),
             InstructionFormat.I_TYPE,
             false,
             "Load Word",
-            "set $t1 to contents of effective memory word address",
+            "Set {0} to contents of effective memory word address",
             "100011 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
@@ -644,17 +619,17 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "ll",
-            formatRSP,
+            List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER),
             InstructionFormat.I_TYPE,
             false,
             "Load Linked",
-            "paired with Store Conditional (sc) to perform atomic read-modify-write; equivalent to Load Word (lw) because MARS does not simulate multiple processors",
+            "Paired with Store Conditional (sc) to perform atomic read-modify-write; equivalent to Load Word (lw) because MARS does not simulate multiple processors",
             "110000 ttttt fffff ssssssssssssssss",
             // The ll (load link) command is supposed to be the front end of an atomic
             // operation completed by sc (store conditional), with success or failure
             // of the store depending on whether the memory block containing the
             // loaded word is modified in the meantime by a different processor.
-            // Since MARS, like SPIM simulates only a single processor, the store
+            // Since MARS, like SPIM, simulates only a single processor, the store
             // conditional will always succeed so there is no need to do anything
             // special here.  In that case, ll is same as lw.  And sc does the same
             // thing as sw except in addition it writes 1 into the source register.
@@ -669,11 +644,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "lwl",
-            formatRSP,
+            List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER),
             InstructionFormat.I_TYPE,
             false,
             "Load Word Left",
-            "load from 1 to 4 bytes left-justified into $t1, starting with effective memory byte address and continuing through the low-order byte of its word",
+            "Load from 1 to 4 bytes left-justified into {0}, starting with effective memory byte address and continuing through the low-order byte of its word",
             "100010 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
@@ -691,11 +666,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "lwr",
-            formatRSP,
+            List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER),
             InstructionFormat.I_TYPE,
             false,
             "Load Word Right",
-            "load from 1 to 4 bytes right-justified into $t1, starting with effective memory byte address and continuing through the high-order byte of its word",
+            "Load from 1 to 4 bytes right-justified into {0}, starting with effective memory byte address and continuing through the high-order byte of its word",
             "100110 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
@@ -713,11 +688,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "sw",
-            formatRSP,
+            List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER),
             InstructionFormat.I_TYPE,
             false,
             "Store Word",
-            "store contents of $t1 into effective memory word address",
+            "Store contents of {0} into effective memory word address",
             "101011 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
@@ -730,11 +705,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "sc",
-            formatRSP,
+            List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER),
             InstructionFormat.I_TYPE,
             false,
             "Store Conditional",
-            "paired with Load Linked (ll) to perform atomic read-modify-write; store content $t1 into effective address, then set $t1 to 1 for success (always succeeds because MARS does not simulate multiple processors)",
+            "Paired with Load Linked (ll) to perform atomic read-modify-write; store content {0} into effective address, then set {0} to 1 for success (always succeeds because MARS does not simulate multiple processors)",
             "111000 ttttt fffff ssssssssssssssss",
             // See comments with "ll" instruction above.  "sc" is implemented
             // like "sw", except that 1 is placed in the source register.
@@ -750,11 +725,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "swl",
-            formatRSP,
+            List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER),
             InstructionFormat.I_TYPE,
             false,
             "Store Word Left",
-            "store high-order 1 to 4 bytes of $t1 into memory, starting with effective byte address and continuing through the low-order byte of its word",
+            "Store high-order 1 to 4 bytes of {0} into memory, starting with effective byte address and continuing through the low-order byte of its word",
             "101010 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
@@ -771,11 +746,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "swr",
-            formatRSP,
+            List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER),
             InstructionFormat.I_TYPE,
             false,
             "Store Word Right",
-            "store low-order 1 to 4 bytes of $t1 into memory, starting with high-order byte of word containing effective byte address and continuing through that byte address",
+            "Store low-order 1 to 4 bytes of {0} into memory, starting with high-order byte of word containing effective byte address and continuing through that byte address",
             "101110 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
@@ -792,11 +767,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "lui",
-            formatRI,
+            List.of(OperandType.REGISTER, OperandType.INTEGER_16),
             InstructionFormat.I_TYPE,
             false,
             "Load Upper Immediate",
-            "set high-order 16 bits of $t1 to 16-bit immediate and low-order 16 bits to 0",
+            "Set high-order 16 bits of {0} to 16-bit immediate and low-order 16 bits to 0",
             "001111 00000 fffff ssssssssssssssss",
             statement -> {
                 Processor.setValue(statement.getOperand(0), statement.getOperand(1) << 16);
@@ -804,11 +779,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "beq",
-            formatRRB,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.BRANCH_OFFSET),
             InstructionFormat.I_TYPE_BRANCH,
             true,
             "Branch if EQual",
-            "branch to statement at label's address if $t1 is equal to $t2",
+            "Branch to statement at label's address if {0} is equal to {1}",
             "000100 fffff sssss tttttttttttttttt",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) == Processor.getValue(statement.getOperand(1))) {
@@ -818,11 +793,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "bne",
-            formatRRB,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.BRANCH_OFFSET),
             InstructionFormat.I_TYPE_BRANCH,
             true,
             "Branch if Not Equal",
-            "branch to statement at label's address unless $t1 is equal to $t2",
+            "Branch to statement at label's address unless {0} is equal to {1}",
             "000101 fffff sssss tttttttttttttttt",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) != Processor.getValue(statement.getOperand(1))) {
@@ -832,11 +807,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "bgez",
-            formatRB,
+            List.of(OperandType.REGISTER, OperandType.BRANCH_OFFSET),
             InstructionFormat.I_TYPE_BRANCH,
             true,
             "Branch if Greater than or Equal to Zero",
-            "branch to statement at label's address if $t1 is greater than or equal to zero",
+            "Branch to statement at label's address if {0} is greater than or equal to zero",
             "000001 fffff 00001 ssssssssssssssss",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) >= 0) {
@@ -846,11 +821,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "bgezal",
-            formatRB,
+            List.of(OperandType.REGISTER, OperandType.BRANCH_OFFSET),
             InstructionFormat.I_TYPE_BRANCH,
             true,
             "Branch if Greater than or Equal to Zero And Link",
-            "if $t1 is greater than or equal to zero, set $ra to the Program Counter and branch to statement at label's address",
+            "If {0} is greater than or equal to zero, set $ra to the Program Counter and branch to statement at label's address",
             "000001 fffff 10001 ssssssssssssssss",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) >= 0) {
@@ -862,11 +837,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "bgtz",
-            formatRB,
+            List.of(OperandType.REGISTER, OperandType.BRANCH_OFFSET),
             InstructionFormat.I_TYPE_BRANCH,
             true,
             "Branch if Greater Than Zero",
-            "branch to statement at label's address if $t1 is greater than zero",
+            "Branch to statement at label's address if {0} is greater than zero",
             "000111 fffff 00000 ssssssssssssssss",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) > 0) {
@@ -876,11 +851,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "blez",
-            formatRB,
+            List.of(OperandType.REGISTER, OperandType.BRANCH_OFFSET),
             InstructionFormat.I_TYPE_BRANCH,
             true,
             "Branch if Less than or Equal to Zero",
-            "branch to statement at label's address if $t1 is less than or equal to zero",
+            "Branch to statement at label's address if {0} is less than or equal to zero",
             "000110 fffff 00000 ssssssssssssssss",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) <= 0) {
@@ -890,11 +865,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "bltz",
-            formatRB,
+            List.of(OperandType.REGISTER, OperandType.BRANCH_OFFSET),
             InstructionFormat.I_TYPE_BRANCH,
             true,
             "Branch if Less Than Zero",
-            "branch to statement at label's address if $t1 is less than zero",
+            "Branch to statement at label's address if {0} is less than zero",
             "000001 fffff 00000 ssssssssssssssss",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) < 0) {
@@ -904,11 +879,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "bltzal",
-            formatRB,
+            List.of(OperandType.REGISTER, OperandType.BRANCH_OFFSET),
             InstructionFormat.I_TYPE_BRANCH,
             true,
             "Branch if Less Than Zero And Link",
-            "if $t1 is less than or equal to zero, set $ra to the Program Counter and branch to statement at label's address",
+            "If {0} is less than or equal to zero, set $ra to the Program Counter and branch to statement at label's address",
             "000001 fffff 10000 ssssssssssssssss",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) < 0) {
@@ -920,11 +895,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "slt",
-            formatRRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "Set Less Than",
-            "if $t2 is less than $t3, set $t1 to 1, otherwise set $t1 to 0",
+            "If {1} is less than {2}, set {0} to 1, otherwise set {0} to 0",
             "000000 sssss ttttt fffff 00000 101010",
             statement -> {
                 Processor.setValue(statement.getOperand(0), (Processor.getValue(statement.getOperand(1)) < Processor.getValue(statement.getOperand(2))) ? 1 : 0);
@@ -932,11 +907,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "sltu",
-            formatRRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "Set Less Than Unsigned",
-            "if $t2 is less than $t3 using unsigned comparision, set $t1 to 1, otherwise set $t1 to 0",
+            "If {1} is less than {2} using unsigned comparision, set {0} to 1, otherwise set {0} to 0",
             "000000 sssss ttttt fffff 00000 101011",
             statement -> {
                 Processor.setValue(statement.getOperand(0), (Integer.compareUnsigned(Processor.getValue(statement.getOperand(1)), Processor.getValue(statement.getOperand(2))) < 0) ? 1 : 0);
@@ -944,11 +919,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "slti",
-            formatRRS,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.INTEGER_16_SIGNED),
             InstructionFormat.I_TYPE,
             false,
             "Set Less Than Immediate",
-            "if $t2 is less than sign-extended 16-bit immediate, set $t1 to 1, otherwise set $t1 to 0",
+            "If {1} is less than sign-extended 16-bit immediate, set {0} to 1, otherwise set {0} to 0",
             "001010 sssss fffff tttttttttttttttt",
             statement -> {
                 // 16 bit immediate value in statement.getOperand(2) is sign-extended
@@ -957,11 +932,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "sltiu",
-            formatRRS,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.INTEGER_16_SIGNED),
             InstructionFormat.I_TYPE,
             false,
             "Set Less Than Immediate Unsigned",
-            "if $t2 is less than sign-extended 16-bit immediate using unsigned comparison, set $t1 to 1, otherwise set $t1 to 0",
+            "If {1} is less than sign-extended 16-bit immediate using unsigned comparison, set {0} to 1, otherwise set {0} to 0",
             "001011 sssss fffff tttttttttttttttt",
             statement -> {
                 // 16 bit immediate value in statement.getOperand(2) is sign-extended
@@ -970,11 +945,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "movn",
-            formatRRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "MOVe if Not zero",
-            "set $t1 to $t2 only if $t3 is not zero",
+            "Set {0} to {1} only if {2} is not zero",
             "000000 sssss ttttt fffff 00000 001011",
             statement -> {
                 if (Processor.getValue(statement.getOperand(2)) != 0) {
@@ -984,11 +959,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "movz",
-            formatRRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "MOVe if Zero",
-            "set $t1 to $t2 only if $t3 is zero",
+            "Set {0} to {1} only if {2} is zero",
             "000000 sssss ttttt fffff 00000 001010",
             statement -> {
                 if (Processor.getValue(statement.getOperand(2)) == 0) {
@@ -998,11 +973,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "movf",
-            formatRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "MOVe if condition flag False",
-            "set $t1 to $t2 only if FPU (Coprocessor 1) condition flag 0 is false (bit value is 0)",
+            "Set {0} to {1} only if FPU (Coprocessor 1) condition flag 0 is false (bit value is 0)",
             "000000 sssss 000 00 fffff 00000 000001",
             statement -> {
                 if (Coprocessor1.getConditionFlag(0) == 0) {
@@ -1012,11 +987,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "movf",
-            formatRR3,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.INTEGER_3_UNSIGNED),
             InstructionFormat.R_TYPE,
             false,
             "MOVe if condition flag False",
-            "set $t1 to $t2 only if FPU (Coprocessor 1) condition flag specified by the last operand is false (bit value is 0)",
+            "Set {0} to {1} only if FPU (Coprocessor 1) condition flag specified by the last operand is false (bit value is 0)",
             "000000 sssss ttt 00 fffff 00000 000001",
             statement -> {
                 if (Coprocessor1.getConditionFlag(statement.getOperand(2)) == 0) {
@@ -1026,11 +1001,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "movt",
-            formatRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "MOVe if condition flag True",
-            "set $t1 to $t2 only if FPU (Coprocessor 1) condition flag 0 is true (bit value is 1)",
+            "Set {0} to {1} only if FPU (Coprocessor 1) condition flag 0 is true (bit value is 1)",
             "000000 sssss 000 01 fffff 00000 000001",
             statement -> {
                 if (Coprocessor1.getConditionFlag(0) == 1) {
@@ -1040,11 +1015,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "movt",
-            formatRR3,
+            List.of(OperandType.REGISTER, OperandType.REGISTER, OperandType.INTEGER_3_UNSIGNED),
             InstructionFormat.R_TYPE,
             false,
             "MOVe if condition flag True",
-            "set $t1 to $t2 only if FPU (Coprocessor 1) condition flag specified by the last operand is true (bit value is 1)",
+            "Set {0} to {1} only if FPU (Coprocessor 1) condition flag specified by the last operand is true (bit value is 1)",
             "000000 sssss ttt 01 fffff 00000 000001",
             statement -> {
                 if (Coprocessor1.getConditionFlag(statement.getOperand(2)) == 1) {
@@ -1054,11 +1029,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "break",
-            formatI,
+            List.of(OperandType.INTEGER_16),
             InstructionFormat.R_TYPE,
             false,
             "BREAK execution",
-            "terminate program execution with the specified exception code",
+            "Terminate program execution with the specified exception code",
             "000000 ffffffffffffffffffff 001101",
             statement -> {
                 throw new SimulatorException(statement, "break instruction executed; code = " + statement.getOperand(0) + ".", ExceptionCause.BREAKPOINT);
@@ -1070,7 +1045,7 @@ public class InstructionSet {
             InstructionFormat.R_TYPE,
             false,
             "BREAK execution",
-            "terminate program execution with an exception",
+            "Terminate program execution with an exception",
             "000000 00000 00000 00000 00000 001101",
             statement -> {
                 throw new SimulatorException(statement, "break instruction executed; no code given.", ExceptionCause.BREAKPOINT);
@@ -1082,7 +1057,7 @@ public class InstructionSet {
             InstructionFormat.R_TYPE,
             false,
             "SYStem CALL",
-            "issue a system call based on contents of $v0 (see syscall help for details)",
+            "Issue a system call based on contents of $v0 (see syscall help for details)",
             "000000 00000 00000 00000 00000 001100",
             statement -> {
                 this.processSyscall(statement, Processor.getValue(Processor.VALUE_0));
@@ -1090,11 +1065,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "j",
-            formatJ,
+            List.of(OperandType.JUMP_LABEL),
             InstructionFormat.J_TYPE,
             true,
             "Jump",
-            "jump execution to statement at label's address",
+            "Jump execution to statement at label's address",
             "000010 ffffffffffffffffffffffffff",
             statement -> {
                 this.processJump(((Processor.getProgramCounter() & 0xF0000000) | (statement.getOperand(0) << 2)));
@@ -1102,11 +1077,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "jr",
-            formatR,
+            List.of(OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             true,
             "Jump to Register",
-            "jump execution to statement whose address is in $t1",
+            "Jump execution to statement whose address is in {0}",
             "000000 fffff 00000 00000 00000 001000",
             statement -> {
                 this.processJump(Processor.getValue(statement.getOperand(0)));
@@ -1114,11 +1089,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "jal",
-            formatJ,
+            List.of(OperandType.JUMP_LABEL),
             InstructionFormat.J_TYPE,
             true,
             "Jump And Link",
-            "set $ra to the Program Counter (return address) then jump execution to statement at label's address",
+            "Set $ra to the Program Counter (return address) then jump execution to statement at label's address",
             "000011 ffffffffffffffffffffffffff",
             statement -> {
                 this.processLink(Processor.RETURN_ADDRESS);
@@ -1127,11 +1102,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "jalr",
-            formatRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             true,
             "Jump And Link to Register",
-            "set $t1 to the Program Counter (return address) then jump execution to statement whose address is in $t2",
+            "Set {0} to the Program Counter (return address) then jump execution to statement whose address is in {1}",
             "000000 sssss 00000 fffff 00000 001001",
             statement -> {
                 this.processLink(statement.getOperand(0));
@@ -1140,11 +1115,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "jalr",
-            formatR,
+            List.of(OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             true,
             "Jump And Link to Register",
-            "set $ra to the Program Counter (return address) then jump execution to statement whose address is in $t1",
+            "Set $ra to the Program Counter (return address) then jump execution to statement whose address is in {0}",
             "000000 fffff 00000 11111 00000 001001",
             statement -> {
                 this.processLink(Processor.RETURN_ADDRESS);
@@ -1153,11 +1128,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "lb",
-            formatRSP,
+            List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER),
             InstructionFormat.I_TYPE,
             false,
             "Load Byte",
-            "set $t1 to sign-extended 8-bit value from effective memory byte address",
+            "Set {0} to sign-extended 8-bit value from effective memory byte address",
             "100000 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
@@ -1170,11 +1145,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "lbu",
-            formatRSP,
+            List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER),
             InstructionFormat.I_TYPE,
             false,
             "Load Byte Unsigned",
-            "Set $t1 to zero-extended 8-bit value from effective memory byte address",
+            "Set {0} to zero-extended 8-bit value from effective memory byte address",
             "100100 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
@@ -1188,11 +1163,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "lh",
-            formatRSP,
+            List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER),
             InstructionFormat.I_TYPE,
             false,
             "Load Halfword",
-            "set $t1 to sign-extended 16-bit value from effective memory halfword address",
+            "Set {0} to sign-extended 16-bit value from effective memory halfword address",
             "100001 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
@@ -1205,11 +1180,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "lhu",
-            formatRSP,
+            List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER),
             InstructionFormat.I_TYPE,
             false,
             "Load Halfword Unsigned",
-            "set $t1 to zero-extended 16-bit value from effective memory halfword address",
+            "Set {0} to zero-extended 16-bit value from effective memory halfword address",
             "100101 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
@@ -1223,11 +1198,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "sb",
-            formatRSP,
+            List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER),
             InstructionFormat.I_TYPE,
             false,
             "Store Byte",
-            "store the low-order 8 bits of $t1 into the effective memory byte address",
+            "Store the low-order 8 bits of {0} into the effective memory byte address",
             "101000 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
@@ -1240,11 +1215,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "sh",
-            formatRSP,
+            List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER),
             InstructionFormat.I_TYPE,
             false,
             "Store Halfword",
-            "store the low-order 16 bits of $t1 into the effective memory halfword address",
+            "Store the low-order 16 bits of {0} into the effective memory halfword address",
             "101001 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
@@ -1271,11 +1246,11 @@ public class InstructionSet {
         // the binary code that is not really an issue.
         this.addBasicInstruction(new BasicInstruction(
             "clo",
-            formatRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "Count Leading Ones",
-            "set $t1 to the count of leading one bits in $t2 starting at most significant bit position",
+            "Set {0} to the count of leading one bits in {1} starting at most significant bit position",
             "011100 sssss 00000 fffff 00000 100001",
             statement -> {
                 // Invert and count leading zeroes
@@ -1285,11 +1260,11 @@ public class InstructionSet {
         // See comments for "clo" instruction above.  They apply here too.
         this.addBasicInstruction(new BasicInstruction(
             "clz",
-            formatRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "Count Leading Zeroes",
-            "set $t1 to the count of leading zero bits in $t2 starting at most significant bit position",
+            "Set {0} to the count of leading zero bits in {1} starting at most significant bit position",
             "011100 sssss 00000 fffff 00000 100000",
             statement -> {
                 Processor.setValue(statement.getOperand(0), Integer.numberOfLeadingZeros(Processor.getValue(statement.getOperand(1))));
@@ -1297,11 +1272,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "mfc0",
-            formatRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "Move From Coprocessor 0",
-            "set $t1 to the value stored in Coprocessor 0 register $8",
+            "Set {0} to the value stored in Coprocessor 0 register {1}",
             "010000 00000 fffff sssss 00000 000000",
             statement -> {
                 Processor.setValue(statement.getOperand(0), Coprocessor0.getValue(statement.getOperand(1)));
@@ -1309,11 +1284,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "mtc0",
-            formatRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false,
             "Move To Coprocessor 0",
-            "set Coprocessor 0 register $8 to value stored in $t1",
+            "Set Coprocessor 0 register {1} to value stored in {0}",
             "010000 00100 fffff sssss 00000 000000",
             statement -> {
                 Coprocessor0.updateRegister(statement.getOperand(1), Processor.getValue(statement.getOperand(0)));
@@ -1324,11 +1299,11 @@ public class InstructionSet {
 
         this.addBasicInstruction(new BasicInstruction(
             "add.s",
-            formatFFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "ADDition, Single-precision",
-            "set $f0 to single-precision floating point value of $f1 plus $f2",
+            "Set {0} to single-precision floating point value of {1} plus {2}",
             "010001 10000 ttttt sssss fffff 000000",
             statement -> {
                 Coprocessor1.setSingleFloat(statement.getOperand(0), Coprocessor1.getSingleFloat(statement.getOperand(1)) + Coprocessor1.getSingleFloat(statement.getOperand(2)));
@@ -1336,11 +1311,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "add.d",
-            formatFFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "ADDition, Double-precision",
-            "set $f2 to double-precision floating point value of $f4 plus $f6",
+            "Set {0} to double-precision floating point value of {1} plus {2}",
             "010001 10001 ttttt sssss fffff 000000",
             statement -> {
                 try {
@@ -1353,11 +1328,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "sub.s",
-            formatFFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "SUBtraction, Single-precision",
-            "set $f0 to single-precision floating point value of $f1 minus $f2",
+            "Set {0} to single-precision floating point value of {1} minus {2}",
             "010001 10000 ttttt sssss fffff 000001",
             statement -> {
                 Coprocessor1.setSingleFloat(statement.getOperand(0), Coprocessor1.getSingleFloat(statement.getOperand(1)) - Coprocessor1.getSingleFloat(statement.getOperand(2)));
@@ -1365,11 +1340,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "sub.d",
-            formatFFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "SUBtraction, Double-precision",
-            "set $f2 to double-precision floating point value of $f4 minus $f6",
+            "Set {0} to double-precision floating point value of {1} minus {2}",
             "010001 10001 ttttt sssss fffff 000001",
             statement -> {
                 try {
@@ -1382,11 +1357,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "mul.s",
-            formatFFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "MULtiplication, Single-precision",
-            "set $f0 to single-precision floating point value of $f1 multiplied by $f2",
+            "Set {0} to single-precision floating point value of {1} multiplied by {2}",
             "010001 10000 ttttt sssss fffff 000010",
             statement -> {
                 Coprocessor1.setSingleFloat(statement.getOperand(0), Coprocessor1.getSingleFloat(statement.getOperand(1)) * Coprocessor1.getSingleFloat(statement.getOperand(2)));
@@ -1394,11 +1369,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "mul.d",
-            formatFFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "MULtiplication, Double-precision",
-            "set $f2 to double-precision floating point value of $f4 multiplied by $f6",
+            "Set {0} to double-precision floating point value of {1} multiplied by {2}",
             "010001 10001 ttttt sssss fffff 000010",
             statement -> {
                 try {
@@ -1411,11 +1386,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "div.s",
-            formatFFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "DIVision, Single-precision",
-            "set $f0 to single-precision floating point value of $f1 divided by $f2",
+            "Set {0} to single-precision floating point value of {1} divided by {2}",
             "010001 10000 ttttt sssss fffff 000011",
             statement -> {
                 Coprocessor1.setSingleFloat(statement.getOperand(0), Coprocessor1.getSingleFloat(statement.getOperand(1)) / Coprocessor1.getSingleFloat(statement.getOperand(2)));
@@ -1423,11 +1398,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "div.d",
-            formatFFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "DIVision, Double-precision",
-            "set $f2 to double-precision floating point value of $f4 divided by $f6",
+            "Set {0} to double-precision floating point value of {1} divided by {2}",
             "010001 10001 ttttt sssss fffff 000011",
             statement -> {
                 try {
@@ -1440,11 +1415,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "neg.s",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "NEGation, Single-precision",
-            "set single-precision $f0 to negation of single-precision value in $f1",
+            "Set single-precision {0} to negation of single-precision value in {1}",
             "010001 10000 00000 sssss fffff 000111",
             statement -> {
                 // Flip the sign bit
@@ -1453,11 +1428,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "neg.d",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "NEGation, Double-precision",
-            "set double-precision $f2 to negation of double-precision value in $f4",
+            "Set double-precision {0} to negation of double-precision value in {1}",
             "010001 10001 00000 sssss fffff 000111",
             statement -> {
                 try {
@@ -1471,11 +1446,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "abs.s",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "ABSolute value, Single-precision",
-            "set $f0 to absolute value of $f1, single-precision",
+            "Set {0} to absolute value of {1}, single-precision",
             "010001 10000 00000 sssss fffff 000101",
             statement -> {
                 // Clear the sign bit
@@ -1484,11 +1459,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "abs.d",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "ABSolute value, Double-precision",
-            "set $f2 to absolute value of $f4, double-precision",
+            "Set {0} to absolute value of {1}, double-precision",
             "010001 10001 00000 sssss fffff 000101",
             statement -> {
                 try {
@@ -1502,11 +1477,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "sqrt.s",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "SQuare RooT, Single-precision",
-            "set $f0 to single-precision floating point square root of $f1",
+            "Set {0} to single-precision floating point square root of {1}",
             "010001 10000 00000 sssss fffff 000100",
             statement -> {
                 // This is subject to refinement later.  Release 4.0 defines floor, ceil, trunc, round
@@ -1519,11 +1494,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "sqrt.d",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "SQuare RooT, Double-precision",
-            "set $f2 to double-precision floating point square root of $f4",
+            "Set {0} to double-precision floating point square root of {1}",
             "010001 10001 00000 sssss fffff 000100",
             statement -> {
                 // This is subject to refinement later.  Release 4.0 defines floor, ceil, trunc, round
@@ -1541,11 +1516,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "floor.w.s",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "FLOOR to Word from Single-precision",
-            "set $f0 to 32-bit integer floor of single-precision float in $f1",
+            "Set {0} to 32-bit integer floor of single-precision float in {1}",
             "010001 10000 00000 sssss fffff 001111",
             statement -> {
                 float value = Coprocessor1.getSingleFloat(statement.getOperand(1));
@@ -1563,11 +1538,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "floor.w.d",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "FLOOR to Word from Double-precision",
-            "set $f1 to 32-bit integer floor of double-precision float in $f2",
+            "Set {0} to 32-bit integer floor of double-precision float in {1}",
             "010001 10001 00000 sssss fffff 001111",
             statement -> {
                 try {
@@ -1590,11 +1565,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "ceil.w.s",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "CEILing to Word from Single-precision",
-            "set $f0 to 32-bit integer ceiling of single-precision float in $f1",
+            "Set {0} to 32-bit integer ceiling of single-precision float in {1}",
             "010001 10000 00000 sssss fffff 001110",
             statement -> {
                 float value = Coprocessor1.getSingleFloat(statement.getOperand(1));
@@ -1612,11 +1587,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "ceil.w.d",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "CEILing to Word from Double-precision",
-            "set $f1 to 32-bit integer ceiling of double-precision float in $f2",
+            "Set {0} to 32-bit integer ceiling of double-precision float in {1}",
             "010001 10001 00000 sssss fffff 001110",
             statement -> {
                 try {
@@ -1639,11 +1614,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "round.w.s",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "ROUND to Word from Single-precision",
-            "set $f0 to 32-bit integer rounding of single-precision float in $f1",
+            "Set {0} to 32-bit integer rounding of single-precision float in {1}",
             "010001 10000 00000 sssss fffff 001100",
             statement -> {
                 // MIPS32 documentation (and IEEE 754) states that round rounds to the nearest but when
@@ -1690,11 +1665,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "round.w.d",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "ROUND to Word from Double-precision",
-            "set $f1 to 32-bit integer rounding of double-precision float in $f2",
+            "Set {0} to 32-bit integer rounding of double-precision float in {1}",
             "010001 10001 00000 sssss fffff 001100",
             statement -> {
                 // See comments in round.w.s above, concerning MIPS and IEEE 754 standard.
@@ -1739,11 +1714,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "trunc.w.s",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "TRUNCate to Word from Single-precision",
-            "set $f0 to 32-bit integer truncation of single-precision float in $f1",
+            "Set {0} to 32-bit integer truncation of single-precision float in {1}",
             "010001 10000 00000 sssss fffff 001101",
             statement -> {
                 float value = Coprocessor1.getSingleFloat(statement.getOperand(1));
@@ -1761,11 +1736,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "trunc.w.d",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "TRUNCate to Word from Double-precision",
-            "set $f1 to 32-bit integer truncation of double-precision float in $f2",
+            "Set {0} to 32-bit integer truncation of double-precision float in {1}",
             "010001 10001 00000 sssss fffff 001101", statement -> {
                 try {
                     double value = Coprocessor1.getDoubleFloat(statement.getOperand(1));
@@ -1787,11 +1762,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "c.eq.s",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "Compare EQual, Single-precision",
-            "if $f0 is equal to $f1, set Coprocessor 1 condition flag 0 to true, otherwise set it to false",
+            "If {0} is equal to {1}, set Coprocessor 1 condition flag 0 to true, otherwise set it to false",
             "010001 10000 sssss fffff 000 00 110010",
             statement -> {
                 if (Coprocessor1.getSingleFloat(statement.getOperand(0)) == Coprocessor1.getSingleFloat(statement.getOperand(1))) {
@@ -1804,11 +1779,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "c.eq.s",
-            format3FF,
+            List.of(OperandType.INTEGER_3_UNSIGNED, OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "Compare EQual, Single-precision",
-            "if $f0 is equal to $f1, set Coprocessor 1 condition flag specified by the first operand to true, otherwise set it to false",
+            "If {0} is equal to {1}, set Coprocessor 1 condition flag specified by the first operand to true, otherwise set it to false",
             "010001 10000 ttttt sssss fff 00 110010",
             statement -> {
                 if (Coprocessor1.getSingleFloat(statement.getOperand(1)) == Coprocessor1.getSingleFloat(statement.getOperand(2))) {
@@ -1821,11 +1796,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "c.eq.d",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "Compare EQual, Double-precision",
-            "if $f2 is equal to $f4 (double-precision), set Coprocessor 1 condition flag 0 to true, otherwise set it to false",
+            "If {0} is equal to {1} (double-precision), set Coprocessor 1 condition flag 0 to true, otherwise set it to false",
             "010001 10001 sssss fffff 000 00 110010",
             statement -> {
                 try {
@@ -1843,11 +1818,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "c.eq.d",
-            format3FF,
+            List.of(OperandType.INTEGER_3_UNSIGNED, OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "Compare EQual, Double-precision",
-            "if $f2 is equal to $f4 (double-precision), set Coprocessor 1 condition flag specified by the first operand to true, otherwise set it to false",
+            "If {0} is equal to {1} (double-precision), set Coprocessor 1 condition flag specified by the first operand to true, otherwise set it to false",
             "010001 10001 ttttt sssss fff 00 110010",
             statement -> {
                 try {
@@ -1865,11 +1840,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "c.le.s",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "Compare Less than or Equal, Single-precision",
-            "if $f0 is less than or equal to $f1, set Coprocessor 1 condition flag 0 to true, otherwise set it to false",
+            "If {0} is less than or equal to {1}, set Coprocessor 1 condition flag 0 to true, otherwise set it to false",
             "010001 10000 sssss fffff 000 00 111110",
             statement -> {
                 if (Coprocessor1.getSingleFloat(statement.getOperand(0)) <= Coprocessor1.getSingleFloat(statement.getOperand(1))) {
@@ -1882,11 +1857,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "c.le.s",
-            format3FF,
+            List.of(OperandType.INTEGER_3_UNSIGNED, OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "Compare Less than or Equal, Single-precision",
-            "if $f0 is less than or equal to $f1, set Coprocessor 1 condition flag specified by the first operand to true, otherwise set it to false",
+            "If {0} is less than or equal to {1}, set Coprocessor 1 condition flag specified by the first operand to true, otherwise set it to false",
             "010001 10000 ttttt sssss fff 00 111110",
             statement -> {
                 if (Coprocessor1.getSingleFloat(statement.getOperand(1)) <= Coprocessor1.getSingleFloat(statement.getOperand(2))) {
@@ -1899,11 +1874,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "c.le.d",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "Compare Less than or Equal, Double-precision",
-            "if $f2 is less than or equal to $f4 (double-precision), set Coprocessor 1 condition flag 0 to true, otherwise set it to false",
+            "If {0} is less than or equal to {1} (double-precision), set Coprocessor 1 condition flag 0 to true, otherwise set it to false",
             "010001 10001 sssss fffff 000 00 111110",
             statement -> {
                 try {
@@ -1921,11 +1896,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "c.le.d",
-            format3FF,
+            List.of(OperandType.INTEGER_3_UNSIGNED, OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "Compare Less than or Equal, Double-precision",
-            "if $f2 is less than or equal to $f4 (double-precision), set Coprocessor 1 condition flag specified by the first operand to true, otherwise set it to false",
+            "If {0} is less than or equal to {1} (double-precision), set Coprocessor 1 condition flag specified by the first operand to true, otherwise set it to false",
             "010001 10001 ttttt sssss fff 00 111110",
             statement -> {
                 try {
@@ -1943,11 +1918,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "c.lt.s",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "Compare Less Than, Single-precision",
-            "if $f0 is less than $f1, set Coprocessor 1 condition flag 0 to true, otherwise set it to false",
+            "If {0} is less than {1}, set Coprocessor 1 condition flag 0 to true, otherwise set it to false",
             "010001 10000 sssss fffff 000 00 111100",
             statement -> {
                 if (Coprocessor1.getSingleFloat(statement.getOperand(0)) < Coprocessor1.getSingleFloat(statement.getOperand(1))) {
@@ -1960,11 +1935,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "c.lt.s",
-            format3FF,
+            List.of(OperandType.INTEGER_3_UNSIGNED, OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "Compare Less Than, Single-precision",
-            "if $f0 is less than $f1, set Coprocessor 1 condition flag specified by the first operand to true, otherwise set it to false",
+            "If {0} is less than {1}, set Coprocessor 1 condition flag specified by the first operand to true, otherwise set it to false",
             "010001 10000 ttttt sssss fff 00 111100",
             statement -> {
                 if (Coprocessor1.getSingleFloat(statement.getOperand(1)) < Coprocessor1.getSingleFloat(statement.getOperand(2))) {
@@ -1977,11 +1952,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "c.lt.d",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "Compare Less Than, Double-precision",
-            "if $f2 is less than $f4 (double-precision), set Coprocessor 1 condition flag 0 to true, otherwise set it to false",
+            "If {0} is less than {1} (double-precision), set Coprocessor 1 condition flag 0 to true, otherwise set it to false",
             "010001 10001 sssss fffff 000 00 111100",
             statement -> {
                 try {
@@ -1999,11 +1974,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "c.lt.d",
-            format3FF,
+            List.of(OperandType.INTEGER_3_UNSIGNED, OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "Compare Less Than, Double-precision",
-            "if $f2 is less than $f4 (double-precision), set Coprocessor 1 condition flag specified by the first operand to true, otherwise set it to false",
+            "If {0} is less than {1} (double-precision), set Coprocessor 1 condition flag specified by the first operand to true, otherwise set it to false",
             "010001 10001 ttttt sssss fff 00 111100",
             statement -> {
                 try {
@@ -2021,11 +1996,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "bc1f",
-            formatB,
+            List.of(OperandType.BRANCH_OFFSET),
             InstructionFormat.FI_TYPE_BRANCH,
             true,
             "Branch if Coprocessor 1 condition flag False (BC1F, not BCLF)",
-            "branch to statement at label's address only if Coprocessor 1 condition flag 0 is false (bit value 0)",
+            "Branch to statement at label's address only if Coprocessor 1 condition flag 0 is false (bit value 0)",
             "010001 01000 000 00 ffffffffffffffff",
             statement -> {
                 if (Coprocessor1.getConditionFlag(0) == 0) {
@@ -2035,11 +2010,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "bc1f",
-            format3B,
+            List.of(OperandType.INTEGER_3_UNSIGNED, OperandType.BRANCH_OFFSET),
             InstructionFormat.FI_TYPE_BRANCH,
             true,
             "Branch if Coprocessor 1 condition flag False (BC1F, not BCLF)",
-            "branch to statement at label's address only if Coprocessor 1 condition flag specified by the first operand is false (bit value 0)",
+            "Branch to statement at label's address only if Coprocessor 1 condition flag specified by the first operand is false (bit value 0)",
             "010001 01000 fff 00 ssssssssssssssss",
             statement -> {
                 if (Coprocessor1.getConditionFlag(statement.getOperand(0)) == 0) {
@@ -2049,11 +2024,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "bc1t",
-            formatB,
+            List.of(OperandType.BRANCH_OFFSET),
             InstructionFormat.FI_TYPE_BRANCH,
             true,
             "Branch if Coprocessor 1 condition flag True (BC1T, not BCLT)",
-            "branch to statement at label's address only if Coprocessor 1 condition flag 0 is true (bit value 1)",
+            "Branch to statement at label's address only if Coprocessor 1 condition flag 0 is true (bit value 1)",
             "010001 01000 000 01 ffffffffffffffff",
             statement -> {
                 if (Coprocessor1.getConditionFlag(0) == 1) {
@@ -2063,11 +2038,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "bc1t",
-            format3B,
+            List.of(OperandType.INTEGER_3_UNSIGNED, OperandType.BRANCH_OFFSET),
             InstructionFormat.FI_TYPE_BRANCH,
             true,
             "Branch if Coprocessor 1 condition flag True (BC1T, not BCLT)",
-            "branch to statement at label's address only if Coprocessor 1 condition flag specified by the first operand is true (bit value 1)",
+            "Branch to statement at label's address only if Coprocessor 1 condition flag specified by the first operand is true (bit value 1)",
             "010001 01000 fff 01 ssssssssssssssss",
             statement -> {
                 if (Coprocessor1.getConditionFlag(statement.getOperand(0)) == 1) {
@@ -2077,15 +2052,14 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "cvt.s.d",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "ConVerT to Single-precision from Double-precision",
-            "set $f1 to single-precision equivalent of double-precision value in $f2",
+            "Set {0} to single-precision equivalent of double-precision value in {1}",
             "010001 10001 00000 sssss fffff 100000",
             statement -> {
                 try {
-                    // Convert double-precision in $f2 to single-precision stored in $f1
                     Coprocessor1.setSingleFloat(statement.getOperand(0), (float) Coprocessor1.getDoubleFloat(statement.getOperand(1)));
                 }
                 catch (InvalidRegisterAccessException exception) {
@@ -2095,15 +2069,14 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "cvt.d.s",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "ConVerT to Double-precision from Single-precision",
-            "set $f2 to double-precision equivalent of single-precision value in $f1",
+            "Set {0} to double-precision equivalent of single-precision value in {1}",
             "010001 10000 00000 sssss fffff 100001",
             statement -> {
                 try {
-                    // Convert single-precision in $f1 to double-precision stored in $f2
                     Coprocessor1.setDoubleFloat(statement.getOperand(0), Coprocessor1.getSingleFloat(statement.getOperand(1)));
                 }
                 catch (InvalidRegisterAccessException exception) {
@@ -2113,28 +2086,26 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "cvt.w.s",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "ConVerT to Word from Single-precision",
-            "set $f0 to 32-bit integer equivalent of single-precision value in $f1",
+            "Set {0} to 32-bit integer equivalent of single-precision value in {1}",
             "010001 10000 00000 sssss fffff 100100",
             statement -> {
-                // Convert single-precision in $f1 to integer stored in $f0
                 Coprocessor1.setValue(statement.getOperand(0), (int) Coprocessor1.getSingleFloat(statement.getOperand(1)));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
             "cvt.w.d",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "ConVerT to Word from Double-precision",
-            "set $f1 to 32-bit integer equivalent of double-precision value in $f2",
+            "Set {0} to 32-bit integer equivalent of double-precision value in {1}",
             "010001 10001 00000 sssss fffff 100100",
             statement -> {
                 try {
-                    // Convert double-precision in $f2 to integer stored in $f1
                     Coprocessor1.setValue(statement.getOperand(0), (int) Coprocessor1.getDoubleFloat(statement.getOperand(1)));
                 }
                 catch (InvalidRegisterAccessException exception) {
@@ -2144,28 +2115,26 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "cvt.s.w",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "ConVerT to Single-precision from Word",
-            "set $f0 to single-precision equivalent of 32-bit integer value in $f1",
+            "Set {0} to single-precision equivalent of 32-bit integer value in {1}",
             "010001 10100 00000 sssss fffff 100000",
             statement -> {
-                // Convert integer to single (interpret $f1 value as int?)
                 Coprocessor1.setSingleFloat(statement.getOperand(0), (float) Coprocessor1.getValue(statement.getOperand(1)));
             }
         ));
         this.addBasicInstruction(new BasicInstruction(
             "cvt.d.w",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "ConVerT to Double-precision from Word",
-            "set $f2 to double-precision equivalent of 32-bit integer value in $f1",
+            "Set {0} to double-precision equivalent of 32-bit integer value in {1}",
             "010001 10100 00000 sssss fffff 100001",
             statement -> {
                 try {
-                    // Convert integer to double (interpret $f1 value as int?)
                     Coprocessor1.setDoubleFloat(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
                 }
                 catch (InvalidRegisterAccessException exception) {
@@ -2175,11 +2144,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "mov.s",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "MOVe, Single-precision",
-            "Set single-precision $f0 to single-precision value in $f1",
+            "Set single-precision {0} to single-precision value in {1}",
             "010001 10000 00000 sssss fffff 000110",
             statement -> {
                 Coprocessor1.setValue(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
@@ -2187,11 +2156,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "mov.d",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "MOVe, Double-precision",
-            "set double-precision $f2 to double-precision value in $f4",
+            "Set double-precision {0} to double-precision value in {1}",
             "010001 10001 00000 sssss fffff 000110",
             statement -> {
                 if (statement.getOperand(0) % 2 == 1 || statement.getOperand(1) % 2 == 1) {
@@ -2203,11 +2172,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "movf.s",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "MOVe if condition flag False, Single-precision",
-            "set single-precision $f0 to single-precision value in $f1 only if condition flag 0 is false (bit value 0)",
+            "Set single-precision {0} to single-precision value in {1} only if condition flag 0 is false (bit value 0)",
             "010001 10000 000 00 sssss fffff 010001",
             statement -> {
                 if (Coprocessor1.getConditionFlag(0) == 0) {
@@ -2217,11 +2186,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "movf.s",
-            formatFF3,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.INTEGER_3_UNSIGNED),
             InstructionFormat.FR_TYPE,
             false,
             "MOVe if condition flag False, Single-precision",
-            "set single-precision $f0 to single-precision value in $f1 only if condition flag specified by the last operand is false (bit value 0)",
+            "Set single-precision {0} to single-precision value in {1} only if condition flag specified by the last operand is false (bit value 0)",
             "010001 10000 ttt 00 sssss fffff 010001",
             statement -> {
                 if (Coprocessor1.getConditionFlag(statement.getOperand(2)) == 0) {
@@ -2231,11 +2200,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "movf.d",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "MOVe if condition flag False, Double-precision",
-            "set double-precision $f2 to double-precision value in $f4 only if condition flag 0 is false (bit value 0)",
+            "Set double-precision {0} to double-precision value in {1} only if condition flag 0 is false (bit value 0)",
             "010001 10001 000 00 sssss fffff 010001",
             statement -> {
                 if (statement.getOperand(0) % 2 == 1 || statement.getOperand(1) % 2 == 1) {
@@ -2249,11 +2218,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "movf.d",
-            formatFF3,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.INTEGER_3_UNSIGNED),
             InstructionFormat.FR_TYPE,
             false,
             "MOVe if condition flag False, Double-precision",
-            "set double-precision $f2 to double-precision value in $f4 only if condition flag specified by the last operand is false (bit value 0)",
+            "Set double-precision {0} to double-precision value in {1} only if condition flag specified by the last operand is false (bit value 0)",
             "010001 10001 ttt 00 sssss fffff 010001",
             statement -> {
                 if (statement.getOperand(0) % 2 == 1 || statement.getOperand(1) % 2 == 1) {
@@ -2267,11 +2236,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "movt.s",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "MOVe if condition flag True, Single-precision",
-            "set single-precision $f0 to single-precision value in $f1 only if condition flag 0 is true (bit value 1)",
+            "Set single-precision {0} to single-precision value in {1} only if condition flag 0 is true (bit value 1)",
             "010001 10000 000 01 sssss fffff 010001",
             statement -> {
                 if (Coprocessor1.getConditionFlag(0) == 1) {
@@ -2281,11 +2250,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "movt.s",
-            formatFF3,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.INTEGER_3_UNSIGNED),
             InstructionFormat.FR_TYPE,
             false,
             "MOVe if condition flag True, Single-precision",
-            "set single-precision $f0 to single-precision value in $f1 only if condition flag specified by the last operand is true (bit value 1)",
+            "Set single-precision {0} to single-precision value in {1} only if condition flag specified by the last operand is true (bit value 1)",
             "010001 10000 ttt 01 sssss fffff 010001",
             statement -> {
                 if (Coprocessor1.getConditionFlag(statement.getOperand(2)) == 1) {
@@ -2295,11 +2264,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "movt.d",
-            formatFF,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "MOVe if condition flag True, Double-precision",
-            "set double-precision $f2 to double-precision value in $f4 only if condition flag 0 is true (bit value 1)",
+            "Set double-precision {0} to double-precision value in {1} only if condition flag 0 is true (bit value 1)",
             "010001 10001 000 01 sssss fffff 010001",
             statement -> {
                 if (statement.getOperand(0) % 2 == 1 || statement.getOperand(1) % 2 == 1) {
@@ -2313,11 +2282,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "movt.d",
-            formatFF3,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.INTEGER_3_UNSIGNED),
             InstructionFormat.FR_TYPE,
             false,
             "MOVe if condition flag True, Double-precision",
-            "set double-precision $f2 to double-precision value in $f4 only if condition flag specified by the last operand is true (bit value 1)",
+            "Set double-precision {0} to double-precision value in {1} only if condition flag specified by the last operand is true (bit value 1)",
             "010001 10001 ttt 01 sssss fffff 010001",
             statement -> {
                 if (statement.getOperand(0) % 2 == 1 || statement.getOperand(1) % 2 == 1) {
@@ -2331,11 +2300,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "movn.s",
-            formatFFR,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "MOVe if Not zero, Single-precision",
-            "set single-precision $f0 to single-precision value in $f1 only if $t3 is not zero",
+            "Set single-precision {0} to single-precision value in {1} only if {2} is not zero",
             "010001 10000 ttttt sssss fffff 010011",
             statement -> {
                 if (Processor.getValue(statement.getOperand(2)) != 0) {
@@ -2345,11 +2314,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "movn.d",
-            formatFFR,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "MOVe if Not zero, Double-precision",
-            "set double-precision $f2 to double-precision value in $f4 only if $t3 is not zero",
+            "Set double-precision {0} to double-precision value in {1} only if {2} is not zero",
             "010001 10001 ttttt sssss fffff 010011",
             statement -> {
                 if (statement.getOperand(0) % 2 == 1 || statement.getOperand(1) % 2 == 1) {
@@ -2363,11 +2332,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "movz.s",
-            formatFFR,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "MOVe if Zero, Single-precision",
-            "set single-precision $f0 to single-precision value in $f1 only if $t3 is zero",
+            "Set single-precision {0} to single-precision value in {1} only if {2} is zero",
             "010001 10000 ttttt sssss fffff 010010",
             statement -> {
                 if (Processor.getValue(statement.getOperand(2)) == 0) {
@@ -2377,11 +2346,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "movz.d",
-            formatFFR,
+            List.of(OperandType.FP_REGISTER, OperandType.FP_REGISTER, OperandType.REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "MOVe if Zero, Double-precision",
-            "set double-precision $f2 to double-precision value in $f4 only if $t3 is zero",
+            "Set double-precision {0} to double-precision value in {1} only if {2} is zero",
             "010001 10001 ttttt sssss fffff 010010",
             statement -> {
                 if (statement.getOperand(0) % 2 == 1 || statement.getOperand(1) % 2 == 1) {
@@ -2395,11 +2364,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "mfc1",
-            formatRF,
+            List.of(OperandType.REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "Move From Coprocessor 1 (FPU)",
-            "set $t1 to value in Coprocessor 1 register $f1",
+            "Set {0} to value in Coprocessor 1 register {1}",
             "010001 00000 fffff sssss 00000 000000",
             statement -> {
                 Processor.setValue(statement.getOperand(0), Coprocessor1.getValue(statement.getOperand(1)));
@@ -2407,11 +2376,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "mtc1",
-            formatRF,
+            List.of(OperandType.REGISTER, OperandType.FP_REGISTER),
             InstructionFormat.FR_TYPE,
             false,
             "Move To Coprocessor 1 (FPU)",
-            "set Coprocessor 1 register $f1 to value in $t1",
+            "Set Coprocessor 1 register {1} to value in {0}",
             "010001 00100 fffff sssss 00000 000000",
             statement -> {
                 Coprocessor1.setValue(statement.getOperand(1), Processor.getValue(statement.getOperand(0)));
@@ -2419,11 +2388,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "lwc1",
-            formatFSP,
+            List.of(OperandType.FP_REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER),
             InstructionFormat.I_TYPE,
             false,
             "Load Word into Coprocessor 1 (FPU)",
-            "set $f1 to 32-bit value from effective memory word address",
+            "Set {0} to 32-bit value from effective memory word address",
             "110001 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
@@ -2437,11 +2406,11 @@ public class InstructionSet {
         // No printed reference, got opcode from SPIM
         this.addBasicInstruction(new BasicInstruction(
             "ldc1",
-            formatFSP,
+            List.of(OperandType.FP_REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER),
             InstructionFormat.I_TYPE,
             false,
             "Load Doubleword into Coprocessor 1 (FPU)",
-            "set $f2 to 64-bit value from effective memory doubleword address",
+            "Set {0} to 64-bit value from effective memory doubleword address",
             "110101 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
@@ -2458,11 +2427,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "swc1",
-            formatFSP,
+            List.of(OperandType.FP_REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER),
             InstructionFormat.I_TYPE,
             false,
             "Store Word from Coprocessor 1 (FPU)",
-            "store 32-bit value in $f1 at effective memory word address",
+            "Store 32-bit value in {0} at effective memory word address",
             "111001 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
@@ -2476,11 +2445,11 @@ public class InstructionSet {
         // No printed reference, got opcode from SPIM
         this.addBasicInstruction(new BasicInstruction(
             "sdc1",
-            formatFSP,
+            List.of(OperandType.FP_REGISTER, OperandType.INTEGER_16_SIGNED, OperandType.PAREN_REGISTER),
             InstructionFormat.I_TYPE,
             false,
             "Store Doubleword from Coprocessor 1 (FPU)",
-            "store 64-bit value in $f2 at effective memory doubleword address",
+            "Store 64-bit value in {0} at effective memory doubleword address",
             "111101 ttttt fffff ssssssssssssssss",
             statement -> {
                 try {
@@ -2499,11 +2468,11 @@ public class InstructionSet {
 
         this.addBasicInstruction(new BasicInstruction(
             "teq",
-            formatRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false, // Throws an exception, does not jump through the typical mechanism
             "Trap if EQual",
-            "trap if $t1 is equal to $t2",
+            "Trap if {0} is equal to {1}",
             "000000 fffff sssss 00000 00000 110100",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) == Processor.getValue(statement.getOperand(1))) {
@@ -2513,11 +2482,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "teqi",
-            formatRS,
+            List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED),
             InstructionFormat.I_TYPE,
             false, // Throws an exception, does not jump through the typical mechanism
             "Trap if EQual to Immediate",
-            "trap if $t1 is equal to sign-extended 16-bit immediate",
+            "Trap if {0} is equal to sign-extended 16-bit immediate",
             "000001 fffff 01100 ssssssssssssssss",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) == (statement.getOperand(1) << 16 >> 16)) {
@@ -2527,11 +2496,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "tne",
-            formatRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false, // Throws an exception, does not jump through the typical mechanism
             "Trap if Not Equal",
-            "trap unless $t1 is equal to $t2",
+            "Trap unless {0} is equal to {1}",
             "000000 fffff sssss 00000 00000 110110",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) != Processor.getValue(statement.getOperand(1))) {
@@ -2541,11 +2510,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "tnei",
-            formatRS,
+            List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED),
             InstructionFormat.I_TYPE,
             false, // Throws an exception, does not jump through the typical mechanism
             "Trap if Not Equal to Immediate",
-            "trap unless $t1 is equal to sign-extended 16-bit immediate",
+            "Trap unless {0} is equal to sign-extended 16-bit immediate",
             "000001 fffff 01110 ssssssssssssssss",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) != (statement.getOperand(1) << 16 >> 16)) {
@@ -2555,11 +2524,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "tge",
-            formatRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false, // Throws an exception, does not jump through the typical mechanism
             "Trap if Greater than or Equal",
-            "trap if $t1 is greater than or equal to $t2",
+            "Trap if {0} is greater than or equal to {1}",
             "000000 fffff sssss 00000 00000 110000",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) >= Processor.getValue(statement.getOperand(1))) {
@@ -2569,11 +2538,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "tgeu",
-            formatRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false, // Throws an exception, does not jump through the typical mechanism
             "Trap if Greater than or Equal Unsigned",
-            "trap if $t1 is greater than or equal to $t2 using unsigned comparision",
+            "Trap if {0} is greater than or equal to {1} using unsigned comparision",
             "000000 fffff sssss 00000 00000 110001",
             statement -> {
                 if (Integer.compareUnsigned(Processor.getValue(statement.getOperand(0)), Processor.getValue(statement.getOperand(1))) >= 0) {
@@ -2583,11 +2552,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "tgei",
-            formatRS,
+            List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED),
             InstructionFormat.I_TYPE,
             false, // Throws an exception, does not jump through the typical mechanism
             "Trap if Greater than or Equal Immediate",
-            "trap if $t1 is greater than or equal to sign-extended 16-bit immediate",
+            "Trap if {0} is greater than or equal to sign-extended 16-bit immediate",
             "000001 fffff 01000 ssssssssssssssss",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) >= (statement.getOperand(1) << 16 >> 16)) {
@@ -2597,11 +2566,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "tgeiu",
-            formatRS,
+            List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED),
             InstructionFormat.I_TYPE,
             false, // Throws an exception, does not jump through the typical mechanism
             "Trap if Greater than or Equal Immediate Unsigned",
-            "trap if $t1 is greater than or equal to sign-extended 16-bit immediate using unsigned comparison",
+            "Trap if {0} is greater than or equal to sign-extended 16-bit immediate using unsigned comparison",
             "000001 fffff 01001 ssssssssssssssss",
             statement -> {
                 if (Integer.compareUnsigned(Processor.getValue(statement.getOperand(0)), statement.getOperand(1) << 16 >> 16) >= 0) {
@@ -2611,11 +2580,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "tlt",
-            formatRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false, // Throws an exception, does not jump through the typical mechanism
             "Trap if Less Than",
-            "trap if $t1 is less than $t2",
+            "Trap if {0} is less than {1}",
             "000000 fffff sssss 00000 00000 110010",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) < Processor.getValue(statement.getOperand(1))) {
@@ -2625,11 +2594,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "tltu",
-            formatRR,
+            List.of(OperandType.REGISTER, OperandType.REGISTER),
             InstructionFormat.R_TYPE,
             false, // Throws an exception, does not jump through the typical mechanism
             "Trap if Less Than Unsigned",
-            "trap if $t1 is less than $t2 using unsigned comparison",
+            "Trap if {0} is less than {1} using unsigned comparison",
             "000000 fffff sssss 00000 00000 110011",
             statement -> {
                 if (Integer.compareUnsigned(Processor.getValue(statement.getOperand(0)), Processor.getValue(statement.getOperand(1))) < 0) {
@@ -2639,11 +2608,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "tlti",
-            formatRS,
+            List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED),
             InstructionFormat.I_TYPE,
             false, // Throws an exception, does not jump through the typical mechanism
             "Trap if Less Than Immediate",
-            "trap if $t1 is less than sign-extended 16-bit immediate",
+            "Trap if {0} is less than sign-extended 16-bit immediate",
             "000001 fffff 01010 ssssssssssssssss",
             statement -> {
                 if (Processor.getValue(statement.getOperand(0)) < (statement.getOperand(1) << 16 >> 16)) {
@@ -2653,11 +2622,11 @@ public class InstructionSet {
         ));
         this.addBasicInstruction(new BasicInstruction(
             "tltiu",
-            formatRS,
+            List.of(OperandType.REGISTER, OperandType.INTEGER_16_SIGNED),
             InstructionFormat.I_TYPE,
             false, // Throws an exception, does not jump through the typical mechanism
             "Trap if Less Than Immediate Unsigned",
-            "trap if $t1 is less than sign-extended 16-bit immediate using unsigned comparison",
+            "Trap if {0} is less than sign-extended 16-bit immediate using unsigned comparison",
             "000001 fffff 01011 ssssssssssssssss",
             statement -> {
                 if (Integer.compareUnsigned(Processor.getValue(statement.getOperand(0)), statement.getOperand(1) << 16 >> 16) < 0) {
@@ -2671,7 +2640,7 @@ public class InstructionSet {
             InstructionFormat.R_TYPE,
             true,
             "Exception RETurn",
-            "set Program Counter to Coprocessor 0 EPC ($14) register value, set Coprocessor 0 Status ($12) register bit 1 (exception level) to zero",
+            "Set Program Counter to Coprocessor 0 EPC ($14) register value, set Coprocessor 0 Status ($12) register bit 1 (exception level) to zero",
             "010000 1 0000000000000000000 011000",
             statement -> {
                 // Set EXL bit (bit 1) in Status register to 0 and jump to EPC

@@ -42,9 +42,9 @@ public enum OperandType {
     INTEGER_16_UNSIGNED("u16", 16),
     INTEGER_16("i16", 16),
     INTEGER_32("i32", 32),
-    REGISTER("reg", 5),
-    FP_REGISTER("freg", 5),
-    PAREN_REGISTER("(reg)", 5),
+    REGISTER("gpr", 5),
+    FP_REGISTER("fpr", 5),
+    PAREN_REGISTER("(gpr)", 5),
     LABEL("label", 32),
     LABEL_OFFSET("label+", 32),
     BRANCH_OFFSET("broff", 16),
@@ -91,7 +91,7 @@ public enum OperandType {
      * The following table describes the return value, where a "✓" indicates that the row type accepts the column type.
      * <p>
      * <table border="1">
-     * <tr><th></th><th><code>u3</code></th><th><code>u5</code></th><th><code>u15</code></th><th><code>s16</code></th><th><code>u16</code></th><th><code>i16</code></th><th><code>i32</code></th><th><code>reg</code></th><th><code>freg</code></th><th><code>(reg)</code></th><th><code>label</code></th><th><code>label+</code></th><th><code>broff</code></th><th><code>jlabel</code></th></tr>
+     * <tr><th></th><th><code>u3</code></th><th><code>u5</code></th><th><code>u15</code></th><th><code>s16</code></th><th><code>u16</code></th><th><code>i16</code></th><th><code>i32</code></th><th><code>gpr</code></th><th><code>fpr</code></th><th><code>(gpr)</code></th><th><code>label</code></th><th><code>label+</code></th><th><code>broff</code></th><th><code>jlabel</code></th></tr>
      * <tr><th><code>u3</code>    </th><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
      * <tr><th><code>u5</code>    </th><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
      * <tr><th><code>u15</code>   </th><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
@@ -99,9 +99,9 @@ public enum OperandType {
      * <tr><th><code>u16</code>   </th><td>✓</td><td>✓</td><td>✓</td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
      * <tr><th><code>i16</code>   </th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
      * <tr><th><code>i32</code>   </th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
-     * <tr><th><code>reg</code>   </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
-     * <tr><th><code>freg</code>  </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
-     * <tr><th><code>(reg)</code> </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>gpr</code>   </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>fpr</code>   </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>(gpr)</code> </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td></tr>
      * <tr><th><code>label</code> </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td> </td><td> </td></tr>
      * <tr><th><code>label+</code></th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td>✓</td><td> </td><td> </td></tr>
      * <tr><th><code>broff</code> </th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td>✓</td><td> </td></tr>
@@ -152,7 +152,7 @@ public enum OperandType {
      * The following table describes the return value, where a "✓" indicates that the row type accepts the column type.
      * <p>
      * <table border="1">
-     * <tr><th></th><th><code>u3</code></th><th><code>u5</code></th><th><code>u15</code></th><th><code>s16</code></th><th><code>u16</code></th><th><code>i16</code></th><th><code>i32</code></th><th><code>reg</code></th><th><code>freg</code></th><th><code>(reg)</code></th><th><code>label</code></th><th><code>label+</code></th><th><code>broff</code></th><th><code>jlabel</code></th></tr>
+     * <tr><th></th><th><code>u3</code></th><th><code>u5</code></th><th><code>u15</code></th><th><code>s16</code></th><th><code>u16</code></th><th><code>i16</code></th><th><code>i32</code></th><th><code>gpr</code></th><th><code>fpr</code></th><th><code>(gpr)</code></th><th><code>label</code></th><th><code>label+</code></th><th><code>broff</code></th><th><code>jlabel</code></th></tr>
      * <tr><th><code>u3</code>    </th><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
      * <tr><th><code>u5</code>    </th><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
      * <tr><th><code>u15</code>   </th><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
@@ -160,9 +160,9 @@ public enum OperandType {
      * <tr><th><code>u16</code>   </th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
      * <tr><th><code>i16</code>   </th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
      * <tr><th><code>i32</code>   </th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
-     * <tr><th><code>reg</code>   </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td></tr>
-     * <tr><th><code>freg</code>  </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
-     * <tr><th><code>(reg)</code> </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>gpr</code>   </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>fpr</code>   </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
+     * <tr><th><code>(gpr)</code> </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td> </td><td>✓</td><td> </td><td> </td><td> </td><td> </td></tr>
      * <tr><th><code>label</code> </th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td>✓</td><td> </td><td> </td></tr>
      * <tr><th><code>label+</code></th><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td>✓</td><td> </td><td> </td></tr>
      * <tr><th><code>broff</code> </th><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td>✓</td><td>✓</td><td>✓</td><td> </td></tr>
@@ -201,7 +201,7 @@ public enum OperandType {
             // A label without an offset can be interpreted as a label with an offset of 0, and vice versa
             return (this == LABEL_OFFSET && fromType == LABEL)
                 || (this == LABEL && fromType == LABEL_OFFSET)
-                // A (reg) can be interpreted as a reg and vice versa, mainly for extended instruction template purposes
+                // A (gpr) can be interpreted as a gpr and vice versa, mainly for extended instruction template purposes
                 || (this == REGISTER && fromType == PAREN_REGISTER)
                 || (this == PAREN_REGISTER && fromType == REGISTER);
         }
@@ -221,9 +221,9 @@ public enum OperandType {
             case "u16" -> INTEGER_16_UNSIGNED;
             case "i16" -> INTEGER_16;
             case "i32" -> INTEGER_32;
-            case "reg" -> REGISTER;
-            case "freg" -> FP_REGISTER;
-            case "(reg)" -> PAREN_REGISTER;
+            case "gpr" -> REGISTER;
+            case "fpr" -> FP_REGISTER;
+            case "(gpr)" -> PAREN_REGISTER;
             case "label" -> LABEL;
             case "label+" -> LABEL_OFFSET;
             case "broff" -> BRANCH_OFFSET;

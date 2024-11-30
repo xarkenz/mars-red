@@ -3,6 +3,7 @@ package mars.mips.instructions;
 import mars.assembler.OperandType;
 import mars.mips.hardware.Memory;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /*
@@ -50,11 +51,18 @@ public abstract class Instruction {
     protected final List<OperandType> operandTypes;
     protected final String title;
     protected final String description;
+    protected final List<String> exampleOperands;
+    protected final String exampleSyntax;
 
     protected Instruction(String mnemonic, List<OperandType> operandTypes, String title, String description) {
         this.mnemonic = mnemonic;
         this.operandTypes = operandTypes;
         this.title = title;
+        this.exampleOperands = generateExampleOperands(mnemonic, operandTypes);
+        this.exampleSyntax = formatSyntax(mnemonic, operandTypes, this.exampleOperands, true);
+        for (int operandIndex = 0; operandIndex < this.exampleOperands.size(); operandIndex++) {
+            description = description.replace("{" + operandIndex + "}", this.exampleOperands.get(operandIndex));
+        }
         this.description = description;
     }
 
@@ -83,6 +91,14 @@ public abstract class Instruction {
      */
     public String getDescription() {
         return this.description;
+    }
+
+    public List<String> getExampleOperands() {
+        return this.exampleOperands;
+    }
+
+    public String getExampleSyntax() {
+        return this.exampleSyntax;
     }
 
     /**
@@ -120,8 +136,68 @@ public abstract class Instruction {
         return true;
     }
 
-    public String generateExample() {
-        // TODO
-        return this.mnemonic + " " + this.operandTypes;
+    public static String formatSyntax(String mnemonic, List<OperandType> operandTypes, List<String> operands, boolean align) {
+        if (operands.isEmpty()) {
+            return mnemonic;
+        }
+
+        StringBuilder syntax = new StringBuilder(mnemonic);
+
+        syntax.append(' ');
+        if (align) {
+            while (syntax.length() < 8) {
+                syntax.append(' ');
+            }
+        }
+        if (operandTypes.get(0) == OperandType.PAREN_REGISTER) {
+            syntax.append('(').append(operands.get(0)).append(')');
+        }
+        else {
+            syntax.append(operands.get(0));
+        }
+
+        for (int index = 1; index < operands.size(); index++) {
+            if (operandTypes.get(index) == OperandType.PAREN_REGISTER) {
+                syntax.append('(').append(operands.get(index)).append(')');
+            }
+            else {
+                syntax.append(", ").append(operands.get(index));
+            }
+        }
+
+        return syntax.toString();
+    }
+
+    public static List<String> generateExampleOperands(String mnemonic, List<OperandType> operandTypes) {
+        List<String> exampleOperands = new ArrayList<>(operandTypes.size());
+
+        for (int index = 0; index < operandTypes.size(); index++) {
+            exampleOperands.add(switch (operandTypes.get(index)) {
+                case INTEGER_3_UNSIGNED -> "1";
+                case INTEGER_5_UNSIGNED -> "10";
+                case INTEGER_15_UNSIGNED, INTEGER_16_UNSIGNED, INTEGER_16 -> "100";
+                case INTEGER_16_SIGNED -> "-100";
+                case INTEGER_32 -> "100000";
+                case REGISTER, PAREN_REGISTER -> "$t" + index;
+                case FP_REGISTER -> "$f" + (
+                    (isDoublePrecision(mnemonic, operandTypes, index))
+                        ? 2 * index + 2 // Even-numbered
+                        : 2 * index + 1 // Odd-numbered
+                );
+                case LABEL -> "label";
+                case LABEL_OFFSET -> "label+100000";
+                case BRANCH_OFFSET, JUMP_LABEL -> "target";
+            });
+        }
+
+        return exampleOperands;
+    }
+
+    private static boolean isDoublePrecision(String mnemonic, List<OperandType> operandTypes, int index) {
+        return mnemonic.contains(".d")
+            && (!mnemonic.contains(".d.s")
+                || (index + 1 < operandTypes.size() && operandTypes.get(index + 1) == OperandType.FP_REGISTER))
+            && (!mnemonic.contains(".s.d")
+                || (index - 1 >= 0 && operandTypes.get(index - 1) == OperandType.FP_REGISTER));
     }
 }

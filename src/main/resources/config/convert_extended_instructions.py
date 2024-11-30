@@ -38,7 +38,7 @@ def get_token_type(tokens, index):
         suffix = ""
 
     if token.startswith("$"):
-        return prefix + ("freg" if token.startswith("$f") else "reg") + suffix
+        return prefix + ("fpr" if token.startswith("$f") else "gpr") + suffix
     try:
         immediate = int(token)
         if 0 <= immediate < (1 << 3):
