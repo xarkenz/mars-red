@@ -149,6 +149,17 @@ public abstract class Instruction {
                 syntax.append(' ');
             }
         }
+
+        return syntax + formatOperands(operandTypes, operands);
+    }
+
+    public static String formatOperands(List<OperandType> operandTypes, List<String> operands) {
+        if (operands.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder syntax = new StringBuilder();
+
         if (operandTypes.get(0) == OperandType.PAREN_REGISTER) {
             syntax.append('(').append(operands.get(0)).append(')');
         }

@@ -59,10 +59,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 public class InstructionSet {
     public static final String EXTENDED_INSTRUCTIONS_PATH = "/config/mips/extended_instructions.yaml";
 
-    private final List<Instruction> instructionList;
+    private final List<Instruction> allInstructionsList;
+    private final List<BasicInstruction> basicInstructionsList;
+    private final List<ExtendedInstruction> extendedInstructionsList;
+    private final Map<String, List<Instruction>> allInstructions;
     private final Map<String, List<BasicInstruction>> basicInstructions;
     private final Map<String, List<ExtendedInstruction>> extendedInstructions;
-    private final Map<String, List<Instruction>> allInstructions;
     private final StringTrie<List<Instruction>> allInstructionsTrie;
     private final InstructionDecoder decoder;
 
@@ -70,10 +72,12 @@ public class InstructionSet {
      * Creates a new InstructionSet object.
      */
     public InstructionSet() {
-        this.instructionList = new ArrayList<>();
+        this.allInstructionsList = new ArrayList<>();
+        this.basicInstructionsList = new ArrayList<>();
+        this.extendedInstructionsList = new ArrayList<>();
+        this.allInstructions = new HashMap<>();
         this.basicInstructions = new HashMap<>();
         this.extendedInstructions = new HashMap<>();
-        this.allInstructions = new HashMap<>();
         this.allInstructionsTrie = new StringTrie<>();
         this.decoder = new InstructionDecoder();
     }
@@ -82,7 +86,15 @@ public class InstructionSet {
      * Retrieve the current instruction set.
      */
     public List<Instruction> getAllInstructions() {
-        return this.instructionList;
+        return this.allInstructionsList;
+    }
+
+    public List<BasicInstruction> getBasicInstructions() {
+        return this.basicInstructionsList;
+    }
+
+    public List<ExtendedInstruction> getExtendedInstructions() {
+        return this.extendedInstructionsList;
     }
 
     public Set<String> getAllMnemonics() {
@@ -100,7 +112,9 @@ public class InstructionSet {
             .add(instruction);
         this.allInstructionsTrie.computeIfAbsent(instruction.getMnemonic(), mnemonic -> new ArrayList<>())
             .add(instruction);
-        this.instructionList.add(instruction);
+
+        this.basicInstructionsList.add(instruction);
+        this.allInstructionsList.add(instruction);
 
         this.decoder.addInstruction(instruction);
     }
@@ -112,7 +126,9 @@ public class InstructionSet {
             .add(instruction);
         this.allInstructionsTrie.computeIfAbsent(instruction.getMnemonic(), mnemonic -> new ArrayList<>())
             .add(instruction);
-        this.instructionList.add(instruction);
+
+        this.extendedInstructionsList.add(instruction);
+        this.allInstructionsList.add(instruction);
     }
 
     /**

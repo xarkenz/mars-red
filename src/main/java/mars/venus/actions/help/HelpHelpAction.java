@@ -2,10 +2,9 @@ package mars.venus.actions.help;
 
 import mars.Application;
 import mars.assembler.Directive;
-import mars.mips.instructions.BasicInstruction;
-import mars.mips.instructions.ExtendedInstruction;
 import mars.mips.instructions.Instruction;
 import mars.venus.VenusUI;
+import mars.venus.WrappingCellRenderer;
 import mars.venus.actions.VenusAction;
 
 import javax.swing.*;
@@ -21,9 +20,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Vector;
 
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
@@ -228,11 +226,11 @@ public class HelpHelpAction extends VenusAction {
                 <tr><td><code>$f2, $f4, $f6</code></td><td><i>even-numbered</i> floating point register</td></tr>
                 <tr><td><code>$f0, $f1, $f3</code></td><td><i>any</i> floating point register</td></tr>
                 <tr><td><code>$8</code></td><td>any Coprocessor 0 register</td></tr>
-                <tr><td><code>1</code></td><td>condition flag (0 to 7)</td></tr>
+                <tr><td><code>1</code></td><td>unsigned 3-bit integer (0 to 7)</td></tr>
                 <tr><td><code>10</code></td><td>unsigned 5-bit integer (0 to 31)</td></tr>
                 <tr><td><code>-100</code></td><td>signed 16-bit integer (-32768 to 32767)</td></tr>
                 <tr><td><code>100</code></td><td>unsigned 16-bit integer (0 to 65535)</td></tr>
-                <tr><td><code>100000</code></td><td>signed 32-bit integer (-2147483648 to 2147483647)</td></tr>
+                <tr><td><code>100000</code></td><td>any 32-bit integer (-2147483648 to 4294967295)</td></tr>
                 <tr></tr>
                 <tr><td colspan=2><b><i><font size=+1>Load & Store addressing mode, basic instructions</font></i></b></td></tr>
                 <tr><td><code>-100($t2)</code></td><td>sign-extended 16-bit integer added to contents of $t2</td></tr>
@@ -256,8 +254,8 @@ public class HelpHelpAction extends VenusAction {
         mipsHelpInfoPanel.add(operandsScrollPane, BorderLayout.NORTH);
         // Below the label is a tabbed pane with categories of MIPS help
         JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.addTab("Basic Instructions", createMipsInstructionHelpPane(BasicInstruction.class));
-        tabbedPane.addTab("Extended (Pseudo) Instructions", createMipsInstructionHelpPane(ExtendedInstruction.class));
+        tabbedPane.addTab("Basic Instructions", createMipsInstructionHelpPane(Application.instructionSet.getBasicInstructions()));
+        tabbedPane.addTab("Extended (Pseudo) Instructions", createMipsInstructionHelpPane(Application.instructionSet.getExtendedInstructions()));
         tabbedPane.addTab("Directives", createMipsDirectivesHelpPane());
         tabbedPane.addTab("Syscalls", createHTMLHelpPanel("SyscallHelp.html"));
         tabbedPane.addTab("Exceptions", createHTMLHelpPanel("ExceptionsHelp.html"));
@@ -273,30 +271,52 @@ public class HelpHelpAction extends VenusAction {
     }
 
     private JScrollPane createMipsDirectivesHelpPane() {
-        Directive[] directives = Directive.values();
-        Vector<String> exampleList = new Vector<>(directives.length);
-        for (Directive directive : directives) {
-            String example = directive.toString();
-            exampleList.add(example + " ".repeat(Math.max(0, 24 - example.length())) + directive.getDescription());
+        String[] columnNames = { "Name", "Description" };
+        Object[][] rowData = new Object[Directive.values().length][2];
+        int row = 0;
+        for (Directive directive : Directive.values()) {
+            rowData[row][0] = directive.getName();
+            rowData[row][1] = directive.getDescription();
+            row++;
         }
-        Collections.sort(exampleList);
-        JList<String> examples = new JList<>(exampleList);
-        examples.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        return new JScrollPane(examples, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+
+        JTable table = new JTable(rowData, columnNames);
+        table.setFont(this.gui.getSettings().tableFont.get());
+        table.setCellSelectionEnabled(false);
+        table.getTableHeader().setReorderingAllowed(false);
+
+        table.getColumnModel().getColumn(0).setPreferredWidth(100);
+        table.getColumnModel().getColumn(1).setPreferredWidth(500);
+
+        WrappingCellRenderer renderer = new WrappingCellRenderer(1.25f);
+        for (int column = 0; column < table.getColumnCount(); column++) {
+            table.getColumnModel().getColumn(column).setCellRenderer(renderer);
+        }
+
+        return new JScrollPane(table, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
     }
 
-    private JScrollPane createMipsInstructionHelpPane(Class<? extends Instruction> instructionClass) {
-        List<Instruction> instructionList = Application.instructionSet.getAllInstructions();
-        Vector<String> exampleList = new Vector<>(instructionList.size());
-        for (Instruction instruction : instructionList) {
-            if (instructionClass.isInstance(instruction)) {
-                String example = instruction.getExampleSyntax();
-                exampleList.add(example + " ".repeat(Math.max(0, 24 - example.length())) + instruction.getDescription());
-            }
+    private JScrollPane createMipsInstructionHelpPane(List<? extends Instruction> instructions) {
+        String[] columnNames = { "Mnemonic", "Operands", "Description" };
+        Object[][] rowData = new Object[instructions.size()][3];
+        int row = 0;
+        for (Instruction instruction : instructions) {
+            rowData[row][0] = instruction.getMnemonic() + "\n" + instruction.getTitle();
+            rowData[row][1] = Instruction.formatOperands(instruction.getOperandTypes(), instruction.getExampleOperands());
+            rowData[row][2] = instruction.getDescription();
+            row++;
         }
-        Collections.sort(exampleList);
-        JList<String> examples = new JList<>(exampleList);
-        examples.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        return new JScrollPane(examples, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+
+        JTable table = new JTable(rowData, columnNames);
+        table.setFont(this.gui.getSettings().tableFont.get());
+        table.setCellSelectionEnabled(false);
+        table.getTableHeader().setReorderingAllowed(false);
+
+        WrappingCellRenderer renderer = new WrappingCellRenderer(1.25f);
+        for (int column = 0; column < table.getColumnCount(); column++) {
+            table.getColumnModel().getColumn(column).setCellRenderer(renderer);
+        }
+
+        return new JScrollPane(table, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
     }
 }
