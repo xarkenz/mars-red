@@ -461,7 +461,7 @@ public class Assembler {
         if (this.globalSymbolTable.getSymbol(identifier.getLiteral()) == null) {
             this.globalSymbolTable.defineSymbol(
                 identifier.getLiteral(),
-                this.externSegment.address,
+                this.externSegment.getAddress(),
                 true
             );
             this.externSegment.incrementAddress(sizeBytes);

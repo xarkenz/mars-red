@@ -48,7 +48,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 public enum Directive {
     DATA(
         ".data",
-        "Subsequent items stored in Data segment at next available address",
+        "Values following this directive are stored in the static data region of memory. "
+            + "To store values, use storage directives such as \".word\" and \".space\". "
+            + "An optional operand can specify the starting address, but this feature should be used with caution.",
         false,
         (syntax, assembler) -> {
             assembler.setSegment(assembler.dataSegment);
@@ -59,7 +61,8 @@ public enum Directive {
     ),
     TEXT(
         ".text",
-        "Subsequent items (instructions) stored in Text segment at next available address",
+        "Instructions following this directive are stored in the text region of memory. "
+            + "An optional operand can specify the starting address, but this feature should be used with caution.",
         false,
         (syntax, assembler) -> {
             assembler.setSegment(assembler.textSegment);
@@ -70,7 +73,9 @@ public enum Directive {
     ),
     KDATA(
         ".kdata",
-        "Subsequent items stored in Kernel Data segment at next available address",
+        "Values following this directive are stored in the kernel data region of memory. "
+            + "To store values, use storage directives such as \".word\" and \".space\". "
+            + "An optional operand can specify the starting address.",
         false,
         (syntax, assembler) -> {
             assembler.setSegment(assembler.kernelDataSegment);
@@ -81,7 +86,8 @@ public enum Directive {
     ),
     KTEXT(
         ".ktext",
-        "Subsequent items (instructions) stored in Kernel Text segment at next available address",
+        "Instructions following this directive are stored in the kernel text region of memory. "
+            + "An optional operand can specify the starting address (to create an exception handler, for instance).",
         false,
         (syntax, assembler) -> {
             assembler.setSegment(assembler.kernelTextSegment);
@@ -92,49 +98,57 @@ public enum Directive {
     ),
     BYTE(
         ".byte",
-        "Store the listed value(s) as 8 bit bytes",
+        "Store 8-bit byte(s) specified as operands. Operands can take the form of an integer value, or "
+            + "\"value : count\" to repeat a value.",
         true,
         new NumericStorageFunction(false, 1)
     ),
     HALF(
         ".half",
-        "Store the listed value(s) as 16 bit halfwords on halfword boundary",
+        "Store 16-bit halfword(s) specified as operands. Operands can take the form of an integer value, or "
+            + "\"value : count\" to repeat a value. Aligns values to halfword boundaries by default.",
         true,
         new NumericStorageFunction(false, Memory.BYTES_PER_HALFWORD)
     ),
     WORD(
         ".word",
-        "Store the listed value(s) as 32 bit words on word boundary",
+        "Store 32-bit word(s) specified as operands. Operands can take the form of an integer value, "
+        + "a label, or \"value : count\" to repeat a value. Aligns values to word boundaries by default.",
         true,
         new NumericStorageFunction(false, Memory.BYTES_PER_WORD)
     ),
     FLOAT(
         ".float",
-        "Store the listed value(s) as single precision floating point",
+        "Store single-precision floating-point number(s) specified as operands. Operands can take the form "
+            + "of a numeric value, \"Infinity\", \"NaN\", or \"value : count\" to repeat a value. "
+            + "Aligns values to word boundaries by default.",
         true,
         new NumericStorageFunction(true, Memory.BYTES_PER_WORD)
     ),
     DOUBLE(
         ".double",
-        "Store the listed value(s) as double precision floating point",
+        "Store double-precision floating-point number(s) specified as operands. Operands can take the form "
+            + "of a numeric value, \"Infinity\", \"NaN\", or \"value : count\" to repeat a value. "
+            + "Aligns values to word (not doubleword) boundaries by default.",
         true,
         new NumericStorageFunction(true, Memory.BYTES_PER_DOUBLEWORD)
     ),
     ASCII(
         ".ascii",
-        "Store the string in the Data segment but do not add null terminator",
+        "Store one or more strings specified as operands without appending a null terminator.",
         true,
         new StringStorageFunction(false)
     ),
     ASCIIZ(
         ".asciiz",
-        "Store the string in the Data segment and add null terminator",
+        "Store one or more strings specified as operands, appending a null terminator (byte value zero).",
         true,
         new StringStorageFunction(true)
     ),
     SPACE(
         ".space",
-        "Reserve the next specified number of bytes in Data segment",
+        "Reserve a number of bytes specified as an operand. The reserved memory is not guaranteed to "
+            + "be initialized, though it will likely be zeroed due to simulator limitations.",
         false,
         (syntax, assembler) -> {
             if (!assembler.getSegment().isData()) {
@@ -161,7 +175,8 @@ public enum Directive {
     ),
     ALIGN(
         ".align",
-        "Align the next data item to the next multiple of 2^n bytes (1 = halfword, 2 = word, 3 = doubleword) or use n = 0 disable automatic alignment until the next segment directive",
+        "Align the next stored value to a multiple of 2^n bytes, where n is specified as an operand, "
+            + "or use n = 0 disable automatic alignment until the next segment directive.",
         false,
         (syntax, assembler) -> {
             if (!assembler.getSegment().isData()) {
@@ -193,7 +208,8 @@ public enum Directive {
     ),
     EXTERN(
         ".extern",
-        "Declare the listed label and byte length to be a global data field",
+        "Declare a global data field with a label and size specified as operands. This field is stored "
+            + "in the global data segment.",
         false,
         (syntax, assembler) -> {
             if (syntax.getContent().size() != 2) {
@@ -221,14 +237,15 @@ public enum Directive {
     ),
     GLOBL(
         ".globl",
-        "Declare the listed label(s) as global to enable referencing from other files",
+        "Declare one or more labels specified as operands to be global symbols. Global symbols can be "
+            + "referenced from any source file currently being assembled.",
         true,
         (syntax, assembler) -> {
             if (syntax.getContent().isEmpty()) {
                 logError(syntax, assembler, "Directive '" + syntax.getDirective() + "' requires one or more identifiers");
                 return;
             }
-            // SPIM limits .globl list to one label, why not extend it to a list?
+            // SPIM limits .globl to one label, why not extend it to a list?
             for (Token token : syntax.getContent()) {
                 if (token.getType() != TokenType.IDENTIFIER && token.getType() != TokenType.OPERATOR) {
                     logError(syntax, assembler, "Directive '" + syntax.getDirective() + "' expected an identifier, got: " + token);
@@ -244,7 +261,9 @@ public enum Directive {
      */
     EQV(
         ".eqv",
-        "Substitute second operand for first. First operand is symbol, second operand is expression (like #define)",
+        "Create an equivalence whose identifier is specified as the first operand, and whose content "
+            + "follows. When the identifier is used after this point in the source file, it is replaced with this "
+            + "directive's content. This is very similar to \"#define\" in the C language.",
         false,
         (syntax, assembler) -> {} // Handled by the preprocessor
     ),
@@ -253,7 +272,9 @@ public enum Directive {
      */
     MACRO(
         ".macro",
-        "Begin macro definition. See .end_macro",
+        "Begin the definition of a new macro whose identifier is specified as the first operand, and "
+            + "whose parameter list follows. Instructions following this directive are added to the macro definition "
+            + "until a \".end_macro\" directive is reached. For more information about macros, see Macro Help.",
         false,
         (syntax, assembler) -> {} // Handled by the preprocessor
     ),
@@ -262,7 +283,7 @@ public enum Directive {
      */
     END_MACRO(
         ".end_macro",
-        "End macro definition. See .macro",
+        "End the definition of a macro started by \".macro\".",
         false,
         (syntax, assembler) -> {} // Handled by the preprocessor
     ),
@@ -271,16 +292,18 @@ public enum Directive {
      */
     INCLUDE(
         ".include",
-        "Insert the contents of the specified file. Put filename in quotes.",
+        "Given a string filename specified as an operand, include the file's content in the current file. "
+            + "The behavior of this directive is almost as if the specified file is copied and pasted directly into "
+            + "the current file, and as such, it will share the same local symbol table.",
         false,
         (syntax, assembler) -> {} // Handled by the preprocessor
     ),
     SET(
         ".set",
-        "Set assembler variables. Currently ignored but included for SPIM compatability",
+        "Set the value of an assembler flag according to the given operand. Currently not implemented.",
         false,
         (syntax, assembler) -> {
-            logWarning(syntax, assembler, "Directive '" + syntax.getDirective() + "' is not currently supported by MARS; ignored");
+            logWarning(syntax, assembler, "Directive '" + syntax.getDirective() + "' is not currently supported; ignored");
         }
     );
 
