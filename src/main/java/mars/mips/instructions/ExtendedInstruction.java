@@ -5,7 +5,7 @@ import mars.assembler.extended.ExpansionTemplate;
 import mars.mips.hardware.Memory;
 
 import java.util.List;
-	
+
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
 
@@ -35,30 +35,26 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 /**
- * ExtendedInstruction represents a MIPS extended (a.k.a pseudo) instruction.  This
- * assembly language instruction does not have a corresponding machine instruction.  Instead
- * it is translated by the extended assembler into one or more basic instructions (operations
- * that have a corresponding machine instruction).  The TranslationCode object is
- * responsible for performing the translation.
+ * Representation of an extended instruction, also known as a pseudo-instruction. Unlike basic instructions,
+ * extended instructions do not exist at the hardware level. Instead, the assembler expands them into one or more
+ * basic instructions which carry out the intended behavior.
  *
  * @author Pete Sanderson, August 2003
+ * @see BasicInstruction
+ * @see ExpansionTemplate
  */
 public class ExtendedInstruction extends Instruction {
     private ExpansionTemplate standardExpansionTemplate;
     private ExpansionTemplate compactExpansionTemplate;
 
     /**
-     * Constructor for ExtendedInstruction.
+     * Create a new <code>ExtendedInstruction</code>.
      *
-     * @param example            A String containing example use of the MIPS extended instruction.
-     * @param translation        Specifications for translating this instruction into a sequence
-     *                           of one or more MIPS basic instructions.
-     * @param compactTranslation Alternative translation that can be used if running under
-     *                           a compact (16 bit) memory configuration.
-     * @param description        a helpful description to be included on help requests
-     *                           <p>
-     *                           The presence of an alternative "compact translation" can optimize code generation
-     *                           by assuming that data label addresses are 16 bits instead of 32
+     * @param mnemonic     The instruction mnemonic used in assembly code (case-insensitive).
+     * @param operandTypes The list of operand types for this instruction, which is used to select a specific
+     *                     instruction from the group of instructions sharing a mnemonic.
+     * @param title        The "long name" of this instruction, which should relate to the mnemonic.
+     * @param description  A short human-readable description of what this instruction does when executed.
      */
     public ExtendedInstruction(String mnemonic, List<OperandType> operandTypes, String title, String description) {
         super(mnemonic, operandTypes, title, description);

@@ -44,8 +44,7 @@ import javax.swing.*;
  * {@link mars.mips.hardware.Memory} and/or {@link mars.mips.hardware.Register} objects.
  * <p>
  * It may also communicate directly with those resources through their published methods,
- * provided any such communication is wrapped inside a block synchronized on the
- * {@link mars.Application#MEMORY_AND_REGISTERS_LOCK} object.
+ * provided any such communication is done using {@link mars.simulator.Simulator#changeState(Runnable)}.
  */
 public interface MarsTool {
     /**
@@ -70,7 +69,9 @@ public interface MarsTool {
      * a lesser number. Likewise, to get your tool at the bottom, choose a
      * greater number.
      */
-    default int getToolMenuOrder() { return 0; }
+    default int getToolMenuOrder() {
+        return 0;
+    }
 
     /**
      * Performs tool functions.  It will be invoked when the tool is selected

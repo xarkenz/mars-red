@@ -91,6 +91,7 @@ public enum OperandType {
      * The following table describes the return value, where a "✓" indicates that the row type accepts the column type.
      * <p>
      * <table border="1">
+     * <caption>Type compatibility table</caption>
      * <tr><th></th><th><code>u3</code></th><th><code>u5</code></th><th><code>u15</code></th><th><code>s16</code></th><th><code>u16</code></th><th><code>i16</code></th><th><code>i32</code></th><th><code>gpr</code></th><th><code>fpr</code></th><th><code>(gpr)</code></th><th><code>label</code></th><th><code>label+</code></th><th><code>broff</code></th><th><code>jlabel</code></th></tr>
      * <tr><th><code>u3</code>    </th><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
      * <tr><th><code>u5</code>    </th><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
@@ -152,6 +153,7 @@ public enum OperandType {
      * The following table describes the return value, where a "✓" indicates that the row type accepts the column type.
      * <p>
      * <table border="1">
+     * <caption>Type compatibility table</caption>
      * <tr><th></th><th><code>u3</code></th><th><code>u5</code></th><th><code>u15</code></th><th><code>s16</code></th><th><code>u16</code></th><th><code>i16</code></th><th><code>i32</code></th><th><code>gpr</code></th><th><code>fpr</code></th><th><code>(gpr)</code></th><th><code>label</code></th><th><code>label+</code></th><th><code>broff</code></th><th><code>jlabel</code></th></tr>
      * <tr><th><code>u3</code>    </th><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
      * <tr><th><code>u5</code>    </th><td>✓</td><td>✓</td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td><td> </td></tr>
