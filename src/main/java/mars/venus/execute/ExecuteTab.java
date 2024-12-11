@@ -140,9 +140,9 @@ public class ExecuteTab extends JDesktopPane {
         this.getTextSegmentWindow().clearWindow();
         this.getDataSegmentWindow().clearWindow();
         this.getLabelsWindow().clearWindow();
-        this.gui.getRegistersPane().getProcessorTab().clearWindow();
-        this.gui.getRegistersPane().getCoprocessor1Tab().clearWindow();
-        this.gui.getRegistersPane().getCoprocessor0Tab().clearWindow();
+        this.gui.getRegistersPane().getProcessorTab().resetDisplay();
+        this.gui.getRegistersPane().getCoprocessor1Tab().resetDisplay();
+        this.gui.getRegistersPane().getCoprocessor0Tab().resetDisplay();
         // Seems to be required in order to display cleared Execute tab contents...
         if (this.gui.getMainPane().getSelectedComponent() == this) {
             this.gui.getMainPane().setSelectedComponent(this.gui.getMainPane().getEditTab());

@@ -438,6 +438,15 @@ public class Settings {
         false
     );
     /**
+     * The special label treated as the entry point for a program.
+     */
+    public final StringSetting entryPointLabel = new StringSetting(
+        this,
+        "EntryPointLabel",
+        "main",
+        false
+    );
+    /**
      * Current specified exception handler file (a MIPS assembly source file).
      */
     public final StringSetting exceptionHandlerPath = new StringSetting(
@@ -491,12 +500,13 @@ public class Settings {
     public final StringSetting lookAndFeelName = new StringSetting(
         this,
         "LookAndFeel",
-        "FlatDarkLaf",
+        "FlatLightLaf",
         false
     );
 
     public final StringSetting[] stringSettings = {
         this.mipsFileExtensions,
+        this.entryPointLabel,
         this.exceptionHandlerPath,
         this.memoryConfiguration,
         this.textSegmentColumnOrder,

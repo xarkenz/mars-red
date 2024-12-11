@@ -143,12 +143,10 @@ public class ProcessorTab extends RegistersDisplayTab {
     }
 
     /**
-     * Reset and redisplay registers.
+     * Redisplay registers.
      */
-    public void clearWindow() {
+    public void resetDisplay() {
         this.clearHighlighting();
-        Processor.reset();
-        Processor.initializeProgramCounter(this.gui.getSettings().startAtMain.get());
         this.updateRegisters(this.gui.getMainPane().getExecuteTab().getValueDisplayBase());
     }
 

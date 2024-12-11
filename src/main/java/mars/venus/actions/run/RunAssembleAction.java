@@ -95,6 +95,10 @@ public class RunAssembleAction extends VenusAction {
 
             this.gui.setProgramStatus(ProgramStatus.NOT_STARTED);
 
+            registersPane.getProcessorTab().resetDisplay();
+            registersPane.getCoprocessor1Tab().resetDisplay();
+            registersPane.getCoprocessor0Tab().resetDisplay();
+
             executeTab.getTextSegmentWindow().setupTable();
             executeTab.getDataSegmentWindow().setupTable();
             executeTab.getDataSegmentWindow().highlightCellForAddress(Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW));
@@ -102,10 +106,6 @@ public class RunAssembleAction extends VenusAction {
             executeTab.getLabelsWindow().setupTable();
             executeTab.getTextSegmentWindow().updateHighlighting();
             this.gui.getMainPane().setSelectedComponent(executeTab);
-
-            registersPane.getProcessorTab().clearWindow();
-            registersPane.getCoprocessor1Tab().clearWindow();
-            registersPane.getCoprocessor0Tab().clearWindow();
         }
         catch (AssemblyError error) {
             this.gui.getMessagesPane().getMessages().writeOutput(this.getName() + ": operation completed with errors.\n");

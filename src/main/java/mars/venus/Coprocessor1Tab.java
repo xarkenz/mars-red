@@ -171,9 +171,8 @@ public class Coprocessor1Tab extends RegistersDisplayTab {
     /**
      * Reset and redisplay registers.
      */
-    public void clearWindow() {
+    public void resetDisplay() {
         this.clearHighlighting();
-        Coprocessor1.reset();
         this.updateRegisters(this.gui.getMainPane().getExecuteTab().getValueDisplayBase());
         this.updateConditionFlagDisplay();
     }

@@ -391,6 +391,7 @@ public class Assembler {
         }
 
         // If the third pass produced any errors, throw them instead of returning normally
+        // This also includes warnings now if they are being treated as errors
         if (this.log.hasMessages(LogLevel.ERROR) || (
             Application.getSettings().warningsAreErrors.get() && this.log.hasMessages(LogLevel.WARNING)
         )) {
@@ -400,6 +401,7 @@ public class Assembler {
 
         this.log.logInfo(null, "Assembling finished.");
 
+        Processor.initializeProgramCounter(Application.getSettings().startAtMain.get());
         Simulator.getInstance().getBackStepper().setEnabled(true);
     }
 

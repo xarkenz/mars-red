@@ -2,7 +2,6 @@ package mars.mips.hardware;
 
 import mars.Application;
 import mars.assembler.Symbol;
-import mars.assembler.SymbolTable;
 import mars.mips.instructions.Instruction;
 import mars.simulator.Simulator;
 import mars.util.Binary;
@@ -295,9 +294,20 @@ public class Processor {
         FETCH_PC_REGISTER.resetValueToDefault();
         EXECUTE_PC_REGISTER.resetValueToDefault();
         if (startAtMain) {
-            Symbol symbol = Application.assembler.getGlobalSymbolTable().getSymbol(SymbolTable.getStartLabel());
+            // First, try searching the global symbol table
+            String startLabel = Application.getSettings().entryPointLabel.get();
+            Symbol symbol = Application.assembler.getGlobalSymbolTable().getSymbol(startLabel);
             if (symbol != null && symbol.isText()) {
                 initializeProgramCounter(symbol.getAddress());
+            }
+            else {
+                // The start symbol wasn't found in the global symbol table, but to be fair to the user,
+                // let's check the local symbol table of the current file anyway
+                String primarySourceFilename = Application.assembler.getSourceFilenames().get(0);
+                symbol = Application.assembler.getLocalSymbolTable(primarySourceFilename).getSymbol(startLabel);
+                if (symbol != null && symbol.isText()) {
+                    initializeProgramCounter(symbol.getAddress());
+                }
             }
         }
     }

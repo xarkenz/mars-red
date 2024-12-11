@@ -177,15 +177,4 @@ public class SymbolTable {
             this.alignableSymbols.clear();
         }
     }
-
-    /**
-     * Fetches the text segment label which, if declared global, indicates
-     * the starting address for execution.
-     *
-     * @return String containing global label whose text segment address is starting address for program execution.
-     */
-    public static String getStartLabel() {
-        // TODO: add setting
-        return "main";
-    }
 }
