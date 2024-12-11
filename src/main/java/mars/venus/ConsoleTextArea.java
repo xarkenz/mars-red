@@ -136,9 +136,7 @@ public class ConsoleTextArea extends JTextArea {
      * @param message String to append to the console output.
      */
     public void writeMessage(LogMessage message) {
-        String text = message.toString() + '\n';
-
-        this.writeOutput(text, message);
+        this.writeOutput(message + "\n\n", message);
     }
 
     /**

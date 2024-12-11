@@ -246,7 +246,7 @@ public class BasicInstruction extends Instruction {
      */
     public int encodeOperands(List<Operand> operands) {
         int binary = this.operationKey;
-        for (int operandIndex = 0; operandIndex < this.operandTypes.size(); operandIndex++) {
+        for (int operandIndex = 0; operandIndex < this.getOperandTypes().size(); operandIndex++) {
             int value = operands.get(operandIndex).getValue();
             binary |= (value << this.operandShifts[operandIndex]) & this.operandMasks[operandIndex];
         }
@@ -258,9 +258,9 @@ public class BasicInstruction extends Instruction {
      * @return
      */
     public List<Operand> decodeOperands(int binary) {
-        List<Operand> operands = new ArrayList<>(this.operandTypes.size());
-        for (int operandIndex = 0; operandIndex < this.operandTypes.size(); operandIndex++) {
-            OperandType type = this.operandTypes.get(operandIndex);
+        List<Operand> operands = new ArrayList<>(this.getOperandTypes().size());
+        for (int operandIndex = 0; operandIndex < this.getOperandTypes().size(); operandIndex++) {
+            OperandType type = this.getOperandTypes().get(operandIndex);
             int value = (binary & this.operandMasks[operandIndex]) >>> this.operandShifts[operandIndex];
             operands.add(new Operand(type, value));
         }

@@ -4,7 +4,8 @@ import mars.Application;
 
 public enum AssemblerFlag {
     DELAYED_BRANCHING("db"),
-    BIG_ENDIAN("be");
+    BIG_ENDIAN("be"),
+    EXTENDED_MODE("pseudo");
 
     private final String key;
 
@@ -20,6 +21,7 @@ public enum AssemblerFlag {
         return switch (this) {
             case DELAYED_BRANCHING -> Application.getSettings().delayedBranchingEnabled.get();
             case BIG_ENDIAN -> Application.getSettings().useBigEndian.get();
+            case EXTENDED_MODE -> Application.getSettings().extendedAssemblerEnabled.get();
         };
     }
 
@@ -27,6 +29,7 @@ public enum AssemblerFlag {
         return switch (key.toLowerCase()) {
             case "db" -> DELAYED_BRANCHING;
             case "be" -> BIG_ENDIAN;
+            case "pseudo" -> EXTENDED_MODE;
             default -> null;
         };
     }

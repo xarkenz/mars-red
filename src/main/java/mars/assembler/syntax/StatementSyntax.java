@@ -61,6 +61,9 @@ public class StatementSyntax implements Syntax {
             return new BasicStatement(this, basicInstruction, resolvedOperands);
         }
         else if (this.instruction instanceof ExtendedInstruction extendedInstruction) {
+            if (!AssemblerFlag.EXTENDED_MODE.isEnabled()) {
+                assembler.logError(this.sourceLine.getLocation(), "Extended instruction '" + this.instruction.getExampleSyntax() + "' is not allowed outside of extended mode");
+            }
             return extendedInstruction.getExpansionTemplate().resolve(resolvedOperands, this, assembler, address);
         }
         else {

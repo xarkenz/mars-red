@@ -50,7 +50,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Pete Sanderson, August 2003
  */
-// FIXME: basic assembler setting, instruction example formats
 public class Assembler {
     private final AssemblerLog log;
     private final List<String> sourceFilenames;
@@ -218,12 +217,11 @@ public class Assembler {
         this.externSegment.setBounds(MemoryConfigurations.EXTERN_LOW, MemoryConfigurations.EXTERN_HIGH);
         this.externSegment.resetAddress();
         this.segment = this.textSegment;
-
-        this.resetExternalState();
     }
 
     public void assembleFilenames(List<String> sourceFilenames) throws AssemblyError {
         this.reset();
+        this.resetExternalState();
 
         StringBuilder startMessage = new StringBuilder("Assembler started with file(s):");
         for (String filename : sourceFilenames) {
@@ -256,6 +254,7 @@ public class Assembler {
      */
     public void assembleFiles(List<SourceFile> sourceFiles) throws AssemblyError {
         this.reset();
+        this.resetExternalState();
 
         // Populate the list of source filenames
         StringBuilder startMessage = new StringBuilder("Assembler restarted with tokenized file(s):");
@@ -399,10 +398,14 @@ public class Assembler {
             throw new AssemblyError(this.log);
         }
 
-        this.log.logInfo(null, "Assembling finished.");
+        // Clean up and perform final steps
+        this.localSymbolTable = null;
+        this.segment = this.textSegment;
 
         Processor.initializeProgramCounter(Application.getSettings().startAtMain.get());
         Simulator.getInstance().getBackStepper().setEnabled(true);
+
+        this.log.logInfo(null, "Assembling finished.");
     }
 
     public void addParsedStatement(StatementSyntax statement) {

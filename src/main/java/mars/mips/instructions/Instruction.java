@@ -47,19 +47,21 @@ public abstract class Instruction {
     public static final int BYTES_PER_INSTRUCTION = Memory.BYTES_PER_WORD;
     public static final int INSTRUCTION_LENGTH_BITS = BYTES_PER_INSTRUCTION * Byte.SIZE;
 
-    protected final String mnemonic;
-    protected final List<OperandType> operandTypes;
-    protected final String title;
-    protected final String description;
-    protected final List<String> exampleOperands;
-    protected final String exampleSyntax;
+    private final String mnemonic;
+    private final List<OperandType> operandTypes;
+    private final String title;
+    private final String description;
+    private final List<String> exampleOperands;
+    private final String alignedExampleSyntax;
+    private final String exampleSyntax;
 
     protected Instruction(String mnemonic, List<OperandType> operandTypes, String title, String description) {
         this.mnemonic = mnemonic;
         this.operandTypes = operandTypes;
         this.title = title;
         this.exampleOperands = generateExampleOperands(mnemonic, operandTypes);
-        this.exampleSyntax = formatSyntax(mnemonic, operandTypes, this.exampleOperands, true);
+        this.alignedExampleSyntax = formatSyntax(mnemonic, operandTypes, this.exampleOperands, true);
+        this.exampleSyntax = formatSyntax(mnemonic, operandTypes, this.exampleOperands, false);
         for (int operandIndex = 0; operandIndex < this.exampleOperands.size(); operandIndex++) {
             description = description.replace("{" + operandIndex + "}", this.exampleOperands.get(operandIndex));
         }
@@ -95,6 +97,10 @@ public abstract class Instruction {
 
     public List<String> getExampleOperands() {
         return this.exampleOperands;
+    }
+
+    public String getAlignedExampleSyntax() {
+        return this.alignedExampleSyntax;
     }
 
     public String getExampleSyntax() {
