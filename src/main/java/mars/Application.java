@@ -48,8 +48,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 /**
  * Collection of globally-available data structures.
  *
- * @author Pete Sanderson
- * @version August 2003
+ * @author Pete Sanderson, August 2003
  */
 public class Application {
     /**
@@ -59,7 +58,7 @@ public class Application {
     /**
      * The current MARS Red version number.
      */
-    public static final String VERSION = "5.0-beta7 [assembler-refactor]";
+    public static final String VERSION = "5.0-beta7";
     /**
      * MARS copyright years.
      */
