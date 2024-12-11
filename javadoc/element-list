@@ -1,5 +1,9 @@
 mars
 mars.assembler
+mars.assembler.extended
+mars.assembler.log
+mars.assembler.syntax
+mars.assembler.token
 mars.mips.dump
 mars.mips.hardware
 mars.mips.instructions
