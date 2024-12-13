@@ -50,7 +50,7 @@ public class ToolAction extends AbstractAction {
      * @param tool The tool this action will open when performed.
      */
     public ToolAction(MarsTool tool) {
-        super(tool.getName(), tool.getIcon());
+        super(tool.getDisplayName(), tool.getIcon());
         this.tool = tool;
     }
 
@@ -64,14 +64,14 @@ public class ToolAction extends AbstractAction {
     }
 
     /**
-     * Opens this action's corresponding tool by invoking its {@link MarsTool#action()} method.
+     * Opens this action's corresponding tool by invoking its {@link MarsTool#launch()} method.
      *
      * @param event The event that triggered this call.
      */
     @Override
     public void actionPerformed(ActionEvent event) {
         try {
-            this.tool.action();
+            this.tool.launch();
         }
         catch (Exception exception) {
             exception.printStackTrace();

@@ -44,9 +44,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Pete Sanderson, verison 1.0, 14 November 2006.
  */
 public class MemoryReferenceVisualization extends AbstractMarsTool {
-    private static final String NAME = "Memory Reference Visualization";
-    private static final String VERSION = "Version 1.0";
-
     // Major GUI components
     private JComboBox<String> wordsPerUnitSelector;
     private JComboBox<String> visualizationUnitPixelWidthSelector;
@@ -108,12 +105,9 @@ public class MemoryReferenceVisualization extends AbstractMarsTool {
     private Grid grid;
     private CounterColorScale counterColorScale;
 
-    /**
-     * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
-     */
-    @SuppressWarnings("unused")
-    public MemoryReferenceVisualization() {
-        super(NAME + ", " + VERSION);
+    @Override
+    public String getIdentifier() {
+        return "memrefvis";
     }
 
     /**
@@ -122,8 +116,13 @@ public class MemoryReferenceVisualization extends AbstractMarsTool {
      * @return Tool name.  MARS will display this in menu item.
      */
     @Override
-    public String getName() {
-        return NAME;
+    public String getDisplayName() {
+        return "Memory Reference Visualization";
+    }
+
+    @Override
+    public String getVersion() {
+        return "1.1";
     }
 
     /**
@@ -246,6 +245,7 @@ public class MemoryReferenceVisualization extends AbstractMarsTool {
             questions or comments.
             """;
         JButton help = new JButton("Help");
+        help.putClientProperty("JButton.buttonType", "help");
         help.addActionListener(event -> JOptionPane.showMessageDialog(dialog, helpContent));
         return help;
     }

@@ -53,6 +53,8 @@ public class SyscallMessageDialogString extends AbstractSyscall {
      */
     @Override
     public void simulate(BasicStatement statement) throws SimulatorException {
+        this.requireGUI(statement);
+
         // Input arguments:
         //   $a0 = address of null-terminated string that is an information-type message to user
         //   $a1 = address of null-terminated string to display after the first message

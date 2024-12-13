@@ -45,8 +45,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @version 1.1
  */
 public class BitmapDisplay extends AbstractMarsTool {
-    private static final String NAME = "Bitmap Display";
-    private static final String VERSION = "1.1";
 
     // Values for Combo Boxes
     private static final Integer[] UNIT_SIZE_CHOICES = { 1, 2, 4, 8, 16, 32 };
@@ -70,12 +68,9 @@ public class BitmapDisplay extends AbstractMarsTool {
     private JComboBox<String> baseAddressSelector;
     private BitmapCanvas canvas;
 
-    /**
-     * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
-     */
-    @SuppressWarnings("unused")
-    public BitmapDisplay() {
-        super(NAME + ", Version " + VERSION);
+    @Override
+    public String getIdentifier() {
+        return "bitmap";
     }
 
     /**
@@ -84,8 +79,13 @@ public class BitmapDisplay extends AbstractMarsTool {
      * @return Tool name.  MARS will display this in menu item.
      */
     @Override
-    public String getName() {
-        return NAME;
+    public String getDisplayName() {
+        return "Bitmap Display";
+    }
+
+    @Override
+    public String getVersion() {
+        return "1.1";
     }
 
     @Override

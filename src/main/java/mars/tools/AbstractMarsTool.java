@@ -51,37 +51,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Pete Sanderson, 14 November 2006
  */
-public abstract class AbstractMarsTool extends JFrame implements MarsTool, Memory.Listener {
+public abstract class AbstractMarsTool implements MarsTool, Memory.Listener {
     protected JDialog dialog;
 
-    /**
-     * Descriptive title for title bar provided to constructor.
-     */
-    private final String title;
-
-    /**
-     * Simple constructor
-     *
-     * @param title String containing title bar text
-     */
-    protected AbstractMarsTool(String title) {
-        this.title = title;
+    public String getTitle() {
+        StringBuilder title = new StringBuilder();
+        title.append('[').append(this.getIdentifier()).append("] ").append(this.getDisplayName());
+        String version = this.getVersion();
+        if (version != null && !version.isBlank()) {
+            title.append(' ').append(version);
+        }
+        return title.toString();
     }
-
-    /**
-     * Required MarsTool method to return Tool name.  Must be defined by subclass.
-     *
-     * @return Tool name.  MARS will display this in menu item.
-     */
-    @Override
-    public abstract String getName();
-
-    /**
-     * Abstract method that must be instantiated by subclass to build the main display area
-     * of the GUI.  It will be placed in the CENTER area of a BorderLayout.  The title
-     * is in the NORTH area, and the controls are in the SOUTH area.
-     */
-    protected abstract JComponent buildMainDisplayArea();
 
     /**
      * This is invoked when the user selects this tool from the Tools menu.
@@ -96,8 +77,8 @@ public abstract class AbstractMarsTool extends JFrame implements MarsTool, Memor
      * and {@link #buildMainDisplayArea()} to contain application-specific displays of parameters and results.
      */
     @Override
-    public void action() {
-        this.dialog = new JDialog(Application.getGUI(), this.title);
+    public void launch() {
+        this.dialog = new JDialog(Application.getGUI(), this.getTitle());
         // Ensure the dialog goes away if the user clicks the X
         this.dialog.addWindowListener(new WindowAdapter() {
             @Override
@@ -105,14 +86,24 @@ public abstract class AbstractMarsTool extends JFrame implements MarsTool, Memor
                 AbstractMarsTool.this.closeTool();
             }
         });
+
         this.initializePreGUI();
+
         this.dialog.setContentPane(this.buildContentPane(this.buildMainDisplayArea(), this.buildButtonArea()));
         this.dialog.pack();
         this.dialog.setLocationRelativeTo(Application.getGUI());
         this.dialog.setVisible(true);
+
         this.initializePostGUI();
         this.startObserving();
     }
+
+    /**
+     * Abstract method that must be instantiated by subclass to build the main display area
+     * of the GUI.  It will be placed in the CENTER area of a BorderLayout.  The title
+     * is in the NORTH area, and the controls are in the SOUTH area.
+     */
+    protected abstract JComponent buildMainDisplayArea();
 
     /**
      * Method that will be called once just before the GUI is constructed in the go() and action()

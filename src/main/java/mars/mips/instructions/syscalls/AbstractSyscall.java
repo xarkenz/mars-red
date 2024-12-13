@@ -1,5 +1,7 @@
 package mars.mips.instructions.syscalls;
 
+import mars.Application;
+import mars.simulator.ExceptionCause;
 import mars.simulator.SimulatorException;
 import mars.assembler.BasicStatement;
 
@@ -99,4 +101,20 @@ public abstract class AbstractSyscall implements Syscall {
      */
     @Override
     public abstract void simulate(BasicStatement statement) throws SimulatorException, InterruptedException;
+
+    /**
+     * Helper method which throws an exception if running from command-line mode. This should be used for any
+     * syscall involving the GUI.
+     *
+     * @param statement BasicStatement object for this syscall instruction.
+     */
+    protected void requireGUI(BasicStatement statement) throws SimulatorException {
+        if (Application.getGUI() == null) {
+            throw new SimulatorException(
+                statement,
+                "syscall '" + this.getName() + "' (" + this.getNumber() + ") cannot be used in command-line mode",
+                ExceptionCause.SYSCALL
+            );
+        }
+    }
 }

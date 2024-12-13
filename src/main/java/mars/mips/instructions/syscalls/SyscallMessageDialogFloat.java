@@ -54,6 +54,8 @@ public class SyscallMessageDialogFloat extends AbstractSyscall {
      */
     @Override
     public void simulate(BasicStatement statement) throws SimulatorException {
+        this.requireGUI(statement);
+
         // Input arguments:
         //   $a0 = address of null-terminated string that is an information-type message to user
         //   $f12 = float value to display in string form after the first message
