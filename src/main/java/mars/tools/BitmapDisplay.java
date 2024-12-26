@@ -249,32 +249,36 @@ public class BitmapDisplay extends AbstractMarsTool {
     @Override
     protected JComponent getHelpComponent() {
         final String helpContent = """
-            Use this program to simulate a basic bitmap display where
-            each memory word in a specified address space corresponds to
-            one display pixel in row-major order starting at the upper left
-            corner of the display.  This tool may be run either from the
-            MARS Tools menu or as a stand-alone application.
+            This tool interprets a region of memory as a bitmap image, where each 32-bit word represents a single \
+            pixel. The display is updated in real-time as values in memory change.
 
-            You can easily learn to use this small program by playing with
-            it!  Each rectangular unit on the display represents one memory
-            word in a contiguous address space starting with the specified
-            base address.  The value stored in that word will be interpreted
-            as a 24-bit RGB color value with the red component in bits 16-23,
-            the green component in bits 8-15, and the blue component in bits 0-7.
-            Each time a memory word within the display address space is written
-            by the MIPS program, its position in the display will be rendered
-            in the color that its value represents.
-
-            Version 1.0 is very basic and was constructed from the Memory
-            Reference Visualization tool's code.  Feel free to improve it and
-            send me your code for consideration in the next MARS release.
-
-            Contact Pete Sanderson at psanderson@otterbein.edu with
-            questions or comments.
+            The first word of the region corresponds to the upper-left corner of the bitmap, and the pixel data is \
+            obtained in a row-major format (that is, the rows of pixels in the bitmap are laid end-to-end in memory). \
+            In other words, the bitmap is read left to right, then top to bottom.
+            
+            Each word value in the memory region is interpreted as a 24-bit RGB color in the form 0xRRGGBB \
+            (bits 23-16 for red, bits 15-8 for green, bits 7-0 for blue). Bits 31-24 are currently ignored. \
+            Note that the whole word is read for each pixel, not the individual bytes. As such, the preferred method \
+            for reading and writing pixel data is loading and storing the entire word, using bitwise operations \
+            to modify specific components. Loading and storing the bytes for each color component will work, but \
+            doing so makes the behavior of the program reliant on the current endianness (i.e. byte ordering) setting.
+            
+            To automate this tool with syscalls, the following notify/query keys can be used. \
+            (Notify syscalls retrieve their value from $a2, and query syscalls place their result in $v0.)
+            - Base address (1): The starting address for the memory region to display.
+            - Bitmap width (2): The number of pixels / words in each row of the bitmap.
+            - Bitmap height (3): The number of rows in the bitmap.
+            - Horizontal scale (4): Factor to scale the displayed image by in the X direction.
+            - Vertical scale (5): Factor to scale the displayed image by in the Y direction.
             """;
         JButton help = new JButton("Help");
         help.putClientProperty("JButton.buttonType", "help");
-        help.addActionListener(event -> JOptionPane.showMessageDialog(this.dialog, helpContent));
+        help.addActionListener(event -> JOptionPane.showMessageDialog(
+            this.dialog,
+            helpContent,
+            this.getDisplayName() + " - Help",
+            JOptionPane.PLAIN_MESSAGE
+        ));
         return help;
     }
 
@@ -287,7 +291,7 @@ public class BitmapDisplay extends AbstractMarsTool {
         this.baseAddressSelector = new JComboBox<>(this.baseAddressNames);
         this.baseAddressSelector.setEditable(false);
         this.baseAddressSelector.setSelectedIndex(this.baseAddressIndex);
-        this.baseAddressSelector.setToolTipText("Address of the top-left corner unit of the bitmap");
+        this.baseAddressSelector.setToolTipText("Address of the upper-left corner unit of the bitmap");
         this.baseAddressSelector.addActionListener(event -> {
             this.baseAddressIndex = this.baseAddressSelector.getSelectedIndex();
             this.baseAddress = this.baseAddressChoices[this.baseAddressIndex];
