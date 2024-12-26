@@ -15,13 +15,13 @@ import java.lang.reflect.InvocationTargetException;
 /**
  * Service to open a MARS tool in the GUI as if the menu action was clicked.
  */
-public class SyscallLaunchTool extends AbstractSyscall {
+public class SyscallNotifyTool extends AbstractSyscall {
     /**
      * Build an instance of the syscall with its default service number and name.
      */
     @SuppressWarnings("unused")
-    public SyscallLaunchTool() {
-        super(62, "LaunchTool");
+    public SyscallNotifyTool() {
+        super(63, "NotifyTool");
     }
 
     /**
@@ -43,7 +43,9 @@ public class SyscallLaunchTool extends AbstractSyscall {
                 );
             }
 
-            SwingUtilities.invokeAndWait(tool::launch);
+            int key = Processor.getValue(Processor.ARGUMENT_1);
+
+            SwingUtilities.invokeAndWait(() -> tool.handleNotify(key));
         }
         catch (AddressErrorException exception) {
             throw new SimulatorException(statement, exception);
@@ -51,7 +53,7 @@ public class SyscallLaunchTool extends AbstractSyscall {
         catch (InvocationTargetException exception) {
             throw new SimulatorException(
                 statement,
-                "exception while launching tool: " + exception.getCause().getMessage(),
+                "exception while notifying tool: " + exception.getCause().getMessage(),
                 ExceptionCause.SYSCALL
             );
         }

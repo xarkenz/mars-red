@@ -7,6 +7,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.HashMap;
+import java.util.Map;
 
 /*
 Copyright (c) 2003-2008,  Pete Sanderson and Kenneth Vollmar
@@ -52,7 +54,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @author Pete Sanderson, 14 November 2006
  */
 public abstract class AbstractMarsTool implements MarsTool, Memory.Listener {
+    protected final Map<Integer, Runnable> notifyHandlers = new HashMap<>();
+    protected final Map<Integer, Runnable> queryHandlers = new HashMap<>();
     protected JDialog dialog;
+
+    public void addNotifyHandler(int key, Runnable handler) {
+        this.notifyHandlers.put(key, handler);
+    }
+
+    public void addQueryHandler(int key, Runnable handler) {
+        this.queryHandlers.put(key, handler);
+    }
 
     public String getTitle() {
         StringBuilder title = new StringBuilder();
@@ -78,6 +90,10 @@ public abstract class AbstractMarsTool implements MarsTool, Memory.Listener {
      */
     @Override
     public void launch() {
+        if (this.dialog != null) {
+            return;
+        }
+
         this.dialog = new JDialog(Application.getGUI(), this.getTitle());
         // Ensure the dialog goes away if the user clicks the X
         this.dialog.addWindowListener(new WindowAdapter() {
@@ -96,6 +112,28 @@ public abstract class AbstractMarsTool implements MarsTool, Memory.Listener {
 
         this.initializePostGUI();
         this.startObserving();
+    }
+
+    @Override
+    public void handleNotify(int key) {
+        Runnable handler = this.notifyHandlers.get(key);
+        if (handler != null) {
+            handler.run();
+        }
+        else {
+            throw new RuntimeException(this.getDisplayName() + " does not support notify key " + key);
+        }
+    }
+
+    @Override
+    public void handleQuery(int key) {
+        Runnable handler = this.queryHandlers.get(key);
+        if (handler != null) {
+            handler.run();
+        }
+        else {
+            throw new RuntimeException(this.getDisplayName() + " does not support query key " + key);
+        }
     }
 
     /**
@@ -217,5 +255,6 @@ public abstract class AbstractMarsTool implements MarsTool, Memory.Listener {
         this.handleClose();
         this.dialog.setVisible(false);
         this.dialog.dispose();
+        this.dialog = null;
     }
 }

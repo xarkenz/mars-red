@@ -86,4 +86,8 @@ public interface MarsTool {
      * from the Tools menu.
      */
     void launch();
+
+    void handleNotify(int key);
+
+    void handleQuery(int key);
 }

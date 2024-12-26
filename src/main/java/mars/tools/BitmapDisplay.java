@@ -4,6 +4,7 @@ import mars.Application;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.MemoryConfigurations;
+import mars.mips.hardware.Processor;
 import mars.util.Binary;
 
 import javax.swing.*;
@@ -45,28 +46,48 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @version 1.1
  */
 public class BitmapDisplay extends AbstractMarsTool {
-
-    // Values for Combo Boxes
-    private static final Integer[] UNIT_SIZE_CHOICES = { 1, 2, 4, 8, 16, 32 };
-    private static final int DEFAULT_UNIT_WIDTH_INDEX = 3;
-    private static final int DEFAULT_UNIT_HEIGHT_INDEX = 3;
-    private static final Integer[] DISPLAY_SIZE_CHOICES = { 64, 128, 256, 512, 1024, 2048 };
-    private static final int DEFAULT_DISPLAY_WIDTH_INDEX = 3;
-    private static final int DEFAULT_DISPLAY_HEIGHT_INDEX = 3;
-
+    public static final int BASE_ADDRESS_KEY = 1;
+    public static final int BITMAP_WIDTH_KEY = 2;
+    public static final int BITMAP_HEIGHT_KEY = 3;
+    public static final int HORIZONTAL_SCALE_KEY = 4;
+    public static final int VERTICAL_SCALE_KEY = 5;
     // The base addresses are lazy-initialized
-    private static final String[] BASE_ADDRESS_NAMES = { "global data", "default $gp", "static data", "heap", "MMIO" };
-    private static final int DEFAULT_BASE_ADDRESS_INDEX = 2; // Static data
-    private int[] baseAddresses;
-    private String[] baseAddressChoices;
+    private static final String[] BASE_ADDRESS_NAMES = { "Custom", "Global data", "Default $gp", "Static data", "Heap", "MMIO" };
+    private int[] baseAddressChoices;
+    private String[] baseAddressNames;
 
     // Major GUI components
-    private JComboBox<Integer> unitWidthSelector;
-    private JComboBox<Integer> unitHeightSelector;
-    private JComboBox<Integer> displayWidthSelector;
-    private JComboBox<Integer> displayHeightSelector;
     private JComboBox<String> baseAddressSelector;
+    private JSpinner bitmapWidthSelector;
+    private JSpinner bitmapHeightSelector;
+    private JSpinner horizontalScaleSelector;
+    private JSpinner verticalScaleSelector;
     private BitmapCanvas canvas;
+
+    private int baseAddressIndex = 3; // Static data
+    private int baseAddress;
+    private int bitmapWidth = 64;
+    private int bitmapHeight = 64;
+    private int horizontalScale = 8;
+    private int verticalScale = 8;
+
+    /**
+     * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
+     */
+    @SuppressWarnings("unused")
+    public BitmapDisplay() {
+        this.addNotifyHandler(BASE_ADDRESS_KEY, () -> this.setBaseAddress(Processor.getValue(Processor.ARGUMENT_2)));
+        this.addNotifyHandler(BITMAP_WIDTH_KEY, () -> this.setBitmapWidth(Processor.getValue(Processor.ARGUMENT_2)));
+        this.addNotifyHandler(BITMAP_HEIGHT_KEY, () -> this.setBitmapHeight(Processor.getValue(Processor.ARGUMENT_2)));
+        this.addNotifyHandler(HORIZONTAL_SCALE_KEY, () -> this.setHorizontalScale(Processor.getValue(Processor.ARGUMENT_2)));
+        this.addNotifyHandler(VERTICAL_SCALE_KEY, () -> this.setVerticalScale(Processor.getValue(Processor.ARGUMENT_2)));
+
+        this.addQueryHandler(BASE_ADDRESS_KEY, () -> Processor.setValue(Processor.VALUE_0, this.baseAddress));
+        this.addQueryHandler(BITMAP_WIDTH_KEY, () -> Processor.setValue(Processor.VALUE_0, this.bitmapWidth));
+        this.addQueryHandler(BITMAP_HEIGHT_KEY, () -> Processor.setValue(Processor.VALUE_0, this.bitmapHeight));
+        this.addQueryHandler(HORIZONTAL_SCALE_KEY, () -> Processor.setValue(Processor.VALUE_0, this.horizontalScale));
+        this.addQueryHandler(VERTICAL_SCALE_KEY, () -> Processor.setValue(Processor.VALUE_0, this.verticalScale));
+    }
 
     @Override
     public String getIdentifier() {
@@ -88,6 +109,69 @@ public class BitmapDisplay extends AbstractMarsTool {
         return "1.1";
     }
 
+    public void setBaseAddress(int baseAddress) {
+        if (baseAddress == this.baseAddress) {
+            return;
+        }
+        this.validateAddress(baseAddress);
+        this.baseAddress = baseAddress;
+        this.baseAddressIndex = 0;
+        if (this.canvas != null) {
+            this.canvas.setFirstAddress(baseAddress);
+            this.baseAddressChoices[0] = baseAddress;
+            this.baseAddressNames[0] = BASE_ADDRESS_NAMES[0] + " (" + Binary.intToHexString(baseAddress) + ")";
+            this.baseAddressSelector.setSelectedIndex(0);
+        }
+    }
+
+    public void setBitmapWidth(int bitmapWidth) {
+        if (bitmapWidth == this.bitmapWidth) {
+            return;
+        }
+        this.validateBitmapSize(bitmapWidth);
+        this.bitmapWidth = bitmapWidth;
+        if (this.canvas != null) {
+            this.canvas.setBitmapWidth(bitmapWidth);
+            this.bitmapWidthSelector.setValue(bitmapWidth);
+        }
+    }
+
+    public void setBitmapHeight(int bitmapHeight) {
+        if (bitmapHeight == this.bitmapHeight) {
+            return;
+        }
+        this.validateBitmapSize(bitmapHeight);
+        this.bitmapHeight = bitmapHeight;
+        if (this.canvas != null) {
+            this.canvas.setBitmapHeight(bitmapHeight);
+            this.bitmapHeightSelector.setValue(bitmapHeight);
+        }
+    }
+
+    public void setHorizontalScale(int horizontalScale) {
+        if (horizontalScale == this.horizontalScale) {
+            return;
+        }
+        this.validateScale(horizontalScale);
+        this.horizontalScale = horizontalScale;
+        if (this.canvas != null) {
+            this.canvas.setHorizontalScale(horizontalScale);
+            this.horizontalScaleSelector.setValue(horizontalScale);
+        }
+    }
+
+    public void setVerticalScale(int verticalScale) {
+        if (verticalScale == this.verticalScale) {
+            return;
+        }
+        this.validateScale(verticalScale);
+        this.verticalScale = verticalScale;
+        if (this.canvas != null) {
+            this.canvas.setVerticalScale(verticalScale);
+            this.verticalScaleSelector.setValue(verticalScale);
+        }
+    }
+
     @Override
     protected void stopObserving() {
         this.canvas.stopObserving();
@@ -104,16 +188,21 @@ public class BitmapDisplay extends AbstractMarsTool {
      */
     @Override
     protected void initializePreGUI() {
-        this.baseAddresses = new int[] {
+        this.baseAddressChoices = new int[] {
+            this.baseAddress,
             Memory.getInstance().getAddress(MemoryConfigurations.DATA_LOW),
             Memory.getInstance().getAddress(MemoryConfigurations.GLOBAL_POINTER),
             Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW),
             Memory.getInstance().getAddress(MemoryConfigurations.DYNAMIC_LOW),
             Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW),
         };
-        this.baseAddressChoices = new String[BASE_ADDRESS_NAMES.length];
+        if (this.baseAddressIndex != 0) {
+            this.baseAddress = this.baseAddressChoices[this.baseAddressIndex];
+            this.baseAddressChoices[0] = this.baseAddress;
+        }
+        this.baseAddressNames = new String[BASE_ADDRESS_NAMES.length];
         for (int choice = 0; choice < BASE_ADDRESS_NAMES.length; choice++) {
-            this.baseAddressChoices[choice] = Binary.intToHexString(this.baseAddresses[choice]) + " (" + BASE_ADDRESS_NAMES[choice] + ")";
+            this.baseAddressNames[choice] = BASE_ADDRESS_NAMES[choice] + " (" + Binary.intToHexString(this.baseAddressChoices[choice]) + ")";
         }
     }
 
@@ -139,11 +228,11 @@ public class BitmapDisplay extends AbstractMarsTool {
     @Override
     protected JComponent buildMainDisplayArea() {
         this.canvas = new BitmapCanvas(
-            this.baseAddresses[DEFAULT_BASE_ADDRESS_INDEX],
-            UNIT_SIZE_CHOICES[DEFAULT_UNIT_WIDTH_INDEX],
-            UNIT_SIZE_CHOICES[DEFAULT_UNIT_HEIGHT_INDEX],
-            DISPLAY_SIZE_CHOICES[DEFAULT_DISPLAY_WIDTH_INDEX],
-            DISPLAY_SIZE_CHOICES[DEFAULT_DISPLAY_HEIGHT_INDEX]
+            this.baseAddress,
+            this.bitmapWidth,
+            this.bitmapHeight,
+            this.horizontalScale,
+            this.verticalScale
         );
 
         Box mainArea = Box.createVerticalBox();
@@ -195,52 +284,52 @@ public class BitmapDisplay extends AbstractMarsTool {
     private JComponent buildSettingsArea() {
         JPanel organization = new JPanel(new GridLayout(5, 1, 6, 6));
 
-        this.unitWidthSelector = new JComboBox<>(UNIT_SIZE_CHOICES);
-        this.unitWidthSelector.setEditable(false);
-        this.unitWidthSelector.setSelectedIndex(DEFAULT_UNIT_WIDTH_INDEX);
-        this.unitWidthSelector.setToolTipText("Width, in pixels, of each rectangle representing a word in memory");
-        this.unitWidthSelector.addActionListener(event -> {
-            this.canvas.setUnitWidth(UNIT_SIZE_CHOICES[this.unitWidthSelector.getSelectedIndex()]);
-        });
-        organization.add(this.createSettingsRow("Unit width (px):", this.unitWidthSelector));
-
-        this.unitHeightSelector = new JComboBox<>(UNIT_SIZE_CHOICES);
-        this.unitHeightSelector.setEditable(false);
-        this.unitHeightSelector.setSelectedIndex(DEFAULT_UNIT_HEIGHT_INDEX);
-        this.unitHeightSelector.setToolTipText("Height, in pixels, of each rectangle representing a word in memory");
-        this.unitHeightSelector.addActionListener(event -> {
-            this.canvas.setUnitHeight(UNIT_SIZE_CHOICES[this.unitHeightSelector.getSelectedIndex()]);
-        });
-        organization.add(this.createSettingsRow("Unit height (px):", this.unitHeightSelector));
-
-        this.displayWidthSelector = new JComboBox<>(DISPLAY_SIZE_CHOICES);
-        this.displayWidthSelector.setEditable(false);
-        this.displayWidthSelector.setSelectedIndex(DEFAULT_DISPLAY_WIDTH_INDEX);
-        this.displayWidthSelector.setToolTipText("Total width, in pixels, of the bitmap display");
-        this.displayWidthSelector.addActionListener(event -> {
-            this.canvas.setDisplayWidth(DISPLAY_SIZE_CHOICES[this.displayWidthSelector.getSelectedIndex()]);
-            this.ensureCanvasVisible();
-        });
-        organization.add(this.createSettingsRow("Display width (px):", this.displayWidthSelector));
-
-        this.displayHeightSelector = new JComboBox<>(DISPLAY_SIZE_CHOICES);
-        this.displayHeightSelector.setEditable(false);
-        this.displayHeightSelector.setSelectedIndex(DEFAULT_DISPLAY_HEIGHT_INDEX);
-        this.displayHeightSelector.setToolTipText("Total height, in pixels, of the bitmap display");
-        this.displayHeightSelector.addActionListener(event -> {
-            this.canvas.setDisplayHeight(DISPLAY_SIZE_CHOICES[this.displayHeightSelector.getSelectedIndex()]);
-            this.ensureCanvasVisible();
-        });
-        organization.add(this.createSettingsRow("Display height (px):", this.displayHeightSelector));
-
-        this.baseAddressSelector = new JComboBox<>(this.baseAddressChoices);
+        this.baseAddressSelector = new JComboBox<>(this.baseAddressNames);
         this.baseAddressSelector.setEditable(false);
-        this.baseAddressSelector.setSelectedIndex(DEFAULT_BASE_ADDRESS_INDEX);
+        this.baseAddressSelector.setSelectedIndex(this.baseAddressIndex);
         this.baseAddressSelector.setToolTipText("Address of the top-left corner unit of the bitmap");
         this.baseAddressSelector.addActionListener(event -> {
-            this.canvas.setFirstAddress(this.baseAddresses[this.baseAddressSelector.getSelectedIndex()]);
+            this.baseAddressIndex = this.baseAddressSelector.getSelectedIndex();
+            this.baseAddress = this.baseAddressChoices[this.baseAddressIndex];
+            this.canvas.setFirstAddress(this.baseAddress);
         });
         organization.add(this.createSettingsRow("Base memory address:", this.baseAddressSelector));
+
+        this.bitmapWidthSelector = new JSpinner(new SpinnerNumberModel(this.bitmapWidth, 1, 2048, 1));
+        this.bitmapWidthSelector.setToolTipText("Total width, in pixels, of the underlying bitmap");
+        this.bitmapWidthSelector.addChangeListener(event -> {
+            this.bitmapWidth = ((SpinnerNumberModel) this.bitmapWidthSelector.getModel()).getNumber().intValue();
+            this.canvas.setBitmapWidth(this.bitmapWidth);
+            this.ensureCanvasVisible();
+        });
+        organization.add(this.createSettingsRow("Bitmap width:", this.bitmapWidthSelector));
+
+        this.bitmapHeightSelector = new JSpinner(new SpinnerNumberModel(this.bitmapHeight, 1, 2048, 1));
+        this.bitmapHeightSelector.setToolTipText("Total height, in pixels, of the underlying bitmap");
+        this.bitmapHeightSelector.addChangeListener(event -> {
+            this.bitmapHeight = ((SpinnerNumberModel) this.bitmapHeightSelector.getModel()).getNumber().intValue();
+            this.canvas.setBitmapHeight(this.bitmapHeight);
+            this.ensureCanvasVisible();
+        });
+        organization.add(this.createSettingsRow("Bitmap height:", this.bitmapHeightSelector));
+
+        this.horizontalScaleSelector = new JSpinner(new SpinnerNumberModel(this.horizontalScale, 1, 32, 1));
+        this.horizontalScaleSelector.setToolTipText("Factor to scale the displayed bitmap by in the X direction");
+        this.horizontalScaleSelector.addChangeListener(event -> {
+            this.horizontalScale = ((SpinnerNumberModel) this.horizontalScaleSelector.getModel()).getNumber().intValue();
+            this.canvas.setHorizontalScale(this.horizontalScale);
+            this.ensureCanvasVisible();
+        });
+        organization.add(this.createSettingsRow("Horizontal scale:", this.horizontalScaleSelector));
+
+        this.verticalScaleSelector = new JSpinner(new SpinnerNumberModel(this.verticalScale, 1, 32, 1));
+        this.verticalScaleSelector.setToolTipText("Factor to scale the displayed bitmap by in the Y direction");
+        this.verticalScaleSelector.addChangeListener(event -> {
+            this.verticalScale = ((SpinnerNumberModel) this.verticalScaleSelector.getModel()).getNumber().intValue();
+            this.canvas.setVerticalScale(this.verticalScale);
+            this.ensureCanvasVisible();
+        });
+        organization.add(this.createSettingsRow("Vertical scale:", this.verticalScaleSelector));
 
         return organization;
     }
@@ -251,6 +340,24 @@ public class BitmapDisplay extends AbstractMarsTool {
         settingsRow.add(Box.createHorizontalGlue());
         settingsRow.add(field);
         return settingsRow;
+    }
+
+    private void validateAddress(int address) {
+        if (!Memory.isWordAligned(address)) {
+            throw new RuntimeException("base address " + Binary.intToHexString(address) + " is not word-aligned");
+        }
+    }
+
+    private void validateScale(int scale) {
+        if (scale < 1 || scale > 32) {
+            throw new RuntimeException("unsupported scale factor " + scale);
+        }
+    }
+
+    private void validateBitmapSize(int size) {
+        if (size < 1 || size > 2048) {
+            throw new RuntimeException("unsupported bitmap size " + size);
+        }
     }
 
     private void ensureCanvasVisible() {
@@ -269,29 +376,27 @@ public class BitmapDisplay extends AbstractMarsTool {
         private boolean imageIsDirty;
 
         private int firstAddress;
-        private int unitWidth;
-        private int unitHeight;
-        private int displayWidth;
-        private int displayHeight;
+        private int bitmapWidth;
+        private int bitmapHeight;
+        private int horizontalScale;
+        private int verticalScale;
 
-        public BitmapCanvas(int firstAddress, int unitWidth, int unitHeight, int displayWidth, int displayHeight) {
-            super();
-
+        public BitmapCanvas(int firstAddress, int bitmapWidth, int bitmapHeight, int horizontalScale, int verticalScale) {
             this.firstAddress = firstAddress;
-            this.unitWidth = unitWidth;
-            this.unitHeight = unitHeight;
-            this.displayWidth = displayWidth;
-            this.displayHeight = displayHeight;
+            this.bitmapWidth = bitmapWidth;
+            this.bitmapHeight = bitmapHeight;
+            this.horizontalScale = horizontalScale;
+            this.verticalScale = verticalScale;
             this.imageIsDirty = false;
             // Ensure the background is drawn correctly
             this.setOpaque(false);
             this.setToolTipText("Live display of the bitmap based on values currently in memory");
             // Set the component size and initialize the image (this also starts listening to memory)
-            this.updateDisplaySize();
+            this.updateImageSize();
         }
 
         public int getBitmapMemorySize() {
-            return Memory.BYTES_PER_WORD * this.image.getWidth() * this.image.getHeight();
+            return Memory.BYTES_PER_WORD * this.bitmapWidth * this.bitmapHeight;
         }
 
         public void startObserving() {
@@ -318,9 +423,9 @@ public class BitmapDisplay extends AbstractMarsTool {
         public void memoryWritten(int address, int length, int value, int wordAddress, int wordValue) {
             int offset = (wordAddress - this.firstAddress) / Memory.BYTES_PER_WORD;
             synchronized (this.imageLock) {
-                int x = offset % this.image.getWidth();
-                int y = offset / this.image.getWidth();
-                if (0 <= offset && offset < this.image.getWidth() * this.image.getHeight()) {
+                int x = offset % this.bitmapWidth;
+                int y = offset / this.bitmapWidth;
+                if (0 <= offset && offset < this.bitmapWidth * this.bitmapHeight) {
                     this.image.setRGB(x, y, wordValue);
                 }
                 // Schedule repaint with the updated image if there is not already a repaint scheduled
@@ -336,35 +441,38 @@ public class BitmapDisplay extends AbstractMarsTool {
             this.resetImage();
         }
 
-        public void setFirstAddress(int address) {
-            this.firstAddress = address;
+        public void setFirstAddress(int firstAddress) {
+            this.firstAddress = firstAddress;
             // Update the active memory range and reinitialize the image contents
             this.stopObserving();
             this.startObserving();
         }
 
-        public void setUnitWidth(int pixels) {
-            this.unitWidth = pixels;
+        public void setBitmapWidth(int bitmapWidth) {
+            this.bitmapWidth = bitmapWidth;
             this.updateImageSize();
         }
 
-        public void setUnitHeight(int pixels) {
-            this.unitHeight = pixels;
+        public void setBitmapHeight(int bitmapHeight) {
+            this.bitmapHeight = bitmapHeight;
             this.updateImageSize();
         }
 
-        public void setDisplayWidth(int pixels) {
-            this.displayWidth = pixels;
+        public void setHorizontalScale(int horizontalScale) {
+            this.horizontalScale = horizontalScale;
             this.updateDisplaySize();
         }
 
-        public void setDisplayHeight(int pixels) {
-            this.displayHeight = pixels;
+        public void setVerticalScale(int verticalScale) {
+            this.verticalScale = verticalScale;
             this.updateDisplaySize();
         }
 
         private void updateDisplaySize() {
-            Dimension size = new Dimension(this.displayWidth, this.displayHeight);
+            Dimension size = new Dimension(
+                this.bitmapWidth * this.horizontalScale,
+                this.bitmapHeight * this.verticalScale
+            );
             // Just, like, make it very clear that we want the canvas to be this size (still not guaranteed!)
             this.setSize(size);
             this.setPreferredSize(size);
@@ -373,30 +481,30 @@ public class BitmapDisplay extends AbstractMarsTool {
 
             // Update the component since its size changed
             this.revalidate();
-            // The image size depends on the display size, so update that as well
-            this.updateImageSize();
         }
 
         private void updateImageSize() {
             // Regenerate the contents of the image from scratch
             synchronized (this.imageLock) {
                 this.image = new BufferedImage(
-                    this.displayWidth / this.unitWidth,
-                    this.displayHeight / this.unitHeight,
+                    this.bitmapWidth,
+                    this.bitmapHeight,
                     BufferedImage.TYPE_INT_RGB
                 );
             }
             // Update the active memory range and initialize the image contents
             this.stopObserving();
             this.startObserving();
+            // The display size depends on the bitmap size, so update that as well
+            this.updateDisplaySize();
         }
 
         private void resetImage() {
             try {
                 synchronized (this.imageLock) {
                     int address = this.firstAddress;
-                    for (int y = 0; y < this.image.getHeight(); y++) {
-                        for (int x = 0; x < this.image.getWidth(); x++) {
+                    for (int y = 0; y < this.bitmapHeight; y++) {
+                        for (int x = 0; x < this.bitmapWidth; x++) {
                             this.image.setRGB(x, y, Memory.getInstance().fetchWord(address, false));
                             address += Memory.BYTES_PER_WORD;
                         }
@@ -413,10 +521,12 @@ public class BitmapDisplay extends AbstractMarsTool {
         @Override
         public void paint(Graphics graphics) {
             // Draw the image in the center of the component bounds
-            int x = Math.max(0, this.getWidth() - this.displayWidth) / 2;
-            int y = Math.max(0, this.getHeight() - this.displayHeight) / 2;
+            int displayWidth = this.bitmapWidth * this.horizontalScale;
+            int displayHeight = this.bitmapHeight * this.verticalScale;
+            int x = Math.max(0, this.getWidth() - displayWidth) / 2;
+            int y = Math.max(0, this.getHeight() - displayHeight) / 2;
             synchronized (this.imageLock) {
-                graphics.drawImage(this.image, x, y, this.displayWidth, this.displayHeight, null);
+                graphics.drawImage(this.image, x, y, displayWidth, displayHeight, null);
                 this.imageIsDirty = false;
             }
         }
