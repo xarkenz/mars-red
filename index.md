@@ -5,15 +5,23 @@ permalink: /
 nav_order: 1
 ---
 
-# MIPS Assembler and Runtime Simulator
+# **MARS Red**
 
-![Screenshot of the MARS Red IDE](mars-red-screenshot.png "The MARS Red IDE")
+MIPS Assembler and Runtime Simulator
+
+![Screenshot of the MARS Red IDE](ide/ide-windows.png "The MARS Red IDE")
 
 MARS Red is a modern derivative of [MARS](https://courses.missouristate.edu/KenVollmar/MARS/index.htm)
 (MIPS Assembler and Runtime Simulator), a Java-based desktop application and
 command-line tool originally developed by Pete Sanderson and Kenneth Vollmar.
 Both have since retired, leaving MARS without any updates since 2014.
 For more information about the developers, see below.
+
+The MARS Red IDE provides editing and assembling capabilities, but its real
+strength lies in its support for interactive debugging. The programmer can easily add or 
+remove execution breakpoints after assembling, execute the program in slow motion or
+one instruction at a time, undo instructions, and view and directly edit registers
+and data in memory while the program is running.
 
 ## Pete Sanderson
 
@@ -33,4 +41,4 @@ Emeritus Professor in the Computer Science Department at
 which is located in Springfield, MO.
 
 - Email: [KenVollmar@missouristate.edu](mailto:KenVollmar@missouristate.edu)
-- Website: [courses.missouristate.edu/KenVollmar](https://courses.missouristate.edu/KenVollmar/)
+- Website: [courses.missouristate.edu/KenVollmar (now defunct)](https://web.archive.org/web/20240907025417/https://courses.missouristate.edu/KenVollmar/)
