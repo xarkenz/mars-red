@@ -3,6 +3,7 @@ layout: default
 title: Command Usage
 permalink: /cli
 nav_order: 3
+has_children: false
 ---
 
 # Command Usage
