@@ -504,18 +504,18 @@ public class TextAreaPainter extends JComponent implements TabExpander {
 
     protected Highlight highlights;
 
-    protected void paintLine(Graphics graphics, TokenMarker tokenMarker, int line, float x) {
+    protected void paintLine(Graphics graphics, TokenMarker tokenMarker, int line, int x) {
         Font defaultFont = getFont();
         Color defaultColor = getForeground();
 
         currentLineIndex = line;
-        float y = textArea.lineToY(line);
+        int y = textArea.lineToY(line);
 
         if (line < 0 || line >= textArea.getLineCount()) {
             if (paintInvalid) {
                 paintHighlight(graphics, line, y);
                 styles[Token.INVALID].setGraphicsFlags(graphics, defaultFont);
-                graphics.drawString("~", 0, Math.round(y) + fontMetrics.getHeight());
+                graphics.drawString("~", 0, y + fontMetrics.getHeight());
             }
         }
         else if (tokenMarker == null) {
@@ -526,7 +526,7 @@ public class TextAreaPainter extends JComponent implements TabExpander {
         }
     }
 
-    protected void paintPlainLine(Graphics graphics, int line, Font defaultFont, Color defaultColor, float x, float y) {
+    protected void paintPlainLine(Graphics graphics, int line, Font defaultFont, Color defaultColor, int x, int y) {
         paintHighlight(graphics, line, y);
         textArea.getLineText(line, currentLine);
 
@@ -534,15 +534,15 @@ public class TextAreaPainter extends JComponent implements TabExpander {
         graphics.setColor(defaultColor);
 
         y += fontMetrics.getHeight();
-        x = Utilities.drawTabbedText(currentLine, x, y, (Graphics2D) graphics, this, 0);
+        x = Math.round(Utilities.drawTabbedText(currentLine, (float) x, (float) y, (Graphics2D) graphics, this, 0));
 
         if (eolMarkers) {
             graphics.setColor(eolMarkerColor);
-            graphics.drawString(".", Math.round(x), Math.round(y));
+            graphics.drawString(".", x, y);
         }
     }
 
-    protected void paintSyntaxLine(Graphics graphics, TokenMarker tokenMarker, int line, Font defaultFont, Color defaultColor, float x, float y) {
+    protected void paintSyntaxLine(Graphics graphics, TokenMarker tokenMarker, int line, Font defaultFont, Color defaultColor, int x, int y) {
         textArea.getLineText(currentLineIndex, currentLine);
         currentLineTokens = tokenMarker.markTokens(currentLine, currentLineIndex);
 
@@ -551,14 +551,14 @@ public class TextAreaPainter extends JComponent implements TabExpander {
         graphics.setFont(defaultFont);
         graphics.setColor(defaultColor);
         y += fontMetrics.getHeight();
-        x = SyntaxUtilities.paintSyntaxLine(currentLine, currentLineTokens, styles, this, graphics, x, y);
+        x = Math.round(SyntaxUtilities.paintSyntaxLine(currentLine, currentLineTokens, styles, this, graphics, x, y));
         if (eolMarkers) {
             graphics.setColor(eolMarkerColor);
-            graphics.drawString(".", Math.round(x), Math.round(y));
+            graphics.drawString(".", x, y);
         }
     }
 
-    protected void paintHighlight(Graphics graphics, int line, float y) {
+    protected void paintHighlight(Graphics graphics, int line, int y) {
         if (line >= textArea.getSelectionStartLine() && line <= textArea.getSelectionEndLine()) {
             paintLineHighlight(graphics, line, y, lineHighlight && line == textArea.getCaretLine());
         }
@@ -576,7 +576,7 @@ public class TextAreaPainter extends JComponent implements TabExpander {
         }
     }
 
-    protected void paintLineHighlight(Graphics graphics, int line, float y, boolean highlight) {
+    protected void paintLineHighlight(Graphics graphics, int line, int y, boolean highlight) {
         int height = fontMetrics.getHeight();
         y += fontMetrics.getLeading() + fontMetrics.getMaxDescent();
 
@@ -585,17 +585,15 @@ public class TextAreaPainter extends JComponent implements TabExpander {
 
         if (highlight) {
             graphics.setColor(lineHighlightColor);
-            graphics.fillRect(0, Math.round(y), getWidth(), height);
+            graphics.fillRect(0, y, getWidth(), height);
         }
 
         if (selectionStart != selectionEnd) {
-            graphics.setColor(selectionBackground);
-
             int selectionStartLine = textArea.getSelectionStartLine();
             int selectionEndLine = textArea.getSelectionEndLine();
             int lineStart = textArea.getLineStartOffset(line);
 
-            float x1, x2;
+            int x1, x2;
             if (textArea.isSelectionRectangular()) {
                 int lineLen = textArea.getLineLength(line);
                 x1 = textArea._offsetToX(line, Math.min(lineLen, selectionStart - textArea.getLineStartOffset(selectionStartLine)));
@@ -621,25 +619,32 @@ public class TextAreaPainter extends JComponent implements TabExpander {
                 x2 = getWidth();
             }
 
-            graphics.fillRect(Math.round(Math.min(x1, x2)), Math.round(y), Math.round(Math.abs(x1 - x2)), height);
+            if (highlight) {
+                // Repaint the background over the portion of line highlight to keep selection color uniform
+                graphics.setColor(getBackground());
+                graphics.fillRect(Math.min(x1, x2), y, Math.abs(x1 - x2), height);
+            }
+
+            graphics.setColor(selectionBackground);
+            graphics.fillRect(Math.min(x1, x2), y, Math.abs(x1 - x2), height);
         }
     }
 
-    protected void paintBracketHighlight(Graphics graphics, int line, float y) {
+    protected void paintBracketHighlight(Graphics graphics, int line, int y) {
         int position = textArea.getBracketPosition();
         if (position < 0) {
             return;
         }
         y += fontMetrics.getLeading() + fontMetrics.getMaxDescent();
-        float x = textArea._offsetToX(line, position);
+        int x = textArea._offsetToX(line, position);
         graphics.setColor(bracketHighlightColor);
         // Hack!!! Since there is no fast way to get the character
         // from the bracket matching routine, we use ( since all
         // brackets probably have the same width anyway
-        graphics.drawRect(Math.round(x), Math.round(y), fontMetrics.charWidth('(') - 1, fontMetrics.getHeight() - 1);
+        graphics.drawRect(x, y, fontMetrics.charWidth('(') - 1, fontMetrics.getHeight() - 1);
     }
 
-    protected void paintCaret(Graphics graphics, int line, float y) {
+    protected void paintCaret(Graphics graphics, int line, int y) {
         if (textArea.isCaretVisible()) {
             int offset = textArea.getCaretPosition() - textArea.getLineStartOffset(line);
             int caretX = textArea._offsetToX(line, offset);
@@ -650,10 +655,10 @@ public class TextAreaPainter extends JComponent implements TabExpander {
             graphics.setColor(caretForeground);
 
             if (textArea.isOverwriteEnabled()) {
-                graphics.fillRect(caretX, Math.round(y) + height - 1, caretWidth, 1);
+                graphics.fillRect(caretX, y + height - 1, caretWidth, 1);
             }
             else {
-                graphics.drawRect(caretX, Math.round(y), caretWidth, height - 1);
+                graphics.drawRect(caretX, y, caretWidth, height - 1);
             }
         }
     }
