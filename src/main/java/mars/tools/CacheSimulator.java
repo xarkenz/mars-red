@@ -59,9 +59,6 @@ public class CacheSimulator extends AbstractMarsTool {
      */
     public boolean debug = false;
 
-    public static final String NAME = "Data Cache Simulator";
-    public static final String VERSION = "Version 1.2";
-
     // Major GUI components
     private JComboBox<Integer> cacheBlockSizeSelector;
     private JComboBox<Integer> cacheBlockCountSelector;
@@ -136,12 +133,9 @@ public class CacheSimulator extends AbstractMarsTool {
     // RNG used for random replacement policy.  For testing, set seed for reproducible stream
     private final Random random = new Random(0);
 
-    /**
-     * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
-     */
-    @SuppressWarnings("unused")
-    public CacheSimulator() {
-        super(NAME + ", " + VERSION);
+    @Override
+    public String getIdentifier() {
+        return "cachesim";
     }
 
     /**
@@ -150,8 +144,13 @@ public class CacheSimulator extends AbstractMarsTool {
      * @return Tool name.  MARS will display this in menu item.
      */
     @Override
-    public String getName() {
-        return NAME;
+    public String getDisplayName() {
+        return "Data Cache Simulator";
+    }
+
+    @Override
+    public String getVersion() {
+        return "1.3";
     }
 
     /**

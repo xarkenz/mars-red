@@ -52,6 +52,8 @@ public class SyscallInputDialogDouble extends AbstractSyscall {
      */
     @Override
     public void simulate(BasicStatement statement) throws SimulatorException {
+        this.requireGUI(statement);
+
         // Input arguments: $a0 = address of null-terminated string that is the message to user
         // Outputs:
         //    $f0 and $f1 contains value of double read. $f1 contains high order word of the double.

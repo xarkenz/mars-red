@@ -17,8 +17,6 @@ import java.awt.event.MouseEvent;
  * didier.teifreto@univ-fcomte.fr
  */
 public class DigitalLabSimulator extends AbstractMarsTool {
-    private static final String NAME = "Digital Lab Simulator";
-    private static final String VERSION = "Version 1.0 (Didier Teifreto)";
     private static final int IN_OFFSET_DISPLAY_1 = 0x10;
     private static final int IN_OFFSET_DISPLAY_2 = 0x11;
     private static final int IN_OFFSET_HEXADECIMAL_KEYBOARD = 0x12;
@@ -40,17 +38,24 @@ public class DigitalLabSimulator extends AbstractMarsTool {
     private static boolean counterInterruptOnOff = false;
     private static OneSecondCounter secondCounter;
 
+    @Override
+    public String getIdentifier() {
+        return "digitallab";
+    }
+
     /**
-     * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
+     * Required MarsTool method to return Tool name.
+     *
+     * @return Tool name.  MARS will display this in menu item.
      */
-    @SuppressWarnings("unused")
-    public DigitalLabSimulator() {
-        super(NAME + ", " + VERSION);
+    @Override
+    public String getDisplayName() {
+        return "Digital Lab Simulator";
     }
 
     @Override
-    public String getName() {
-        return NAME;
+    public String getVersion() {
+        return "1.1";
     }
 
     @Override
@@ -143,6 +148,7 @@ public class DigitalLabSimulator extends AbstractMarsTool {
              If counter interruption is enable, every 30 instructions, an exception is started with cause register bit number 10.
              (contributed by Didier Teifreto, dteifreto@lifc.univ-fcomte.fr)""";
         JButton help = new JButton("Help");
+        help.putClientProperty("JButton.buttonType", "help");
         help.addActionListener(e -> {
             JTextArea ja = new JTextArea(helpContent);
             ja.setRows(20);

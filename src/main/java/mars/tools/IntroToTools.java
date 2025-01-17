@@ -35,25 +35,24 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * The "hello world" of MarsTools!
  */
 public class IntroToTools extends AbstractMarsTool {
-    private static final String NAME = "Introduction to MARS Tools";
-    private static final String VERSION = "Version 1.0";
-
-    /**
-     * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
-     */
-    @SuppressWarnings("unused")
-    public IntroToTools() {
-        super(NAME + ", " + VERSION);
+    @Override
+    public String getIdentifier() {
+        return "helloworld";
     }
 
     /**
-     * Required method to return Tool name.
+     * Required MarsTool method to return Tool name.
      *
      * @return Tool name.  MARS will display this in menu item.
      */
     @Override
-    public String getName() {
-        return NAME;
+    public String getDisplayName() {
+        return "Introduction To MARS Tools";
+    }
+
+    @Override
+    public String getVersion() {
+        return "1.1";
     }
 
     /**

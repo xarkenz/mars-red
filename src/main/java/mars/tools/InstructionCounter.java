@@ -46,9 +46,6 @@ import java.awt.*;
  * @author Felipe Lessa (felipe.lessa@gmail.com)
  */
 public class InstructionCounter extends AbstractMarsTool {
-    private static final String NAME = "Instruction Counter";
-    private static final String VERSION = "Version 1.0 (Felipe Lessa)";
-
     /**
      * Number of instructions executed until now.
      */
@@ -80,17 +77,24 @@ public class InstructionCounter extends AbstractMarsTool {
      */
     protected int lastAddress = -1;
 
+    @Override
+    public String getIdentifier() {
+        return "instrcount";
+    }
+
     /**
-     * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
+     * Required MarsTool method to return Tool name.
+     *
+     * @return Tool name.  MARS will display this in menu item.
      */
-    @SuppressWarnings("unused")
-    public InstructionCounter() {
-        super(NAME + ", " + VERSION);
+    @Override
+    public String getDisplayName() {
+        return "Instruction Counter";
     }
 
     @Override
-    public String getName() {
-        return NAME;
+    public String getVersion() {
+        return "1.1";
     }
 
     @Override

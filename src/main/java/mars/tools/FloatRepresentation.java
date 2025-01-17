@@ -1,6 +1,5 @@
 package mars.tools;
 
-import mars.Application;
 import mars.mips.hardware.Coprocessor1;
 import mars.mips.hardware.Register;
 import mars.simulator.Simulator;
@@ -47,9 +46,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * As written, it can <i>almost</i> be adapted to 64-bit by changing a few constants.
  */
 public class FloatRepresentation extends AbstractMarsTool implements Register.Listener {
-    private static final String NAME = "Floating-Point Representation";
-    private static final String VERSION = "Version 1.1";
-
     private static final String defaultHex = "00000000";
     private static final String defaultDecimal = "0.0";
     private static final String defaultBinarySign = "0";
@@ -88,22 +84,24 @@ public class FloatRepresentation extends AbstractMarsTool implements Register.Li
     private InstructionsPane instructions;
     private final String defaultInstructions = "Modify any value then press the Enter key to update all values.";
 
-    /**
-     * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
-     */
-    @SuppressWarnings("unused")
-    public FloatRepresentation() {
-        super(NAME + ", " + VERSION);
+    @Override
+    public String getIdentifier() {
+        return "floatrepr";
     }
 
     /**
-     * Fetch tool name (for display in MARS Tools menu)
+     * Required MarsTool method to return Tool name.
      *
-     * @return String containing tool name
+     * @return Tool name.  MARS will display this in menu item.
      */
     @Override
-    public String getName() {
-        return NAME;
+    public String getDisplayName() {
+        return "Floating-Point Representation";
+    }
+
+    @Override
+    public String getVersion() {
+        return "1.2";
     }
 
     /**
