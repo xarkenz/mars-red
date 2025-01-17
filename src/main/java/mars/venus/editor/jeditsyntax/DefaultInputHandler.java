@@ -104,6 +104,7 @@ public class DefaultInputHandler extends InputHandler {
      * @param action     The action
      */
     @Override
+    @SuppressWarnings("unchecked")
     public void addKeyBinding(String keyBinding, ActionListener action) {
         Hashtable<KeyStroke, Object> current = bindings;
 
@@ -116,14 +117,11 @@ public class DefaultInputHandler extends InputHandler {
 
             if (st.hasMoreTokens()) {
                 Object o = current.get(keyStroke);
-                if (o instanceof Hashtable) {
-                    current = (Hashtable) o;
-                }
-                else {
-                    o = new Hashtable();
+                if (!(o instanceof Hashtable)) {
+                    o = new Hashtable<>();
                     current.put(keyStroke, o);
-                    current = (Hashtable) o;
                 }
+                current = (Hashtable<KeyStroke, Object>) o;
             }
             else {
                 current.put(keyStroke, action);
@@ -165,6 +163,7 @@ public class DefaultInputHandler extends InputHandler {
      * the key stroke and execute it.
      */
     @Override
+    @SuppressWarnings("unchecked")
     public void keyPressed(KeyEvent evt) {
         int keyCode = evt.getKeyCode();
         int modifiers = evt.getModifiersEx();
@@ -207,7 +206,7 @@ public class DefaultInputHandler extends InputHandler {
                 evt.consume();
             }
             else if (o instanceof Hashtable) {
-                currentBindings = (Hashtable) o;
+                currentBindings = (Hashtable<KeyStroke, Object>) o;
                 evt.consume();
             }
         }
@@ -217,6 +216,7 @@ public class DefaultInputHandler extends InputHandler {
      * Handle a key typed event. This inserts the key into the text area.
      */
     @Override
+    @SuppressWarnings("unchecked")
     public void keyTyped(KeyEvent evt) {
         int modifiers = evt.getModifiersEx();
         char c = evt.getKeyChar();
@@ -271,7 +271,7 @@ public class DefaultInputHandler extends InputHandler {
                 Object o = currentBindings.get(keyStroke);
 
                 if (o instanceof Hashtable) {
-                    currentBindings = (Hashtable) o;
+                    currentBindings = (Hashtable<KeyStroke, Object>) o;
                     return;
                 }
                 else if (o instanceof ActionListener) {

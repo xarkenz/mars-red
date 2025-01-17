@@ -226,7 +226,7 @@ public abstract class InputHandler extends KeyAdapter {
      * Returns the macro recorder. If this is non-null, all executed
      * actions should be forwarded to the recorder.
      */
-    public InputHandler.MacroRecorder getMacroRecorder() {
+    public MacroRecorder getMacroRecorder() {
         return recorder;
     }
 
@@ -236,7 +236,7 @@ public abstract class InputHandler extends KeyAdapter {
      *
      * @param recorder The macro recorder
      */
-    public void setMacroRecorder(InputHandler.MacroRecorder recorder) {
+    public void setMacroRecorder(MacroRecorder recorder) {
         this.recorder = recorder;
     }
 
@@ -394,7 +394,7 @@ public abstract class InputHandler extends KeyAdapter {
                     textArea.getDocument().remove(caret - 1, 1);
                 }
                 catch (BadLocationException bl) {
-                    bl.printStackTrace();
+                    bl.printStackTrace(System.err);
                 }
             }
         }
@@ -431,7 +431,7 @@ public abstract class InputHandler extends KeyAdapter {
                 textArea.getDocument().remove(caret + lineStart, start - (caret + lineStart));
             }
             catch (BadLocationException bl) {
-                bl.printStackTrace();
+                bl.printStackTrace(System.err);
             }
         }
     }
@@ -459,7 +459,7 @@ public abstract class InputHandler extends KeyAdapter {
                     textArea.getDocument().remove(caret, 1);
                 }
                 catch (BadLocationException bl) {
-                    bl.printStackTrace();
+                    bl.printStackTrace(System.err);
                 }
             }
         }
@@ -496,7 +496,7 @@ public abstract class InputHandler extends KeyAdapter {
                 textArea.getDocument().remove(start, (caret + lineStart) - start);
             }
             catch (BadLocationException bl) {
-                bl.printStackTrace();
+                bl.printStackTrace(System.err);
             }
         }
     }
@@ -681,6 +681,14 @@ public abstract class InputHandler extends KeyAdapter {
         @Override
         public void actionPerformed(ActionEvent event) {
             JEditTextArea textArea = getTextArea(event);
+
+            // If a selection is active and will be deselected, place the caret at the end of the selection
+            // Sean Clarke 01/2025
+            if (!select && textArea.getSelectionStart() != textArea.getSelectionEnd()) {
+                textArea.setCaretPosition(textArea.getSelectionEnd());
+                return;
+            }
+
             int caret = textArea.getCaretPosition();
             if (caret == textArea.getDocumentLength()) {
                 textArea.getToolkit().beep();
@@ -708,18 +716,33 @@ public abstract class InputHandler extends KeyAdapter {
             JEditTextArea textArea = getTextArea(event);
             int caret = textArea.getCaretPosition();
             int line = textArea.getCaretLine();
+            int magic = textArea.getMagicCaretPosition();
+
+            // If a selection is active and will be deselected, base the movement from the end of the selection
+            // Sean Clarke 01/2025
+            if (!select && textArea.getSelectionStart() != textArea.getSelectionEnd()) {
+                caret = textArea.getSelectionEnd();
+                line = textArea.getSelectionEndLine();
+                // Reset "magic" caret position
+                magic = -1;
+            }
 
             if (line == textArea.getLineCount() - 1) {
-                textArea.getToolkit().beep();
-                return;
+                // There is no next line, so snap to the end of the document
+                // Sean Clarke 01/2025
+                if (caret == textArea.getDocumentLength()) {
+                    textArea.getToolkit().beep();
+                    return;
+                }
+                caret = textArea.getDocumentLength();
+            }
+            else {
+                if (magic == -1) {
+                    magic = textArea.offsetToX(line, caret - textArea.getLineStartOffset(line));
+                }
+                caret = textArea.getLineStartOffset(line + 1) + textArea.xToOffset(line + 1, magic);
             }
 
-            int magic = textArea.getMagicCaretPosition();
-            if (magic == -1) {
-                magic = textArea.offsetToX(line, caret - textArea.getLineStartOffset(line));
-            }
-
-            caret = textArea.getLineStartOffset(line + 1) + textArea.xToOffset(line + 1, magic);
             if (select) {
                 textArea.select(textArea.getMarkPosition(), caret);
             }
@@ -819,6 +842,14 @@ public abstract class InputHandler extends KeyAdapter {
         @Override
         public void actionPerformed(ActionEvent event) {
             JEditTextArea textArea = getTextArea(event);
+
+            // If a selection is active and will be deselected, place the caret at the start of the selection
+            // Sean Clarke 01/2025
+            if (!select && textArea.getSelectionStart() != textArea.getSelectionEnd()) {
+                textArea.setCaretPosition(textArea.getSelectionStart());
+                return;
+            }
+
             int caret = textArea.getCaretPosition();
             if (caret == 0) {
                 textArea.getToolkit().beep();
@@ -846,18 +877,33 @@ public abstract class InputHandler extends KeyAdapter {
             JEditTextArea textArea = getTextArea(event);
             int caret = textArea.getCaretPosition();
             int line = textArea.getCaretLine();
+            int magic = textArea.getMagicCaretPosition();
+
+            // If a selection is active and will be deselected, base the movement from the start of the selection
+            // Sean Clarke 01/2025
+            if (!select && textArea.getSelectionStart() != textArea.getSelectionEnd()) {
+                caret = textArea.getSelectionStart();
+                line = textArea.getSelectionStartLine();
+                // Reset "magic" caret position
+                magic = -1;
+            }
 
             if (line == 0) {
-                textArea.getToolkit().beep();
-                return;
+                // There is no previous line, so snap to the start of the document
+                // Sean Clarke 01/2025
+                if (caret == 0) {
+                    textArea.getToolkit().beep();
+                    return;
+                }
+                caret = 0;
+            }
+            else {
+                if (magic == -1) {
+                    magic = textArea.offsetToX(line, caret - textArea.getLineStartOffset(line));
+                }
+                caret = textArea.getLineStartOffset(line - 1) + textArea.xToOffset(line - 1, magic);
             }
 
-            int magic = textArea.getMagicCaretPosition();
-            if (magic == -1) {
-                magic = textArea.offsetToX(line, caret - textArea.getLineStartOffset(line));
-            }
-
-            caret = textArea.getLineStartOffset(line - 1) + textArea.xToOffset(line - 1, magic);
             if (select) {
                 textArea.select(textArea.getMarkPosition(), caret);
             }
