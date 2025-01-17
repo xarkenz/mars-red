@@ -560,7 +560,7 @@ public class TextAreaPainter extends JComponent implements TabExpander {
 
     protected void paintHighlight(Graphics graphics, int line, float y) {
         if (line >= textArea.getSelectionStartLine() && line <= textArea.getSelectionEndLine()) {
-            paintLineHighlight(graphics, line, y);
+            paintLineHighlight(graphics, line, y, lineHighlight && line == textArea.getCaretLine());
         }
 
         if (highlights != null) {
@@ -576,20 +576,19 @@ public class TextAreaPainter extends JComponent implements TabExpander {
         }
     }
 
-    protected void paintLineHighlight(Graphics graphics, int line, float y) {
+    protected void paintLineHighlight(Graphics graphics, int line, float y, boolean highlight) {
         int height = fontMetrics.getHeight();
         y += fontMetrics.getLeading() + fontMetrics.getMaxDescent();
 
         int selectionStart = textArea.getSelectionStart();
         int selectionEnd = textArea.getSelectionEnd();
 
-        if (selectionStart == selectionEnd) {
-            if (lineHighlight) {
-                graphics.setColor(lineHighlightColor);
-                graphics.fillRect(0, Math.round(y), getWidth(), height);
-            }
+        if (highlight) {
+            graphics.setColor(lineHighlightColor);
+            graphics.fillRect(0, Math.round(y), getWidth(), height);
         }
-        else {
+
+        if (selectionStart != selectionEnd) {
             graphics.setColor(selectionBackground);
 
             int selectionStartLine = textArea.getSelectionStartLine();
