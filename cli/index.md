@@ -6,10 +6,24 @@ nav_order: 3
 has_children: false
 ---
 
-# Command Usage
+{: .no_toc }
+# {{page.title}}
 
-Command syntax, where `mars.jar` is the path to the downloaded JAR
-(items surrounded by `[]` are optional):
+{: .no_toc .text-delta }
+## {{site.toc_header}}
+
+- TOC
+{:toc}
+
+{: .warning }
+This is subject to change in the future. In general, command-line mode has not changed very much
+since MARS 4.5, and this feature will likely be cleaned up and improved before version 5.0.
+
+## Syntax
+
+Command syntax takes the following format,
+where `mars.jar` is the path to the JAR file for the MARS Red application.
+(Items surrounded by `[]` are optional.)
 
 `java -jar mars.jar [options...] <asmfiles...> [pa <args...>]`
 

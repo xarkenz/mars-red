@@ -5,6 +5,17 @@ permalink: /ide/assembler
 parent: Interface
 ---
 
+{: .no_toc }
+# {{page.title}}
+
+{: .no_toc .text-delta }
+## {{site.toc_header}}
+
+- TOC
+{:toc}
+
+## Introduction
+
 There are two toolbar actions used to assemble MIPS programs: *Run → Assemble*
 and *Run → Assemble Folder*. The difference between these actions is which source
 files are assembled. The *Assemble* action assembles only the currently selected
@@ -21,6 +32,8 @@ To avoid this problem, it is recommended that multi-file projects define a
 global label `main` to specify the desired entry point for the program,
 which will be detected by MARS Red if the *Settings → Use "main" as program
 entry point* option is enabled.
+
+## Exception Handler
 
 The *Settings → Exception Handler* dialog allows an optional exception handler
 file to be included in all assembly operations. Technically, the file
