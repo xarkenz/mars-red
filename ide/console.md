@@ -5,7 +5,18 @@ permalink: /ide/console
 parent: Interface
 ---
 
+{: .no_toc }
+# {{page.title}}
+
 ![Screenshot of the Messages and Console window](messages-console-short.png "Messages and Console")
+
+{: .no_toc .text-delta }
+## {{site.toc_header}}
+
+- TOC
+{:toc}
+
+## Introduction
 
 There are two tabbed message areas at the bottom of the screen.
 

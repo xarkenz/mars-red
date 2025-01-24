@@ -5,6 +5,17 @@ permalink: /ide/editor
 parent: Interface
 ---
 
+{: .no_toc }
+# {{page.title}}
+
+{: .no_toc .text-delta }
+## {{site.toc_header}}
+
+- TOC
+{:toc}
+
+## Introduction
+
 MARS Red includes an integrated text editor featuring syntax-aware color highlighting
 of most MIPS language elements and popup instruction guidance.
 

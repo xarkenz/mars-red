@@ -6,10 +6,10 @@ parent: MIPS Reference
 ---
 
 {: .no_toc }
-# System Calls
+# {{page.title}}
 
 {: .no_toc .text-delta }
-## Table of Contents
+## {{site.toc_header}}
 
 - TOC
 {:toc}
@@ -59,7 +59,7 @@ MIPS register contents are not affected by system calls unless they are specifie
 | Write File | 15 | `$a0` &mdash; file descriptor <br> `$a1` &mdash; address of output buffer <br> `$a2` &mdash; number of characters to write | `$v0` &mdash; number of characters written (negative if an error occurred) |
 | Close File | 16 | `$a0` &mdash; file descriptor |  |
 | Exit2 <br> *(terminate with exit code)* | 17 | `$a0` &mdash; integer exit code | Program execution is terminated immediately. If the program is run from within the MARS graphical user interface (GUI), the exit code in `$a0` is displayed in the message console. |
-| Time <br> *(get system time)* | 30 |  | `$a0` &mdash; low order 32 bits of system time <br> `$a1` &mdash; high order 32 bits of system time <br> System time is obtained from `java.util.Date.getTime()` as the number of milliseconds since 1 January 1970. |
+| Time <br> *(get system time)* | 30 |  | `$a0` &mdash; low order 32 bits of system time <br> `$a1` &mdash; high order 32 bits of system time <br> System time is obtained from [`java.util.Date.getTime()`] as the number of milliseconds since 1 January 1970. |
 | MIDI Out | 31 | `$a0` &mdash; pitch (0-127) <br> `$a1` &mdash; duration in milliseconds <br> `$a2` &mdash; instrument (0-127) <br> `$a3` &mdash; volume (0-127) | Begins playing tone and returns immediately. <br> *See section below for details.* |
 | Sleep | 32 | `$a0` &mdash; duration to sleep in milliseconds | Pauses execution for (approximately) the specified duration. This timing will not be precise, as the Java implementation will add some overhead. |
 | MIDI Out Synchronous | 33 | `$a0` &mdash; pitch (0-127) <br> `$a1` &mdash; duration in milliseconds <br> `$a2` &mdash; instrument (0-127) <br> `$a3` &mdash; volume (0-127) | Plays tone and returns upon tone completion. <br> *See section below for details.* |
@@ -227,5 +227,6 @@ affect the timbre of the tone (as most instruments sound different when
 they are played louder or softer).
 
 [`java.nio.channels.FileChannel`]: {{site.java_se_docs}}/java.base/java/nio/channels/Channel.html
+[`java.util.Date.getTime()`]: {{site.java_se_docs}}/java.base/java/util/Date.html#getTime()
 [`java.util.Random`]: {{site.java_se_docs}}/java.base/java/util/Random.html
 [`javax.sound.midi`]: {{site.java_se_docs}}/java.desktop/javax/sound/midi/package-summary.html

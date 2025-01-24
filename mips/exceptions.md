@@ -5,6 +5,15 @@ permalink: /mips/exceptions
 parent: MIPS Reference
 ---
 
+{: .no_toc }
+# {{page.title}}
+
+{: .no_toc .text-delta }
+## {{site.toc_header}}
+
+- TOC
+{:toc}
+
 Exceptions, traps, and interrupts are all distinct from each other, though they use the same
 underlying mechanism. Exceptions are caused by exceptional conditions that occur at runtime
 such as invalid memory address references. Traps are caused explicitly by certain instructions,
