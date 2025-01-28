@@ -7,8 +7,6 @@ on:
       - main
     paths:
       - "docs/**"
-    paths-ignore:
-      - "docs/javadoc/**"
   # Runs after JavaDoc is deployed
   workflow_run:
     workflows:
