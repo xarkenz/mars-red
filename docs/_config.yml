@@ -4,9 +4,10 @@ description: The official website for the MARS Red project
 theme: just-the-docs
 color_scheme: mars-light
 
+aux_links_new_tab: true
 aux_links:
+    API Reference: https://xarkenz.github.io/mars-red/javadoc
     GitHub Repository: https://github.com/xarkenz/mars-red
-    API Documentation: https://xarkenz.github.io/mars-red/javadoc
 
 callouts:
     note:

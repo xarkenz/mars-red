@@ -26,4 +26,4 @@ Tabs can be reordered by simply clicking and dragging.
 Below the editor is a status bar indicating the current line and column of the text cursor.
 
 The color scheme of the editor, as well as several aspects of its behavior, can be
-customized via the *Settings → Editor Settings* dialog.
+customized via the *Settings→Editor Settings* dialog.

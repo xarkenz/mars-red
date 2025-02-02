@@ -36,7 +36,7 @@ When an exception, trap, or interrupt occurs, the following steps are taken by t
   Or, if there is no instruction at location `0x80000180`, MARS will terminate the MIPS program
   with an appropriate error message by default. This address in the kernel text segment is the standard
   MIPS32 exception handler location. The only way to change it in MARS is to change the MIPS memory
-  configuration through the *Settings → Memory Configuration* dialog.
+  configuration through the *Settings→Memory Configuration* dialog.
 
 The following exception causes are used by MARS:
 
@@ -65,13 +65,13 @@ There are multiple ways to include an exception handler in a MIPS program:
 - Write the exception handler in the same file as the rest of the program. An example of this is
   presented below.
 - Write the exception handler in a separate file, store that file in the same directory as the other
-  program files, and assemble using the *Run → Assemble Folder* action.
+  program files, and assemble using the *Run→Assemble Folder* action.
 - Write the exception handler in a separate file, store that file in any directory, then open the
-  *Settings → Exception Handler* dialog, check the checkbox and browse to that file. Note that
+  *Settings→Exception Handler* dialog, check the checkbox and browse to that file. Note that
   using this method keeps the exception handler active until the checkbox is unchecked again.
 
 The exception handler itself should start at kernel text address `0x80000180` in the standard
-memory configuration (open the *Settings → Memory Configuration* dialog to find the address
+memory configuration (open the *Settings→Memory Configuration* dialog to find the address
 if you are using a different layout). Use the directive `.ktext 0x80000180` to achieve this.
 
 If you use any general-purpose registers in your exception handler besides `$k0` and `$k1`

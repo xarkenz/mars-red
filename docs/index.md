@@ -12,13 +12,15 @@ MIPS Assembler and Runtime Simulator
 ![Screenshot of the MARS Red IDE](ide/ide-windows.png "The MARS Red IDE")
 
 MARS Red is a modern derivative of [MARS](https://dpetersanderson.github.io/)
-(MIPS Assembler and Runtime Simulator), a lightweight IDE for programming in the MIPS assembly language.
-The original MARS was developed by Dr. Pete Sanderson and Dr. Kenneth Vollmar.
-Both have since retired, leaving MARS without any updates since 2014.
+(MIPS Assembler and Runtime Simulator), an education-oriented lightweight IDE
+for programming in the MIPS assembly language.
 For more information about the original MARS, see [History](history/).
 
 The MARS Red IDE provides editing and assembling capabilities, but its real
-strength lies in its support for interactive debugging. The programmer can easily add or 
-remove execution breakpoints after assembling, execute the program in slow motion or
-one instruction at a time, undo instructions, and view and directly edit registers
-and data in memory while the program is running.
+strength lies in its support for interactive debugging.
+
+- The program can be executed in slow motion or one instruction at a time.
+  In addition, the program can be stepped backwards to undo instructions.
+- Registers and data in memory are shown and can be modified by hand
+  while the program is running.
+- Execution breakpoints can easily be added or removed after assembling.
