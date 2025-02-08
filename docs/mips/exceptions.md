@@ -14,6 +14,11 @@ parent: MIPS Reference
 - TOC
 {:toc}
 
+{: .note }
+This page is largely based on the [original MARS documentation](https://dpetersanderson.github.io/Help/MarsExceptions.html).
+
+## Introduction
+
 Exceptions, traps, and interrupts are all distinct from each other, though they use the same
 underlying mechanism. Exceptions are caused by exceptional conditions that occur at runtime
 such as invalid memory address references. Traps are caused explicitly by certain instructions,

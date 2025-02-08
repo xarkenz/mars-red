@@ -14,6 +14,11 @@ parent: MIPS Reference
 - TOC
 {:toc}
 
+{: .note }
+This page is largely based on the [original MARS documentation](https://dpetersanderson.github.io/Help/SyscallHelp.html).
+
+## Introduction
+
 A number of system services, mainly for input and output, are available for use by your MIPS program.
 Calling these services allows a program to interact with the console, read/write files, terminate the program,
 allocate heap memory, and more.
