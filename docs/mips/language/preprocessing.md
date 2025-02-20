@@ -19,8 +19,9 @@ This page is largely based on the [original MARS documentation](https://dpetersa
 
 ## Equivalences
 
-The `.eqv` directive (short for "equivalence") can be used to define an identifier which is
-replaced by a short fragment of syntax during assembly preprocessing.
+The [`.eqv`]({{site.url}}/mips/language/directives#eqv) directive (short for "equivalence")
+can be used to define an identifier which is replaced by a short fragment of syntax during
+assembly preprocessing.
 
 This feature is most commonly used to define constants in a similar manner to using the
 `#define` directive in the C language. In general, equivalences should be used for inline
@@ -77,8 +78,8 @@ This particular example prints the integers 0 to 19 in order without any spacing
 
 ## Macros
 
-Patterson and Hennessy define a **macro** as *a pattern-matching and replacement facility
-that provides a simple mechanism to name a frequently used sequence of instructions*.[^1]
+Patterson and Hennessy define a *macro* as "a pattern-matching and replacement facility
+that provides a simple mechanism to name a frequently used sequence of instructions."[^1]
 This permits the programmer to specify the instruction sequence by invoking the macro,
 requiring only one line of code for each use instead of repeatedly typing
 in the instruction sequence each time. It follows the axiom "define once, use many times," which
@@ -87,7 +88,7 @@ not only reduces the chance for error but also facilitates program maintenance.
 Macros are like procedures (subroutines) in this sense, but unlike procedures, they only exist during
 the assembly process. Procedures in MIPS assembly language follow particular protocols for definition,
 calling and returning. Macros operate by substituting the macro body for each use at the time of
-assembly in a process called *macro expansion.* They do not require the protocols and execution
+assembly in a process called *macro expansion*. They do not require the protocols and execution
 overhead of procedures.
 
 In some ways, a macro is similar to an extended (pseudo) instruction. The main difference is that
@@ -107,7 +108,8 @@ instructions:
 
 This is still somewhat tedious to write, though, and it isn't immediately clear what the function
 of the code is without comments. Instead, this can be turned into a macro, which we can name
-something like `exit`:
+something like `exit`, using the [`.macro`]({{site.url}}/mips/language/directives#macro) and
+[`.end_macro`]({{site.url}}/mips/language/directives#end_macro) directives:
 
 ```
     .macro exit
@@ -359,8 +361,9 @@ start_loop_M0:
 
 ## Includes
 
-The `.include` directive can be used to effectively "paste" the contents of another assembly
-file during assembly preprocessing, much like the `#include` directive in the C language.
+The [`.include`]({{site.url}}/mips/language/directives#include) directive can be used to
+effectively "paste" the contents of another assembly file during assembly preprocessing,
+much like the `#include` directive in the C language.
 
 Includes are designed to make macros and equivalences more convenient to use across multiple
 files. Both macros and equivalences are local to the source file where they are defined,

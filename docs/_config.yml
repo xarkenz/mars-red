@@ -13,9 +13,12 @@ callouts:
     note:
         title: Note
         color: blue
+    compatibility-note:
+        title: Compatibility Note
+        color: yellow
     warning:
         title: Warning
-        color: yellow
+        color: red
 
 url: https://xarkenz.github.io/mars-red
 java_se_docs: https://docs.oracle.com/en/java/javase/17/docs/api
