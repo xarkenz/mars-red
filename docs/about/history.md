@@ -483,7 +483,7 @@ The development of Release 4.0 was supported by the Otterbein College sabbatical
 
 - New syscall 36 will display an integer as an unsigned decimal.
 
-- A new tool, Digital Lab Sim, contributed by [**Didier Teifreto**](dteifreto@lifc.univ-fcomte.fr). This tool
+- A new tool, Digital Lab Sim, contributed by [**Didier Teifreto**](mailto:dteifreto@lifc.univ-fcomte.fr). This tool
   features two seven-segment displays, a hexadecimal keypad, and a counter. It uses MMIO to explore
   interrupt-driven I/O in an engaging setting. More information is available from its Help feature. Many thanks!
 
