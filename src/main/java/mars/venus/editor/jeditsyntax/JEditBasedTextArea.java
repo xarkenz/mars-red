@@ -486,4 +486,14 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
         }
         return replaceCount;
     }
+
+    /**
+     * Ensure that syntax styles are updated properly when the application theme is changed.
+     */
+    @Override
+    public void updateUI() {
+        super.updateUI();
+
+        this.updateSyntaxStyles();
+    }
 }
