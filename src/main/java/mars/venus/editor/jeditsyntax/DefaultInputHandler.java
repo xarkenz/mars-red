@@ -16,7 +16,7 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.StringTokenizer;
 
 /**
@@ -27,14 +27,14 @@ import java.util.StringTokenizer;
  * @version $Id: DefaultInputHandler.java,v 1.18 1999/12/13 03:40:30 sp Exp $
  */
 public class DefaultInputHandler extends InputHandler {
-    private final Hashtable<KeyStroke, Object> bindings;
-    private Hashtable<KeyStroke, Object> currentBindings;
+    private final HashMap<KeyStroke, Object> bindings;
+    private HashMap<KeyStroke, Object> currentBindings;
 
     /**
      * Create a new input handler with no key bindings defined.
      */
     public DefaultInputHandler() {
-        bindings = currentBindings = new Hashtable<>();
+        bindings = currentBindings = new HashMap<>();
     }
 
     private DefaultInputHandler(DefaultInputHandler copy) {
@@ -85,7 +85,11 @@ public class DefaultInputHandler extends InputHandler {
         addKeyBinding("DOWN", NEXT_LINE);
         addKeyBinding("S+DOWN", SELECT_NEXT_LINE);
 
-        addKeyBinding("C+ENTER", REPEAT);
+        // No one uses Ctrl+Enter for repeat mode
+//        addKeyBinding("C+ENTER", REPEAT);
+
+        addKeyBinding("CS+ENTER", NEW_LINE_BEFORE);
+        addKeyBinding("C+ENTER", NEW_LINE_AFTER);
 
         // Clipboard
         addKeyBinding("C+C", CLIP_COPY);
@@ -105,7 +109,7 @@ public class DefaultInputHandler extends InputHandler {
      */
     @Override
     public void addKeyBinding(String keyBinding, ActionListener action) {
-        Hashtable<KeyStroke, Object> current = bindings;
+        HashMap<KeyStroke, Object> current = bindings;
 
         StringTokenizer st = new StringTokenizer(keyBinding);
         while (st.hasMoreTokens()) {
@@ -116,13 +120,13 @@ public class DefaultInputHandler extends InputHandler {
 
             if (st.hasMoreTokens()) {
                 Object o = current.get(keyStroke);
-                if (o instanceof Hashtable) {
-                    current = (Hashtable) o;
+                if (o instanceof HashMap) {
+                    current = (HashMap) o;
                 }
                 else {
-                    o = new Hashtable();
+                    o = new HashMap();
                     current.put(keyStroke, o);
-                    current = (Hashtable) o;
+                    current = (HashMap) o;
                 }
             }
             else {
@@ -206,8 +210,8 @@ public class DefaultInputHandler extends InputHandler {
 
                 evt.consume();
             }
-            else if (o instanceof Hashtable) {
-                currentBindings = (Hashtable) o;
+            else if (o instanceof HashMap) {
+                currentBindings = (HashMap) o;
                 evt.consume();
             }
         }
@@ -270,8 +274,8 @@ public class DefaultInputHandler extends InputHandler {
                 KeyStroke keyStroke = KeyStroke.getKeyStroke(Character.toUpperCase(c));
                 Object o = currentBindings.get(keyStroke);
 
-                if (o instanceof Hashtable) {
-                    currentBindings = (Hashtable) o;
+                if (o instanceof HashMap) {
+                    currentBindings = (HashMap) o;
                     return;
                 }
                 else if (o instanceof ActionListener) {

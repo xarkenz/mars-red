@@ -124,11 +124,16 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
         }
         else {
             boolean dataIsReturnAddress = this.isReturnAddress(wordValue);
-            String description = (dataIsReturnAddress ? "Return address from " : "Contents of ")
-                                 + Processor.getRegisters()[registerDataCameFrom].getName();
+            Register register = Processor.getRegisters()[registerDataCameFrom];
+            StringBuilder description = new StringBuilder();
+            description.append(register.getName()).append(" = ");
+            description.append("0x").append(wordValue);
+
+            if (!dataIsReturnAddress)
+                description.append(" = ").append(wordValue);
 
             if (position > 0) {
-                this.stackViewer.insertStackElement(position, dataIsReturnAddress, description);
+                this.stackViewer.insertStackElement(position, dataIsReturnAddress, description.toString());
             }
         }
     }
@@ -159,7 +164,7 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
     private synchronized boolean isReturnAddress(int address) {
         if (Memory.getInstance().isInTextSegment(address)) {
             try {
-                BasicStatement statement = Memory.getInstance().fetchStatement(address - Instruction.BYTES_PER_INSTRUCTION, false);
+                BasicStatement statement = Memory.getInstance().fetchStatement(address - Instruction.BYTES_PER_INSTRUCTION * 2, false);
                 return statement != null && statement.getInstruction().getMnemonic().startsWith("jal");
             }
             catch (AddressErrorException exception) {
@@ -207,7 +212,7 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
             super.setPreferredSize(new Dimension(width, height));
             this.screen = new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
             this.imageWriter = this.screen.createGraphics();
-            this.imageWriter.setFont(new Font("SansSerif", Font.BOLD, 14));
+            setFont();
             this.imageWriter.setColor(Color.BLACK);
             this.imageWriter.fillRect(0, 0, width, height);
             this.imageWriter.setColor(NULL_LIGHT);
@@ -318,8 +323,12 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
         private void printStringCentered(String string, int width, int x, int y) {
             int offset = this.imageWriter.getFontMetrics().stringWidth(string);
             offset = (width - offset) / 2;
-            this.imageWriter.setFont(new Font("SansSerif", Font.BOLD, 14));
+            setFont();
             this.imageWriter.drawString(string, x + offset, y);
+        }
+
+        private void setFont() {
+            this.imageWriter.setFont(new Font("SansSerif", Font.BOLD, 16));
         }
 
         private void drawArrow(int position) {

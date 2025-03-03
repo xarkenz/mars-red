@@ -76,6 +76,9 @@ public abstract class InputHandler extends KeyAdapter {
     public static final ActionListener SELECT_PREV_WORD = new PrevWordAction(true);
     public static final ActionListener REPEAT = new RepeatAction();
     public static final ActionListener TOGGLE_RECT = new ToggleRectangularAction();
+    // New shortcuts
+    public static final ActionListener NEW_LINE_BEFORE = new NewLineBeforeAction();
+    public static final ActionListener NEW_LINE_AFTER = new NewLineAfterAction();
     // Clipboard
     public static final ActionListener CLIP_COPY = new ClipboardCopyAction();
     public static final ActionListener CLIP_PASTE = new ClipboardPasteAction();
@@ -994,6 +997,26 @@ public abstract class InputHandler extends KeyAdapter {
         public void actionPerformed(ActionEvent event) {
             JEditTextArea textArea = getTextArea(event);
             textArea.paste();
+        }
+    }
+
+    public static class NewLineBeforeAction implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent event) {
+            JEditTextArea textArea = getTextArea(event);
+
+            HOME.actionPerformed(event);
+            textArea.setSelectedText(textArea.getAutoIndent() + "\n");
+            PREV_LINE.actionPerformed(event);
+            END.actionPerformed(event);
+        }
+    }
+
+    public static class NewLineAfterAction implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent event) {
+            END.actionPerformed(event);
+            INSERT_BREAK.actionPerformed(event);
         }
     }
 }
