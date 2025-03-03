@@ -157,10 +157,19 @@
         <tr><td>Message Dialog Float</td>    <td>57</td>  <td><code>$a0</code> &mdash; address of null-terminated string message for the user<br><code>$f12</code> &mdash; float value to append to the message</td>  <td></td></tr>
         <tr><td>Message Dialog Double</td>   <td>58</td>  <td><code>$a0</code> &mdash; address of null-terminated string message for the user<br><code>$f12</code> / <code>$f13</code> &mdash; double value to append to the message</td>  <td></td></tr>
         <tr><td>Message Dialog String</td>   <td>59</td>  <td><code>$a0</code> &mdash; address of null-terminated string message for the user<br><code>$a1</code> &mdash; address of null-terminated string to append to the message</td>  <td></td></tr>
-        <tr><td>Print Last I/O Message</td>    <td>60</td>  <td></td>  <td><p>
+        <tr><td>Print Last I/O Message</td>  <td>60</td>  <td></td>  <td><p>
             The most recent file operation message is printed to the message console if MARS is ran with a GUI, or the terminal if ran from the command line.
         </p></td></tr>
         <tr><td>Seek File</td>       <td>61</td>  <td><code>$a0</code> &mdash; file descriptor<br><code>$a1</code> &mdash; offset to add to position specified by whence<br><code>$a2</code> &mdash; whence to add the offset to (can be 0 for beginning of file, 1 for current position, or 2 for end of file)</td>  <td><code>$v0</code> &mdash; new position in file (-1 if an error occurred)</td></tr>
+        <tr><td>Launch Tool</td>     <td>62</td>  <td><code>$a0</code> &mdash; address of null-terminated string tool identifier</td>  <td><p>
+            The MARS tool corresponding to the identifier is launched in the GUI, unless it is already open. To find the identifier for a tool, look for square brackets in the title bar of the tool window.
+        </p></td></tr>
+        <tr><td>Notify Tool</td>     <td>63</td>  <td><code>$a0</code> &mdash; address of null-terminated string tool identifier<br><code>$a1</code> &mdash; notify key</td>  <td><p>
+            The MARS tool corresponding to the identifier is notified of an event; this is often used for tool configuration and state changes. Refer to the help menu for a specific tool for guidance on how it uses this service.
+        </p></td></tr>
+        <tr><td>Query Tool</td>      <td>64</td>  <td><code>$a0</code> &mdash; address of null-terminated string tool identifier<br><code>$a1</code> &mdash; query key</td>  <td><p>
+            The MARS tool corresponding to the identifier is queried for information. Refer to the help menu for a specific tool for guidance on how it uses this service.
+        </p></td></tr>
         </tbody>
     </table>
 

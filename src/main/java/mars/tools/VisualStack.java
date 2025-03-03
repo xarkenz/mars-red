@@ -10,8 +10,6 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 
 public class VisualStack extends AbstractMarsTool implements Register.Listener {
-    private static final String NAME = "Visual Stack";
-    private static final String VERSION = "Version 1.0";
     private static final int STACK_VIEWER_WIDTH = 400;
     private static final int STACK_VIEWER_HEIGHT = 400;
 
@@ -20,17 +18,24 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
     private int oldStackPtrValue;
     private boolean stackOK = true;
 
+    @Override
+    public String getIdentifier() {
+        return "visualstack";
+    }
+
     /**
-     * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
+     * Required MarsTool method to return Tool name.
+     *
+     * @return Tool name.  MARS will display this in menu item.
      */
-    @SuppressWarnings("unused")
-    public VisualStack() {
-        super(NAME + ", " + VERSION);
+    @Override
+    public String getDisplayName() {
+        return "Visual Stack";
     }
 
     @Override
-    public String getName() {
-        return NAME;
+    public String getVersion() {
+        return "1.1";
     }
 
     @Override
@@ -58,8 +63,7 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
 
     @Override
     protected JComponent getHelpComponent() {
-        final String helpContent = NAME + ", " + VERSION + """
-
+        final String helpContent = """
             This tool provides a graphical visualization of the MIPS stack. \
             When data is pushed to the stack, a colored rectangle representing the data appears in the appropriate position, along with information about which register the data came from. \
             Visual Stack was written to aid developers of recursive functions in debugging and to help them avoid common stack pitfalls; as such, it distinguishes between return addresses and other types of data. \
@@ -72,6 +76,7 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
             This tool was written by James Hester, a student at the University of Texas at Dallas, in November 2014.""";
 
         JButton help = new JButton("Help");
+        help.putClientProperty("JButton.buttonType", "help");
         help.addActionListener(event -> {
             JTextArea textArea = new JTextArea(helpContent);
             textArea.setRows(15);
@@ -139,7 +144,7 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
         this.stackViewer.errorOverlay();
         Toolkit.getDefaultToolkit().beep();
         this.stackOK = false;
-        this.repaint();
+        this.dialog.repaint();
     }
 
     @Override
@@ -179,7 +184,7 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
         this.stackViewer.advanceStackPointer(0);
         this.oldStackPtrValue = Memory.getInstance().getAddress(MemoryConfigurations.STACK_POINTER);
         this.stackOK = true;
-        this.repaint();
+        this.dialog.repaint();
     }
 
     private static class StackViewer extends JComponent {
