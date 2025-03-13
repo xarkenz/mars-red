@@ -1,5 +1,6 @@
 package mars.settings;
 
+import mars.tools.BitmapDisplay;
 import mars.util.Binary;
 import mars.venus.editor.jeditsyntax.SyntaxStyle;
 import mars.venus.editor.jeditsyntax.tokenmarker.Token;
@@ -412,6 +413,41 @@ public class Settings {
         false
     );
 
+    public final IntegerSetting bitmapDisplayUnitWidth = new IntegerSetting(
+        this,
+        "BitmapDisplayUnitWidth",
+        3,
+        false
+    );
+
+    public final IntegerSetting bitmapDisplayUnitHeight = new IntegerSetting(
+        this,
+        "BitmapDisplayUnitHeight",
+        3,
+        false
+    );
+
+    public final IntegerSetting bitmapDisplayWidth = new IntegerSetting(
+        this,
+        "BitmapDisplayWidth",
+        3,
+        false
+    );
+
+    public final IntegerSetting bitmapDisplayHeight = new IntegerSetting(
+        this,
+        "BitmapDisplayHeight",
+        3,
+        false
+    );
+
+    public final IntegerSetting bitmapDisplayBaseAddress = new IntegerSetting(
+        this,
+        "BitmapDisplayBaseAddress",
+        2,
+        false
+    );
+
     public final IntegerSetting[] integerSettings = {
         this.uiScale,
         this.maxRecentFiles,
@@ -423,6 +459,11 @@ public class Settings {
         this.caretBlinkRate,
         this.editorTabSize,
         this.editorPopupPrefixLength,
+        this.bitmapDisplayUnitWidth,
+        this.bitmapDisplayUnitHeight,
+        this.bitmapDisplayWidth,
+        this.bitmapDisplayHeight,
+        this.bitmapDisplayBaseAddress
     };
 
     // STRING SETTINGS
