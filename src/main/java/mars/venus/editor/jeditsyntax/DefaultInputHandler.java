@@ -90,6 +90,10 @@ public class DefaultInputHandler extends InputHandler {
 
         addKeyBinding("CS+ENTER", NEW_LINE_BEFORE);
         addKeyBinding("C+ENTER", NEW_LINE_AFTER);
+        addKeyBinding("A+UP", MOVE_LINE_UP);
+        addKeyBinding("A+DOWN", MOVE_LINE_DOWN);
+        addKeyBinding("C+[", INDENT_LEFT);
+        addKeyBinding("C+]", INDENT_RIGHT);
 
         // Clipboard
         addKeyBinding("C+C", CLIP_COPY);

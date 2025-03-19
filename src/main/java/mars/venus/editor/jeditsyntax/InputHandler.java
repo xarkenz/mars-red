@@ -9,6 +9,8 @@
 
 package mars.venus.editor.jeditsyntax;
 
+import mars.Application;
+
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import java.awt.*;
@@ -79,6 +81,10 @@ public abstract class InputHandler extends KeyAdapter {
     // New shortcuts
     public static final ActionListener NEW_LINE_BEFORE = new NewLineBeforeAction();
     public static final ActionListener NEW_LINE_AFTER = new NewLineAfterAction();
+    public static final ActionListener MOVE_LINE_UP = new MoveLineUp();
+    public static final ActionListener MOVE_LINE_DOWN = new MoveLineDown();
+    public static final ActionListener INDENT_LEFT = new IndentLeft();
+    public static final ActionListener INDENT_RIGHT = new IndentRight();
     // Clipboard
     public static final ActionListener CLIP_COPY = new ClipboardCopyAction();
     public static final ActionListener CLIP_PASTE = new ClipboardPasteAction();
@@ -128,6 +134,12 @@ public abstract class InputHandler extends KeyAdapter {
         ACTIONS.put("clipboard-paste", CLIP_PASTE);
         ACTIONS.put("clipboard-cut", CLIP_CUT);
         ACTIONS.put("insert-char", INSERT_CHAR);
+        ACTIONS.put("new-line-before", NEW_LINE_BEFORE);
+        ACTIONS.put("new-line-after", NEW_LINE_AFTER);
+        ACTIONS.put("move-line-up", MOVE_LINE_UP);
+        ACTIONS.put("move-line-down", MOVE_LINE_DOWN);
+        ACTIONS.put("indent-left", INDENT_LEFT);
+        ACTIONS.put("indent-right", INDENT_RIGHT);
     }
 
     /**
@@ -1017,6 +1029,125 @@ public abstract class InputHandler extends KeyAdapter {
         public void actionPerformed(ActionEvent event) {
             END.actionPerformed(event);
             INSERT_BREAK.actionPerformed(event);
+        }
+    }
+
+    public static class MoveLineUp implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent event) {
+            JEditTextArea textArea = getTextArea(event);
+            SyntaxDocument document = textArea.getDocument();
+            int startLine = textArea.getSelectionStartLine(),
+                endLine = textArea.getSelectionEndLine();
+            if (startLine == 0)
+                return;
+            int prevLine = startLine - 1;
+            int prevLineOffset = textArea.getLineStartOffset(prevLine),
+                startLineOffset = textArea.getLineStartOffset(startLine),
+                endLineOffset = textArea.getLineEndOffset(endLine),
+                prevLineLength = startLineOffset - prevLineOffset;
+            try {
+                String prevStr = document.getText(prevLineOffset, prevLineLength);
+                int caretStart = textArea.getSelectionStart(), caretEnd = textArea.getSelectionEnd();
+                document.remove(prevLineOffset, prevLineLength);
+                // To prevent weird behavior when moving last line upx
+                if (endLine == textArea.getLineCount()) {
+                    prevStr = prevStr.substring(0, prevStr.length() - 1);
+                    document.insertString(prevLineOffset + (endLineOffset - startLineOffset) - 1, "\n" + prevStr.substring(0, prevStr.length() - 1), null);
+                    textArea.setSelectionStart(prevLineOffset + (caretStart - startLineOffset));
+                    textArea.setSelectionEnd(prevLineOffset + (caretEnd - startLineOffset));
+                }
+                else {
+                    document.insertString(prevLineOffset + (endLineOffset - startLineOffset), prevStr, null);
+                }
+            }
+            catch (BadLocationException e) {
+                e.printStackTrace();
+            }
+//            textArea.painter.repaint();
+        }
+    }
+
+    public static class MoveLineDown implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent event) {
+            JEditTextArea textArea = getTextArea(event);
+            SyntaxDocument document = textArea.getDocument();
+            int startLine = textArea.getSelectionStartLine(),
+                endLine = textArea.getSelectionEndLine();
+            if (endLine == textArea.getLineCount() - 1) {
+                System.out.println("Returning since cannot move below end of file");
+                return;
+            }
+            int nextLine = endLine + 1;
+            int startLineOffset = textArea.getLineStartOffset(startLine),
+                nextLineOffset = textArea.getLineStartOffset(nextLine),
+                nextLineLength = textArea.getLineEndOffset(nextLine) - nextLineOffset;
+            try {
+                String nextStr = document.getText(nextLineOffset, nextLineLength);
+                // To prevent weird behavior when moving down to last line
+                if (nextLine == textArea.getLineCount() - 1) {
+                    document.remove(nextLineOffset - 1, nextLineLength);
+                    document.insertString(startLineOffset, nextStr, null);
+                }
+                else {
+                    document.remove(nextLineOffset, nextLineLength);
+                    document.insertString(startLineOffset, nextStr, null);
+                }
+            }
+            catch (BadLocationException e) {
+                e.printStackTrace();
+            }
+//            textArea.painter.repaint();
+        }
+    }
+
+    public static class IndentLeft implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent event) {
+            JEditTextArea textArea = getTextArea(event);
+
+            int startLine = textArea.getSelectionStartLine(),
+                endLine = textArea.getSelectionEndLine();
+            for (int line = startLine; line <= endLine; line++) {
+                int startOffset = textArea.getLineStartOffset(line);
+                String text = textArea.getLineText(line);
+                if (text.isEmpty() || !(text.charAt(0) == '\t' || text.charAt(0) == ' '))
+                    return;
+
+                int len = 1;
+                int maxLen = Math.min(Application.getSettings().editorTabSize.get(), text.length());
+                for (int i = 0; i < maxLen; i++) {
+                    if (text.charAt(i) != ' ')
+                        break;
+                    len = i + 1;
+                }
+                try {
+                    textArea.getDocument().remove(startOffset, len);
+                }
+                catch (BadLocationException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public static class IndentRight implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent event) {
+            JEditTextArea textArea = getTextArea(event);
+
+            int startLine = textArea.getSelectionStartLine(),
+                endLine = textArea.getSelectionEndLine();
+            for (int line = startLine; line <= endLine; line++) {
+                int startOffset = textArea.getLineStartOffset(line);
+                try {
+                    textArea.getDocument().insertString(startOffset, "\t", null);
+                }
+                catch (BadLocationException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 }

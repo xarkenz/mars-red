@@ -659,7 +659,7 @@ public class JEditTextArea extends JComponent {
     /**
      * Returns the document this text area is editing.
      */
-    public final Document getDocument() {
+    public final SyntaxDocument getDocument() {
         return document;
     }
 
