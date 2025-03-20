@@ -659,7 +659,7 @@ public class JEditTextArea extends JComponent {
     /**
      * Returns the document this text area is editing.
      */
-    public final Document getDocument() {
+    public final SyntaxDocument getDocument() {
         return document;
     }
 
@@ -1562,6 +1562,9 @@ public class JEditTextArea extends JComponent {
         // do magic stuff
         else if (line < firstLine) {
             setFirstLine(firstLine + count);
+        }
+        else if (firstLine + visibleLines > getLineCount() + 1 && firstLine > 0) {
+            setFirstLine(getLineCount() - visibleLines + 1);
         }
         // end of magic stuff
         else {

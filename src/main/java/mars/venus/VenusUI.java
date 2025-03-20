@@ -376,7 +376,7 @@ public class VenusUI extends JFrame implements SimulatorListener {
         this.actions.add(this.settingsMemoryConfigurationAction = new SettingsMemoryConfigurationAction(this, "Memory Configuration...", null, "View and modify memory segment base addresses for simulated MIPS", null, null));
         this.actions.add(this.settingsPreferencesAction = new SettingsPreferencesAction(this, null, null));
 
-        this.actions.add(this.helpHelpAction = new HelpHelpAction(this, KeyEvent.VK_H, KeyStroke.getKeyStroke(KeyEvent.VK_H, menuShortcutMask)));
+        this.actions.add(this.helpHelpAction = new HelpHelpAction(this, KeyEvent.VK_H, KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0)));
         this.actions.add(this.helpUpdateAction = new HelpUpdateAction(this, null, null));
         this.actions.add(this.helpAboutAction = new HelpAboutAction(this, null, null));
     }
