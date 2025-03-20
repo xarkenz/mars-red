@@ -1563,6 +1563,9 @@ public class JEditTextArea extends JComponent {
         else if (line < firstLine) {
             setFirstLine(firstLine + count);
         }
+        else if (firstLine + visibleLines > getLineCount() + 1 && firstLine > 0) {
+            setFirstLine(getLineCount() - visibleLines + 1);
+        }
         // end of magic stuff
         else {
             painter.invalidateLineRange(line, firstLine + visibleLines);

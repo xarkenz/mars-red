@@ -1053,7 +1053,7 @@ public abstract class InputHandler extends KeyAdapter {
                 // To prevent weird behavior when moving last line upx
                 if (endLine == textArea.getLineCount()) {
                     prevStr = prevStr.substring(0, prevStr.length() - 1);
-                    document.insertString(prevLineOffset + (endLineOffset - startLineOffset) - 1, "\n" + prevStr.substring(0, prevStr.length() - 1), null);
+                    document.insertString(prevLineOffset + (endLineOffset - startLineOffset) - 1, "\n" + prevStr, null);
                     textArea.setSelectionStart(prevLineOffset + (caretStart - startLineOffset));
                     textArea.setSelectionEnd(prevLineOffset + (caretEnd - startLineOffset));
                 }
@@ -1076,7 +1076,6 @@ public abstract class InputHandler extends KeyAdapter {
             int startLine = textArea.getSelectionStartLine(),
                 endLine = textArea.getSelectionEndLine();
             if (endLine == textArea.getLineCount() - 1) {
-                System.out.println("Returning since cannot move below end of file");
                 return;
             }
             int nextLine = endLine + 1;
