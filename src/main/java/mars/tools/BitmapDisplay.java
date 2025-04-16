@@ -4,11 +4,13 @@ import mars.Application;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
 import mars.mips.hardware.MemoryConfigurations;
+import mars.settings.Settings;
 import mars.util.Binary;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.util.function.IntConsumer;
 
 /*
 Copyright (c) 2010-2011,  Pete Sanderson and Kenneth Vollmar
@@ -70,12 +72,16 @@ public class BitmapDisplay extends AbstractMarsTool {
     private JComboBox<String> baseAddressSelector;
     private BitmapCanvas canvas;
 
+    // Settings
+    private final Settings settings;
+
     /**
      * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
      */
     @SuppressWarnings("unused")
     public BitmapDisplay() {
         super(NAME + ", Version " + VERSION);
+        this.settings = Application.getSettings();
     }
 
     /**
@@ -146,6 +152,13 @@ public class BitmapDisplay extends AbstractMarsTool {
             DISPLAY_SIZE_CHOICES[DEFAULT_DISPLAY_HEIGHT_INDEX]
         );
 
+        // Initialize with settings
+        canvas.setUnitWidth(UNIT_SIZE_CHOICES[settings.bitmapDisplayUnitWidth.get()]);
+        canvas.setUnitHeight(UNIT_SIZE_CHOICES[settings.bitmapDisplayUnitHeight.get()]);
+        canvas.setDisplayWidth(DISPLAY_SIZE_CHOICES[settings.bitmapDisplayWidth.get()]);
+        canvas.setDisplayHeight(DISPLAY_SIZE_CHOICES[settings.bitmapDisplayHeight.get()]);
+        canvas.setFirstAddress(settings.bitmapDisplayBaseAddress.get());
+
         Box mainArea = Box.createVerticalBox();
         mainArea.add(new JScrollPane(this.canvas, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED));
         mainArea.add(Box.createVerticalStrut(12));
@@ -189,56 +202,57 @@ public class BitmapDisplay extends AbstractMarsTool {
         return help;
     }
 
+    private <E> JComboBox<E> makeComboBox(E[] choices, int startingIndex, String tooltip, IntConsumer callback) {
+        JComboBox<E> comboBox = new JComboBox<>(choices);
+        comboBox.setEditable(false);
+        comboBox.setSelectedIndex(startingIndex);
+        comboBox.setToolTipText(tooltip);
+        comboBox.addActionListener(event -> {
+            callback.accept(comboBox.getSelectedIndex());
+        });
+        return comboBox;
+    }
+
     /**
      * Build the layout for the part of the GUI where the settings are located.
      */
     private JComponent buildSettingsArea() {
         JPanel organization = new JPanel(new GridLayout(5, 1, 6, 6));
 
-        this.unitWidthSelector = new JComboBox<>(UNIT_SIZE_CHOICES);
-        this.unitWidthSelector.setEditable(false);
-        this.unitWidthSelector.setSelectedIndex(DEFAULT_UNIT_WIDTH_INDEX);
-        this.unitWidthSelector.setToolTipText("Width, in pixels, of each rectangle representing a word in memory");
-        this.unitWidthSelector.addActionListener(event -> {
-            this.canvas.setUnitWidth(UNIT_SIZE_CHOICES[this.unitWidthSelector.getSelectedIndex()]);
+        this.unitWidthSelector = makeComboBox(UNIT_SIZE_CHOICES, settings.bitmapDisplayUnitWidth.get(), "Width, in pixels, of each rectangle representing a word in memory", index -> {
+            this.canvas.setUnitWidth(UNIT_SIZE_CHOICES[index]);
+            settings.bitmapDisplayUnitWidth.set(index);
+            settings.saveIntegerSetting(settings.bitmapDisplayUnitWidth.getKey(), index, false);
         });
         organization.add(this.createSettingsRow("Unit width (px):", this.unitWidthSelector));
 
-        this.unitHeightSelector = new JComboBox<>(UNIT_SIZE_CHOICES);
-        this.unitHeightSelector.setEditable(false);
-        this.unitHeightSelector.setSelectedIndex(DEFAULT_UNIT_HEIGHT_INDEX);
-        this.unitHeightSelector.setToolTipText("Height, in pixels, of each rectangle representing a word in memory");
-        this.unitHeightSelector.addActionListener(event -> {
-            this.canvas.setUnitHeight(UNIT_SIZE_CHOICES[this.unitHeightSelector.getSelectedIndex()]);
+        this.unitHeightSelector = makeComboBox(UNIT_SIZE_CHOICES, settings.bitmapDisplayUnitHeight.get(), "Height, in pixels, of each rectangle representing a word in memory", index -> {
+            this.canvas.setUnitHeight(UNIT_SIZE_CHOICES[index]);
+            settings.bitmapDisplayUnitHeight.set(index);
+            settings.saveIntegerSetting(settings.bitmapDisplayUnitHeight.getKey(), index, false);
         });
         organization.add(this.createSettingsRow("Unit height (px):", this.unitHeightSelector));
 
-        this.displayWidthSelector = new JComboBox<>(DISPLAY_SIZE_CHOICES);
-        this.displayWidthSelector.setEditable(false);
-        this.displayWidthSelector.setSelectedIndex(DEFAULT_DISPLAY_WIDTH_INDEX);
-        this.displayWidthSelector.setToolTipText("Total width, in pixels, of the bitmap display");
-        this.displayWidthSelector.addActionListener(event -> {
-            this.canvas.setDisplayWidth(DISPLAY_SIZE_CHOICES[this.displayWidthSelector.getSelectedIndex()]);
+        this.displayWidthSelector = makeComboBox(DISPLAY_SIZE_CHOICES, settings.bitmapDisplayWidth.get(), "Total width, in pixels, of the bitmap display", index -> {
+            this.canvas.setDisplayWidth(DISPLAY_SIZE_CHOICES[index]);
             this.ensureCanvasVisible();
+            settings.bitmapDisplayWidth.set(index);
+            settings.saveIntegerSetting(settings.bitmapDisplayWidth.getKey(), index, false);
         });
         organization.add(this.createSettingsRow("Display width (px):", this.displayWidthSelector));
 
-        this.displayHeightSelector = new JComboBox<>(DISPLAY_SIZE_CHOICES);
-        this.displayHeightSelector.setEditable(false);
-        this.displayHeightSelector.setSelectedIndex(DEFAULT_DISPLAY_HEIGHT_INDEX);
-        this.displayHeightSelector.setToolTipText("Total height, in pixels, of the bitmap display");
-        this.displayHeightSelector.addActionListener(event -> {
-            this.canvas.setDisplayHeight(DISPLAY_SIZE_CHOICES[this.displayHeightSelector.getSelectedIndex()]);
+        this.displayHeightSelector = makeComboBox(DISPLAY_SIZE_CHOICES, settings.bitmapDisplayHeight.get(), "Total height, in pixels, of the bitmap display", index -> {
+            this.canvas.setDisplayHeight(DISPLAY_SIZE_CHOICES[index]);
             this.ensureCanvasVisible();
+            settings.bitmapDisplayHeight.set(index);
+            settings.saveIntegerSetting(settings.bitmapDisplayHeight.getKey(), index, false);
         });
         organization.add(this.createSettingsRow("Display height (px):", this.displayHeightSelector));
 
-        this.baseAddressSelector = new JComboBox<>(this.baseAddressChoices);
-        this.baseAddressSelector.setEditable(false);
-        this.baseAddressSelector.setSelectedIndex(DEFAULT_BASE_ADDRESS_INDEX);
-        this.baseAddressSelector.setToolTipText("Address of the top-left corner unit of the bitmap");
-        this.baseAddressSelector.addActionListener(event -> {
-            this.canvas.setFirstAddress(this.baseAddresses[this.baseAddressSelector.getSelectedIndex()]);
+        this.baseAddressSelector = makeComboBox(this.baseAddressChoices, settings.bitmapDisplayBaseAddress.get(), "Address of the top-left corner unit of the bitmap", index -> {
+            this.canvas.setFirstAddress(this.baseAddresses[index]);
+            settings.bitmapDisplayBaseAddress.set(index);
+            settings.saveIntegerSetting(settings.bitmapDisplayBaseAddress.getKey(), index, false);
         });
         organization.add(this.createSettingsRow("Base memory address:", this.baseAddressSelector));
 
