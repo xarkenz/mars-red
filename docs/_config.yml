@@ -1,0 +1,25 @@
+title: MARS Red
+description: The official website for the MARS Red project
+
+theme: just-the-docs
+color_scheme: mars-light
+
+aux_links_new_tab: true
+aux_links:
+    API Reference: https://xarkenz.github.io/mars-red/javadoc
+    GitHub Repository: https://github.com/xarkenz/mars-red
+
+callouts:
+    note:
+        title: Note
+        color: blue
+    compatibility-note:
+        title: Compatibility Note
+        color: yellow
+    warning:
+        title: Warning
+        color: red
+
+url: https://xarkenz.github.io/mars-red
+java_se_docs: https://docs.oracle.com/en/java/javase/17/docs/api
+toc_header: Table of Contents
