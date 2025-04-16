@@ -10,7 +10,7 @@ import mars.util.Binary;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 
 /*
 Copyright (c) 2010-2011,  Pete Sanderson and Kenneth Vollmar
@@ -202,7 +202,7 @@ public class BitmapDisplay extends AbstractMarsTool {
         return help;
     }
 
-    private <E> JComboBox<E> makeComboBox(E[] choices, int startingIndex, String tooltip, Consumer<Integer> callback) {
+    private <E> JComboBox<E> makeComboBox(E[] choices, int startingIndex, String tooltip, IntConsumer callback) {
         JComboBox<E> comboBox = new JComboBox<>(choices);
         comboBox.setEditable(false);
         comboBox.setSelectedIndex(startingIndex);

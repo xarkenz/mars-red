@@ -1,6 +1,5 @@
 package mars.settings;
 
-import mars.tools.BitmapDisplay;
 import mars.util.Binary;
 import mars.venus.editor.jeditsyntax.SyntaxStyle;
 import mars.venus.editor.jeditsyntax.tokenmarker.Token;

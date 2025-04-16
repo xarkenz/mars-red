@@ -127,10 +127,11 @@ public class VisualStack extends AbstractMarsTool implements Register.Listener {
             Register register = Processor.getRegisters()[registerDataCameFrom];
             StringBuilder description = new StringBuilder();
             description.append(register.getName()).append(" = ");
-            description.append("0x").append(wordValue);
+            description.append(Binary.intToHexString(wordValue));
 
-            if (!dataIsReturnAddress)
+            if (!dataIsReturnAddress) {
                 description.append(" = ").append(wordValue);
+            }
 
             if (position > 0) {
                 this.stackViewer.insertStackElement(position, dataIsReturnAddress, description.toString());
