@@ -178,7 +178,7 @@ public class MIPSTokenMarker extends TokenMarker {
                         backslash = false;
                     }
                     else if (c == '\'') {
-                        addToken(offset - lastOffset + 1, Token.STRING_LITERAL);
+                        addToken(offset - lastOffset + 1, token);
                         token = Token.NULL;
                         lastOffset = lastKeyword = offset + 1;
                     }

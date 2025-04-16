@@ -781,7 +781,7 @@ public class JEditTextArea extends JComponent {
             return document.getText(0, document.getLength());
         }
         catch (BadLocationException bl) {
-            bl.printStackTrace();
+            bl.printStackTrace(System.err);
             return null;
         }
     }
@@ -796,7 +796,7 @@ public class JEditTextArea extends JComponent {
             document.insertString(0, text, null);
         }
         catch (BadLocationException bl) {
-            bl.printStackTrace();
+            bl.printStackTrace(System.err);
         }
         finally {
             document.endCompoundEdit();
@@ -815,7 +815,7 @@ public class JEditTextArea extends JComponent {
             return document.getText(start, len);
         }
         catch (BadLocationException bl) {
-            bl.printStackTrace();
+            bl.printStackTrace(System.err);
             return null;
         }
     }
@@ -833,7 +833,7 @@ public class JEditTextArea extends JComponent {
             document.getText(start, len, segment);
         }
         catch (BadLocationException bl) {
-            bl.printStackTrace();
+            bl.printStackTrace(System.err);
             segment.offset = segment.count = 0;
         }
     }

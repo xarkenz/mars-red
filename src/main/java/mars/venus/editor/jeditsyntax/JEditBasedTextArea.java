@@ -52,6 +52,9 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
         this.setFont(this.settings.editorFont.get());
         this.setTokenMarker(new MIPSTokenMarker());
 
+        // Enable smart Home/End key functionality
+        this.putClientProperty(InputHandler.SMART_HOME_END_PROPERTY, true);
+
         this.addCaretListener(event -> {
             // Display caret position on the edit pane
             this.fileEditorTab.displayCaretPosition(event.getDot());
@@ -482,5 +485,15 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
             fileEditorTab.updateUndoRedoActions();
         }
         return replaceCount;
+    }
+
+    /**
+     * Ensure that syntax styles are updated properly when the application theme is changed.
+     */
+    @Override
+    public void updateUI() {
+        super.updateUI();
+
+        this.updateSyntaxStyles();
     }
 }
