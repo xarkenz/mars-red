@@ -152,6 +152,13 @@ public class BitmapDisplay extends AbstractMarsTool {
             DISPLAY_SIZE_CHOICES[DEFAULT_DISPLAY_HEIGHT_INDEX]
         );
 
+        // Initialize with settings
+        canvas.setUnitWidth(UNIT_SIZE_CHOICES[settings.bitmapDisplayUnitWidth.get()]);
+        canvas.setUnitHeight(UNIT_SIZE_CHOICES[settings.bitmapDisplayUnitHeight.get()]);
+        canvas.setDisplayWidth(DISPLAY_SIZE_CHOICES[settings.bitmapDisplayWidth.get()]);
+        canvas.setDisplayHeight(DISPLAY_SIZE_CHOICES[settings.bitmapDisplayHeight.get()]);
+        canvas.setFirstAddress(settings.bitmapDisplayBaseAddress.get());
+
         Box mainArea = Box.createVerticalBox();
         mainArea.add(new JScrollPane(this.canvas, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED));
         mainArea.add(Box.createVerticalStrut(12));
@@ -214,12 +221,14 @@ public class BitmapDisplay extends AbstractMarsTool {
 
         this.unitWidthSelector = makeComboBox(UNIT_SIZE_CHOICES, settings.bitmapDisplayUnitWidth.get(), "Width, in pixels, of each rectangle representing a word in memory", index -> {
             this.canvas.setUnitWidth(UNIT_SIZE_CHOICES[index]);
+            settings.bitmapDisplayUnitWidth.set(index);
             settings.saveIntegerSetting(settings.bitmapDisplayUnitWidth.getKey(), index, false);
         });
         organization.add(this.createSettingsRow("Unit width (px):", this.unitWidthSelector));
 
         this.unitHeightSelector = makeComboBox(UNIT_SIZE_CHOICES, settings.bitmapDisplayUnitHeight.get(), "Height, in pixels, of each rectangle representing a word in memory", index -> {
-            this.canvas.setUnitHeight(UNIT_SIZE_CHOICES[this.unitHeightSelector.getSelectedIndex()]);
+            this.canvas.setUnitHeight(UNIT_SIZE_CHOICES[index]);
+            settings.bitmapDisplayUnitHeight.set(index);
             settings.saveIntegerSetting(settings.bitmapDisplayUnitHeight.getKey(), index, false);
         });
         organization.add(this.createSettingsRow("Unit height (px):", this.unitHeightSelector));
@@ -227,6 +236,7 @@ public class BitmapDisplay extends AbstractMarsTool {
         this.displayWidthSelector = makeComboBox(DISPLAY_SIZE_CHOICES, settings.bitmapDisplayWidth.get(), "Total width, in pixels, of the bitmap display", index -> {
             this.canvas.setDisplayWidth(DISPLAY_SIZE_CHOICES[index]);
             this.ensureCanvasVisible();
+            settings.bitmapDisplayWidth.set(index);
             settings.saveIntegerSetting(settings.bitmapDisplayWidth.getKey(), index, false);
         });
         organization.add(this.createSettingsRow("Display width (px):", this.displayWidthSelector));
@@ -234,12 +244,14 @@ public class BitmapDisplay extends AbstractMarsTool {
         this.displayHeightSelector = makeComboBox(DISPLAY_SIZE_CHOICES, settings.bitmapDisplayHeight.get(), "Total height, in pixels, of the bitmap display", index -> {
             this.canvas.setDisplayHeight(DISPLAY_SIZE_CHOICES[index]);
             this.ensureCanvasVisible();
+            settings.bitmapDisplayHeight.set(index);
             settings.saveIntegerSetting(settings.bitmapDisplayHeight.getKey(), index, false);
         });
         organization.add(this.createSettingsRow("Display height (px):", this.displayHeightSelector));
 
         this.baseAddressSelector = makeComboBox(this.baseAddressChoices, settings.bitmapDisplayBaseAddress.get(), "Address of the top-left corner unit of the bitmap", index -> {
             this.canvas.setFirstAddress(this.baseAddresses[index]);
+            settings.bitmapDisplayBaseAddress.set(index);
             settings.saveIntegerSetting(settings.bitmapDisplayBaseAddress.getKey(), index, false);
         });
         organization.add(this.createSettingsRow("Base memory address:", this.baseAddressSelector));
