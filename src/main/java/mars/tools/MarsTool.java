@@ -37,7 +37,7 @@ import javax.swing.*;
  * and its .class file must be in the same Tools folder as MarsTool.class.
  * Mars will detect a qualifying tool upon startup, create an instance
  * using its no-argument constructor and add it to its Tools menu.
- * When its menu item is selected, the {@link #action()} method will be invoked.
+ * When its menu item is selected, the {@link #launch()} method will be invoked.
  * <p>
  * A tool may receive communication from MIPS system resources
  * (registers or memory) by registering as an observer with
@@ -47,12 +47,20 @@ import javax.swing.*;
  * provided any such communication is done using {@link mars.simulator.Simulator#changeState(Runnable)}.
  */
 public interface MarsTool {
+    default String getIdentifier() {
+        return this.getClass().getSimpleName();
+    }
+
     /**
      * Return the name you have chosen for this tool, which will be used for the
      * menu item.  If not implemented, uses the class name.
      */
-    default String getName() {
-        return this.getClass().getSimpleName();
+    default String getDisplayName() {
+        return this.getIdentifier();
+    }
+
+    default String getVersion() {
+        return null;
     }
 
     /**
@@ -77,5 +85,9 @@ public interface MarsTool {
      * Performs tool functions.  It will be invoked when the tool is selected
      * from the Tools menu.
      */
-    void action();
+    void launch();
+
+    void handleNotify(int key);
+
+    void handleQuery(int key);
 }

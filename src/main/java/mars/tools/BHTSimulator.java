@@ -64,14 +64,6 @@ public class BHTSimulator extends AbstractMarsTool {
      * Constant for the default inital value.
      */
     public static final boolean DEFAULT_INITIAL_VALUE = false;
-    /**
-     * The name of the tool.
-     */
-    public static final String NAME = "Branch History Table Simulator";
-    /**
-     * The version of the tool.
-     */
-    public static final String VERSION = "Version 1.0 (Ingo Kofler)";
 
     /**
      * The GUI of the BHT simulator.
@@ -90,12 +82,24 @@ public class BHTSimulator extends AbstractMarsTool {
      */
     private boolean lastBranchTaken;
 
+    @Override
+    public String getIdentifier() {
+        return "bhtsim";
+    }
+
     /**
-     * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
+     * Returns the name of the tool.
+     *
+     * @return The tool's name as a string.
      */
-    @SuppressWarnings("unused")
-    public BHTSimulator() {
-        super(NAME + ", " + VERSION);
+    @Override
+    public String getDisplayName() {
+        return "Branch History Table Simulator";
+    }
+
+    @Override
+    public String getVersion() {
+        return "1.1";
     }
 
     /**
@@ -140,16 +144,6 @@ public class BHTSimulator extends AbstractMarsTool {
     }
 
     /**
-     * Returns the name of the tool.
-     *
-     * @return The tool's name as a string.
-     */
-    @Override
-    public String getName() {
-        return NAME;
-    }
-
-    /**
      * Perform a reset of the simulator.
      * This causes the BHT to be reseted and the log messages to be cleared.
      */
@@ -191,7 +185,7 @@ public class BHTSimulator extends AbstractMarsTool {
         this.gui.getTable().addRowSelectionInterval(index, index);
 
         // Add output to log
-        this.gui.getLogTextField().append("instruction " + statement.toString() + " at address " + addressString + ", maps to index " + index + "\n");
+        this.gui.getLogTextField().append("instruction " + statement + " at address " + addressString + ", maps to index " + index + "\n");
         this.gui.getLogTextField().append("branches to address " + Binary.intToHexString(BHTSimulator.extractBranchAddress(address, statement)) + "\n");
         this.gui.getLogTextField().append("prediction is: " + (this.tableModel.getPrediction(index) ? "take" : "do not take") + "...\n");
         this.gui.getLogTextField().setCaretPosition(this.gui.getLogTextField().getDocument().getLength());

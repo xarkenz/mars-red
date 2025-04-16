@@ -53,6 +53,8 @@ public class SyscallInputDialogString extends AbstractSyscall {
      */
     @Override
     public void simulate(BasicStatement statement) throws SimulatorException {
+        this.requireGUI(statement);
+
         // Input arguments:
         //    $a0 = address of null-terminated string that is the message to user
         //    $a1 = address of input buffer for the input string

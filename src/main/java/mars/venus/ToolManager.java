@@ -53,6 +53,7 @@ public class ToolManager {
     private static final String CLASS_EXTENSION = "class";
 
     private static List<ToolAction> toolActions = null;
+    private static Map<String, MarsTool> toolsByIdentifier = null;
 
     // Prevent instances
     private ToolManager() {}
@@ -85,6 +86,7 @@ public class ToolManager {
         // The list will be populated only the first time this is called
         if (toolActions == null) {
             List<MarsTool> marsTools = new ArrayList<>();
+            toolsByIdentifier = new HashMap<>();
 
             // Add any tools stored externally, as listed in values.properties file.
             // This needs some work, because mars.Globals.getExternalTools() returns
@@ -111,7 +113,10 @@ public class ToolManager {
                         continue;
                     }
                     // Obtain an instance of the class
-                    marsTools.add((MarsTool) loadedClass.getDeclaredConstructor().newInstance());
+                    MarsTool tool = (MarsTool) loadedClass.getDeclaredConstructor().newInstance();
+
+                    marsTools.add(tool);
+                    toolsByIdentifier.put(tool.getIdentifier().toLowerCase(), tool);
                 }
                 catch (Exception exception) {
                     System.err.println(ToolManager.class.getSimpleName() + ": " + exception);
@@ -121,11 +126,16 @@ public class ToolManager {
             toolActions = marsTools.stream()
                     .sorted(Comparator
                             .comparing(MarsTool::getToolMenuOrder)
-                            .thenComparing(MarsTool::getName))
+                            .thenComparing(MarsTool::getDisplayName))
                     .map(ToolAction::new)
                     .toList();
         }
 
         return toolActions;
+    }
+
+    public static MarsTool getTool(String identifier) {
+        getToolActions();
+        return toolsByIdentifier.get(identifier.toLowerCase());
     }
 }

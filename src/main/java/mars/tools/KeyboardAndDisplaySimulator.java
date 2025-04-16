@@ -72,9 +72,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @author Pete Sanderson
  */
 public class KeyboardAndDisplaySimulator extends AbstractMarsTool {
-    private static final String NAME = "Keyboard and Display Simulator";
-    private static final String VERSION = "Version 1.4";
-
     private static String displayPanelTitle;
     private static String keyboardPanelTitle;
 
@@ -123,12 +120,9 @@ public class KeyboardAndDisplaySimulator extends AbstractMarsTool {
     private JCheckBox displayAfterDelayCheckBox;
     private JTextArea keyEventAccepter;
 
-    /**
-     * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
-     */
-    @SuppressWarnings("unused")
-    public KeyboardAndDisplaySimulator() {
-        super(NAME + ", " + VERSION);
+    @Override
+    public String getIdentifier() {
+        return "keydispsim";
     }
 
     /**
@@ -137,8 +131,13 @@ public class KeyboardAndDisplaySimulator extends AbstractMarsTool {
      * @return Tool name.  MARS will display this in menu item.
      */
     @Override
-    public String getName() {
-        return NAME;
+    public String getDisplayName() {
+        return "Keyboard and Display Simulator";
+    }
+
+    @Override
+    public String getVersion() {
+        return "1.5";
     }
 
     /**
@@ -438,7 +437,7 @@ public class KeyboardAndDisplaySimulator extends AbstractMarsTool {
         Dimension areaSize = display.getSize();
         int widthInPixels = (int) areaSize.getWidth();
         int heightInPixels = (int) areaSize.getHeight();
-        FontMetrics metrics = getFontMetrics(display.getFont());
+        FontMetrics metrics = dialog.getFontMetrics(display.getFont());
         int rowHeight = metrics.getHeight();
         int charWidth = metrics.getMaxAdvance();
         // Estimate number of columns/rows of text that will fit in current window with current font.
@@ -529,6 +528,7 @@ public class KeyboardAndDisplaySimulator extends AbstractMarsTool {
             + "for programming MMIO text-based games.\n\n"
             + "Contact Pete Sanderson at psanderson@otterbein.edu with questions or comments.\n";
         JButton helpButton = new JButton("Help");
+        helpButton.putClientProperty("JButton.buttonType", "help");
         helpButton.addActionListener(event -> {
             JTextArea textArea = new JTextArea(helpContent);
             textArea.setRows(30);

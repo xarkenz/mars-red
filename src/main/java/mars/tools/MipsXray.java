@@ -32,9 +32,6 @@ import java.util.*;
 import java.util.function.BiConsumer;
 
 public class MipsXray extends AbstractMarsTool {
-    private static final String NAME = "MIPS Datapath X-Ray";
-    private static final String VERSION = "Version 2.0";
-
     protected Graphics graphics;
     // Address of instruction in memory
     protected int lastAddress = -1;
@@ -46,23 +43,26 @@ public class MipsXray extends AbstractMarsTool {
 
     private VenusUI gui;
     private JToolBar toolBar;
+    private JPanel panel;
 
-    /**
-     * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
-     */
-    @SuppressWarnings("unused")
-    public MipsXray() {
-        super(NAME + ", " + VERSION);
+    @Override
+    public String getIdentifier() {
+        return "mipsxray";
     }
 
     /**
-     * Required method to return Tool name.
+     * Required MarsTool method to return Tool name.
      *
      * @return Tool name.  MARS will display this in menu item.
      */
     @Override
-    public String getName() {
-        return NAME;
+    public String getDisplayName() {
+        return "MIPS Datapath X-Ray";
+    }
+
+    @Override
+    public String getVersion() {
+        return "2.1";
     }
 
     /**
@@ -71,7 +71,7 @@ public class MipsXray extends AbstractMarsTool {
     @Override
     protected JComponent getHelpComponent() {
         final String helpContent = """
-            This plugin is used to visualize the behavior of mips processor using the default datapath.
+            This plugin is used to visualize the behavior of MIPS processor using the default datapath.
             It reads the source code instruction and generates an animation representing the inputs and
             outputs of functional blocks and the interconnection between them.  The basic signals
             represented are control signals, opcode bits and data of functional blocks.
@@ -83,11 +83,11 @@ public class MipsXray extends AbstractMarsTool {
 
             To see the datapath of register bank and control units, click inside the functional unit.
 
-            Version 2.0
             Developed by Márcio Roberto, Guilherme Sales, Fabrício Vivas, Flávio Cardeal and Fábio Lúcio
             Contact Márcio Roberto at marcio.rdaraujo@gmail.com with questions or comments.
             """;
         JButton help = new JButton("Help");
+        help.putClientProperty("JButton.buttonType", "help");
         help.addActionListener(event -> JOptionPane.showMessageDialog(dialog, helpContent));
         return help;
     }
@@ -101,9 +101,9 @@ public class MipsXray extends AbstractMarsTool {
     }
 
     protected JComponent buildMainDisplayArea(String figure) {
-        gui = Application.getGUI();
+        this.gui = Application.getGUI();
         this.createActionObjects();
-        toolBar = this.setUpToolBar();
+        this.toolBar = this.setUpToolBar();
 
         GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
         GraphicsConfiguration gc = ge.getDefaultScreenDevice().getDefaultConfiguration();
@@ -127,11 +127,12 @@ public class MipsXray extends AbstractMarsTool {
         icon = new ImageIcon(im);
 
         JLabel label = new JLabel(icon);
-        this.getContentPane().add(label, BorderLayout.WEST);
-        this.getContentPane().add(toolBar, BorderLayout.NORTH);
-        this.setResizable(false);
+        this.panel = new JPanel();
+        this.panel.add(label, BorderLayout.WEST);
+        this.panel.add(toolBar, BorderLayout.NORTH);
+        this.dialog.setResizable(false);
 
-        return (JComponent) this.getContentPane();
+        return this.panel;
     }
 
     @Override
@@ -166,13 +167,13 @@ public class MipsXray extends AbstractMarsTool {
         BasicStatement statement = Application.instructionSet.getDecoder().decodeStatement(wordValue);
         instructionBinary = statement.getInstruction().getEncodingDescriptor();
 
-        this.getContentPane().removeAll();
+        this.panel.removeAll();
         // Class panel that runs datapath animation
         DatapathAnimation datapathAnimation = new DatapathAnimation(instructionBinary);
         this.createActionObjects();
         toolBar = this.setUpToolBar();
-        this.getContentPane().add(toolBar, BorderLayout.NORTH);
-        this.getContentPane().add(datapathAnimation, BorderLayout.WEST);
+        this.panel.add(toolBar, BorderLayout.NORTH);
+        this.panel.add(datapathAnimation, BorderLayout.WEST);
         datapathAnimation.startAnimation(instructionBinary);
     }
 

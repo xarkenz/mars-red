@@ -46,15 +46,6 @@ import java.util.Arrays;
  */
 public class InstructionStatistics extends AbstractMarsTool {
     /**
-     * name of the tool
-     */
-    private static final String NAME = "Instruction Statistics";
-    /**
-     * version and author information of the tool
-     */
-    private static final String VERSION = "Version 1.0 (Ingo Kofler)";
-
-    /**
      * number of instruction categories used by this tool
      */
     private static final int MAX_CATEGORY = 5;
@@ -118,22 +109,24 @@ public class InstructionStatistics extends AbstractMarsTool {
      */
     protected int lastAddress = -1;
 
-    /**
-     * Construct an instance of this tool. This will be used by the {@link mars.venus.ToolManager}.
-     */
-    @SuppressWarnings("unused")
-    public InstructionStatistics() {
-        super(NAME + ", " + VERSION);
+    @Override
+    public String getIdentifier() {
+        return "instrstats";
     }
 
     /**
-     * returns the name of the tool
+     * Required MarsTool method to return Tool name.
      *
-     * @return the tools's name
+     * @return Tool name.  MARS will display this in menu item.
      */
     @Override
-    public String getName() {
-        return NAME;
+    public String getDisplayName() {
+        return "Instruction Statistics";
+    }
+
+    @Override
+    public String getVersion() {
+        return "1.1";
     }
 
     /**
@@ -143,7 +136,6 @@ public class InstructionStatistics extends AbstractMarsTool {
      */
     @Override
     protected JComponent buildMainDisplayArea() {
-
         // Create GUI elements for the tool
         JPanel panel = new JPanel(new GridBagLayout());
 
