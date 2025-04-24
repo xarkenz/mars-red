@@ -682,7 +682,14 @@ public abstract class InputHandler extends KeyAdapter {
                 return;
             }
 
-            textArea.overwriteSetSelectedText("\t");
+            if (textArea.getSelectionStart() != textArea.getSelectionEnd()) {
+                // A selection is active, so indent the selected lines rather than overwriting with a tab
+                // Sean Clarke 04/2025
+                INDENT_RIGHT.actionPerformed(event);
+            }
+            else {
+                textArea.overwriteSetSelectedText("\t");
+            }
         }
     }
 
@@ -1083,20 +1090,21 @@ public abstract class InputHandler extends KeyAdapter {
         public void actionPerformed(ActionEvent event) {
             JEditTextArea textArea = getTextArea(event);
             SyntaxDocument document = textArea.getDocument();
-            int startLine = textArea.getSelectionStartLine(),
-                endLine = textArea.getSelectionEndLine();
-            if (startLine == 0)
+            int startLine = textArea.getSelectionStartLine();
+            int endLine = textArea.getSelectionEndLine();
+            if (startLine == 0) {
                 return;
+            }
             int prevLine = startLine - 1;
-            int prevLineOffset = textArea.getLineStartOffset(prevLine),
-                startLineOffset = textArea.getLineStartOffset(startLine),
-                endLineOffset = textArea.getLineEndOffset(endLine),
-                prevLineLength = startLineOffset - prevLineOffset;
+            int prevLineOffset = textArea.getLineStartOffset(prevLine);
+            int startLineOffset = textArea.getLineStartOffset(startLine);
+            int endLineOffset = textArea.getLineEndOffset(endLine);
+            int prevLineLength = startLineOffset - prevLineOffset;
             try {
                 String prevStr = document.getText(prevLineOffset, prevLineLength);
                 int caretStart = textArea.getSelectionStart(), caretEnd = textArea.getSelectionEnd();
                 document.remove(prevLineOffset, prevLineLength);
-                // To prevent weird behavior when moving last line upx
+                // To prevent weird behavior when moving last line up
                 if (endLine == textArea.getLineCount()) {
                     prevStr = prevStr.substring(0, prevStr.length() - 1);
                     document.insertString(prevLineOffset + (endLineOffset - startLineOffset) - 1, "\n" + prevStr, null);
@@ -1107,10 +1115,9 @@ public abstract class InputHandler extends KeyAdapter {
                     document.insertString(prevLineOffset + (endLineOffset - startLineOffset), prevStr, null);
                 }
             }
-            catch (BadLocationException e) {
-                e.printStackTrace();
+            catch (BadLocationException exception) {
+                exception.printStackTrace(System.err);
             }
-//            textArea.painter.repaint();
         }
     }
 
@@ -1119,15 +1126,16 @@ public abstract class InputHandler extends KeyAdapter {
         public void actionPerformed(ActionEvent event) {
             JEditTextArea textArea = getTextArea(event);
             SyntaxDocument document = textArea.getDocument();
-            int startLine = textArea.getSelectionStartLine(),
-                endLine = textArea.getSelectionEndLine();
+            int startLine = textArea.getSelectionStartLine();
+            int endLine = textArea.getSelectionEndLine();
             if (endLine == textArea.getLineCount() - 1) {
                 return;
             }
+
             int nextLine = endLine + 1;
-            int startLineOffset = textArea.getLineStartOffset(startLine),
-                nextLineOffset = textArea.getLineStartOffset(nextLine),
-                nextLineLength = textArea.getLineEndOffset(nextLine) - nextLineOffset;
+            int startLineOffset = textArea.getLineStartOffset(startLine);
+            int nextLineOffset = textArea.getLineStartOffset(nextLine);
+            int nextLineLength = textArea.getLineEndOffset(nextLine) - nextLineOffset;
             try {
                 String nextStr = document.getText(nextLineOffset, nextLineLength);
                 // To prevent weird behavior when moving down to last line
@@ -1140,10 +1148,9 @@ public abstract class InputHandler extends KeyAdapter {
                     document.insertString(startLineOffset, nextStr, null);
                 }
             }
-            catch (BadLocationException e) {
-                e.printStackTrace();
+            catch (BadLocationException exception) {
+                exception.printStackTrace(System.err);
             }
-//            textArea.painter.repaint();
         }
     }
 
@@ -1151,27 +1158,29 @@ public abstract class InputHandler extends KeyAdapter {
         @Override
         public void actionPerformed(ActionEvent event) {
             JEditTextArea textArea = getTextArea(event);
+            int startLine = textArea.getSelectionStartLine();
+            int endLine = textArea.getSelectionEndLine();
 
-            int startLine = textArea.getSelectionStartLine(),
-                endLine = textArea.getSelectionEndLine();
             for (int line = startLine; line <= endLine; line++) {
                 int startOffset = textArea.getLineStartOffset(line);
                 String text = textArea.getLineText(line);
-                if (text.isEmpty() || !(text.charAt(0) == '\t' || text.charAt(0) == ' '))
+                if (text.isEmpty() || !(text.charAt(0) == '\t' || text.charAt(0) == ' ')) {
                     return;
+                }
 
                 int len = 1;
                 int maxLen = Math.min(Application.getSettings().editorTabSize.get(), text.length());
                 for (int i = 0; i < maxLen; i++) {
-                    if (text.charAt(i) != ' ')
+                    if (text.charAt(i) != ' ') {
                         break;
+                    }
                     len = i + 1;
                 }
                 try {
                     textArea.getDocument().remove(startOffset, len);
                 }
-                catch (BadLocationException e) {
-                    e.printStackTrace();
+                catch (BadLocationException exception) {
+                    exception.printStackTrace(System.err);
                 }
             }
         }
@@ -1182,15 +1191,15 @@ public abstract class InputHandler extends KeyAdapter {
         public void actionPerformed(ActionEvent event) {
             JEditTextArea textArea = getTextArea(event);
 
-            int startLine = textArea.getSelectionStartLine(),
-                endLine = textArea.getSelectionEndLine();
+            int startLine = textArea.getSelectionStartLine();
+            int endLine = textArea.getSelectionEndLine();
             for (int line = startLine; line <= endLine; line++) {
                 int startOffset = textArea.getLineStartOffset(line);
                 try {
                     textArea.getDocument().insertString(startOffset, "\t", null);
                 }
-                catch (BadLocationException e) {
-                    e.printStackTrace();
+                catch (BadLocationException exception) {
+                    exception.printStackTrace(System.err);
                 }
             }
         }

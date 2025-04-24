@@ -52,7 +52,8 @@ public class DefaultInputHandler extends InputHandler {
         addKeyBinding("C+DELETE", DELETE_WORD);
 
         addKeyBinding("ENTER", INSERT_BREAK);
-        addKeyBinding("TAB", INSERT_TAB);
+        addKeyBinding("TAB", INSERT_TAB); // Invokes INDENT_RIGHT if text is selected
+        addKeyBinding("S+TAB", INDENT_LEFT);
 
         addKeyBinding("INSERT", OVERWRITE);
         addKeyBinding("C+\\", TOGGLE_RECT);
@@ -172,16 +173,16 @@ public class DefaultInputHandler extends InputHandler {
      */
     @Override
     @SuppressWarnings("unchecked")
-    public void keyPressed(KeyEvent evt) {
-        int keyCode = evt.getKeyCode();
-        int modifiers = evt.getModifiersEx();
+    public void keyPressed(KeyEvent event) {
+        int keyCode = event.getKeyCode();
+        int modifiers = event.getModifiersEx();
         if (keyCode == KeyEvent.VK_CONTROL || keyCode == KeyEvent.VK_SHIFT || keyCode == KeyEvent.VK_ALT || keyCode == KeyEvent.VK_META) {
             return;
         }
 
-        if ((modifiers & ~KeyEvent.SHIFT_DOWN_MASK) != 0 || evt.isActionKey() || keyCode == KeyEvent.VK_BACK_SPACE || keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_ENTER || keyCode == KeyEvent.VK_TAB || keyCode == KeyEvent.VK_ESCAPE) {
+        if ((modifiers & ~KeyEvent.SHIFT_DOWN_MASK) != 0 || event.isActionKey() || keyCode == KeyEvent.VK_BACK_SPACE || keyCode == KeyEvent.VK_DELETE || keyCode == KeyEvent.VK_ENTER || keyCode == KeyEvent.VK_TAB || keyCode == KeyEvent.VK_ESCAPE) {
             if (grabAction != null) {
-                handleGrabAction(evt);
+                handleGrabAction(event);
                 return;
             }
 
@@ -199,23 +200,23 @@ public class DefaultInputHandler extends InputHandler {
                     // shouldn't
                     repeatCount = 0;
                     repeat = false;
-                    evt.consume();
+                    event.consume();
                 }
                 currentBindings = bindings;
                 // No binding for this keyStroke, pass it to menu
                 // (mnemonic, accelerator).  DPS 4-may-2010
-                Application.getGUI().getJMenuBar().dispatchEvent(evt);
-                evt.consume();
+                Application.getGUI().getJMenuBar().dispatchEvent(event);
+                event.consume();
             }
             else if (o instanceof ActionListener) {
                 currentBindings = bindings;
-                executeAction(((ActionListener) o), evt.getSource(), null);
+                executeAction(((ActionListener) o), event.getSource(), null);
 
-                evt.consume();
+                event.consume();
             }
             else if (o instanceof HashMap) {
                 currentBindings = (HashMap<KeyStroke, Object>) o;
-                evt.consume();
+                event.consume();
             }
         }
     }

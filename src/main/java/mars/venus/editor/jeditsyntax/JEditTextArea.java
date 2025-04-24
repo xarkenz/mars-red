@@ -142,8 +142,11 @@ public class JEditTextArea extends JComponent {
         // One can also accomplish this using: setFocusTraversalKeysEnabled(false);
         // but that seems heavy-handed.
         // DPS 12-May-2010
+        // EDIT: Require that the Ctrl key be held for a focus traversal to occur. So, Shift+Tab is captured by the
+        // text area and can be used for the purpose of unindent.
+        // Sean Clarke, 04/2025
         KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(event -> {
-            if (JEditTextArea.this.isFocusOwner() && event.getKeyCode() == KeyEvent.VK_TAB && event.getModifiersEx() == 0) {
+            if (JEditTextArea.this.isFocusOwner() && event.getKeyCode() == KeyEvent.VK_TAB && !event.isControlDown()) {
                 processKeyEvent(event);
                 return true;
             }

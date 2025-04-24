@@ -27,7 +27,7 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
     private final FileEditorTab fileEditorTab;
     private final Settings settings;
     private final UndoManager undoManager;
-    private boolean isCompoundEdit = false;
+    private boolean isCompoundEdit;
     private CompoundEdit compoundEdit;
 
     public JEditBasedTextArea(FileEditorTab fileEditorTab, Settings settings, JComponent lineNumbers) {
@@ -35,6 +35,7 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
         this.fileEditorTab = fileEditorTab;
         this.settings = settings;
         this.undoManager = new UndoManager();
+        this.isCompoundEdit = false;
         this.compoundEdit = new CompoundEdit();
 
         // Needed to support unlimited undo/redo capability
@@ -89,14 +90,14 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
     @Override
     public void setCaretBlinkRate(int rate) {
         if (rate > 0) {
-            caretBlinks = true;
-            caretBlinkRate = rate;
+            this.caretBlinks = true;
+            this.caretBlinkRate = rate;
             caretTimer.setDelay(rate);
             caretTimer.setInitialDelay(rate);
             caretTimer.restart();
         }
         else {
-            caretBlinks = false;
+            this.caretBlinks = false;
         }
     }
 
@@ -145,7 +146,7 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
      */
     @Override
     public void replaceSelection(String replacementText) {
-        setSelectedText(replacementText);
+        this.setSelectedText(replacementText);
     }
 
     @Override
@@ -170,7 +171,7 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
      */
     @Override
     public UndoManager getUndoManager() {
-        return undoManager;
+        return this.undoManager;
     }
 
     /**
@@ -180,15 +181,15 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
     public void undo() {
         // "unredoing" is mode used by DocumentHandler's insertUpdate() and removeUpdate()
         // to pleasingly mark the text and location of the undo.
-        unredoing = true;
+        this.unredoing = true;
         try {
             this.undoManager.undo();
         }
-        catch (CannotUndoException ex) {
-            System.err.println("Unable to undo: " + ex);
-            ex.printStackTrace(System.err);
+        catch (CannotUndoException exception) {
+            System.err.println("Unable to undo: " + exception);
+            exception.printStackTrace(System.err);
         }
-        unredoing = false;
+        this.unredoing = false;
         this.setCaretVisible(true);
     }
 
@@ -199,15 +200,15 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
     public void redo() {
         // "unredoing" is mode used by DocumentHandler's insertUpdate() and removeUpdate()
         // to pleasingly mark the text and location of the redo.
-        unredoing = true;
+        this.unredoing = true;
         try {
             this.undoManager.redo();
         }
-        catch (CannotRedoException ex) {
-            System.err.println("Unable to redo: " + ex);
-            ex.printStackTrace(System.err);
+        catch (CannotRedoException exception) {
+            System.err.println("Unable to redo: " + exception);
+            exception.printStackTrace(System.err);
         }
-        unredoing = false;
+        this.unredoing = false;
         this.setCaretVisible(true);
     }
 
@@ -250,15 +251,18 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
             for (int i = startLine; i <= endLine; i++) {
                 String commentedLine = this.getLineText(i);
                 String uncommentedLine = commentedLine.replaceFirst("# ?", "");
-                replaceLine(i, uncommentedLine);
+                this.replaceLine(i, uncommentedLine);
                 
                 int textDiff = uncommentedLine.length() - commentedLine.length();
-                if (i == startLine)
+                if (i == startLine) {
                     startLineTextDiff = textDiff;
-                if (i == endLine)
+                }
+                if (i == endLine) {
                     endLineTextDiff = textDiff;
-                if (i == caretLine)
+                }
+                if (i == caretLine) {
                     caretLineTextDiff = textDiff;
+                }
             }
         }
         else {
@@ -266,19 +270,24 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
             for (int i = startLine; i <= endLine; i++) {
                 String uncommentedLine = this.getLineText(i);
                 String commentedLine;
-                if (uncommentedLine.isBlank())
+                if (uncommentedLine.isBlank()) {
                     commentedLine = uncommentedLine;
-                else
+                }
+                else {
                     commentedLine = uncommentedLine.replaceFirst("(\\S)", "# $1");
-                replaceLine(i, commentedLine);
+                }
+                this.replaceLine(i, commentedLine);
 
                 int textDiff = commentedLine.length() - uncommentedLine.length();
-                if (i == startLine)
+                if (i == startLine) {
                     startLineTextDiff = textDiff;
-                if (i == endLine)
+                }
+                if (i == endLine) {
                     endLineTextDiff = textDiff;
-                if (i == caretLine)
+                }
+                if (i == caretLine) {
                     caretLineTextDiff = textDiff;
+                }
             }
         }
 
@@ -288,16 +297,10 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
         int finalCaretPos = this.getLineStartOffset(caretLine) + caretPositionOffset + caretLineTextDiff;
         if (hasSelection) {
             if (caretAtSelectionStart) {
-                this.select(
-                        finalEndPos,
-                        finalStartPos
-                );
+                this.select(finalEndPos, finalStartPos);
             }
             else {
-                this.select(
-                        finalStartPos,
-                        finalEndPos
-                );
+                this.select(finalStartPos, finalEndPos);
             }
         }
         else {
@@ -342,7 +345,7 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
      * @return TEXT_FOUND or TEXT_NOT_FOUND, depending on the result.
      */
     public int doFindText(String text, boolean caseSensitive) {
-        int foundIndex = nextIndex(this.getText(), text, this.getCaretPosition(), caseSensitive);
+        int foundIndex = this.nextIndex(this.getText(), text, this.getCaretPosition(), caseSensitive);
         if (foundIndex >= 0) {
             // Ensure the found text will appear highlighted once selected
             this.requestFocusInWindow();
@@ -410,7 +413,7 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
         // Will perform a "find" and return, unless positioned at the end of
         // a selected "find" result.
         if (text == null || !text.equals(this.getSelectedText()) || this.getSelectionEnd() != this.getCaretPosition()) {
-            return doFindText(text, caseSensitive);
+            return this.doFindText(text, caseSensitive);
         }
         // We are positioned at end of selected "find".  Replace and find next.
         int foundIndex = this.getSelectionStart();
@@ -422,16 +425,16 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
         // Need to repeat start due to quirk in JEditTextArea implementation of setSelectionStart
         this.setSelectionStart(foundIndex);
 
-        isCompoundEdit = true;
-        compoundEdit = new CompoundEdit();
+        this.isCompoundEdit = true;
+        this.compoundEdit = new CompoundEdit();
         this.replaceSelection(replace);
-        compoundEdit.end();
-        undoManager.addEdit(compoundEdit);
-        fileEditorTab.updateUndoRedoActions();
-        isCompoundEdit = false;
+        this.compoundEdit.end();
+        this.undoManager.addEdit(this.compoundEdit);
+        this.fileEditorTab.updateUndoRedoActions();
+        this.isCompoundEdit = false;
         this.setCaretPosition(foundIndex + replace.length());
 
-        if (doFindText(text, caseSensitive) == TEXT_NOT_FOUND) {
+        if (this.doFindText(text, caseSensitive) == TEXT_NOT_FOUND) {
             return TEXT_REPLACED_NOT_FOUND_NEXT;
         }
         else {
@@ -453,10 +456,10 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
         int nextIndex = 0;
         int findIndex = 0; // Begin at start of text
         int replaceCount = 0;
-        compoundEdit = null; // new one will be created upon first replacement
-        isCompoundEdit = true; // undo manager's action listener needs this
+        this.compoundEdit = null; // new one will be created upon first replacement
+        this.isCompoundEdit = true; // undo manager's action listener needs this
         while (nextIndex >= 0) {
-            nextIndex = nextIndex(this.getText(), find, findIndex, caseSensitive);
+            nextIndex = this.nextIndex(this.getText(), find, findIndex, caseSensitive);
             if (nextIndex >= 0) {
                 // nextIndex() will wrap around, which causes infinite loop if
                 // find string is a substring of replacement string.  This
@@ -469,20 +472,20 @@ public class JEditBasedTextArea extends JEditTextArea implements MARSTextEditing
                 this.setSelectionEnd(nextIndex + find.length()); //select found text
                 // Need to repeat start due to quirk in JEditTextArea implementation of setSelectionStart.
                 this.setSelectionStart(nextIndex);
-                if (compoundEdit == null) {
-                    compoundEdit = new CompoundEdit();
+                if (this.compoundEdit == null) {
+                    this.compoundEdit = new CompoundEdit();
                 }
                 this.replaceSelection(replace);
                 findIndex = nextIndex + replace.length(); // set for next search
                 replaceCount++;
             }
         }
-        isCompoundEdit = false;
+        this.isCompoundEdit = false;
         // Will be true if any replacements were performed
-        if (compoundEdit != null) {
-            compoundEdit.end();
-            undoManager.addEdit(compoundEdit);
-            fileEditorTab.updateUndoRedoActions();
+        if (this.compoundEdit != null) {
+            this.compoundEdit.end();
+            this.undoManager.addEdit(this.compoundEdit);
+            this.fileEditorTab.updateUndoRedoActions();
         }
         return replaceCount;
     }
