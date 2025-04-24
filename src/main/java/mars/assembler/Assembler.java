@@ -115,6 +115,12 @@ public class Assembler {
         this.log.logWarning(location, content);
     }
 
+    public void logCompatibilityWarning(SourceLocation location, String content) {
+        if (Application.getSettings().compatibilityWarningsEnabled.get()) {
+            this.logWarning(location, content);
+        }
+    }
+
     public void logError(SourceLocation location, String content) {
         this.log.logError(location, content);
     }

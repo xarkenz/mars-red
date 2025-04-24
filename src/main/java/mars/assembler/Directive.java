@@ -455,6 +455,8 @@ public enum Directive {
             int initialAddress = assembler.getSegment().getAddress();
             Token repeatColon = null;
             Token previousNeedsPatch = null;
+            int operandCount = 0;
+            boolean hasRepetitionSyntax = false;
             for (Token token : syntax.getContent()) {
                 try {
                     // Integers (including characters) may be used as values in integer or floating-point directives,
@@ -463,7 +465,7 @@ public enum Directive {
                         // Extract the value from the token
                         int value = (Integer) token.getValue();
 
-                        // Handle the "value : n" format, which replicates the value "n" times.
+                        // Handle the "value : n" format, which replicates the value n times
                         if (repeatColon != null) {
                             if (assembler.getSegment().getAddress() == initialAddress) {
                                 logError(repeatColon, assembler, "Missing value to repeat before ':'");
@@ -497,15 +499,17 @@ public enum Directive {
 
                             // The repetition syntax is now complete
                             repeatColon = null;
-                            previousNeedsPatch = null;
+                            hasRepetitionSyntax = true;
                         }
                         else if (this.isFloatingPoint) {
                             this.storeFloatingPoint(syntax, assembler, token, value);
+                            operandCount++;
                         }
                         else {
                             this.storeInteger(syntax, assembler, token, value);
-                            previousNeedsPatch = null;
+                            operandCount++;
                         }
+                        previousNeedsPatch = null;
                     }
                     // Only integers may be used as a repetition count
                     else if (repeatColon != null) {
@@ -515,6 +519,7 @@ public enum Directive {
                     // Real numbers may be used as values in floating-point directives only
                     else if (this.isFloatingPoint && token.getType() == TokenType.REAL_NUMBER) {
                         this.storeFloatingPoint(syntax, assembler, token, (Double) token.getValue());
+                        operandCount++;
                     }
                     // A colon indicates that the previous value should be repeated a number of times specified by
                     // the next token (repetition count)
@@ -548,9 +553,17 @@ public enum Directive {
                             previousNeedsPatch = token;
                         }
 
+                        // Issue a warning if a label is being stored with .byte or .half, with likely undesired results
+                        // However, if a compact address space is being used with .half, might be intentional
+                        if (this.numBytes == 1 || this.numBytes == Memory.BYTES_PER_HALFWORD && !Memory.getInstance().isUsingCompactAddressSpace()
+                        ) {
+                            logWarning(token, assembler, "Address of label '" + token + "' is likely out of range for '" + syntax.getDirective() + "' and may be truncated to fit");
+                        }
+
                         // Store either the actual value or the temporary placeholder
                         Memory.getInstance().store(assembler.getSegment().getAddress(), value, this.numBytes, false);
                         assembler.getSegment().incrementAddress(this.numBytes);
+                        operandCount++;
                     }
                     else {
                         logError(token, assembler, "Directive '" + syntax.getDirective() + "' expected a numeric value, got: " + token);
@@ -566,6 +579,14 @@ public enum Directive {
             // If there's still a repeat colon, the repetition count is invalid or missing
             if (repeatColon != null) {
                 logError(repeatColon, assembler, "Expected an integer repetition count following ':'");
+            }
+            // Check compatibility with legacy MARS
+            else if (hasRepetitionSyntax && operandCount != 1) {
+                assembler.logCompatibilityWarning(
+                    syntax.getSourceLine().getLocation(),
+                    "In MARS 4.5, the 'value : n' syntax does not permit other operands in the same directive. "
+                    + "Consider splitting this '" + syntax.getDirective() + "' directive into multiple."
+                );
             }
         }
 

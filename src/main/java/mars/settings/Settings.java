@@ -294,6 +294,17 @@ public class Settings {
         false,
         false
     );
+    /**
+     * Flag to control whether the assembler outputs a warning whenever it assembles a program which uses features
+     * exclusive to MARS Red, and would not assemble properly in MARS 4.5. This is useful to students, for example,
+     * whose assignments may be assembled in MARS 4.5 for grading.
+     */
+    public final BooleanSetting compatibilityWarningsEnabled = new BooleanSetting(
+        this,
+        "CompatibilityWarnings",
+        true,
+        false
+    );
 
     public final BooleanSetting[] booleanSettings = {
         this.extendedAssemblerEnabled,
@@ -315,6 +326,7 @@ public class Settings {
         this.autoIndentEnabled,
         this.selfModifyingCodeEnabled,
         this.useBigEndian,
+        this.compatibilityWarningsEnabled,
     };
 
     // INTEGER SETTINGS

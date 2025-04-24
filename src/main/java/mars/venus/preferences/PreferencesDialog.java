@@ -30,6 +30,7 @@ public class PreferencesDialog extends JDialog {
         this.tabs.add(new GeneralPreferencesTab(settings));
         this.tabs.add(new AppearancePreferencesTab(settings));
         this.tabs.add(new EditorPreferencesTab(settings));
+        this.tabs.add(new AssemblerPreferencesTab(settings));
         this.tabs.add(new SimulatorPreferencesTab(settings));
         this.tabs.add(new ExceptionPreferencesTab(settings));
         this.tabs.add(new MemoryPreferencesTab(settings));
