@@ -25,4 +25,5 @@ mars.venus.editor.jeditsyntax
 mars.venus.editor.jeditsyntax.tokenmarker
 mars.venus.execute
 mars.venus.preferences
+mars.venus.preferences.components
 mars.venus.themes
