@@ -131,21 +131,14 @@ public class VenusUI extends JFrame implements SimulatorListener {
     private RunToggleBreakpointsAction runToggleBreakpointsAction;
 
     private SettingsLabelAction settingsLabelAction;
-    private SettingsPopupInputAction settingsPopupInputAction;
     private SettingsValueDisplayBaseAction settingsValueDisplayBaseAction;
     private SettingsAddressDisplayBaseAction settingsAddressDisplayBaseAction;
-    private SettingsExtendedAction settingsExtendedAction;
     private SettingsAssembleOnOpenAction settingsAssembleOnOpenAction;
-    private SettingsWarningsAreErrorsAction settingsWarningsAreErrorsAction;
-    private SettingsStartAtMainAction settingsStartAtMainAction;
     private SettingsProgramArgumentsAction settingsProgramArgumentsAction;
-    private SettingsDelayedBranchingAction settingsDelayedBranchingAction;
     private SettingsExceptionHandlerAction settingsExceptionHandlerAction;
     private SettingsEditorAction settingsEditorAction;
     private SettingsHighlightingAction settingsHighlightingAction;
     private SettingsMemoryConfigurationAction settingsMemoryConfigurationAction;
-    private SettingsSelfModifyingCodeAction settingsSelfModifyingCodeAction;
-    private SettingsEndiannessAction settingsEndiannessAction;
     private SettingsPreferencesAction settingsPreferencesAction;
 
     private HelpHelpAction helpHelpAction;
@@ -359,17 +352,10 @@ public class VenusUI extends JFrame implements SimulatorListener {
         this.actions.add(this.runToggleBreakpointsAction = new RunToggleBreakpointsAction(this, KeyEvent.VK_T, KeyStroke.getKeyStroke(KeyEvent.VK_T, menuShortcutMask)));
 
         this.actions.add(this.settingsLabelAction = new SettingsLabelAction(this, "Show symbol table", null, "Toggle visibility of Labels window (symbol table) in the Execute tab", null, null));
-        this.actions.add(this.settingsPopupInputAction = new SettingsPopupInputAction(this, "Use dialog for user input", null, "If set, use popup dialog for input syscalls (5, 6, 7, 8, 12) instead of console input", null, null));
         this.actions.add(this.settingsValueDisplayBaseAction = new SettingsValueDisplayBaseAction(this, "Hexadecimal values", null, "Toggle between hexadecimal and decimal display of memory/register values", null, null));
         this.actions.add(this.settingsAddressDisplayBaseAction = new SettingsAddressDisplayBaseAction(this, "Hexadecimal addresses", null, "Toggle between hexadecimal and decimal display of memory addresses", null, null));
-        this.actions.add(this.settingsExtendedAction = new SettingsExtendedAction(this, "Allow extended (pseudo) instructions", null, "If set, MIPS extended (pseudo) instructions are formats are permitted.", null, null));
         this.actions.add(this.settingsAssembleOnOpenAction = new SettingsAssembleOnOpenAction(this, "Assemble files when opened", null, "If set, a file will be automatically assembled as soon as it is opened.  File Open dialog will show most recently opened file.", null, null));
-        this.actions.add(this.settingsWarningsAreErrorsAction = new SettingsWarningsAreErrorsAction(this, "Promote assembler warnings to errors", null, "If set, assembler warnings will be interpreted as errors and prevent successful assembly.", null, null));
-        this.actions.add(this.settingsStartAtMainAction = new SettingsStartAtMainAction(this, "Use \"main\" as program entry point", null, "If set, assembler will initialize Program Counter to text address globally labeled 'main', if defined.", null, null));
         this.actions.add(this.settingsProgramArgumentsAction = new SettingsProgramArgumentsAction(this, "Allow program arguments", null, "If set, program arguments for MIPS program can be entered in border of Text Segment window.", null, null));
-        this.actions.add(this.settingsDelayedBranchingAction = new SettingsDelayedBranchingAction(this, "Delayed branching", null, "If set, delayed branching will occur during MIPS execution.", null, null));
-        this.actions.add(this.settingsSelfModifyingCodeAction = new SettingsSelfModifyingCodeAction(this, "Self-modifying code", null, "If set, the MIPS program can write and branch to both text and data segments.", null, null));
-        this.actions.add(this.settingsEndiannessAction = new SettingsEndiannessAction(this, "Use big-endian byte ordering", null, "If set, the bytes in a word will be ordered from most to least significant.", null, null));
         this.actions.add(this.settingsEditorAction = new SettingsEditorAction(this, "Editor Settings...", null, "View and modify text editor settings", null, null));
         this.actions.add(this.settingsHighlightingAction = new SettingsHighlightingAction(this, "Highlighting...", null, "View and modify Execute tab highlighting colors", null, null));
         this.actions.add(this.settingsExceptionHandlerAction = new SettingsExceptionHandlerAction(this, "Exception Handler...", null, "If set, the specified exception handler file will be included in all Assemble operations.", null, null));
@@ -443,15 +429,8 @@ public class VenusUI extends JFrame implements SimulatorListener {
         settingsMenu.add(this.createMenuBaseChooser(this.settingsValueDisplayBaseAction, this.settings.displayValuesInHex.get(), this.mainPane.getExecuteTab().getValueDisplayBaseChooser()));
         settingsMenu.addSeparator();
         settingsMenu.add(this.createMenuCheckBox(this.settingsAssembleOnOpenAction, this.settings.assembleOnOpenEnabled.get()));
-        settingsMenu.add(this.createMenuCheckBox(this.settingsWarningsAreErrorsAction, this.settings.warningsAreErrors.get()));
-        settingsMenu.add(this.createMenuCheckBox(this.settingsStartAtMainAction, this.settings.startAtMain.get()));
-        settingsMenu.add(this.createMenuCheckBox(this.settingsExtendedAction, this.settings.extendedAssemblerEnabled.get()));
         settingsMenu.addSeparator();
         settingsMenu.add(this.createMenuCheckBox(this.settingsProgramArgumentsAction, this.settings.useProgramArguments.get()));
-        settingsMenu.add(this.createMenuCheckBox(this.settingsPopupInputAction, this.settings.popupSyscallInput.get()));
-        settingsMenu.add(this.createMenuCheckBox(this.settingsDelayedBranchingAction, this.settings.delayedBranchingEnabled.get()));
-        settingsMenu.add(this.createMenuCheckBox(this.settingsSelfModifyingCodeAction, this.settings.selfModifyingCodeEnabled.get()));
-        settingsMenu.add(this.createMenuCheckBox(this.settingsEndiannessAction, this.settings.useBigEndian.get()));
         settingsMenu.addSeparator();
         settingsMenu.add(this.createMenuItem(this.settingsEditorAction));
         settingsMenu.add(this.createMenuItem(this.settingsHighlightingAction));

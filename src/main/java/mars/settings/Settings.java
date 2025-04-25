@@ -963,6 +963,7 @@ public class Settings {
      * the built-in defaults set by this class are used.
      */
     public void loadValues() {
+        // TODO: probably should handle the error case a little more gracefully, and still allow app to run
         this.preferences = Objects.requireNonNull(
             Preferences.userNodeForPackage(Settings.class),
             "failed to access persistent settings storage"
