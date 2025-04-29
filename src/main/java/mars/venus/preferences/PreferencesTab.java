@@ -1,5 +1,6 @@
 package mars.venus.preferences;
 
+import mars.Application;
 import mars.settings.Settings;
 
 import javax.swing.*;
@@ -19,6 +20,7 @@ public abstract class PreferencesTab extends JScrollPane {
         container.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
         this.setViewportView(container);
         this.setBorder(BorderFactory.createEmptyBorder());
+        Application.getGUI().customizeScrollPane(this);
     }
 
     public abstract void applyChanges();

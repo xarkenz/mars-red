@@ -138,7 +138,6 @@ public class VenusUI extends JFrame implements SimulatorListener {
     private SettingsExceptionHandlerAction settingsExceptionHandlerAction;
     private SettingsEditorAction settingsEditorAction;
     private SettingsHighlightingAction settingsHighlightingAction;
-    private SettingsMemoryConfigurationAction settingsMemoryConfigurationAction;
     private SettingsPreferencesAction settingsPreferencesAction;
 
     private HelpHelpAction helpHelpAction;
@@ -359,7 +358,6 @@ public class VenusUI extends JFrame implements SimulatorListener {
         this.actions.add(this.settingsEditorAction = new SettingsEditorAction(this, "Editor Settings...", null, "View and modify text editor settings", null, null));
         this.actions.add(this.settingsHighlightingAction = new SettingsHighlightingAction(this, "Highlighting...", null, "View and modify Execute tab highlighting colors", null, null));
         this.actions.add(this.settingsExceptionHandlerAction = new SettingsExceptionHandlerAction(this, "Exception Handler...", null, "If set, the specified exception handler file will be included in all Assemble operations.", null, null));
-        this.actions.add(this.settingsMemoryConfigurationAction = new SettingsMemoryConfigurationAction(this, "Memory Configuration...", null, "View and modify memory segment base addresses for simulated MIPS", null, null));
         this.actions.add(this.settingsPreferencesAction = new SettingsPreferencesAction(this, null, null));
 
         this.actions.add(this.helpHelpAction = new HelpHelpAction(this, KeyEvent.VK_H, KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0)));
@@ -435,7 +433,6 @@ public class VenusUI extends JFrame implements SimulatorListener {
         settingsMenu.add(this.createMenuItem(this.settingsEditorAction));
         settingsMenu.add(this.createMenuItem(this.settingsHighlightingAction));
         settingsMenu.add(this.createMenuItem(this.settingsExceptionHandlerAction));
-        settingsMenu.add(this.createMenuItem(this.settingsMemoryConfigurationAction));
         settingsMenu.add(this.createMenuItem(this.settingsPreferencesAction));
         menuBar.add(settingsMenu);
 
