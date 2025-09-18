@@ -590,8 +590,8 @@ public class TextSegmentWindow extends JInternalFrame implements SimulatorListen
     public void startObservingMemory() {
         Memory.getInstance().addListener(
             this,
-            Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW),
-            Memory.getInstance().getAddress(MemoryConfigurations.TEXT_HIGH)
+            Memory.getInstance().getLayout().textRange.minAddress(),
+            Memory.getInstance().getLayout().textRange.maxAddress()
         );
     }
 

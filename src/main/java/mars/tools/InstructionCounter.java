@@ -30,7 +30,6 @@ package mars.tools;
 import mars.assembler.BasicStatement;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.MemoryConfigurations;
 import mars.mips.instructions.BasicInstruction;
 import mars.mips.instructions.InstructionFormat;
 
@@ -175,13 +174,13 @@ public class InstructionCounter extends AbstractMarsTool {
     protected void startObserving() {
         Memory.getInstance().addListener(
             this,
-            Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW),
-            Memory.getInstance().getAddress(MemoryConfigurations.TEXT_HIGH)
+            Memory.getInstance().getLayout().textRange.minAddress(),
+            Memory.getInstance().getLayout().textRange.maxAddress()
         );
         Memory.getInstance().addListener(
             this,
-            Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_TEXT_LOW),
-            Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_TEXT_HIGH)
+            Memory.getInstance().getLayout().kernelTextRange.minAddress(),
+            Memory.getInstance().getLayout().kernelTextRange.maxAddress()
         );
     }
 

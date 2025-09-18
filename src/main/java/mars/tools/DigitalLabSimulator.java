@@ -1,10 +1,8 @@
 package mars.tools;
 
-import mars.Application;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Coprocessor0;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.MemoryConfigurations;
 import mars.simulator.Simulator;
 
 import javax.swing.*;
@@ -55,7 +53,7 @@ public class DigitalLabSimulator extends AbstractMarsTool {
 
     @Override
     protected void startObserving() {
-        Memory.getInstance().addListener(this, Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW) + IN_OFFSET_DISPLAY_1);
+        Memory.getInstance().addListener(this, Memory.getInstance().getLayout().mmioRange.minAddress() + IN_OFFSET_DISPLAY_1);
     }
 
     @Override
@@ -65,7 +63,7 @@ public class DigitalLabSimulator extends AbstractMarsTool {
 
     @Override
     public void memoryWritten(int address, int length, int value, int wordAddress, int wordValue) {
-        int mmioBaseAddress = Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW);
+        int mmioBaseAddress = Memory.getInstance().getLayout().mmioRange.minAddress();
         if (address == mmioBaseAddress + IN_OFFSET_DISPLAY_1) {
             sevenSegmentPanel.modifyDisplay(1, (byte) value);
         }
@@ -112,7 +110,7 @@ public class DigitalLabSimulator extends AbstractMarsTool {
     private synchronized void updateMMIOControlAndData(int value) {
         Simulator.getInstance().changeState(() -> {
             try {
-                Memory.getInstance().storeWord(Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW) + OUT_OFFSET_HEXADECIMAL_KEYBOARD, value, true);
+                Memory.getInstance().storeWord(Memory.getInstance().getLayout().mmioRange.minAddress() + OUT_OFFSET_HEXADECIMAL_KEYBOARD, value, true);
             }
             catch (AddressErrorException exception) {
                 System.err.println("Tool author specified incorrect MMIO address!");

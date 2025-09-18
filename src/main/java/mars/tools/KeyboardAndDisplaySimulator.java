@@ -148,7 +148,7 @@ public class KeyboardAndDisplaySimulator extends AbstractMarsTool {
      */
     @Override
     protected void initializePreGUI() {
-        int address = Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW);
+        int address = Memory.getInstance().getLayout().mmioRange.minAddress();
         receiverControl = address; // keyboard Ready in low-order bit
         address += Memory.BYTES_PER_WORD;
         receiverData = address; // keyboard character in low-order byte
@@ -184,13 +184,13 @@ public class KeyboardAndDisplaySimulator extends AbstractMarsTool {
         // this too.  This simulates the time required for the display unit to process the TRANSMITTER_DATA.
         Memory.getInstance().addListener(
             this,
-            Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW),
-            Memory.getInstance().getAddress(MemoryConfigurations.TEXT_HIGH)
+            Memory.getInstance().getLayout().textRange.minAddress(),
+            Memory.getInstance().getLayout().textRange.maxAddress()
         );
         Memory.getInstance().addListener(
             this,
-            Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_TEXT_LOW),
-            Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_TEXT_HIGH)
+            Memory.getInstance().getLayout().kernelTextRange.minAddress(),
+            Memory.getInstance().getLayout().kernelTextRange.maxAddress()
         );
     }
 

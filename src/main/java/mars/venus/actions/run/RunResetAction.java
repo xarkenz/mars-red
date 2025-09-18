@@ -87,7 +87,7 @@ public class RunResetAction extends VenusAction {
         registersPane.setSelectedComponent(registersPane.getProcessorTab());
 
         ExecuteTab executeTab = this.gui.getMainPane().getExecuteTab();
-        executeTab.getDataSegmentWindow().highlightCellForAddress(Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW));
+        executeTab.getDataSegmentWindow().highlightCellForAddress(Memory.getInstance().getLayout().staticRange.minAddress());
         executeTab.getDataSegmentWindow().clearHighlighting();
         executeTab.getTextSegmentWindow().resetModifiedSourceCode();
         executeTab.getTextSegmentWindow().updateHighlighting();

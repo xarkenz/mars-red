@@ -1,8 +1,7 @@
 package mars.venus.preferences;
 
-import mars.Application;
-import mars.mips.hardware.MemoryConfiguration;
-import mars.mips.hardware.MemoryConfigurations;
+import mars.mips.hardware.Memory;
+import mars.mips.hardware.MemoryLayout;
 import mars.settings.Settings;
 import mars.util.Binary;
 import mars.venus.SimpleCellRenderer;
@@ -12,12 +11,12 @@ import mars.venus.preferences.components.CheckBoxPreference;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
-import java.util.List;
+import java.util.Map;
 
 public class MemoryPreferencesTab extends PreferencesTab {
     private final CheckBoxPreference useBigEndian;
-    private ConfigurationButton selectedConfigurationButton;
-    private ConfigurationButton initialConfigurationButton;
+    private MemoryLayoutButton selectedLayoutButton;
+    private MemoryLayoutButton initialLayoutButton;
     private JTable memoryRangeTable;
     private Object[][] memoryRangeData;
     private JTable memoryLocationTable;
@@ -32,40 +31,40 @@ public class MemoryPreferencesTab extends PreferencesTab {
             "When enabled, the bytes in a word will be ordered from most to least significant. "
             + "By default, the bytes in a word are ordered from least to most significant (little-endian)."
         ));
-        this.addRow(this.buildConfigChooser(MemoryConfigurations.getConfigurations()));
+        this.addRow(this.buildLayoutChooser());
     }
 
     @Override
     public void applyChanges() {
         this.useBigEndian.apply();
-        if (MemoryConfigurations.setCurrentConfiguration(this.selectedConfigurationButton.getConfiguration())) {
-            this.settings.memoryConfiguration.set(this.selectedConfigurationButton.getConfiguration().identifier());
-            Application.getGUI().getRegistersPane().getProcessorTab().clearHighlighting();
-            Application.getGUI().getRegistersPane().getProcessorTab().updateRegisters();
-            Application.getGUI().getMainPane().getExecuteTab().getDataSegmentWindow().updateBaseAddressComboBox();
-        }
+        this.settings.memoryLayout.set(this.selectedLayoutButton.getKey());
     }
 
     @Override
     public void revertChanges() {
         this.useBigEndian.revert();
-        this.selectedConfigurationButton = this.initialConfigurationButton;
-        this.selectedConfigurationButton.setSelected(true);
-        this.setConfigDisplay(this.selectedConfigurationButton.getConfiguration());
+        this.selectedLayoutButton = this.initialLayoutButton;
+        this.selectedLayoutButton.setSelected(true);
+        this.setLayoutDisplay(this.selectedLayoutButton.getKey());
     }
 
-    private JComponent buildConfigChooser(List<MemoryConfiguration> configurations) {
-        JPanel choicesPanel = new JPanel(new GridLayout(configurations.size(), 1));
+    private JComponent buildLayoutChooser() {
+        JPanel choicesPanel = new JPanel(new GridLayout(Memory.getLayouts().size(), 1));
         ButtonGroup choicesGroup = new ButtonGroup();
-        for (MemoryConfiguration configuration : configurations) {
-            ConfigurationButton button = new ConfigurationButton(configuration);
+        String currentLayoutKey = this.settings.memoryLayout.get();
+        for (Map.Entry<String, MemoryLayout> entry : Memory.getLayouts().entrySet()) {
+            MemoryLayoutButton button = new MemoryLayoutButton(
+                entry.getKey(),
+                entry.getValue().displayName,
+                entry.getKey().equals(currentLayoutKey)
+            );
             button.addActionListener(event -> {
-                this.setConfigDisplay(button.getConfiguration());
-                this.selectedConfigurationButton = button;
+                this.setLayoutDisplay(button.getKey());
+                this.selectedLayoutButton = button;
             });
             if (button.isSelected()) {
-                this.selectedConfigurationButton = button;
-                this.initialConfigurationButton = button;
+                this.selectedLayoutButton = button;
+                this.initialLayoutButton = button;
             }
             choicesGroup.add(button);
             choicesPanel.add(button);
@@ -74,17 +73,10 @@ public class MemoryPreferencesTab extends PreferencesTab {
         SimpleCellRenderer addressRenderer = new SimpleCellRenderer(SwingConstants.CENTER);
 
         String[] memoryRangeColumns = { "Description", "Lowest Address", "Highest Address" };
-        this.memoryRangeData = new Object[10][3];
-        this.memoryRangeData[0][0] = "Mapped address space";
-        this.memoryRangeData[1][0] = "User space";
-        this.memoryRangeData[2][0] = "Text segment (.text)";
-        this.memoryRangeData[3][0] = "Data segment";
-        this.memoryRangeData[4][0] = "Global data (.extern)";
-        this.memoryRangeData[5][0] = "Static data (.data)";
-        this.memoryRangeData[6][0] = "Heap/stack data";
-        this.memoryRangeData[7][0] = "Kernel text segment (.ktext)";
-        this.memoryRangeData[8][0] = "Kernel data segment (.kdata)";
-        this.memoryRangeData[9][0] = "Memory-mapped I/O";
+        this.memoryRangeData = new Object[MemoryLayout.RANGE_DESCRIPTIONS.length][3];
+        for (int row = 0; row < MemoryLayout.RANGE_DESCRIPTIONS.length; row++) {
+            this.memoryRangeData[row][0] = MemoryLayout.RANGE_DESCRIPTIONS[row];
+        }
 
         this.memoryRangeTable = new JTable(new StaticTableModel(this.memoryRangeData, memoryRangeColumns));
         this.memoryRangeTable.setCellSelectionEnabled(false);
@@ -111,7 +103,10 @@ public class MemoryPreferencesTab extends PreferencesTab {
         ));
 
         String[] memoryLocationColumns = { "Description", "Address" };
-        this.memoryLocationData = new Object[3][2];
+        this.memoryLocationData = new Object[MemoryLayout.LOCATION_DESCRIPTIONS.length][2];
+        for (int row = 0; row < MemoryLayout.LOCATION_DESCRIPTIONS.length; row++) {
+            this.memoryLocationData[row][0] = MemoryLayout.LOCATION_DESCRIPTIONS[row];
+        }
 
         this.memoryLocationTable = new JTable(new StaticTableModel(this.memoryLocationData, memoryLocationColumns));
         this.memoryLocationTable.setCellSelectionEnabled(false);
@@ -135,7 +130,7 @@ public class MemoryPreferencesTab extends PreferencesTab {
             BorderFactory.createLineBorder(UIManager.getColor("Table.gridColor"))
         ));
 
-        this.setConfigDisplay(MemoryConfigurations.getCurrentConfiguration());
+        this.setLayoutDisplay(this.settings.memoryLayout.get());
 
         Box chooserPanels = Box.createVerticalBox();
         chooserPanels.add(choicesPanel);
@@ -153,35 +148,33 @@ public class MemoryPreferencesTab extends PreferencesTab {
         return chooserPanels;
     }
 
-    private void setConfigDisplay(MemoryConfiguration configuration) {
-        String[] addressNames = configuration.addressNames();
-        int[] addresses = configuration.addresses();
+    private void setLayoutDisplay(String layoutKey) {
+        MemoryLayout layout = Memory.getLayoutOrDefault(layoutKey);
 
-        for (int i = 0; i < 20; i++) {
-            this.memoryRangeData[i / 2][1 + i % 2] = Binary.intToHexString(addresses[i]);
+        for (int row = 0; row < layout.ranges.length; row++) {
+            this.memoryRangeData[row][1] = Binary.intToHexString(layout.ranges[row].minAddress());
+            this.memoryRangeData[row][2] = Binary.intToHexString(layout.ranges[row].maxAddress());
         }
 
         ((StaticTableModel) this.memoryRangeTable.getModel()).fireTableDataChanged();
 
-        for (int i = 20; i < addresses.length; i++) {
-            int row = i - 20;
-            this.memoryLocationData[row][0] = addressNames[i];
-            this.memoryLocationData[row][1] = Binary.intToHexString(addresses[i]);
+        for (int row = 0; row < layout.locations.length; row++) {
+            this.memoryLocationData[row][1] = Binary.intToHexString(layout.locations[row]);
         }
 
         ((StaticTableModel) this.memoryLocationTable.getModel()).fireTableDataChanged();
     }
 
-    private static class ConfigurationButton extends JRadioButton {
-        private final MemoryConfiguration configuration;
+    private static class MemoryLayoutButton extends JRadioButton {
+        private final String key;
 
-        public ConfigurationButton(MemoryConfiguration configuration) {
-            super(configuration.name(), configuration == MemoryConfigurations.getCurrentConfiguration());
-            this.configuration = configuration;
+        public MemoryLayoutButton(String key, String displayName, boolean selected) {
+            super(displayName, selected);
+            this.key = key;
         }
 
-        public MemoryConfiguration getConfiguration() {
-            return this.configuration;
+        public String getKey() {
+            return this.key;
         }
     }
 }

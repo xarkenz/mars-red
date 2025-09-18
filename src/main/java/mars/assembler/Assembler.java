@@ -212,15 +212,15 @@ public class Assembler {
         this.currentFilePatches.clear();
         this.remainingPatches.clear();
 
-        this.dataSegment.setBounds(MemoryConfigurations.STATIC_LOW, MemoryConfigurations.STATIC_HIGH);
+        this.dataSegment.setRange(Memory.getInstance().getLayout().staticRange);
         this.dataSegment.resetAddress();
-        this.textSegment.setBounds(MemoryConfigurations.TEXT_LOW, MemoryConfigurations.TEXT_HIGH);
+        this.textSegment.setRange(Memory.getInstance().getLayout().textRange);
         this.textSegment.resetAddress();
-        this.kernelDataSegment.setBounds(MemoryConfigurations.KERNEL_DATA_LOW, MemoryConfigurations.KERNEL_DATA_HIGH);
+        this.kernelDataSegment.setRange(Memory.getInstance().getLayout().kernelDataRange);
         this.kernelDataSegment.resetAddress();
-        this.kernelTextSegment.setBounds(MemoryConfigurations.KERNEL_TEXT_LOW, MemoryConfigurations.KERNEL_TEXT_HIGH);
+        this.kernelTextSegment.setRange(Memory.getInstance().getLayout().kernelTextRange);
         this.kernelTextSegment.resetAddress();
-        this.externSegment.setBounds(MemoryConfigurations.EXTERN_LOW, MemoryConfigurations.EXTERN_HIGH);
+        this.externSegment.setRange(Memory.getInstance().getLayout().externRange);
         this.externSegment.resetAddress();
         this.segment = this.textSegment;
     }
@@ -554,9 +554,9 @@ public class Assembler {
             return this.lastAddress;
         }
 
-        public void setBounds(int lowKey, int highKey) {
-            this.firstAddress = Memory.getInstance().getAddress(lowKey);
-            this.lastAddress = Memory.getInstance().getAddress(highKey);
+        public void setRange(MemoryLayout.Range range) {
+            this.firstAddress = range.minAddress();
+            this.lastAddress = range.maxAddress();
         }
 
         public int getAddress() {

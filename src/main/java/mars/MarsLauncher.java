@@ -168,7 +168,6 @@ public class MarsLauncher {
             this.registerDisplayList = new ArrayList<>();
             this.memoryDisplayList = new ArrayList<>();
             this.filenameList = new ArrayList<>();
-            MemoryConfigurations.setCurrentConfiguration(MemoryConfigurations.getDefaultConfiguration());
             this.maxSteps = -1;
             this.out = System.out;
             if (this.parseCommandArgs(args)) {
@@ -313,13 +312,12 @@ public class MarsLauncher {
             }
             if (args[i].equalsIgnoreCase("mc")) {
                 String configName = args[++i];
-                MemoryConfiguration config = MemoryConfigurations.getConfiguration(configName);
-                if (config == null) {
+                if (Memory.getLayouts().get(configName) == null) {
                     this.out.println("Invalid memory configuration: " + configName);
                     argsOK = false;
                 }
                 else {
-                    MemoryConfigurations.setCurrentConfiguration(config);
+                    Application.getSettings().memoryLayout.setNonPersistent(configName);
                 }
                 continue;
             }
@@ -568,13 +566,13 @@ public class MarsLauncher {
             };
             Memory.getInstance().addListener(
                 instructionCounter,
-                Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW),
-                Memory.getInstance().getAddress(MemoryConfigurations.TEXT_HIGH)
+                Memory.getInstance().getLayout().textRange.minAddress(),
+                Memory.getInstance().getLayout().textRange.maxAddress()
             );
             Memory.getInstance().addListener(
                 instructionCounter,
-                Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_TEXT_LOW),
-                Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_TEXT_HIGH)
+                Memory.getInstance().getLayout().kernelTextRange.minAddress(),
+                Memory.getInstance().getLayout().kernelTextRange.maxAddress()
             );
         }
     }

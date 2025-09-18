@@ -314,7 +314,7 @@ public class Simulator {
         try {
             // The first step is to store all of the argument strings underneath the stack
             // Start at highest dynamic data address, sits "under" stack
-            int address = Memory.alignToPrevious(Memory.getInstance().getAddress(MemoryConfigurations.DYNAMIC_HIGH), Memory.BYTES_PER_WORD);
+            int address = Memory.alignToPrevious(Memory.getInstance().getLayout().dynamicRange.maxAddress(), Memory.BYTES_PER_WORD);
             List<Integer> argumentAddresses = new ArrayList<>(arguments.size());
             for (String argument : arguments) {
                 // Store a null terminator byte
@@ -329,7 +329,7 @@ public class Simulator {
             }
 
             // Determine where the bottom of the runtime stack is
-            int stackAddress = Memory.getInstance().getAddress(MemoryConfigurations.STACK_POINTER);
+            int stackAddress = Memory.getInstance().getLayout().initialStackPointer;
             if (address < stackAddress + Memory.BYTES_PER_WORD - 1) {
                 // Based on current values for stackBaseAddress and stackPointer, this will
                 // only happen if the combined lengths of program arguments is greater than

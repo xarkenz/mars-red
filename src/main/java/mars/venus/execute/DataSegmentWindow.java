@@ -105,14 +105,14 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
     private static final int MMIO_BASE_ADDRESS_INDEX = 7;
     // Must agree with above in number and order...
     private final int[] baseAddresses = {
-        Memory.getInstance().getAddress(MemoryConfigurations.EXTERN_LOW),
-        Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW),
-        Memory.getInstance().getAddress(MemoryConfigurations.DYNAMIC_LOW),
+        Memory.getInstance().getLayout().externRange.minAddress(),
+        Memory.getInstance().getLayout().staticRange.minAddress(),
+        Memory.getInstance().getLayout().dynamicRange.minAddress(),
         -1, // Global pointer placeholder
         -1, // Stack pointer placeholder
-        Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW),
-        Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_DATA_LOW),
-        Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW),
+        Memory.getInstance().getLayout().textRange.minAddress(),
+        Memory.getInstance().getLayout().kernelDataRange.minAddress(),
+        Memory.getInstance().getLayout().mmioRange.minAddress(),
     };
     // Must agree with above in number and order...
     private static final String[] LOCATION_DESCRIPTIONS = {
@@ -192,14 +192,14 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
     }
 
     public void updateBaseAddressComboBox() {
-        this.baseAddresses[EXTERN_BASE_ADDRESS_INDEX] = Memory.getInstance().getAddress(MemoryConfigurations.EXTERN_LOW);
-        this.baseAddresses[DATA_BASE_ADDRESS_INDEX] = Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW);
-        this.baseAddresses[HEAP_BASE_ADDRESS_INDEX] = Memory.getInstance().getAddress(MemoryConfigurations.DYNAMIC_LOW);
+        this.baseAddresses[EXTERN_BASE_ADDRESS_INDEX] = Memory.getInstance().getLayout().externRange.minAddress();
+        this.baseAddresses[DATA_BASE_ADDRESS_INDEX] = Memory.getInstance().getLayout().staticRange.minAddress();
+        this.baseAddresses[HEAP_BASE_ADDRESS_INDEX] = Memory.getInstance().getLayout().dynamicRange.minAddress();
         this.baseAddresses[GLOBAL_POINTER_BASE_ADDRESS_INDEX] = -1; // Global pointer placeholder
         this.baseAddresses[STACK_POINTER_BASE_ADDRESS_INDEX] = -1; // Stack pointer placeholder
-        this.baseAddresses[TEXT_BASE_ADDRESS_INDEX] = Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW);
-        this.baseAddresses[KERNEL_DATA_BASE_ADDRESS_INDEX] = Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_DATA_LOW);
-        this.baseAddresses[MMIO_BASE_ADDRESS_INDEX] = Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW);
+        this.baseAddresses[TEXT_BASE_ADDRESS_INDEX] = Memory.getInstance().getLayout().textRange.minAddress();
+        this.baseAddresses[KERNEL_DATA_BASE_ADDRESS_INDEX] = Memory.getInstance().getLayout().kernelDataRange.minAddress();
+        this.baseAddresses[MMIO_BASE_ADDRESS_INDEX] = Memory.getInstance().getLayout().mmioRange.minAddress();
         this.updateBaseAddressChoices();
         this.baseAddressSelector.setModel(new CustomComboBoxModel(this.baseAddressChoices));
         this.baseAddressSelector.setSelectedIndex(this.defaultBaseAddressIndex);
@@ -363,19 +363,19 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
         int shortestDistance = Integer.MAX_VALUE;
         int testDistance;
         // Check distance from .extern base.  Cannot be below it
-        testDistance = address - Memory.getInstance().getAddress(MemoryConfigurations.EXTERN_LOW);
+        testDistance = address - Memory.getInstance().getLayout().externRange.minAddress();
         if (testDistance >= 0 && testDistance < shortestDistance) {
             shortestDistance = testDistance;
             desiredComboBoxIndex = EXTERN_BASE_ADDRESS_INDEX;
         }
         // Check distance from .data base.  Cannot be below it
-        testDistance = address - Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW);
+        testDistance = address - Memory.getInstance().getLayout().staticRange.minAddress();
         if (testDistance >= 0 && testDistance < shortestDistance) {
             shortestDistance = testDistance;
             desiredComboBoxIndex = DATA_BASE_ADDRESS_INDEX;
         }
         // Check distance from heap base; cannot be below it
-        testDistance = address - Memory.getInstance().getAddress(MemoryConfigurations.DYNAMIC_LOW);
+        testDistance = address - Memory.getInstance().getLayout().dynamicRange.minAddress();
         if (testDistance >= 0 && testDistance < shortestDistance) {
             shortestDistance = testDistance;
             desiredComboBoxIndex = HEAP_BASE_ADDRESS_INDEX;
@@ -393,19 +393,19 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
             desiredComboBoxIndex = STACK_POINTER_BASE_ADDRESS_INDEX;
         }
         // Check distance from .text base; cannot be below it
-        testDistance = address - Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW);
+        testDistance = address - Memory.getInstance().getLayout().textRange.minAddress();
         if (testDistance >= 0 && testDistance < shortestDistance) {
             shortestDistance = testDistance;
             desiredComboBoxIndex = TEXT_BASE_ADDRESS_INDEX;
         }
         // Check distance from .kdata base; cannot be below it
-        testDistance = address - Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_DATA_LOW);
+        testDistance = address - Memory.getInstance().getLayout().kernelDataRange.minAddress();
         if (testDistance >= 0 && testDistance < shortestDistance) {
             shortestDistance = testDistance;
             desiredComboBoxIndex = KERNEL_DATA_BASE_ADDRESS_INDEX;
         }
         // Check distance from MMIO base; cannot be below it
-        testDistance = address - Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW);
+        testDistance = address - Memory.getInstance().getLayout().mmioRange.minAddress();
         if (testDistance >= 0 && testDistance < shortestDistance) {
             shortestDistance = testDistance;
             desiredComboBoxIndex = MMIO_BASE_ADDRESS_INDEX;
@@ -621,12 +621,12 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
         // NOTE: For buttons that are now combo box items, the tool tips are not displayed w/o custom renderer.
         this.baseAddressButtons[GLOBAL_POINTER_BASE_ADDRESS_INDEX].setToolTipText("View memory around global pointer ($gp)");
         this.baseAddressButtons[STACK_POINTER_BASE_ADDRESS_INDEX].setToolTipText("View memory around stack pointer ($sp)");
-        this.baseAddressButtons[HEAP_BASE_ADDRESS_INDEX].setToolTipText("View memory around heap starting at " + Binary.intToHexString(Memory.getInstance().getAddress(MemoryConfigurations.DYNAMIC_LOW)));
-        this.baseAddressButtons[KERNEL_DATA_BASE_ADDRESS_INDEX].setToolTipText("View memory around kernel data starting at " + Binary.intToHexString(Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_DATA_LOW)));
-        this.baseAddressButtons[EXTERN_BASE_ADDRESS_INDEX].setToolTipText("View memory around static globals starting at " + Binary.intToHexString(Memory.getInstance().getAddress(MemoryConfigurations.EXTERN_LOW)));
-        this.baseAddressButtons[MMIO_BASE_ADDRESS_INDEX].setToolTipText("View memory around memory-mapped I/O starting at " + Binary.intToHexString(Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW)));
-        this.baseAddressButtons[TEXT_BASE_ADDRESS_INDEX].setToolTipText("View memory around program code starting at " + Binary.intToHexString(Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW)));
-        this.baseAddressButtons[DATA_BASE_ADDRESS_INDEX].setToolTipText("View memory around program data starting at " + Binary.intToHexString(Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW)));
+        this.baseAddressButtons[HEAP_BASE_ADDRESS_INDEX].setToolTipText("View memory around heap starting at " + Binary.intToHexString(Memory.getInstance().getLayout().dynamicRange.minAddress()));
+        this.baseAddressButtons[KERNEL_DATA_BASE_ADDRESS_INDEX].setToolTipText("View memory around kernel data starting at " + Binary.intToHexString(Memory.getInstance().getLayout().kernelDataRange.minAddress()));
+        this.baseAddressButtons[EXTERN_BASE_ADDRESS_INDEX].setToolTipText("View memory around static globals starting at " + Binary.intToHexString(Memory.getInstance().getLayout().externRange.minAddress()));
+        this.baseAddressButtons[MMIO_BASE_ADDRESS_INDEX].setToolTipText("View memory around memory-mapped I/O starting at " + Binary.intToHexString(Memory.getInstance().getLayout().mmioRange.minAddress()));
+        this.baseAddressButtons[TEXT_BASE_ADDRESS_INDEX].setToolTipText("View memory around program code starting at " + Binary.intToHexString(Memory.getInstance().getLayout().textRange.minAddress()));
+        this.baseAddressButtons[DATA_BASE_ADDRESS_INDEX].setToolTipText("View memory around program data starting at " + Binary.intToHexString(Memory.getInstance().getLayout().staticRange.minAddress()));
         this.prevButton.setToolTipText("View previous/lower memory range (hold down for rapid fire)");
         this.nextButton.setToolTipText("View next/higher memory range (hold down for rapid fire)");
 
@@ -648,43 +648,43 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
             this.firstAddress = Processor.getValue(Processor.STACK_POINTER);
             // See comment above for baseAddressButtons[GLOBAL_POINTER_BASE_ADDRESS_INDEX]
             this.firstAddress = Memory.alignToPrevious(this.firstAddress, BYTES_PER_ROW);
-            this.homeAddress = Memory.getInstance().getAddress(MemoryConfigurations.STACK_POINTER);
+            this.homeAddress = Memory.getInstance().getLayout().initialStackPointer;
             this.updateFirstAddress(this.firstAddress);
             this.updateModelForMemoryRange(this.firstAddress);
         });
         this.baseAddressButtons[HEAP_BASE_ADDRESS_INDEX].addActionListener(event -> {
             this.userOrKernelMode = USER_MODE;
-            this.homeAddress = Memory.getInstance().getAddress(MemoryConfigurations.DYNAMIC_LOW);
+            this.homeAddress = Memory.getInstance().getLayout().dynamicRange.minAddress();
             this.updateFirstAddress(this.homeAddress);
             this.updateModelForMemoryRange(this.firstAddress);
         });
         this.baseAddressButtons[EXTERN_BASE_ADDRESS_INDEX].addActionListener(event -> {
             this.userOrKernelMode = USER_MODE;
-            this.homeAddress = Memory.getInstance().getAddress(MemoryConfigurations.EXTERN_LOW);
+            this.homeAddress = Memory.getInstance().getLayout().externRange.minAddress();
             this.updateFirstAddress(this.homeAddress);
             this.updateModelForMemoryRange(this.firstAddress);
         });
         this.baseAddressButtons[KERNEL_DATA_BASE_ADDRESS_INDEX].addActionListener(event -> {
             this.userOrKernelMode = KERNEL_MODE;
-            this.homeAddress = Memory.getInstance().getAddress(MemoryConfigurations.KERNEL_DATA_LOW);
+            this.homeAddress = Memory.getInstance().getLayout().kernelDataRange.minAddress();
             this.updateFirstAddress(this.homeAddress);
             this.updateModelForMemoryRange(this.firstAddress);
         });
         this.baseAddressButtons[MMIO_BASE_ADDRESS_INDEX].addActionListener(event -> {
             this.userOrKernelMode = KERNEL_MODE;
-            this.homeAddress = Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW);
+            this.homeAddress = Memory.getInstance().getLayout().mmioRange.minAddress();
             this.updateFirstAddress(this.homeAddress);
             this.updateModelForMemoryRange(this.firstAddress);
         });
         this.baseAddressButtons[TEXT_BASE_ADDRESS_INDEX].addActionListener(event -> {
             this.userOrKernelMode = USER_MODE;
-            this.homeAddress = Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW);
+            this.homeAddress = Memory.getInstance().getLayout().textRange.minAddress();
             this.updateFirstAddress(this.homeAddress);
             this.updateModelForMemoryRange(this.firstAddress);
         });
         baseAddressButtons[DATA_BASE_ADDRESS_INDEX].addActionListener(event -> {
             this.userOrKernelMode = USER_MODE;
-            this.homeAddress = Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW);
+            this.homeAddress = Memory.getInstance().getLayout().staticRange.minAddress();
             this.updateFirstAddress(this.homeAddress);
             this.updateModelForMemoryRange(this.firstAddress);
         });
@@ -703,19 +703,20 @@ public class DataSegmentWindow extends JInternalFrame implements SimulatorListen
      * <code>prevButton</code> and <code>nextButton</code> are also enabled/disabled appropriately.
      */
     private void updateFirstAddress(int address) {
-        int lowLimit = Memory.getInstance().getAddress((this.userOrKernelMode == USER_MODE) ? MemoryConfigurations.USER_LOW : MemoryConfigurations.MAPPED_LOW);
-        int highLimit = Memory.getInstance().getAddress((this.userOrKernelMode == USER_MODE) ? MemoryConfigurations.USER_HIGH : MemoryConfigurations.MAPPED_HIGH);
+        MemoryLayout.Range range = (this.userOrKernelMode == USER_MODE)
+            ? Memory.getInstance().getLayout().userRange
+            : Memory.getInstance().getLayout().mappedRange;
 
         this.firstAddress = address;
-        if (this.firstAddress <= lowLimit) {
-            this.firstAddress = lowLimit;
+        if (this.firstAddress <= range.minAddress()) {
+            this.firstAddress = range.minAddress();
             this.prevButton.setEnabled(false);
         }
         else {
             this.prevButton.setEnabled(true);
         }
-        if (this.firstAddress >= highLimit - MEMORY_CHUNK_SIZE) {
-            this.firstAddress = highLimit - MEMORY_CHUNK_SIZE + 1;
+        if (this.firstAddress >= range.maxAddress() - MEMORY_CHUNK_SIZE) {
+            this.firstAddress = range.maxAddress() - MEMORY_CHUNK_SIZE + 1;
             this.nextButton.setEnabled(false);
         }
         else {

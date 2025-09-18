@@ -3,7 +3,6 @@ package mars.tools;
 import mars.Application;
 import mars.mips.hardware.AddressErrorException;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.MemoryConfigurations;
 import mars.settings.Settings;
 import mars.util.Binary;
 
@@ -111,11 +110,11 @@ public class BitmapDisplay extends AbstractMarsTool {
     @Override
     protected void initializePreGUI() {
         this.baseAddresses = new int[] {
-            Memory.getInstance().getAddress(MemoryConfigurations.DATA_LOW),
-            Memory.getInstance().getAddress(MemoryConfigurations.GLOBAL_POINTER),
-            Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW),
-            Memory.getInstance().getAddress(MemoryConfigurations.DYNAMIC_LOW),
-            Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW),
+            Memory.getInstance().getLayout().dataRange.minAddress(),
+            Memory.getInstance().getLayout().initialGlobalPointer,
+            Memory.getInstance().getLayout().staticRange.minAddress(),
+            Memory.getInstance().getLayout().dynamicRange.minAddress(),
+            Memory.getInstance().getLayout().mmioRange.minAddress(),
         };
         this.baseAddressChoices = new String[BASE_ADDRESS_NAMES.length];
         for (int choice = 0; choice < BASE_ADDRESS_NAMES.length; choice++) {

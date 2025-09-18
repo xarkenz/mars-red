@@ -162,8 +162,6 @@ public class Application {
             assembler = new Assembler();
             initialized = true;
             debug = false;
-
-            MemoryConfigurations.getConfigurations();
         }
     }
 

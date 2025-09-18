@@ -1,7 +1,6 @@
 package mars.tools;
 
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.MemoryConfigurations;
 import mars.util.Binary;
 
 import javax.swing.*;
@@ -389,12 +388,12 @@ public class MemoryReferenceVisualization extends AbstractMarsTool {
     //dataBaseAddress=0x10010000, heapBaseAddress=0x10040000, memoryMapBaseAddress=0xffff0000
     private void initializeDisplayBaseChoices() {
         int[] displayBaseAddressArray = {
-            Memory.getInstance().getAddress(MemoryConfigurations.TEXT_LOW),
-            Memory.getInstance().getAddress(MemoryConfigurations.DATA_LOW),
-            Memory.getInstance().getAddress(MemoryConfigurations.GLOBAL_POINTER),
-            Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW),
-            Memory.getInstance().getAddress(MemoryConfigurations.DYNAMIC_LOW),
-            Memory.getInstance().getAddress(MemoryConfigurations.MMIO_LOW),
+            Memory.getInstance().getLayout().textRange.minAddress(),
+            Memory.getInstance().getLayout().dataRange.minAddress(),
+            Memory.getInstance().getLayout().initialGlobalPointer,
+            Memory.getInstance().getLayout().staticRange.minAddress(),
+            Memory.getInstance().getLayout().dynamicRange.minAddress(),
+            Memory.getInstance().getLayout().mmioRange.minAddress(),
         };
         // Must agree with above in number and order...
         String[] descriptions = {

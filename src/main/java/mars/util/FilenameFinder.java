@@ -120,7 +120,7 @@ public class FilenameFinder {
             }
         }
         catch (IOException exception) {
-            exception.printStackTrace();
+            exception.printStackTrace(System.err);
         }
 
         return filenameList;

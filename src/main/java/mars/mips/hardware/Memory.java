@@ -6,7 +6,9 @@ import mars.mips.instructions.Instruction;
 import mars.simulator.ExceptionCause;
 import mars.simulator.Simulator;
 import mars.util.Binary;
+import mars.util.FilenameFinder;
 
+import java.io.InputStream;
 import java.util.*;
 
 /*
@@ -87,6 +89,53 @@ public class Memory {
         default void memoryReset() {
             // Do nothing by default
         }
+    }
+
+    private static final String LAYOUTS_DIRECTORY = "config/memory_layouts";
+
+    private static Map<String, MemoryLayout> layouts = null;
+
+    /**
+     * Obtain the collection of memory layouts, organized by key. Each key corresponds to the base filename of the
+     * properties file it is derived from (e.g., the key for <code>Default.properties</code> is <code>Default</code>).
+     * The collection of available layouts loaded the first time this method is called.
+     *
+     * @return The collection of available memory layouts.
+     */
+    public static Map<String, MemoryLayout> getLayouts() {
+        if (layouts == null) {
+            layouts = new TreeMap<>();
+            List<String> layoutFilenames = FilenameFinder.findFilenames(
+                Memory.class.getClassLoader(),
+                LAYOUTS_DIRECTORY,
+                "properties"
+            );
+            for (String layoutFilename : layoutFilenames) {
+                try {
+                    String layoutKey = layoutFilename.substring(0, layoutFilename.lastIndexOf('.'));
+                    InputStream input = Memory.class.getResourceAsStream('/' + LAYOUTS_DIRECTORY + '/' + layoutFilename);
+                    Properties properties = new Properties();
+                    properties.load(input);
+                    layouts.put(layoutKey, MemoryLayout.fromProperties(properties));
+                }
+                catch (Exception exception) {
+                    exception.printStackTrace(System.err);
+                }
+            }
+        }
+        return layouts;
+    }
+
+    public static MemoryLayout getDefaultLayout() {
+        return Objects.requireNonNull(
+            Memory.getLayouts().get("Default"),
+            "could not find a 'Default' memory layout"
+        );
+    }
+
+    public static MemoryLayout getLayoutOrDefault(String key) {
+        MemoryLayout layout = Memory.getLayouts().get(key);
+        return layout != null ? layout : Memory.getDefaultLayout();
     }
 
     /**
@@ -258,9 +307,9 @@ public class Memory {
      */
     private Endianness endianness = Endianness.LITTLE_ENDIAN;
     /**
-     * Current memory configuration, updated upon memory reset.
+     * Current memory layout, updated upon memory reset.
      */
-    private MemoryConfiguration configuration;
+    private MemoryLayout layout;
     /**
      * The next address on the heap which will be used for dynamic memory allocation.
      */
@@ -280,30 +329,36 @@ public class Memory {
     public static Memory getInstance() {
         if (instance == null) {
             instance = new Memory();
+            instance.reset();
         }
         return instance;
     }
 
     /**
-     * Reinitialize the memory contents with the current memory configuration
-     * ({@link MemoryConfigurations#getCurrentConfiguration()}) and reset the heap address to its initial state.
+     * Reinitialize the memory contents with the current memory layout and reset the heap address to its initial state.
      */
     public void reset() {
         // Update the memory configuration and endianness
-        this.configuration = MemoryConfigurations.getCurrentConfiguration();
-        this.endianness = (Application.getSettings().useBigEndian.get()) ? Endianness.BIG_ENDIAN : Endianness.LITTLE_ENDIAN;
+        this.endianness = (Application.getSettings().useBigEndian.get())
+            ? Endianness.BIG_ENDIAN
+            : Endianness.LITTLE_ENDIAN;
+
+        this.layout = Memory.getLayoutOrDefault(Application.getSettings().memoryLayout.get());
+        Processor.getRegisters()[Processor.GLOBAL_POINTER].setDefaultValue(this.layout.initialGlobalPointer);
+        Processor.getRegisters()[Processor.STACK_POINTER].setDefaultValue(this.layout.initialStackPointer);
+        Processor.setDefaultProgramCounter(this.layout.textRange.minAddress());
 
         // Initialize the heap address at the bottom of the dynamic data range
-        this.nextHeapAddress = alignToNext(this.getAddress(MemoryConfigurations.DYNAMIC_LOW), BYTES_PER_WORD);
+        this.nextHeapAddress = alignToNext(this.layout.dynamicRange.minAddress(), BYTES_PER_WORD);
 
         // Allocate new memory regions, which will be filled in as needed.
         // MMIO is separate because it isn't really considered part of the kernel data segment,
         // though they could have been combined in this case. Probably better to assume they aren't adjacent anyway.
-        this.dataSegmentRegion = new DataRegion(this.getAddress(MemoryConfigurations.DATA_LOW), this.getAddress(MemoryConfigurations.DATA_HIGH));
-        this.kernelDataSegmentRegion = new DataRegion(this.getAddress(MemoryConfigurations.KERNEL_DATA_LOW), this.getAddress(MemoryConfigurations.KERNEL_DATA_HIGH));
-        this.mmioRegion = new DataRegion(this.getAddress(MemoryConfigurations.MMIO_LOW), this.getAddress(MemoryConfigurations.MMIO_HIGH));
-        this.textSegmentRegion = new TextRegion(this.getAddress(MemoryConfigurations.TEXT_LOW), this.getAddress(MemoryConfigurations.TEXT_HIGH));
-        this.kernelTextSegmentRegion = new TextRegion(this.getAddress(MemoryConfigurations.KERNEL_TEXT_LOW), this.getAddress(MemoryConfigurations.KERNEL_TEXT_HIGH));
+        this.dataSegmentRegion = new DataRegion(this.layout.dataRange);
+        this.kernelDataSegmentRegion = new DataRegion(this.layout.kernelDataRange);
+        this.mmioRegion = new DataRegion(this.layout.mmioRange);
+        this.textSegmentRegion = new TextRegion(this.layout.textRange);
+        this.kernelTextSegmentRegion = new TextRegion(this.layout.kernelTextRange);
 
         // Encourage the garbage collector to clean up any region objects now orphaned
         System.gc();
@@ -316,10 +371,6 @@ public class Memory {
         }
     }
 
-    public int getAddress(int key) {
-        return this.configuration.getAddress(key);
-    }
-
     /**
      * Get the current endianness (i.e. byte ordering) in use.
      * This reflects the value of {@link mars.settings.Settings#useBigEndian};
@@ -329,6 +380,17 @@ public class Memory {
      */
     public Endianness getEndianness() {
         return this.endianness;
+    }
+
+    /**
+     * Get the current memory layout in use.
+     * This reflects the value of {@link mars.settings.Settings#memoryLayout};
+     * however, it is only updated when {@link #reset()} is called.
+     *
+     * @return The memory layout used to format memory the last time <code>reset()</code> was called.
+     */
+    public MemoryLayout getLayout() {
+        return this.layout;
     }
 
     /**
@@ -355,7 +417,7 @@ public class Memory {
             throw new IllegalArgumentException("invalid heap allocation of " + numBytes + " bytes requested");
         }
         int newHeapAddress = alignToNext(this.nextHeapAddress + numBytes, BYTES_PER_WORD);
-        if (Integer.compareUnsigned(newHeapAddress, this.getAddress(MemoryConfigurations.DYNAMIC_HIGH)) > 0) {
+        if (Integer.compareUnsigned(newHeapAddress, this.layout.dynamicRange.maxAddress()) > 0) {
             throw new IllegalArgumentException("heap allocation of " + numBytes + " bytes failed due to insufficient heap space");
         }
         this.nextHeapAddress = newHeapAddress;
@@ -368,7 +430,7 @@ public class Memory {
      * @return True if the highest mapped address can be stored in 16 bits, false otherwise.
      */
     public boolean isUsingCompactAddressSpace() {
-        return Integer.compareUnsigned(this.getAddress(MemoryConfigurations.MAPPED_HIGH), 0xFFFF) <= 0;
+        return Integer.compareUnsigned(this.layout.mappedRange.maxAddress(), 0xFFFF) <= 0;
     }
 
     /**
@@ -379,8 +441,7 @@ public class Memory {
      * @return True if the address is within the text segment, false otherwise.
      */
     public boolean isInTextSegment(int address) {
-        return Integer.compareUnsigned(address, this.getAddress(MemoryConfigurations.TEXT_LOW)) >= 0
-            && Integer.compareUnsigned(address, this.getAddress(MemoryConfigurations.TEXT_HIGH)) <= 0;
+        return this.layout.textRange.contains(address);
     }
 
     /**
@@ -391,8 +452,7 @@ public class Memory {
      * @return True if the address is within the kernel text segment, false otherwise.
      */
     public boolean isInKernelTextSegment(int address) {
-        return Integer.compareUnsigned(address, this.getAddress(MemoryConfigurations.KERNEL_TEXT_LOW)) >= 0
-            && Integer.compareUnsigned(address, this.getAddress(MemoryConfigurations.KERNEL_TEXT_HIGH)) <= 0;
+        return this.layout.kernelTextRange.contains(address);
     }
 
     /**
@@ -403,8 +463,7 @@ public class Memory {
      * @return True if the address is within the data segment, false otherwise.
      */
     public boolean isInDataSegment(int address) {
-        return Integer.compareUnsigned(address, this.getAddress(MemoryConfigurations.DATA_LOW)) >= 0
-            && Integer.compareUnsigned(address, this.getAddress(MemoryConfigurations.DATA_HIGH)) <= 0;
+        return this.layout.dataRange.contains(address);
     }
 
     /**
@@ -415,8 +474,7 @@ public class Memory {
      * @return True if the address is within the kernel data segment, false otherwise.
      */
     public boolean isInKernelDataSegment(int address) {
-        return Integer.compareUnsigned(address, this.getAddress(MemoryConfigurations.KERNEL_DATA_LOW)) >= 0
-            && Integer.compareUnsigned(address, this.getAddress(MemoryConfigurations.KERNEL_DATA_HIGH)) <= 0;
+        return this.layout.kernelDataRange.contains(address);
     }
 
     /**
@@ -427,8 +485,7 @@ public class Memory {
      * @return True if the address is within the memory-mapped I/O range, false otherwise.
      */
     public boolean isInMemoryMappedIO(int address) {
-        return Integer.compareUnsigned(address, this.getAddress(MemoryConfigurations.MMIO_LOW)) >= 0
-            && Integer.compareUnsigned(address, this.getAddress(MemoryConfigurations.MMIO_HIGH)) <= 0;
+        return this.layout.mmioRange.contains(address);
     }
 
     /**
@@ -1004,14 +1061,13 @@ public class Memory {
         /**
          * Allocate a new region of memory containing data.
          *
-         * @param firstAddress The lowest address this region is required to contain.
-         * @param lastAddress  The highest address this region is required to contain.
+         * @param addressRange The range of addresses this region is required to contain.
          */
-        public DataRegion(int firstAddress, int lastAddress) {
+        public DataRegion(MemoryLayout.Range addressRange) {
             // Get the base address, which must be aligned to a table boundary
-            this.baseAddress = alignToPrevious(firstAddress, BYTES_PER_TABLE);
+            this.baseAddress = alignToPrevious(addressRange.minAddress(), BYTES_PER_TABLE);
             // Determine how many tables are needed to cover the region
-            int tableCount = (lastAddress - this.baseAddress) / BYTES_PER_TABLE + 1;
+            int tableCount = (addressRange.maxAddress() - this.baseAddress) / BYTES_PER_TABLE + 1;
             // Allocate an array which can hold that many tables
             this.tables = new int[tableCount][][];
         }
@@ -1132,14 +1188,13 @@ public class Memory {
         /**
          * Allocate a new region of memory containing text.
          *
-         * @param firstAddress The lowest address this region is required to contain.
-         * @param lastAddress  The highest address this region is required to contain.
+         * @param addressRange The range of addresses this region is required to contain.
          */
-        public TextRegion(int firstAddress, int lastAddress) {
+        public TextRegion(MemoryLayout.Range addressRange) {
             // Get the base address, which must be aligned to a table boundary
-            this.baseAddress = alignToPrevious(firstAddress, BYTES_PER_TABLE);
+            this.baseAddress = alignToPrevious(addressRange.minAddress(), BYTES_PER_TABLE);
             // Determine how many tables are needed to cover the region
-            int tableCount = (lastAddress - this.baseAddress) / BYTES_PER_TABLE + 1;
+            int tableCount = (addressRange.maxAddress() - this.baseAddress) / BYTES_PER_TABLE + 1;
             // Allocate an array which can hold that many tables
             this.tables = new BasicStatement[tableCount][][];
         }

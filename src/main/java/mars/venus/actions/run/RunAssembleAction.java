@@ -5,7 +5,6 @@ import mars.assembler.log.AssemblyError;
 import mars.assembler.log.LogLevel;
 import mars.assembler.log.LogMessage;
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.MemoryConfigurations;
 import mars.simulator.Simulator;
 import mars.venus.RegistersPane;
 import mars.venus.VenusUI;
@@ -101,7 +100,7 @@ public class RunAssembleAction extends VenusAction {
 
             executeTab.getTextSegmentWindow().setupTable();
             executeTab.getDataSegmentWindow().setupTable();
-            executeTab.getDataSegmentWindow().highlightCellForAddress(Memory.getInstance().getAddress(MemoryConfigurations.STATIC_LOW));
+            executeTab.getDataSegmentWindow().highlightCellForAddress(Memory.getInstance().getLayout().staticRange.minAddress());
             executeTab.getDataSegmentWindow().clearHighlighting();
             executeTab.getLabelsWindow().setupTable();
             executeTab.getTextSegmentWindow().updateHighlighting();

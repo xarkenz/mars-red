@@ -1,7 +1,6 @@
 package mars.tools;
 
 import mars.mips.hardware.Memory;
-import mars.mips.hardware.MemoryConfigurations;
 import mars.util.Binary;
 
 import javax.swing.*;
@@ -392,8 +391,8 @@ public class CacheSimulator extends AbstractMarsTool {
     protected void startObserving() {
         Memory.getInstance().addListener(
             this,
-            Memory.getInstance().getAddress(MemoryConfigurations.DATA_LOW),
-            Memory.getInstance().getAddress(MemoryConfigurations.DATA_HIGH)
+            Memory.getInstance().getLayout().dataRange.minAddress(),
+            Memory.getInstance().getLayout().dataRange.maxAddress()
         );
     }
 

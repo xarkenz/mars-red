@@ -508,9 +508,9 @@ public class Settings {
         false
     );
     /**
-     * Identifier of current memory configuration.
+     * Identifier of current memory layout.
      */
-    public final StringSetting memoryConfiguration = new StringSetting(
+    public final StringSetting memoryLayout = new StringSetting(
         this,
         "MemoryConfiguration",
         "",
@@ -560,7 +560,7 @@ public class Settings {
         this.mipsFileExtensions,
         this.entryPointLabel,
         this.exceptionHandlerPath,
-        this.memoryConfiguration,
+        this.memoryLayout,
         this.textSegmentColumnOrder,
         this.previouslyOpenFiles,
         this.recentFiles,

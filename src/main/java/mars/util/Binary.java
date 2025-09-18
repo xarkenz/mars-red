@@ -2,8 +2,6 @@ package mars.util;
 
 import mars.Application;
 
-import java.util.Comparator;
-
 /*
 Copyright (c) 2003-2006,  Pete Sanderson and Kenneth Vollmar
 

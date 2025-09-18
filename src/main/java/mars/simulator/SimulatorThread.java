@@ -181,8 +181,8 @@ public class SimulatorThread extends Thread {
                 }
 
                 // Check for an exception handler by attempting to fetch the instruction located at the
-                // exception handler address, as determined by the memory configuration
-                int exceptionHandlerAddress = Memory.getInstance().getAddress(MemoryConfigurations.EXCEPTION_HANDLER);
+                // exception handler address, as determined by the memory layout
+                int exceptionHandlerAddress = Memory.getInstance().getLayout().exceptionHandlerAddress;
                 BasicStatement exceptionHandler = null;
                 try {
                     exceptionHandler = Memory.getInstance().fetchStatement(exceptionHandlerAddress, true);
