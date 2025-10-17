@@ -468,14 +468,6 @@ public class TextAreaPainter extends JComponent implements TabExpander {
         return dim;
     }
 
-    /**
-     * Returns the painter's minimum size.
-     */
-    @Override
-    public Dimension getMinimumSize() {
-        return getPreferredSize();
-    }
-
     // package-private members
     int currentLineIndex;
     Token currentLineTokens;
