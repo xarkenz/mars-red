@@ -4,7 +4,6 @@ import mars.Application;
 import mars.venus.DynamicTabbedPane;
 import mars.util.FilenameFinder;
 import mars.venus.VenusUI;
-import mars.venus.execute.ProgramStatus;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
@@ -159,9 +158,6 @@ public class EditTab extends DynamicTabbedPane {
         // This is kind of goofy, but it's fine since a File doesn't have to represent anything.
         newTab.setFile(new File(name));
         this.addTab(name, null, newTab, name);
-
-        this.gui.setProgramStatus(ProgramStatus.NOT_ASSEMBLED);
-        this.gui.getMainPane().getExecuteTab().clear();
 
         this.gui.getMainPane().setSelectedComponent(this);
         newTab.displayCaretPosition(new Point(1, 1));
@@ -559,7 +555,9 @@ public class EditTab extends DynamicTabbedPane {
                 content.append('*');
             }
             content.append(tab.getFile().getName());
-            this.setTitleAt(this.indexOfComponent(tab), content.toString());
+            int tabIndex = this.indexOfComponent(tab);
+            this.setTitleAt(tabIndex, content.toString());
+            this.setToolTipTextAt(tabIndex, tab.getFile().getPath());
 
             if (tab == this.getCurrentEditorTab()) {
                 this.gui.setTitleContent(content.toString());
